@@ -1,7 +1,7 @@
 ﻿{
-    "version":  "1.3.2",
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.3.2/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.3.2/SatinalmaPro.zip",
-    "notes":  "Surum 1.3.2",
+    "version":  "1.3.4",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.3.4/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.3.4/SatinalmaPro.zip",
+    "notes":  "Surum 1.3.4",
     "zorunlu":  false
 }
