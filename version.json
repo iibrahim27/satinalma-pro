@@ -1,0 +1,7 @@
+﻿{
+    "version":  "1.3.0",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.3.0/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.3.0/SatinalmaPro.zip",
+    "notes":  "Giris ekrani, bulut senkron, otomatik guncelleme duzeltmeleri",
+    "zorunlu":  false
+}
