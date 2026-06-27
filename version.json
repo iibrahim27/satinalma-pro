@@ -1,0 +1,7 @@
+﻿{
+    "version":  "1.2.3",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.2.3/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.2.3/SatinalmaPro.zip",
+    "notes":  "Guncelleme 404 hatasi duzeltmesi, zip yedek indirme",
+    "zorunlu":  false
+}
