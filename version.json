@@ -1,8 +1,8 @@
 {
-    "version":  "1.4.3",
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.3/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.3/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.3/SatinalmaPro.apk",
-    "notes":  "Otomatik yayin testi - gh ile release ve version.json guncelleme",
+    "version":  "1.4.4",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.4/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.4/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.4/SatinalmaPro.apk",
+    "notes":  "Masaustu null reference hatalari duzeltildi - PDF, teklif onayi, veri guvenligi",
     "zorunlu":  false
 }
