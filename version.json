@@ -1,8 +1,8 @@
-﻿{
-    "version":  "1.4.2",
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.2/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.2/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.2/SatinalmaPro.apk",
-    "notes":  "Teklif duzenleme: marka ve birim fiyat girisi duzeltmesi (masaustu ve mobil)",
+{
+    "version":  "1.4.3",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.3/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.3/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.3/SatinalmaPro.apk",
+    "notes":  "Otomatik yayin testi - gh ile release ve version.json guncelleme",
     "zorunlu":  false
 }
