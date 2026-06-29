@@ -1,8 +1,8 @@
 {
-    "version":  "1.4.4",
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.4/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.4/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.4/SatinalmaPro.apk",
-    "notes":  "Masaustu null reference hatalari duzeltildi - PDF, teklif onayi, veri guvenligi",
+    "version":  "1.4.5",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.5/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.5/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.5/SatinalmaPro.apk",
+    "notes":  "Teklif onay kaydi null reference duzeltmesi - grid secimleri ve UI yenileme",
     "zorunlu":  false
 }
