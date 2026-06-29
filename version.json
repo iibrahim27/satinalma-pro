@@ -1,7 +1,8 @@
 ﻿{
-    "version":  "1.3.7",
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.3.7/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.3.7/SatinalmaPro.zip",
-    "notes":  "Surum 1.3.7",
+    "version":  "1.4.0",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.0/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.0/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.0/SatinalmaPro.apk",
+    "notes":  "Otomatik guncelleme testi, Android geri navigasyonu, surum alt bilgisi",
     "zorunlu":  false
 }
