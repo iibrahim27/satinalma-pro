@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.4.0",
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.0/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.0/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.0/SatinalmaPro.apk",
-    "notes":  "Otomatik guncelleme testi, Android geri navigasyonu, surum alt bilgisi",
+    "version":  "1.4.1",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.1/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.1/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.1/SatinalmaPro.apk",
+    "notes":  "Android baglanti hatasi duzeltmesi, FCM gecikmeli baslatma, Turkce ag hata mesajlari",
     "zorunlu":  false
 }
