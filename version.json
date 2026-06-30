@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.7.3",
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.3/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.3/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.3/SatinalmaPro.apk",
-    "notes":  "Satinalma Talepler sekmesi: tum kayitli talepler artik listede (yonetim onayinda, karsilastirma, onaylanan, red vb.).\nTalep Durumlari: Tumu alt sekmesi eklendi (varsayilan).\nYonetime gonderilen tekliflerin listeden kaybolmasi duzeltildi.",
+    "version":  "1.7.4",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.4/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.4/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.4/SatinalmaPro.apk",
+    "notes":  "Satinalma modulu liste/navigasyon sifirdan yenilendi.\nTum talepler tek listede (varsayilan: Tum talepler); durum filtresi istege bagli.\nBulut senkronu sonrasi liste otomatik yenilenir; F5 ile yenileme calisir.\nSayfa basina 250 talep; veriler korunur (talep/teklif/onay silinmez).",
     "zorunlu":  false
 }
