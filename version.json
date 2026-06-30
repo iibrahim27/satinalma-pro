@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.7.6",
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.6/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.6/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.6/SatinalmaPro.apk",
-    "notes":  "Windows Action Center bildirimleri, Android kalici oturum ve biyometrik kilit, rol/menu guncellemeleri",
+    "version":  "1.7.7",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.7/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.7/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.7/SatinalmaPro.apk",
+    "notes":  "Bildirim ve cihazlar arasi senkron duzeltmeleri: Android push, rol bazli masaustu bildirimleri, anlik veri yenileme",
     "zorunlu":  false
 }
