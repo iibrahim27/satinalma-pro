@@ -1,8 +1,8 @@
-{
-  "version": "1.7.0",
-  "downloadUrl": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.0/SatinalmaPro_Kurulum.exe",
-  "downloadUrlZip": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.0/SatinalmaPro.zip",
-  "downloadUrlApk": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.0/SatinalmaPro.apk",
-  "notes": "PDF karsilastirma duzeltmeleri, rol bazli kuyruk filtreleri, masaustu yonetim onay paneli, Android menu sadelestirme",
-  "zorunlu": false
+﻿{
+    "version":  "1.7.1",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.1/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.1/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.1/SatinalmaPro.apk",
+    "notes":  "Bildirim metinleri duzeltildi (talep no, talep eden, ozet).\nWindows Action Center toast bildirimleri.\nTeklif silme sonrasi teklif sekmesinde kalma.\nKaydedilmeyen talep taslak olarak kalmaz; Hazirlaniyor durumu.",
+    "zorunlu":  false
 }
