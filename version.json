@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.7.4",
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.4/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.4/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.4/SatinalmaPro.apk",
-    "notes":  "Satinalma modulu liste/navigasyon sifirdan yenilendi.\nTum talepler tek listede (varsayilan: Tum talepler); durum filtresi istege bagli.\nBulut senkronu sonrasi liste otomatik yenilenir; F5 ile yenileme calisir.\nSayfa basina 250 talep; veriler korunur (talep/teklif/onay silinmez).",
+    "version":  "1.7.5",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.5/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.5/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.5/SatinalmaPro.apk",
+    "notes":  "Satinalma: tablo gorunumu (DataGrid), sayfalama kaldirildi.\nBulut+yerel talep birlestirme — senkron artik kayit silmez.\nTum talepler depoda listelenir; filtre istege bagli.\nF5 yenileme ve otomatik liste guncelleme.",
     "zorunlu":  false
 }
