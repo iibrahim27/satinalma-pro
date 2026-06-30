@@ -1,8 +1,8 @@
-{
-    "version":  "1.4.5",
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.5/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.5/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.4.5/SatinalmaPro.apk",
-    "notes":  "Teklif onay kaydi null reference duzeltmesi - grid secimleri ve UI yenileme",
-    "zorunlu":  false
+﻿{
+  "version": "1.7.0",
+  "downloadUrl": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.0/SatinalmaPro_Kurulum.exe",
+  "downloadUrlZip": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.0/SatinalmaPro.zip",
+  "downloadUrlApk": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.0/SatinalmaPro.apk",
+  "notes": "PDF karsilastirma duzeltmeleri, rol bazli kuyruk filtreleri, masaustu yonetim onay paneli, Android menu sadelestirme",
+  "zorunlu": false
 }
