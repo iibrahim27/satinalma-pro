@@ -4,7 +4,7 @@ using SatinalmaPro.Shared.Services;
 
 namespace SatinalmaPro.Shared.Services;
 
-public sealed class SatinalmaMobilServisi
+public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
 {
     private readonly MobilVeriDeposu _depo;
     private readonly BildirimServisi _bildirimler;
@@ -26,6 +26,7 @@ public sealed class SatinalmaMobilServisi
             Tarih = DateTime.Now.ToString("dd.MM.yyyy"),
             TalepEden = kullanici?.AdSoyad ?? "",
             OlusturanUid = kullanici?.Uid ?? "",
+            OlusturanRol = kullanici?.Rol ?? "",
             Durum = SatinalmaTalepDurumlari.Taslak,
             TalepTuru = TalepTurleri.Normal,
             Kalemler = [new SatinalmaTalepKalemi { SiraNo = 1, Birim = "Adet" }]
@@ -40,6 +41,8 @@ public sealed class SatinalmaMobilServisi
                 throw new InvalidOperationException("Kaydetmek için en az bir kalem veya açıklama girin.");
             SatinalmaTalepYardimcisi.KayitOncesiHazirla(talep);
         }
+
+        OlusturanRolunuTamamla(talep);
 
         var mevcut = _depo.Talepler.FirstOrDefault(t => t.Id == talep.Id);
         if (mevcut is null)
@@ -69,6 +72,10 @@ public sealed class SatinalmaMobilServisi
 
     public async Task YonetimeGonderAsync(SatinalmaTalep talep, CancellationToken iptal = default)
     {
+        if ((talep.Teklifler?.Count ?? 0) > 0)
+            throw new InvalidOperationException(
+                "Teklif girilmiş talepler «Karşılaştırma» ekranından yönetime gönderilmelidir.");
+
         if (talep.Durum == SatinalmaTalepDurumlari.Taslak)
         {
             if (!SatinalmaTalepYardimcisi.IcerikVar(talep))
@@ -76,10 +83,12 @@ public sealed class SatinalmaMobilServisi
             SatinalmaTalepYardimcisi.KayitOncesiHazirla(talep);
         }
 
+        OlusturanRolunuTamamla(talep);
         talep.Durum = SatinalmaTalepDurumlari.ImzaSurecinde;
         await TalepKaydetAsync(talep, iptal);
 
         await _bildirimler.EkleAsync(BildirimKaydiOlustur(BildirimTipleri.YonetimeGonderildi, talep, hedefRol: KullaniciRolleri.Yonetim), iptal);
+        await _bildirimler.EkleAsync(BildirimKaydiOlustur(BildirimTipleri.YonetimeGonderildi, talep, hedefRol: KullaniciRolleri.Satinalma), iptal);
     }
 
     public async Task YonetimAcilOnaylaAsync(SatinalmaTalep talep, CancellationToken iptal = default)
@@ -170,8 +179,8 @@ public sealed class SatinalmaMobilServisi
 
     public async Task TeklifEkleAsync(SatinalmaTalep talep, SatinalmaTeklif teklif, CancellationToken iptal = default)
     {
-        if (!SatinalmaIsAkisi.TeklifEklenebilir(talep))
-            throw new InvalidOperationException(SatinalmaIsAkisi.TeklifEklemeEngelMesaji(talep));
+        if (!SatinalmaIsAkisi.TeklifEklenebilir(talep, _depo.AktifKullanici))
+            throw new InvalidOperationException(SatinalmaIsAkisi.TeklifEklemeEngelMesaji(talep, _depo.AktifKullanici));
 
         teklif.FiyatlariHesapla(talep.Kalemler);
         var mevcut = talep.Teklifler.FirstOrDefault(t => t.Id == teklif.Id);
@@ -179,7 +188,7 @@ public sealed class SatinalmaMobilServisi
             talep.Teklifler.Remove(mevcut);
         talep.Teklifler.Add(teklif);
 
-        if (talep.Durum == SatinalmaTalepDurumlari.TeklifGirisi)
+        if (talep.Durum is SatinalmaTalepDurumlari.TeklifGirisi or SatinalmaTalepDurumlari.Hazirlaniyor)
             talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
 
         await TalepKaydetAsync(talep, iptal);
@@ -413,6 +422,17 @@ public sealed class SatinalmaMobilServisi
     {
         if (!izin)
             throw new InvalidOperationException(mesaj);
+    }
+
+    private void OlusturanRolunuTamamla(SatinalmaTalep talep)
+    {
+        if (!string.IsNullOrWhiteSpace(talep.OlusturanRol))
+            return;
+
+        if (!string.IsNullOrWhiteSpace(_depo.AktifKullanici?.Rol)
+            && !string.IsNullOrWhiteSpace(talep.OlusturanUid)
+            && talep.OlusturanUid == _depo.AktifKullanici.Uid)
+            talep.OlusturanRol = _depo.AktifKullanici.Rol;
     }
 
     public IEnumerable<SatinalmaTalep> TeklifsizFirmaFiyatBekleyenleri() =>

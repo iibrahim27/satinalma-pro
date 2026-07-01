@@ -104,6 +104,7 @@ public partial class SatinalmaView
         var talep = SatinalmaDepo.YeniTalepOlustur();
         talep.TalepEden = KullaniciYetkileri.AktifKullaniciAdi() ?? "";
         talep.OlusturanUid = OturumYoneticisi.AktifKullanici?.Uid ?? "";
+        talep.OlusturanRol = OturumYoneticisi.AktifKullanici?.Rol ?? "";
         SatinalmaDepo.Talepler.Insert(0, talep);
         SatinalmaDepo.Kaydet();
 
@@ -447,6 +448,8 @@ public partial class SatinalmaView
         }
 
         SatinalmaTalepYardimcisi.KayitOncesiHazirla(_seciliTalep!);
+        if (string.IsNullOrWhiteSpace(_seciliTalep!.OlusturanRol))
+            _seciliTalep.OlusturanRol = OturumYoneticisi.AktifKullanici?.Rol ?? "";
         _seciliTalep!.Durum = SatinalmaTalepDurumlari.Hazirlaniyor;
         SatinalmaDepo.Kaydet();
 
@@ -463,6 +466,14 @@ public partial class SatinalmaView
     {
         if (!TalepFormunuModeleAktar(zorunluKalem: true))
             return;
+
+        if ((_seciliTalep!.Teklifler?.Count ?? 0) > 0)
+        {
+            MessageBox.Show(
+                "Teklif girilmiş talepler «Teklif Girişi» ekranından «Değerlendirmeye Gönder» ile yönetime iletilmelidir.",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
 
         var onay = MessageBox.Show(
             "Talep yönetim onayına gönderilsin mi?",

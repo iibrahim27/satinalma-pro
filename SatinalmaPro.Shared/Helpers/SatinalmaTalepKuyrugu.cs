@@ -98,18 +98,37 @@ public static class SatinalmaTalepKuyrugu
         return onaylayanUid is null || t.YonetimOnaylayanUid == onaylayanUid;
     }
 
-    /// <summary>Satınalma Teklif Girişi — teklif girilecek talepler.</summary>
+    /// <summary>Satınalma Teklif Girişi — onay sonrası veya satınalma iç akış.</summary>
     public static bool SatinalmaTeklifGirisi(SatinalmaTalep t) =>
-        t.Durum == SatinalmaTalepDurumlari.TeklifGirisi
-        && (t.Teklifler?.Count ?? 0) == 0
-        && !t.YonetimOnayKilitli;
+        SatinalmaTeklifGirisi(
+            t.Durum,
+            t.OlusturanRol,
+            t.Teklifler?.Count ?? 0,
+            t.YonetimOnayKilitli,
+            t.TalepTuru);
+
+    public static bool SatinalmaTeklifGirisi(
+        string durum,
+        string olusturanRol,
+        int teklifSayisi,
+        bool yonetimOnayKilitli,
+        string talepTuru) =>
+        (durum == SatinalmaTalepDurumlari.TeklifGirisi
+         && teklifSayisi == 0
+         && !yonetimOnayKilitli)
+        || SatinalmaTalepYardimcisi.SatinalmaIcTeklifGirisi(
+            durum, olusturanRol, teklifSayisi, yonetimOnayKilitli, talepTuru);
 
     /// <summary>Satınalma Karşılaştırma — teklifler girildi, yönetime gönderilecek.</summary>
     public static bool SatinalmaKarsilastirma(SatinalmaTalep t) =>
-        (t.Durum == SatinalmaTalepDurumlari.Karsilastirma
-         || (t.Durum == SatinalmaTalepDurumlari.TeklifGirisi && (t.Teklifler?.Count ?? 0) > 0))
-        && !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(t)
-        && !t.YonetimOnayKilitli;
+        ((t.Durum == SatinalmaTalepDurumlari.Karsilastirma
+          || (t.Durum == SatinalmaTalepDurumlari.TeklifGirisi && (t.Teklifler?.Count ?? 0) > 0))
+         && !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(t)
+         && !t.YonetimOnayKilitli)
+        || (SatinalmaTalepYardimcisi.SatinalmaOlusturdu(t)
+            && (t.Teklifler?.Count ?? 0) > 0
+            && t.Durum is SatinalmaTalepDurumlari.Karsilastirma or SatinalmaTalepDurumlari.Hazirlaniyor
+            && !t.YonetimOnayKilitli);
 
     /// <summary>Satınalma teklifsiz firma/fiyat girişi.</summary>
     public static bool SatinalmaTeklifsizFirmaFiyat(SatinalmaTalep t) =>

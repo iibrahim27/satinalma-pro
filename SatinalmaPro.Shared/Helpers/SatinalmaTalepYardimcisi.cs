@@ -31,6 +31,35 @@ public static class SatinalmaTalepYardimcisi
     public static bool FormDuzenlenebilir(SatinalmaTalep talep) =>
         talep.Durum == SatinalmaTalepDurumlari.Taslak || GonderimOncesiDuzenlenebilir(talep);
 
+    /// <summary>Satınalma rolüyle oluşturulmuş talep — yönetime göndermeden teklif girişi yalnızca buna izin verilir.</summary>
+    public static bool SatinalmaOlusturdu(SatinalmaTalep talep) =>
+        SatinalmaOlusturdu(talep.OlusturanRol);
+
+    public static bool SatinalmaOlusturdu(string olusturanRol) =>
+        !string.IsNullOrWhiteSpace(olusturanRol)
+        && KullaniciRolleri.Normalize(olusturanRol) == KullaniciRolleri.Satinalma;
+
+    /// <summary>Satınalma kendi talebine yönetime iletmeden teklif girebilir.</summary>
+    public static bool SatinalmaIcTeklifGirisi(SatinalmaTalep talep) =>
+        SatinalmaIcTeklifGirisi(
+            talep.Durum,
+            talep.OlusturanRol,
+            talep.Teklifler?.Count ?? 0,
+            talep.YonetimOnayKilitli,
+            talep.TalepTuru);
+
+    public static bool SatinalmaIcTeklifGirisi(
+        string durum,
+        string olusturanRol,
+        int teklifSayisi,
+        bool yonetimOnayKilitli,
+        string talepTuru) =>
+        SatinalmaOlusturdu(olusturanRol)
+        && talepTuru != TalepTurleri.Acil
+        && !yonetimOnayKilitli
+        && durum == SatinalmaTalepDurumlari.Hazirlaniyor
+        && teklifSayisi == 0;
+
     public static void KayitOncesiHazirla(SatinalmaTalep talep)
     {
         if (talep.Durum == SatinalmaTalepDurumlari.Taslak)

@@ -79,7 +79,7 @@ public static class BulutVeriSenkronu
                         await UiThreaddeCalistirAsync(() =>
                         {
                             Uygula(anahtar, bulutJson!);
-                            YerelOnbellegeYaz(anahtar, bulutJson!);
+                            YerelBirlesikDurumuKaydet(anahtar);
                         });
                         BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
                     }
@@ -238,7 +238,7 @@ public static class BulutVeriSenkronu
                     continue;
 
                 Uygula(anahtar, json);
-                YerelOnbellegeYaz(anahtar, json);
+                YerelBirlesikDurumuKaydet(anahtar);
             }
 
             BuluttanYuklendi = true;
@@ -312,7 +312,7 @@ public static class BulutVeriSenkronu
 
             _senkronYukleniyor = true;
             Uygula(anahtar, json);
-            YerelOnbellegeYaz(anahtar, json);
+            YerelBirlesikDurumuKaydet(anahtar);
             if (guncelleme.HasValue)
                 BulutSenkronZamani.Kaydet(anahtar, guncelleme.Value);
             _senkronYukleniyor = false;
@@ -401,6 +401,14 @@ public static class BulutVeriSenkronu
         "uygulama_ayarlar" => SatinalmaProKlasor.DosyaYolu("uygulama_ayarlar.json"),
         _ => SatinalmaProKlasor.DosyaYolu($"{anahtar}.json")
     };
+
+    /// <summary>Bulut verisi uygulandıktan sonra birleşik bellek durumunu diske yazar.</summary>
+    private static void YerelBirlesikDurumuKaydet(string anahtar)
+    {
+        var yol = YerelDosyaYolu(anahtar);
+        SatinalmaProKlasor.Olustur();
+        File.WriteAllText(yol, Olustur(anahtar));
+    }
 
     private static void YerelOnbellegeYaz(string anahtar, string json)
     {

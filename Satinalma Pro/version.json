@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.8.6",
-    "build":  33,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.6/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.6/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.6/SatinalmaPro.apk",
-    "notes":  "APK yeniden derlendi; masaustu ve Android ayni surum; mobil rol yetkileri RolNavigasyonu ile hizalandi",
+    "version":  "1.8.7",
+    "build":  34,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.7/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.7/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.7/SatinalmaPro.apk",
+    "notes":  "Masaustu Satinalma Panel dashboard (Android benzeri ozet kartlari). Talep onay is akisi desktop-mobil hizalama. Firmaya Siparis Ver kalicilik duzeltmesi. Onaylanan talepler kart duzeni duzeltildi.",
     "zorunlu":  false
 }

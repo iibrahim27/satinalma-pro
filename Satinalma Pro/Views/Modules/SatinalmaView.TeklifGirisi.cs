@@ -34,7 +34,12 @@ public partial class SatinalmaView
     private void TeklifGirisTalepListesiniYenile()
     {
         var liste = SatinalmaDepo.Talepler
-            .Where(t => t.Durum == SatinalmaTalepDurumlari.TeklifGirisi)
+            .Where(t => SatinalmaPro.Shared.Helpers.SatinalmaTalepKuyrugu.SatinalmaTeklifGirisi(
+                t.Durum,
+                t.OlusturanRol,
+                t.Teklifler?.Count ?? 0,
+                t.YonetimOnayKilitli,
+                t.TalepTuru))
             .OrderByDescending(t => t.Tarih)
             .ThenByDescending(t => t.TalepNo)
             .ToList();
@@ -160,6 +165,26 @@ public partial class SatinalmaView
             return;
         }
 
+        var k = OturumYoneticisi.AktifKullanici;
+        if (!SatinalmaPro.Shared.Helpers.SatinalmaIsAkisi.TeklifEklenebilir(
+                _teklifGirisTalep.Durum,
+                _teklifGirisTalep.TalepTuru,
+                _teklifGirisTalep.YonetimOnayKilitli,
+                _teklifGirisTalep.OlusturanRol,
+                k?.Rol,
+                k?.Aktif ?? false))
+        {
+            MessageBox.Show(
+                SatinalmaPro.Shared.Helpers.SatinalmaIsAkisi.TeklifEklemeEngelMesaji(
+                    _teklifGirisTalep.Durum,
+                    _teklifGirisTalep.TalepTuru,
+                    _teklifGirisTalep.YonetimOnayKilitli,
+                    _teklifGirisTalep.OlusturanRol,
+                    k?.Rol),
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         var teklif = new SatinalmaTeklif();
         SatinalmaDepo.TeklifFiyatlariniHazirla(_teklifGirisTalep, teklif);
 
@@ -167,6 +192,8 @@ public partial class SatinalmaView
             return;
 
         _teklifGirisTalep.Teklifler.Add(teklif);
+        if (_teklifGirisTalep.Durum is SatinalmaTalepDurumlari.TeklifGirisi or SatinalmaTalepDurumlari.Hazirlaniyor)
+            _teklifGirisTalep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
         SatinalmaDepo.Kaydet();
         TeklifListesiniYenile();
         TeklifGirisTalepListesiniYenile();

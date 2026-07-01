@@ -98,7 +98,9 @@
           <Border Background="#F8FAFC" CornerRadius="10" Padding="4"
                   BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
             <StackPanel Orientation="Horizontal">
-              <Button x:Name="BtnSekmeTalepler" Tag="Taleplerim" Style="{StaticResource SatSekmeBtnAktif}"
+              <Button x:Name="BtnSekmePanel" Tag="Panel" Style="{StaticResource SatSekmeBtnAktif}"
+                      Content="Panel" Click="Sekme_Click" />
+              <Button x:Name="BtnSekmeTalepler" Tag="Taleplerim" Style="{StaticResource SatSekmeBtn}"
                       Content="Taleplerim" Click="Sekme_Click" />
               <Button x:Name="BtnSekmeGelenTalepler" Tag="Gelen Talepler" Style="{StaticResource SatSekmeBtn}"
                       Content="Gelen Talepler" Click="Sekme_Click" />
@@ -130,10 +132,72 @@
       </Grid>
     </Border>
 
-    <!-- Sekme içerikleri (boş — adım adım doldurulacak) -->
+    <!-- Sekme içerikleri -->
     <Grid Grid.Row="1">
+      <Border x:Name="PanelDashboard" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Visibility="Visible">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="24" MaxWidth="920">
+            <Grid Margin="0,0,0,20">
+              <StackPanel>
+                <TextBlock x:Name="TxtPanelBaslik" Text="Panel" FontSize="22" FontWeight="SemiBold"
+                           Foreground="{StaticResource InkBrush}" />
+                <TextBlock x:Name="TxtPanelAltBaslik" FontSize="14" Foreground="{StaticResource InkMutedBrush}"
+                           Margin="0,4,0,0" />
+                <TextBlock x:Name="TxtPanelGuncelleme" FontSize="11" Foreground="{StaticResource InkMutedBrush}"
+                           Margin="0,4,0,0" Opacity="0.8" />
+              </StackPanel>
+            </Grid>
+
+            <TextBlock Text="Özet" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}"
+                       Margin="0,0,0,12" />
+            <WrapPanel x:Name="DashboardKartlarPanel" />
+
+            <TextBlock Text="Son İşlemler" FontSize="16" FontWeight="SemiBold"
+                       Foreground="{StaticResource InkBrush}" Margin="0,16,0,12" />
+            <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="12"
+                    Background="#FAFBFC" Padding="4">
+              <StackPanel>
+                <ItemsControl x:Name="DashboardAktiviteListe">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Padding="12,10" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1"
+                              Background="Transparent" Cursor="Hand" Tag="{Binding}"
+                              MouseLeftButtonUp="DashboardAktivite_Click">
+                        <Grid>
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <StackPanel>
+                            <TextBlock Text="{Binding Baslik}" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource InkBrush}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Alt}" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
+                                       TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                          </StackPanel>
+                          <TextBlock Grid.Column="1" Text="{Binding Durum}" FontSize="11"
+                                     Foreground="{StaticResource InkMutedBrush}" VerticalAlignment="Center"
+                                     Margin="12,0,0,0" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock x:Name="TxtSonIslemBos" Text="Henüz kayıtlı işlem yok." FontSize="12"
+                           Foreground="{StaticResource InkMutedBrush}" Margin="12,16" Visibility="Collapsed"
+                           HorizontalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <TextBlock Text="Kartlara tıklayarak ilgili sekmeye gidebilirsiniz."
+                       FontSize="11" Foreground="{StaticResource InkMutedBrush}"
+                       HorizontalAlignment="Center" Margin="0,16,0,8" TextAlignment="Center" />
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+
       <Border x:Name="PanelTalepler" Background="White" BorderBrush="{StaticResource LineBrush}"
-              BorderThickness="1" CornerRadius="14" Padding="20">
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="300" />
@@ -195,11 +259,16 @@
                           BorderThickness="1" CornerRadius="10" Padding="10,8">
                     <StackPanel>
                       <Grid Margin="0,0,0,4">
-                        <TextBlock Text="{Binding TalepNo}" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
-                        <Border Background="{Binding RozetArkaPlan}" CornerRadius="6" Padding="7,3"
-                                HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding TalepNo}" FontWeight="SemiBold" FontSize="13"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                        <Border Grid.Column="1" Background="{Binding RozetArkaPlan}" CornerRadius="6" Padding="7,3"
+                                VerticalAlignment="Center">
                           <TextBlock Text="{Binding DurumEtiketi}" FontSize="10" FontWeight="SemiBold"
-                                     Foreground="{Binding RozetYazi}" />
+                                     Foreground="{Binding RozetYazi}" TextWrapping="NoWrap" />
                         </Border>
                       </Grid>
                       <TextBlock Text="{Binding Tarih}" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
@@ -568,17 +637,46 @@
                        Margin="0,8,0,0" />
             <ListView x:Name="OnaylananTalepListesi" BorderThickness="0" Background="Transparent"
                       SelectionChanged="OnaylananTalepListesi_SelectionChanged">
+              <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                  <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                  <Setter Property="Padding" Value="0" />
+                  <Setter Property="Margin" Value="0,0,0,6" />
+                  <Setter Property="Background" Value="Transparent" />
+                  <Setter Property="BorderThickness" Value="0" />
+                  <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                  <Setter Property="Template">
+                    <Setter.Value>
+                      <ControlTemplate TargetType="ListViewItem">
+                        <Border x:Name="SecimCercevesi" Padding="2" CornerRadius="12" Background="Transparent">
+                          <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                          <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="SecimCercevesi" Property="Background" Value="#E2E8F0" />
+                          </Trigger>
+                        </ControlTemplate.Triggers>
+                      </ControlTemplate>
+                    </Setter.Value>
+                  </Setter>
+                </Style>
+              </ListView.ItemContainerStyle>
               <ListView.ItemTemplate>
                 <DataTemplate>
                   <Border Background="{Binding KartArkaPlan}" BorderBrush="{Binding KartKenar}"
                           BorderThickness="1" CornerRadius="10" Padding="10,8">
                     <StackPanel>
-                      <Grid>
-                        <TextBlock Text="{Binding TalepNo}" FontWeight="SemiBold" FontSize="13" />
-                        <Border Background="{Binding RozetArkaPlan}" CornerRadius="6" Padding="6,2"
-                                HorizontalAlignment="Right">
+                      <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding TalepNo}" FontWeight="SemiBold" FontSize="13"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                        <Border Grid.Column="1" Background="{Binding RozetArkaPlan}" CornerRadius="6" Padding="6,2"
+                                VerticalAlignment="Center">
                           <TextBlock Text="{Binding DurumEtiketi}" FontSize="10" FontWeight="SemiBold"
-                                     Foreground="{Binding RozetYazi}" />
+                                     Foreground="{Binding RozetYazi}" TextWrapping="NoWrap" />
                         </Border>
                       </Grid>
                       <TextBlock Text="{Binding OnayliFirmaOzet}" FontSize="11" Margin="0,4,0,0" />

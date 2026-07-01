@@ -39,12 +39,17 @@ public static class SatinalmaTalepBirlestirme
         if (skorA > skorB)
             return a;
 
+        var asamaA = SatinalmaTalepDurumlari.SurecAsamaSkoru(a.Durum);
+        var asamaB = SatinalmaTalepDurumlari.SurecAsamaSkoru(b.Durum);
+        if (asamaB != asamaA)
+            return asamaB > asamaA ? b : a;
+
         return TarihSira(b.Tarih) >= TarihSira(a.Tarih) ? b : a;
     }
 
     private static int Skor(SatinalmaTalep talep)
     {
-        var skor = 0;
+        var skor = SatinalmaTalepDurumlari.SurecAsamaSkoru(talep.Durum);
         if (!string.IsNullOrWhiteSpace(talep.TalepNo))
             skor += 4;
         if (talep.Durum != SatinalmaTalepDurumlari.Taslak)

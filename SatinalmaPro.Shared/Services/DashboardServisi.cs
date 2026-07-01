@@ -29,8 +29,17 @@ public sealed class DashboardOzet
     public List<DashboardAktivite> SonAktivite { get; init; } = [];
 }
 
+public sealed class DashboardVeriKaynagi
+{
+    public required IReadOnlyList<SatinalmaTalep> Talepler { get; init; }
+    public required IReadOnlyList<StokKaydi> Stok { get; init; }
+    public required IReadOnlyList<StokHareketKaydi> StokHareketleri { get; init; }
+    public required string Uid { get; init; }
+    public required string Ad { get; init; }
+}
+
 /// <summary>
-/// Panel özet kartları — sayılar liste ekranlarıyla aynı SatinalmaMobilServisi sorgularını kullanır.
+/// Panel özet kartları — sayılar liste ekranlarıyla aynı sorguları kullanır.
 /// </summary>
 public static class DashboardServisi
 {
@@ -38,28 +47,46 @@ public static class DashboardServisi
         MobilVeriDeposu depo,
         SatinalmaMobilServisi satinalma,
         string? rol,
+        int okunmamisBildirim) =>
+        Olustur(
+            new DashboardVeriKaynagi
+            {
+                Talepler = depo.Talepler,
+                Stok = depo.Stok,
+                StokHareketleri = depo.StokHareketleri,
+                Uid = depo.AktifKullanici?.Uid ?? "",
+                Ad = depo.AktifKullanici?.AdSoyad ?? ""
+            },
+            satinalma,
+            rol,
+            okunmamisBildirim);
+
+    public static DashboardOzet Olustur(
+        DashboardVeriKaynagi kaynak,
+        ISatinalmaDashboardSorgu satinalma,
+        string? rol,
         int okunmamisBildirim)
     {
         rol = KullaniciRolleri.Normalize(rol);
-        var uid = depo.AktifKullanici?.Uid ?? "";
-        var ad = depo.AktifKullanici?.AdSoyad ?? "";
+        var uid = kaynak.Uid;
+        var ad = kaynak.Ad;
 
         if (KullaniciRolleri.AdminMi(rol))
-            return AdminOzet(depo, satinalma, ad, uid, okunmamisBildirim);
+            return AdminOzet(kaynak, satinalma, ad, uid, okunmamisBildirim);
 
         return rol switch
         {
-            KullaniciRolleri.Yonetim => YonetimOzet(depo, satinalma, ad, okunmamisBildirim),
-            KullaniciRolleri.Satinalma => SatinalmaOzet(depo, satinalma, ad, okunmamisBildirim),
-            KullaniciRolleri.Depo => DepoOzet(depo, ad, okunmamisBildirim),
-            KullaniciRolleri.Sef => SefOzet(depo, satinalma, ad, uid, okunmamisBildirim),
-            KullaniciRolleri.Atolye => AtolyeOzet(depo, ad, okunmamisBildirim),
-            _ => SahaOzet(depo, satinalma, ad, uid, okunmamisBildirim)
+            KullaniciRolleri.Yonetim => YonetimOzet(kaynak, satinalma, ad, okunmamisBildirim),
+            KullaniciRolleri.Satinalma => SatinalmaOzet(kaynak, satinalma, ad, okunmamisBildirim),
+            KullaniciRolleri.Depo => DepoOzet(kaynak, ad, okunmamisBildirim),
+            KullaniciRolleri.Sef => SefOzet(kaynak, satinalma, ad, uid, okunmamisBildirim),
+            KullaniciRolleri.Atolye => AtolyeOzet(kaynak, ad, okunmamisBildirim),
+            _ => SahaOzet(kaynak, satinalma, ad, uid, okunmamisBildirim)
         };
     }
 
     private static DashboardOzet AdminOzet(
-        MobilVeriDeposu depo, SatinalmaMobilServisi satinalma, string ad, string uid, int bildirim) =>
+        DashboardVeriKaynagi kaynak, ISatinalmaDashboardSorgu satinalma, string ad, string uid, int bildirim) =>
         new()
         {
             PanelBasligi = "Admin Paneli",
@@ -71,15 +98,15 @@ public static class DashboardServisi
                 Kart("Teklif Girişi", satinalma.TeklifGirisiBekleyenleri().Count().ToString(), "Teklif bekleyen", "#2980B9", "teklif-gir"),
                 Kart("Teklifsiz F/F", satinalma.TeklifsizFirmaFiyatBekleyenleri().Count().ToString(), "Firma/fiyat bekleyen", "#E67E22", "teklifsiz-firma-fiyat"),
                 Kart("Mal Kabul", satinalma.MalKabulBekleyenSayisi().ToString(), "Bekleyen malzeme", "#16A085", "onaylanan-malzemeler"),
-                Kart("Stok Kritik", StokKritik(depo).ToString(), "Kritik / tükenen", "#C0392B", "stok-durum"),
+                Kart("Stok Kritik", StokKritik(kaynak).ToString(), "Kritik / tükenen", "#C0392B", "stok-durum"),
                 Kart("Bildirimler", bildirim.ToString(), "Okunmamış", "#1B3A5C", "bildirimler"),
-                Kart("Toplam Stok", depo.Stok.Count.ToString(), "Malzeme kalemi", "#27AE60", "stok-durum")
+                Kart("Toplam Stok", kaynak.Stok.Count.ToString(), "Malzeme kalemi", "#27AE60", "stok-durum")
             ],
-            SonAktivite = SonTalepler(depo, 6, satinalma.YonetimTalepleri().Concat(satinalma.YonetimTeklifOnayiBekleyenleri()))
+            SonAktivite = SonTalepler(kaynak, 6, satinalma.YonetimTalepleri().Concat(satinalma.YonetimTeklifOnayiBekleyenleri()))
         };
 
     private static DashboardOzet YonetimOzet(
-        MobilVeriDeposu depo, SatinalmaMobilServisi satinalma, string ad, int bildirim) =>
+        DashboardVeriKaynagi kaynak, ISatinalmaDashboardSorgu satinalma, string ad, int bildirim) =>
         new()
         {
             PanelBasligi = "Yönetim Paneli",
@@ -91,15 +118,15 @@ public static class DashboardServisi
                 Kart("Geçmiş Talepler", satinalma.YonetimGecmisTalepleri().Count().ToString(), "Acil / teklifsiz", "#27AE60", "gecmis-talepler"),
                 Kart("Teklifli Geçmiş", satinalma.YonetimGecmisTeklifliOnaylari().Count().ToString(), "Onaylanan teklifler", "#1B3A5C", "gecmis-teklifli-onaylar"),
                 Kart("Reddedilen", satinalma.YonetimReddedilenleri().Count().ToString(), "Red talepler", "#C0392B", "red-talepler"),
-                Kart("Stok", depo.Stok.Count.ToString(), "Stok durumu", "#2980B9", "stok-durum"),
+                Kart("Stok", kaynak.Stok.Count.ToString(), "Stok durumu", "#2980B9", "stok-durum"),
                 Kart("Bildirimler", bildirim.ToString(), "Okunmamış", "#34495E", "bildirimler")
             ],
-            SonAktivite = SonTalepler(depo, 6,
+            SonAktivite = SonTalepler(kaynak, 6,
                 satinalma.YonetimTalepleri().Concat(satinalma.YonetimTeklifOnayiBekleyenleri()))
         };
 
     private static DashboardOzet SatinalmaOzet(
-        MobilVeriDeposu depo, SatinalmaMobilServisi satinalma, string ad, int bildirim) =>
+        DashboardVeriKaynagi kaynak, ISatinalmaDashboardSorgu satinalma, string ad, int bildirim) =>
         new()
         {
             PanelBasligi = "Satınalma Paneli",
@@ -112,15 +139,15 @@ public static class DashboardServisi
                 Kart("Onay Bekleyen", satinalma.OnayBekleyenTalepler().Count().ToString(), "İşlemde", "#E67E22", "onay-bekleyen"),
                 Kart("Yön. Onaylı", (satinalma.YonetimOnaylananTeklifleri().Count() + satinalma.YonetimOnaylananTalepleri().Count()).ToString(), "Onay belgesi / PDF", "#27AE60", "onaylanan-teklifler"),
                 Kart("Mal Kabul", satinalma.MalKabulBekleyenSayisi().ToString(), "Bekleyen malzeme", "#16A085", "onaylanan-malzemeler"),
-                Kart("Stok Kritik", StokKritik(depo).ToString(), "Depo durumu", "#C0392B", "stok-durum"),
+                Kart("Stok Kritik", StokKritik(kaynak).ToString(), "Depo durumu", "#C0392B", "stok-durum"),
                 Kart("Bildirimler", bildirim.ToString(), "Okunmamış", "#1B3A5C", "bildirimler")
             ],
-            SonAktivite = SonTalepler(depo, 6,
+            SonAktivite = SonTalepler(kaynak, 6,
                 satinalma.TeklifGirisiBekleyenleri().Concat(satinalma.KarsilastirmaBekleyenleri()))
         };
 
     private static DashboardOzet SefOzet(
-        MobilVeriDeposu depo, SatinalmaMobilServisi satinalma, string ad, string uid, int bildirim)
+        DashboardVeriKaynagi kaynak, ISatinalmaDashboardSorgu satinalma, string ad, string uid, int bildirim)
     {
         var taleplerim = KayitliKullaniciTalepleri(satinalma, uid).Count();
 
@@ -136,30 +163,30 @@ public static class DashboardServisi
                 Kart("Siparişte", KayitliKullaniciTalepleri(satinalma, uid).Count(SiparisDurum).ToString(), "Teslim bekliyor", "#2980B9", "onaylanan-talepler"),
                 Kart("Reddedilen", KayitliKullaniciTalepleri(satinalma, uid).Count(t => t.Durum == SatinalmaTalepDurumlari.Reddedildi).ToString(), "Geri dönen", "#C0392B", "taleplerim"),
                 Kart("Alınan Malz.", satinalma.OnaylananMalzemeleriOlustur().Count(s => s.KabulEdilenMiktar > 0.0001).ToString(), "Teslim alınan", "#8E44AD", "onaylanan-malzemeler"),
-                Kart("Stok Kritik", StokKritik(depo).ToString(), "Depo durumu", "#34495E", "stok-durum"),
+                Kart("Stok Kritik", StokKritik(kaynak).ToString(), "Depo durumu", "#34495E", "stok-durum"),
                 Kart("Bildirimler", bildirim.ToString(), "Okunmamış", "#7F8C8D", "bildirimler")
             ],
-            SonAktivite = SonTalepler(depo, 5, KayitliKullaniciTalepleri(satinalma, uid))
+            SonAktivite = SonTalepler(kaynak, 5, KayitliKullaniciTalepleri(satinalma, uid))
         };
     }
 
-    private static DashboardOzet AtolyeOzet(MobilVeriDeposu depo, string ad, int bildirim) =>
+    private static DashboardOzet AtolyeOzet(DashboardVeriKaynagi kaynak, string ad, int bildirim) =>
         new()
         {
             PanelBasligi = "Atölye Paneli",
             AltBaslik = $"Hoş geldiniz, {ad}",
             Kartlar =
             [
-                Kart("Stok Kalemi", depo.Stok.Count.ToString(), "Depodaki malzeme", "#1B3A5C", "stok-durum"),
-                Kart("Kritik Stok", depo.Stok.Count(s => s.DurumMetin == "Kritik").ToString(), "Minimum altı", "#E67E22", "stok-durum"),
-                Kart("Tükenen", depo.Stok.Count(s => s.DurumMetin == "Tükendi").ToString(), "Stok yok", "#C0392B", "stok-durum"),
+                Kart("Stok Kalemi", kaynak.Stok.Count.ToString(), "Depodaki malzeme", "#1B3A5C", "stok-durum"),
+                Kart("Kritik Stok", kaynak.Stok.Count(s => s.DurumMetin == "Kritik").ToString(), "Minimum altı", "#E67E22", "stok-durum"),
+                Kart("Tükenen", kaynak.Stok.Count(s => s.DurumMetin == "Tükendi").ToString(), "Stok yok", "#C0392B", "stok-durum"),
                 Kart("Bildirimler", bildirim.ToString(), "Okunmamış", "#34495E", "bildirimler")
             ],
             SonAktivite = []
         };
 
     private static DashboardOzet SahaOzet(
-        MobilVeriDeposu depo, SatinalmaMobilServisi satinalma, string ad, string uid, int bildirim)
+        DashboardVeriKaynagi kaynak, ISatinalmaDashboardSorgu satinalma, string ad, string uid, int bildirim)
     {
         var taleplerim = KayitliKullaniciTalepleri(satinalma, uid).Count();
 
@@ -174,36 +201,36 @@ public static class DashboardServisi
                 Kart("Onaylanan", satinalma.OnaylanmisTalepler().Count().ToString(), "Firma onaylandı", "#27AE60", "onaylanan-talepler"),
                 Kart("Siparişte", KayitliKullaniciTalepleri(satinalma, uid).Count(SiparisDurum).ToString(), "Teslim bekliyor", "#2980B9", "onaylanan-talepler"),
                 Kart("Reddedilen", KayitliKullaniciTalepleri(satinalma, uid).Count(t => t.Durum == SatinalmaTalepDurumlari.Reddedildi).ToString(), "Geri dönen", "#C0392B", "taleplerim"),
-                Kart("Stok Kritik", StokKritik(depo).ToString(), "Depo durumu", "#8E44AD", "stok-durum"),
+                Kart("Stok Kritik", StokKritik(kaynak).ToString(), "Depo durumu", "#8E44AD", "stok-durum"),
                 Kart("Bildirimler", bildirim.ToString(), "Okunmamış", "#34495E", "bildirimler")
             ],
-            SonAktivite = SonTalepler(depo, 5, KayitliKullaniciTalepleri(satinalma, uid))
+            SonAktivite = SonTalepler(kaynak, 5, KayitliKullaniciTalepleri(satinalma, uid))
         };
     }
 
-    private static DashboardOzet DepoOzet(MobilVeriDeposu depo, string ad, int bildirim) =>
+    private static DashboardOzet DepoOzet(DashboardVeriKaynagi kaynak, string ad, int bildirim) =>
         new()
         {
             PanelBasligi = "Depo Paneli",
             AltBaslik = $"Hoş geldiniz, {ad}",
             Kartlar =
             [
-                Kart("Stok Kalemi", depo.Stok.Count.ToString(), "Toplam malzeme", "#1B3A5C", "stok-durum"),
-                Kart("Kritik Stok", depo.Stok.Count(s => s.DurumMetin == "Kritik").ToString(), "Minimum altı", "#E67E22", "stok-durum"),
-                Kart("Tükenen", depo.Stok.Count(s => s.DurumMetin == "Tükendi").ToString(), "Stok yok", "#C0392B", "stok-durum"),
-                Kart("Hareketler", depo.StokHareketleri.Count.ToString(), "Kayıtlı hareket", "#2980B9", "stok-hareket"),
+                Kart("Stok Kalemi", kaynak.Stok.Count.ToString(), "Toplam malzeme", "#1B3A5C", "stok-durum"),
+                Kart("Kritik Stok", kaynak.Stok.Count(s => s.DurumMetin == "Kritik").ToString(), "Minimum altı", "#E67E22", "stok-durum"),
+                Kart("Tükenen", kaynak.Stok.Count(s => s.DurumMetin == "Tükendi").ToString(), "Stok yok", "#C0392B", "stok-durum"),
+                Kart("Hareketler", kaynak.StokHareketleri.Count.ToString(), "Kayıtlı hareket", "#2980B9", "stok-hareket"),
                 Kart("Stok Girişi", "→", "Malzeme girişi", "#27AE60", "stok-giris"),
                 Kart("Stok Çıkışı", "→", "Malzeme çıkışı", "#8E44AD", "stok-cikis"),
                 Kart("Bildirimler", bildirim.ToString(), "Okunmamış", "#34495E", "bildirimler")
             ],
-            SonAktivite = SonStokHareketleri(depo, 6)
+            SonAktivite = SonStokHareketleri(kaynak, 6)
         };
 
-    private static IEnumerable<SatinalmaTalep> KayitliKullaniciTalepleri(SatinalmaMobilServisi satinalma, string uid) =>
+    private static IEnumerable<SatinalmaTalep> KayitliKullaniciTalepleri(ISatinalmaDashboardSorgu satinalma, string uid) =>
         satinalma.KullaniciTalepleri(uid).Where(SatinalmaTalepKuyrugu.KayitliTalep);
 
-    private static int StokKritik(MobilVeriDeposu depo) =>
-        depo.Stok.Count(s => s.DurumMetin is "Kritik" or "Tükendi");
+    private static int StokKritik(DashboardVeriKaynagi kaynak) =>
+        kaynak.Stok.Count(s => s.DurumMetin is "Kritik" or "Tükendi");
 
     private static bool SiparisDurum(SatinalmaTalep t) =>
         t.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu;
@@ -212,9 +239,9 @@ public static class DashboardServisi
         new() { Baslik = baslik, Deger = deger, AltMetin = alt, Renk = renk, Route = route };
 
     private static List<DashboardAktivite> SonTalepler(
-        MobilVeriDeposu depo, int adet, IEnumerable<SatinalmaTalep>? kaynak = null)
+        DashboardVeriKaynagi kaynak, int adet, IEnumerable<SatinalmaTalep>? kaynakListe = null)
     {
-        var liste = (kaynak ?? depo.Talepler.AsEnumerable())
+        var liste = (kaynakListe ?? kaynak.Talepler.AsEnumerable())
             .OrderByDescending(t => t.Tarih)
             .Take(adet);
 
@@ -228,8 +255,8 @@ public static class DashboardServisi
         }).ToList();
     }
 
-    private static List<DashboardAktivite> SonStokHareketleri(MobilVeriDeposu depo, int adet) =>
-        depo.StokHareketleri
+    private static List<DashboardAktivite> SonStokHareketleri(DashboardVeriKaynagi kaynak, int adet) =>
+        kaynak.StokHareketleri
             .OrderByDescending(h => h.Tarih)
             .Take(adet)
             .Select(h => new DashboardAktivite

@@ -112,6 +112,8 @@ public class SatinalmaTalep
     public string TalepAciklamasi { get; set; } = "";
     public string TalepTuru { get; set; } = TalepTurleri.Normal;
     public string OlusturanUid { get; set; } = "";
+    /// <summary>Talebi oluşturan kullanıcının rolü — satınalma iç teklif akışı için.</summary>
+    public string OlusturanRol { get; set; } = "";
     public string RedGerekcesi { get; set; } = "";
     public Guid? YonetimOnerilenTeklifId { get; set; }
     /// <summary>Satınalmacı öneriyi elle seçtiyse true; aksi halde sistem en düşük fiyatlı teklifi önerir.</summary>

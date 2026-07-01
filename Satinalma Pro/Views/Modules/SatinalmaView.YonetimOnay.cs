@@ -71,8 +71,16 @@ public partial class SatinalmaView
     {
         var yetki = KullaniciYetkileri.YonetimKararVerebilir();
         var secili = _gelenTalepSecili is not null;
+        var teklifIstenebilir = secili
+            && SatinalmaPro.Shared.Helpers.SatinalmaIsAkisi.TeklifIstenebilir(
+                _gelenTalepSecili!.TalepTuru,
+                _gelenTalepSecili.Durum,
+                SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(_gelenTalepSecili));
         BtnGelenTalepOnayla.IsEnabled = yetki && secili;
-        BtnGelenTalepTeklifIste.IsEnabled = yetki && secili;
+        BtnGelenTalepTeklifIste.IsEnabled = yetki && teklifIstenebilir;
+        BtnGelenTalepTeklifIste.Visibility = teklifIstenebilir && yetki
+            ? Visibility.Visible
+            : Visibility.Collapsed;
         BtnGelenTalepReddet.IsEnabled = yetki && secili;
     }
 
@@ -128,6 +136,16 @@ public partial class SatinalmaView
         if (!KullaniciYetkileri.YonetimKararVerebilir())
         {
             MessageBox.Show("Teklif isteme yetkiniz yok.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!SatinalmaPro.Shared.Helpers.SatinalmaIsAkisi.TeklifIstenebilir(
+                _gelenTalepSecili.TalepTuru,
+                _gelenTalepSecili.Durum,
+                SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(_gelenTalepSecili)))
+        {
+            MessageBox.Show("Acil taleplerde teklif istenemez.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 

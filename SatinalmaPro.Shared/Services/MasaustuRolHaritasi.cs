@@ -5,6 +5,7 @@ namespace SatinalmaPro.Shared.Services;
 /// <summary>Android RolNavigasyonu rotalarını masaüstü modül sekmelerine çevirir.</summary>
 public static class MasaustuRolHaritasi
 {
+    public const string Panel = "Panel";
     public const string Taleplerim = "Taleplerim";
     public const string OnayBekleyen = "Onay Bekleyen";
     public const string OnaylananTalepler = "Onaylanan Talepler";
@@ -85,12 +86,21 @@ public static class MasaustuRolHaritasi
         return SekmeAliaslari.TryGetValue(ad, out var hedef) ? hedef : ad;
     }
 
+    public static string? RouteToSatinalmaSekme(string? route) =>
+        route is not null && SatinalmaRouteToSekme.TryGetValue(route, out var sekme) ? sekme : null;
+
+    public static string? RouteToStokSekme(string? route) =>
+        route is not null && StokRouteToSekme.TryGetValue(route, out var sekme) ? sekme : null;
+
     public static bool SatinalmaSekmesiGorebilir(string? rol, string sekmeAdi)
     {
         if (KullaniciRolleri.AdminMi(rol))
             return true;
 
         var hedef = SatinalmaSekmeNormalize(sekmeAdi);
+        if (hedef.Equals(Panel, StringComparison.OrdinalIgnoreCase))
+            return SatinalmaSekmeleri(rol).Count > 0;
+
         return SatinalmaSekmeleri(rol).Contains(hedef, StringComparer.OrdinalIgnoreCase);
     }
 

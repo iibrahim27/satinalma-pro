@@ -40,7 +40,9 @@ public static class SatinalmaBildirimleri
     public static Task YonetimeGonderildiAsync(SatinalmaTalep talep)
     {
         var (baslik, mesaj) = Metin(SharedBildirimTipleri.YonetimeGonderildi, talep);
-        return BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.YonetimeGonderildi, baslik, mesaj, hedefRol: KullaniciRolleri.Yonetim));
+        return Task.WhenAll(
+            BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.YonetimeGonderildi, baslik, mesaj, hedefRol: KullaniciRolleri.Yonetim)),
+            BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.YonetimeGonderildi, baslik, mesaj, hedefRol: KullaniciRolleri.Satinalma)));
     }
 
     public static Task TeklifIstendiAsync(SatinalmaTalep talep)

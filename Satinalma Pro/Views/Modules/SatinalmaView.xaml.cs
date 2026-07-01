@@ -2,13 +2,14 @@ using System.Windows;
 using System.Windows.Controls;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Services;
+using SatinalmaPro.Shared.Services;
 
 namespace SatinalmaPro.Views.Modules;
 
 public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
 {
     private readonly Dictionary<string, (Button Btn, Border Panel)> _sekmeler;
-    private string _aktifSekme = "Taleplerim";
+    private string _aktifSekme = MasaustuRolHaritasi.Panel;
     private string? _sekmePanelOverride;
 
     public SatinalmaView()
@@ -17,6 +18,7 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
 
         _sekmeler = new Dictionary<string, (Button, Border)>(StringComparer.Ordinal)
         {
+            [MasaustuRolHaritasi.Panel] = (BtnSekmePanel, PanelDashboard),
             ["Taleplerim"] = (BtnSekmeTalepler, PanelTalepler),
             ["Gelen Talepler"] = (BtnSekmeGelenTalepler, PanelGelenTalepler),
             ["Onay Bekleyen"] = (BtnSekmeOnayBekleyen, PanelOnayBekleyen),
@@ -35,6 +37,7 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
         Loaded += (_, _) =>
         {
             SekmeleriYetkiyeGoreAyarla();
+            PanelSekmesiniHazirla();
             TalepSekmesiniHazirla();
             TeklifGirisSekmesiniHazirla();
             AkisSekmeleriniHazirla();
@@ -44,6 +47,8 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
 
     public void KisayolYenile()
     {
+        if (_aktifSekme == MasaustuRolHaritasi.Panel)
+            PaneliYenile();
         TalepListesiniYenile();
         TeklifGirisTalepListesiniYenile();
         AkisSekmeleriniYenile();
@@ -88,7 +93,9 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
         sekmeAdi = SatinalmaPro.Shared.Services.MasaustuRolHaritasi.SatinalmaSekmeNormalize(sekmeAdi);
 
         if (!_sekmeler.ContainsKey(sekmeAdi))
-            sekmeAdi = "Taleplerim";
+            sekmeAdi = KullaniciYetkileri.SekmeGorebilir("Satınalma", MasaustuRolHaritasi.Panel)
+                ? MasaustuRolHaritasi.Panel
+                : "Taleplerim";
 
         if (!KullaniciYetkileri.SekmeGorebilir("Satınalma", sekmeAdi))
         {
@@ -137,6 +144,8 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
             GecmisTeklifliListesiniYenile();
         else if (sekmeAdi == "Alınan Malzemeler")
             AlinanMalzemeListesiniYenile();
+        else if (sekmeAdi == MasaustuRolHaritasi.Panel)
+            PaneliYenile();
         else if (sekmeAdi == "Gelen Siparişler")
             GelenSiparisListesiniYenile();
     }

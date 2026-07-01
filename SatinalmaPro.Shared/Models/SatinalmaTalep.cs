@@ -88,6 +88,8 @@ public class SatinalmaTalep
     public string TalepAciklamasi { get; set; } = "";
     public string TalepTuru { get; set; } = TalepTurleri.Normal;
     public string OlusturanUid { get; set; } = "";
+    /// <summary>Talebi oluşturan kullanıcının rolü — satınalma iç teklif akışı için.</summary>
+    public string OlusturanRol { get; set; } = "";
     public string RedGerekcesi { get; set; } = "";
     public Guid? YonetimOnerilenTeklifId { get; set; }
     /// <summary>Satınalmacı öneriyi elle seçtiyse true; aksi halde sistem en düşük fiyatlı teklifi önerir.</summary>
@@ -208,6 +210,21 @@ public static class SatinalmaTalepDurumlari
         Taslak, Hazirlaniyor, ImzaSurecinde, YonetimOnayinda, TeklifGirisi,
         Karsilastirma, Onaylandi, Reddedildi, SiparisOlusturuldu
     ];
+
+    /// <summary>İş akışı aşaması — bulut/yerel birleştirmede ileri aşama tercih edilir.</summary>
+    public static int SurecAsamaSkoru(string? durum) => durum switch
+    {
+        SiparisOlusturuldu => 90,
+        Onaylandi => 70,
+        YonetimOnayinda => 60,
+        Karsilastirma => 50,
+        TeklifGirisi => 40,
+        ImzaSurecinde => 30,
+        Hazirlaniyor => 20,
+        Reddedildi => 15,
+        Taslak => 0,
+        _ => 0
+    };
 }
 
 public class SatinalmaAyarlar

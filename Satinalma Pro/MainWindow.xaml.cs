@@ -270,6 +270,8 @@ public partial class MainWindow : Window
         AltBilgiyiGuncelle(modulde: true);
     }
 
+    public void ModulAc(string modulAdi) => OnModuleSelected(modulAdi);
+
     private void OnModuleSelected(string moduleTitle)
     {
         if (!KullaniciYetkileri.ModulGorebilir(moduleTitle))
