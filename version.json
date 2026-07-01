@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.8.0",
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.0/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.0/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.0/SatinalmaPro.apk",
-    "notes":  "Android Yonetim yeniden tasarim: gelen talepler, teklif onay, gecmis talepler/teklifli onaylar, red talepler, stok durumu",
+    "version":  "1.8.1",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.1/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.1/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.1/SatinalmaPro.apk",
+    "notes":  "Masaustu-Android kuyruk eslesmesi: Yonetim teklifsiz onay, Sef filtre, bildirim yonlendirme",
     "zorunlu":  false
 }
