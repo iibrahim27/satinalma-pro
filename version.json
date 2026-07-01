@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.8.5",
-    "build":  30,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.5/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.5/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.5/SatinalmaPro.apk",
-    "notes":  "Siparis PDF oncesi sartname duzenleme penceresi",
+    "version":  "1.8.6",
+    "build":  33,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.6/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.6/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.6/SatinalmaPro.apk",
+    "notes":  "APK yeniden derlendi; masaustu ve Android ayni surum; mobil rol yetkileri RolNavigasyonu ile hizalandi",
     "zorunlu":  false
 }
