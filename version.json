@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.8.7",
-    "build":  34,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.7/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.7/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.7/SatinalmaPro.apk",
-    "notes":  "Masaustu Satinalma Panel dashboard (Android benzeri ozet kartlari). Talep onay is akisi desktop-mobil hizalama. Firmaya Siparis Ver kalicilik duzeltmesi. Onaylanan talepler kart duzeni duzeltildi.",
+    "version":  "1.8.9",
+    "build":  36,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.9/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.9/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.9/SatinalmaPro.apk",
+    "notes":  "Teklif girisi kaydetme ve yonetime gonder duzeltmeleri. Satinalma panel menu (kart butonlari). Akis: yonetim yalnizca gonderildikten sonra teklif gorur. Bildirim navigasyonu ve onay bildirimleri. Bulut birlestirmede teklif kaybi onlemi. Android bildirim iyilestirmeleri.",
     "zorunlu":  false
 }
