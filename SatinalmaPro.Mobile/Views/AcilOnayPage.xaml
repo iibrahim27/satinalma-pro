@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+
+             x:Class="SatinalmaPro.Mobile.Views.AcilOnayPage"
+
+             Title="Acil Onay">
+
+
+
+    <ScrollView Padding="16">
+
+        <VerticalStackLayout Spacing="12">
+
+            <Label x:Name="LblTalepNo" FontAttributes="Bold" FontSize="18" Style="{StaticResource LblSection}" />
+
+            <Label x:Name="LblTalepEden" Style="{StaticResource LblSecondary}" />
+
+            <Label x:Name="LblAciklama" Style="{StaticResource LblSecondary}" LineBreakMode="WordWrap" IsVisible="False" />
+
+
+
+            <Label Text="Talep Kalemleri" Style="{StaticResource LblSection}" />
+
+            <Border Padding="10"
+
+                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+
+                    Stroke="{AppThemeBinding Light={StaticResource CardBorderLight}, Dark={StaticResource CardBorderDark}}"
+
+                    StrokeShape="RoundRectangle 8">
+
+                <VerticalStackLayout x:Name="KalemPanel" Spacing="4" />
+
+            </Border>
+
+
+
+            <Border Padding="12"
+
+                    BackgroundColor="{AppThemeBinding Light=#FFF7ED, Dark=#431407}"
+
+                    Stroke="{AppThemeBinding Light=#FDBA74, Dark=#C2410C}"
+
+                    StrokeShape="RoundRectangle 8">
+
+                <VerticalStackLayout Spacing="4">
+
+                    <Label Text="Yönetim onayı" FontAttributes="Bold"
+
+                           TextColor="{AppThemeBinding Light=#C2410C, Dark=#FED7AA}" />
+
+                    <Label Text="Acil taleplerde yalnızca onay veya red verilir. Satınalma birimi onay sonrası tedarik sürecini yürütür; fatura geldikten sonra tedarikçi adı, birim fiyat ve kategori bilgilerini girer."
+
+                           FontSize="12" LineBreakMode="WordWrap"
+
+                           TextColor="{AppThemeBinding Light=#9A3412, Dark=#FFEDD5}" />
+
+                </VerticalStackLayout>
+
+            </Border>
+
+
+
+            <Button Text="Onayla" Clicked="Onayla_Clicked" Style="{StaticResource BtnSuccess}" />
+
+            <Button Text="Reddet" Clicked="Reddet_Clicked" Style="{StaticResource BtnDanger}" />
+
+        </VerticalStackLayout>
+
+    </ScrollView>
+
+</ContentPage>
+
+

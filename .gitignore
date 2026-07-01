@@ -1,0 +1,18 @@
+﻿# Derleme
+**/bin/
+**/obj/
+
+# Yayin artefaktlari
+Satinalma Pro/SatinalmaPro.zip
+Satinalma Pro/SatinalmaPro.apk
+Satinalma Pro/SatinalmaPro_Kurulum.exe
+
+# Gizli anahtarlar
+**/fcm-service-account.json
+
+# IDE
+**/.vs/
+**/*.user
+
+# Gecici
+**/*.tmp

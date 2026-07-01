@@ -1,0 +1,328 @@
+using SatinalmaPro.Models;
+
+
+
+using SatinalmaPro.Services;
+
+
+
+
+
+
+
+namespace SatinalmaPro.Helpers;
+
+
+
+
+
+
+
+public static class SatinalmaYonetimIslemleri
+
+
+
+{
+
+
+
+    public static async Task OnaylaAsync(SatinalmaTalep talep, bool teklifIste)
+
+
+
+    {
+
+
+
+        if (!KullaniciYetkileri.YonetimKararVerebilir())
+
+
+
+            throw new InvalidOperationException("Talep onay yetkiniz yok.");
+
+
+
+        if (talep.TalepTuru == Models.TalepTurleri.Acil)
+
+
+
+        {
+
+
+
+            await AcilOnaylaAsync(talep);
+
+
+
+            return;
+
+
+
+        }
+
+
+
+
+
+
+
+        if (!teklifIste)
+
+
+
+        {
+
+
+
+            talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
+
+
+
+            talep.TeklifsizYonetimOnayi = true;
+
+
+
+            YonetimOnayiKaydet(talep);
+
+
+
+            SatinalmaDepo.Kaydet();
+
+
+
+
+
+
+
+            await BildirimGonderAsync(() => SatinalmaBildirimleri.OnaylandiAsync(talep, hedefUid: talep.OlusturanUid));
+
+
+
+            await BildirimGonderAsync(() => SatinalmaBildirimleri.OnaylandiAsync(talep, hedefRol: KullaniciRolleri.Satinalma));
+
+
+
+            await BildirimYoneticisi.GecersizleriOkunduYapAsync();
+
+
+
+            return;
+
+
+
+        }
+
+
+
+
+
+
+
+        talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
+
+
+
+        SatinalmaDepo.Kaydet();
+
+
+
+        await BildirimGonderAsync(() => SatinalmaBildirimleri.TeklifIstendiAsync(talep));
+
+
+
+        await BildirimYoneticisi.GecersizleriOkunduYapAsync();
+
+
+
+    }
+
+
+
+
+
+
+
+    public static async Task ReddetAsync(SatinalmaTalep talep, string? gerekce)
+
+
+
+    {
+
+
+
+        if (!KullaniciYetkileri.YonetimKararVerebilir())
+
+
+
+            throw new InvalidOperationException("Red yetkiniz yok.");
+
+
+
+        talep.Durum = SatinalmaTalepDurumlari.Reddedildi;
+
+
+
+        talep.RedGerekcesi = string.IsNullOrWhiteSpace(gerekce) ? "" : gerekce.Trim();
+
+
+
+        SatinalmaDepo.Kaydet();
+
+
+
+
+
+
+
+        await BildirimYoneticisi.GecersizleriOkunduYapAsync();
+
+
+
+        await BildirimGonderAsync(() => SatinalmaBildirimleri.ReddedildiAsync(talep, gerekce ?? ""));
+
+
+
+    }
+
+
+
+
+
+
+
+    private static async Task AcilOnaylaAsync(SatinalmaTalep talep)
+
+
+
+    {
+
+
+
+        talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
+
+
+
+        talep.TeklifsizYonetimOnayi = true;
+
+
+
+        YonetimOnayiKaydet(talep);
+
+
+
+        SatinalmaDepo.Kaydet();
+
+
+
+
+
+
+
+        await BildirimGonderAsync(() => SatinalmaBildirimleri.OnaylandiAsync(talep, hedefUid: talep.OlusturanUid));
+
+
+
+        await BildirimGonderAsync(() => SatinalmaBildirimleri.OnaylandiAsync(talep, hedefRol: KullaniciRolleri.Satinalma));
+
+
+
+        await BildirimYoneticisi.GecersizleriOkunduYapAsync();
+
+
+
+    }
+
+
+
+
+
+
+
+    private static async Task BildirimGonderAsync(Func<Task> gonder)
+
+
+
+    {
+
+
+
+        try
+
+
+
+        {
+
+
+
+            await gonder();
+
+
+
+        }
+
+
+
+        catch (Exception ex)
+
+
+
+        {
+
+
+
+            HataGunlugu.Kaydet(ex, "SatinalmaYonetimIslemleri.Bildirim");
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    private static void YonetimOnayiKaydet(SatinalmaTalep talep)
+
+
+
+    {
+
+
+
+        var k = OturumYoneticisi.AktifKullanici;
+
+
+
+        talep.YonetimOnaylayanUid = k?.Uid ?? "";
+
+
+
+        talep.YonetimOnaylayanAd = k?.AdSoyad ?? "";
+
+
+
+        talep.YonetimOnaylayanEposta = k?.Eposta ?? "";
+
+
+
+        talep.YonetimOnayTarihi = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
+
+
+
+        talep.YonetimOnayKilitli = true;
+
+
+
+    }
+
+
+
+}
+
+
+

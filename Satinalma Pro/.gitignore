@@ -1,0 +1,13 @@
+# Derleme çıktıları
+bin/
+obj/
+
+# Yayın zip (GitHub Release'e yüklenir)
+SatinalmaPro.zip
+
+# IDE
+.vs/
+*.user
+
+# Geçici
+*.tmp

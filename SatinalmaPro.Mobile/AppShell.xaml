@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:views="clr-namespace:SatinalmaPro.Mobile.Views"
+       x:Class="SatinalmaPro.Mobile.AppShell"
+       FlyoutBehavior="Flyout"
+       Title="Satınalma Pro">
+
+    <Shell.FlyoutHeader>
+        <Grid Padding="16" BackgroundColor="{StaticResource BrandPrimary}" HeightRequest="130">
+            <VerticalStackLayout VerticalOptions="Center" Spacing="6">
+                <Image Source="app_logo.png" HeightRequest="48" WidthRequest="48" Aspect="AspectFit" />
+                <Label x:Name="LblKullanici" TextColor="{StaticResource OnPrimary}" FontSize="16" FontAttributes="Bold" />
+                <Label x:Name="LblRol" TextColor="{StaticResource BrandPrimaryLight}" FontSize="13" />
+                <Label x:Name="LblBildirimSayi" TextColor="{StaticResource BrandAccent}" FontSize="11" IsVisible="False" />
+            </VerticalStackLayout>
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <ShellContent Title="Panel" Route="main" ContentTemplate="{DataTemplate views:AnaSayfaPage}" />
+
+</Shell>

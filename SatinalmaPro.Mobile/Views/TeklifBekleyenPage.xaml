@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SatinalmaPro.Shared.Models;assembly=SatinalmaPro.Shared"
+             x:Class="SatinalmaPro.Mobile.Views.TeklifBekleyenPage"
+             Title="Teklif Bekleyen">
+
+    <RefreshView x:Name="RefreshView" Padding="12">
+        <CollectionView x:Name="Liste" SelectionMode="Single" SelectionChanged="Liste_SelectionChanged">
+            <CollectionView.EmptyView>
+                <Label Text="Teklif bekleyen talep yok." TextColor="Gray"
+                       HorizontalOptions="Center" VerticalOptions="Center" Margin="24" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:SatinalmaTalep">
+                    <Border Style="{StaticResource TalepKartBorderStyle}">
+                        <VerticalStackLayout Spacing="4">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="{Binding TalepNo}" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+                                <Label Grid.Column="1" Text="{Binding GorunenDurum}" FontSize="11" Style="{StaticResource LblMuted}" />
+                            </Grid>
+                            <Label Text="{Binding TalepAciklamasi}" FontSize="13"
+                                   TextColor="{AppThemeBinding Light=#666, Dark=#AAA}"
+                                   LineBreakMode="WordWrap" />
+                            <Label Text="{Binding TalepEden, StringFormat='Talep eden: {0}'}"
+                                   FontSize="12"
+                                   TextColor="{AppThemeBinding Light=#888, Dark=#999}" />
+                            <Label Text="{Binding KalemOzeti}" FontSize="12" Style="{StaticResource LblAccent}"
+                                   LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+</ContentPage>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SatinalmaPro.Shared.Models;assembly=SatinalmaPro.Shared"
+             x:Class="SatinalmaPro.Mobile.Views.GelenTaleplerPage"
+             Title="Gelen Talepler">
+
+    <RefreshView x:Name="RefreshView">
+        <CollectionView x:Name="Liste">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:SatinalmaTalep">
+                    <Border Style="{StaticResource TalepKartBorderStyle}">
+                        <VerticalStackLayout Spacing="6">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="{Binding TalepNo}" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+                                <Border Grid.Column="1" Padding="8,3" StrokeThickness="1" StrokeShape="RoundRectangle 6"
+                                        BackgroundColor="{AppThemeBinding Light=#FEF3C7, Dark=#78350F}"
+                                        Stroke="{AppThemeBinding Light=#FCD34D, Dark=#F59E0B}">
+                                    <Label Text="{Binding GorunenDurum}" FontSize="11" FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#B45309, Dark=#FDE68A}" />
+                                </Border>
+                            </Grid>
+                            <Label Text="{Binding TalepEden}" TextColor="{AppThemeBinding Light={StaticResource SecondaryTextLight}, Dark={StaticResource SecondaryTextDark}}" />
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="{Binding TalepTuru}" Style="{StaticResource LblWarning}" />
+                                <Label Text="{Binding Tarih}" TextColor="{AppThemeBinding Light={StaticResource MutedTextLight}, Dark={StaticResource MutedTextDark}}" />
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding KalemOzeti}" TextColor="{AppThemeBinding Light={StaticResource AccentTextLight}, Dark={StaticResource AccentTextDark}}" FontSize="12" LineBreakMode="WordWrap" />
+                            <HorizontalStackLayout Spacing="8">
+                                <Button x:Name="BtnOnayla" Text="Direkt Onay" Clicked="Onayla_Clicked" CommandParameter="{Binding .}"
+                                        Style="{StaticResource BtnSmallSuccess}">
+                                    <Button.Triggers>
+                                        <DataTrigger TargetType="Button" Binding="{Binding TeklifGirilmis}" Value="True">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Button" Binding="{Binding TalepTuru}" Value="Acil">
+                                            <Setter Property="Text" Value="Acil Onayla" />
+                                        </DataTrigger>
+                                    </Button.Triggers>
+                                </Button>
+                                <Button x:Name="BtnTeklifIste" Text="Teklif İste" Clicked="TeklifIste_Clicked" CommandParameter="{Binding .}"
+                                        IsVisible="False" Style="{StaticResource BtnSmallSecondary}">
+                                    <Button.Triggers>
+                                        <DataTrigger TargetType="Button" Binding="{Binding TeklifGirilmis}" Value="True">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Button" Binding="{Binding TeklifIstenmeli}" Value="True">
+                                            <Setter Property="IsVisible" Value="True" />
+                                        </DataTrigger>
+                                    </Button.Triggers>
+                                </Button>
+                                <Button Text="Reddet" Clicked="Reddet_Clicked" CommandParameter="{Binding .}"
+                                        Style="{StaticResource BtnSmallDanger}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+</ContentPage>

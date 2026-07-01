@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SatinalmaPro.Mobile.Views.ProfilPage"
+             Title="Profil / Ayarlar">
+
+    <ScrollView Padding="16">
+        <VerticalStackLayout Spacing="12">
+            <Border Style="{StaticResource TalepKartBorderStyle}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Kullanıcı Bilgileri" Style="{StaticResource LblSection}" />
+                    <Label x:Name="LblAd" Style="{StaticResource LblPrimary}" />
+                    <Label x:Name="LblEposta" Style="{StaticResource LblSecondary}" />
+                    <Label x:Name="LblRol" Style="{StaticResource LblMuted}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border x:Name="OfflinePanel" Style="{StaticResource OnayPanelBorder}" IsVisible="False">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Bağlantı durumu" FontAttributes="Bold" Style="{StaticResource LblWarning}" />
+                    <Label x:Name="LblBaglanti" Style="{StaticResource LblSecondary}" FontSize="12" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="Güvenli Giriş" Style="{StaticResource LblSection}" />
+            <Border Style="{StaticResource TalepKartBorderStyle}">
+                <VerticalStackLayout Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Biyometrik giriş" VerticalOptions="Center" Style="{StaticResource LblPrimary}" />
+                        <Switch x:Name="SwBiyometrik" Grid.Column="1" Toggled="Biyometrik_Toggled" />
+                    </Grid>
+                    <Label x:Name="LblBiyometrikDurum" Style="{StaticResource LblMuted}" FontSize="12" />
+                    <Button x:Name="BtnPinAyarla" Text="PIN Ayarla / Değiştir" Clicked="PinAyarla_Clicked"
+                            Style="{StaticResource BtnInfoDark}" />
+                    <Button x:Name="BtnPinKaldir" Text="PIN Kaldır" Clicked="PinKaldir_Clicked"
+                            Style="{StaticResource BtnSmallDanger}" IsVisible="False" />
+                    <Label x:Name="LblPinDurum" Style="{StaticResource LblMuted}" FontSize="12" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="Şifre Değiştir" Style="{StaticResource LblSection}" />
+            <Entry x:Name="TxtMevcutSifre" Placeholder="Mevcut şifre" IsPassword="True" />
+            <Entry x:Name="TxtYeniSifre" Placeholder="Yeni şifre" IsPassword="True" />
+            <Entry x:Name="TxtYeniSifreTekrar" Placeholder="Yeni şifre (tekrar)" IsPassword="True" />
+            <Button Text="Şifreyi Güncelle" Clicked="SifreGuncelle_Clicked" Style="{StaticResource BtnBrand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

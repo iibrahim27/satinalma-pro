@@ -1,0 +1,217 @@
+================================================================================
+  SATINALMA PRO — FIREBASE BULUT KURULUM KILAVUZU
+  (Adım adım, bilgisayar bilmeyen biri için)
+================================================================================
+
+Bu kılavuz, uygulamayı internet üzerinden ortak kullanmak için gereken
+Firebase kurulumunu anlatır. Kendi sunucunuz gerekmez.
+
+ÖNEMLİ:
+- Firebase ücretsiz başlangıç planı küçük/orta ekipler için yeterlidir.
+- Kurulumu bir kez yaparsınız; diğer bilgisayarlar aynı ayar dosyasını kullanır.
+- İlk admin kullanıcıyı Firebase sitesinden elle oluşturmanız gerekir.
+
+
+--------------------------------------------------------------------------------
+BÖLÜM 1 — FIREBASE PROJESİ OLUŞTURMA
+--------------------------------------------------------------------------------
+
+ADIM 1.1 — Google hesabıyla giriş
+  1. Tarayıcıda şu adresi açın: https://console.firebase.google.com
+  2. Google hesabınızla giriş yapın.
+
+ADIM 1.2 — Yeni proje
+  1. "Proje ekle" / "Add project" tıklayın.
+  2. Proje adı: örn. "SatinalmaPro" yazın → Devam.
+  3. Google Analytics sorarsa "Şimdilik etkinleştme" seçebilirsiniz → Proje oluştur.
+  4. Proje hazır olunca "Devam" deyin.
+
+
+--------------------------------------------------------------------------------
+BÖLÜM 2 — E-POSTA İLE GİRİŞ (AUTHENTICATION)
+--------------------------------------------------------------------------------
+
+ADIM 2.1
+  1. Sol menüden "Build" → "Authentication" tıklayın.
+  2. "Get started" / "Başlayın" deyin.
+  3. "Sign-in method" sekmesine gidin.
+  4. "Email/Password" satırına tıklayın.
+  5. "Enable" / "Etkinleştir" açın → Kaydet.
+
+ADIM 2.2 — İlk admin kullanıcı (sizin hesabınız)
+  1. Authentication → "Users" sekmesi.
+  2. "Add user" / "Kullanıcı ekle".
+  3. E-posta: örn. admin@sirket.com
+  4. Şifre: en az 6 karakter (güçlü bir şifre seçin).
+  5. Kullanıcı eklendikten sonra listede "User UID" sütunundaki uzun kodu
+     kopyalayın (örnek: aBc123XyZ...). Bunu ADIM 4'te kullanacaksınız.
+
+
+--------------------------------------------------------------------------------
+BÖLÜM 3 — FIRESTORE VERİTABANI
+--------------------------------------------------------------------------------
+
+ADIM 3.1
+  1. Sol menü: "Build" → "Firestore Database".
+  2. "Create database" / "Veritabanı oluştur".
+  3. Konum: "europe-west" veya size yakın bir bölge seçin → İleri.
+  4. "Start in production mode" seçin → Oluştur.
+
+ADIM 3.2 — Güvenlik kuralları
+  1. Firestore → "Rules" sekmesi.
+  2. Program klasöründeki "firestore.rules" dosyasının içeriğini kopyalayın.
+  3. Firebase'deki kurallar kutusuna yapıştırın → "Publish" / "Yayınla".
+
+ADIM 3.3 — İlk admin profili (Firestore'da)
+  1. Firestore → "Data" sekmesi.
+  2. "Start collection" → Collection ID: users → İleri.
+  3. Document ID: ADIM 2.2'de kopyaladığınız User UID'yi yapıştırın.
+  4. Alanları ekleyin (Field → Type → Value):
+
+     | Alan adı  | Tür      | Değer              |
+     |-----------|----------|--------------------|
+     | eposta    | string   | admin@sirket.com   |
+     | adSoyad   | string   | Adınız Soyadınız   |
+     | rol       | string   | Admin              |
+     | aktif     | boolean  | true               |
+     | saha      | string   | (boş bırakabilir)  |
+
+  5. Kaydet.
+
+
+--------------------------------------------------------------------------------
+BÖLÜM 4 — API ANAHTARI VE PROJE ID
+--------------------------------------------------------------------------------
+
+ADIM 4.1
+  1. Firebase sol üst dişli → "Project settings" / "Proje ayarları".
+  2. "General" sekmesinde "Project ID" değerini not alın.
+  3. Aşağı kaydırın → "Your apps" → Web simgesi (</>) tıklayın.
+  4. Uygulama takma adı: SatinalmaPro → Uygulamayı kaydet.
+  5. firebaseConfig içindeki apiKey değerini kopyalayın.
+
+
+--------------------------------------------------------------------------------
+BÖLÜM 5 — UYGULAMA AYAR DOSYASI (BİR KEZ, ANA KLASÖRDE)
+--------------------------------------------------------------------------------
+
+ADIM 5.1 — Dosyayı düzenleyin (sadece bir kez)
+  Proje klasöründe şu dosyayı Not Defteri ile açın:
+    Satinalma Pro\firebase_ayarlar.json
+
+  Örnek içerik:
+
+  {
+    "apiKey": "AIza...buraya_api_key",
+    "projectId": "satinalmapro-xxxxx",
+    "guncellemeManifestUrl": ""
+  }
+
+  - apiKey: BÖLÜM 4'ten
+  - projectId: BÖLÜM 4'ten
+  - guncellemeManifestUrl: Otomatik güncelleme istemiyorsanız boş bırakın.
+
+ADIM 5.2 — Derleyin veya program klasörünü kopyalayın
+  Bu dosya exe ile birlikte otomatik kopyalanır.
+  Diğer bilgisayarlara tüm program klasörünü (SatinalmaPro.exe dahil)
+  USB veya ağ ile kopyalamanız yeterlidir. Ek ayar gerekmez.
+
+  Örnek klasör:
+    bin\Debug\net9.0-windows\
+    veya
+    bin\Release\net9.0-windows\
+
+
+--------------------------------------------------------------------------------
+BÖLÜM 6 — UYGULAMAYI İLK ÇALIŞTIRMA
+--------------------------------------------------------------------------------
+
+ADIM 6.1
+  1. SatinalmaPro.exe'yi çalıştırın.
+  2. Giriş ekranı gelir → ADIM 2.2'de oluşturduğunuz e-posta ve şifre.
+  3. Ana sayfada tüm modüller görünür (Admin rolü).
+
+ADIM 6.2 — Diğer kullanıcıları ekleme
+  1. Ayarlar modülü → Genel → "Kullanıcı Yönetimi".
+  2. Ad, e-posta, şifre ve rol girin → Kullanıcı Ekle.
+
+  Roller:
+    Admin      — Her şey + kullanıcı yönetimi
+    Satınalma  — Satınalma ve veri modülleri, düzenleme
+    Şantiye    — Saha modülleri, düzenleme
+    Yönetim    — Raporlar + görüntüleme
+    Okuma      — Sadece görüntüleme
+
+
+--------------------------------------------------------------------------------
+BÖLÜM 7 — VERİ SENKRONU (NASIL ÇALIŞIR)
+--------------------------------------------------------------------------------
+
+- Her bilgisayar veriyi önce yerelde tutar, sonra buluta gönderir.
+- Başka bilgisayar ~25 saniye içinde güncellemeyi alır.
+- İnternet kesilirse uygulama yerel veriyle çalışmaya devam eder;
+  internet gelince senkron devam eder.
+- Çıkış: Ana pencerenin sağ altındaki "Çıkış Yap".
+
+
+--------------------------------------------------------------------------------
+BÖLÜM 8 — OTOMATİK GÜNCELLEME (İSTEĞE BAĞLI)
+--------------------------------------------------------------------------------
+
+Uygulama yeni sürümü internetten indirip kendini güncelleyebilir.
+
+ADIM 8.1 — GitHub veya herhangi bir web adresi
+  1. Bir version.json dosyası yayınlayın. Örnek:
+
+  {
+    "version": "1.2.0",
+    "downloadUrl": "https://.../SatinalmaPro_1.2.0.zip",
+    "notes": "Hata düzeltmeleri",
+    "zorunlu": false
+  }
+
+  2. Zip içinde güncel exe ve dll dosyaları olsun (program klasörünün aynısı).
+
+ADIM 8.2
+  firebase_ayarlar.json içindeki guncellemeManifestUrl alanına
+  version.json'un tam internet adresini yazın.
+
+ADIM 8.3
+  Yeni sürüm yayınladığınızda csproj içindeki Version numarasını da
+  artırıp yeniden derleyin.
+
+
+--------------------------------------------------------------------------------
+SORUN GİDERME
+--------------------------------------------------------------------------------
+
+"E-posta veya şifre hatalı"
+  → Authentication'da kullanıcı var mı kontrol edin.
+
+"Kullanıcı profili bulunamadı"
+  → Firestore'da users/{uid} belgesi ve rol alanı eksik.
+
+"Firestore bağlantı hatası" / yetki hatası
+  → firestore.rules yayınlandı mı? aktif=true ve rol doğru mu?
+
+Giriş ekranı hiç çıkmıyor
+  → firebase_ayarlar.json'da apiKey ve projectId dolu mu?
+
+Veriler diğer PC'de görünmüyor
+  → Her iki PC'de de giriş yapılmış olmalı. Birkaç saniye bekleyin.
+
+Uygulama derlenmiyor / dosya kilitli
+  → Çalışan SatinalmaPro.exe'yi kapatın, tekrar derleyin.
+
+
+--------------------------------------------------------------------------------
+DESTEK
+--------------------------------------------------------------------------------
+
+Kurulum dosyası: Uygulama klasöründeki firebase_ayarlar.json
+Veri klasörü:     %AppData%\SatinalmaPro\
+
+Sorun olursa Ayarlar → Genel → "Kurulum Kılavuzunu Aç" ile bu dosyayı
+tekrar okuyabilirsiniz.
+
+================================================================================

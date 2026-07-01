@@ -1,0 +1,85 @@
+using SatinalmaPro.Shared.Models;
+
+namespace SatinalmaPro.Shared.Services;
+
+public sealed class BildirimServisi
+{
+    private readonly MobilVeriDeposu _depo;
+    private readonly FcmPushServisi? _fcm;
+
+    public BildirimServisi(MobilVeriDeposu depo, FcmPushServisi? fcm = null)
+    {
+        _depo = depo;
+        _fcm = fcm;
+    }
+
+    public async Task EkleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
+    {
+        await _depo.BildirimleriYukleAsync(iptal);
+        _depo.Bildirimler.Insert(0, bildirim);
+        await _depo.BildirimleriKaydetAsync(iptal);
+
+        if (_fcm?.Aktif == true)
+        {
+            try { await _fcm.BildirimGonderAsync(bildirim, iptal); }
+            catch { /* push isteğe bağlı */ }
+        }
+    }
+
+    public IEnumerable<BildirimKaydi> KullaniciBildirimleri(KullaniciProfili? kullanici) =>
+        BildirimFiltreleme.KullaniciBildirimleri(_depo.Bildirimler, kullanici);
+
+    public int OkunmamisSayisi(KullaniciProfili? kullanici) =>
+        BildirimFiltreleme.OkunmamisSayisi(_depo.Bildirimler, kullanici, _depo.Talepler);
+
+    public async Task OkunduIsaretleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
+    {
+        bildirim.Okundu = true;
+        await _depo.BildirimleriKaydetAsync(iptal);
+    }
+
+    public async Task TumunuOkunduIsaretleAsync(KullaniciProfili kullanici, CancellationToken iptal = default)
+    {
+        foreach (var b in KullaniciBildirimleri(kullanici))
+            b.Okundu = true;
+        await _depo.BildirimleriKaydetAsync(iptal);
+    }
+
+    public async Task GecersizleriOkunduYapAsync(CancellationToken iptal = default)
+    {
+        await _depo.BildirimleriYukleAsync(iptal);
+        await _depo.TalepleriYukleAsync(iptal);
+
+        var degisti = false;
+        foreach (var b in _depo.Bildirimler)
+        {
+            if (b.Okundu || BildirimFiltreleme.GecerliMi(b, _depo.Talepler))
+                continue;
+
+            b.Okundu = true;
+            degisti = true;
+        }
+
+        if (degisti)
+            await _depo.BildirimleriKaydetAsync(iptal);
+    }
+
+    public async Task TemizleAsync(KullaniciProfili kullanici, CancellationToken iptal = default)
+    {
+        await _depo.TalepleriYukleAsync(iptal);
+        var silinecek = KullaniciBildirimleri(kullanici)
+            .Where(b => !BildirimFiltreleme.Temizlenmemeli(b, _depo.Talepler))
+            .Select(b => b.Id)
+            .ToHashSet();
+
+        _depo.Bildirimler.RemoveAll(b => silinecek.Contains(b.Id));
+        await _depo.BildirimleriKaydetAsync(iptal);
+    }
+
+    public async Task TalepBildirimleriniSilAsync(Guid talepId, CancellationToken iptal = default)
+    {
+        await _depo.BildirimleriYukleAsync(iptal);
+        _depo.Bildirimler.RemoveAll(b => b.TalepId == talepId);
+        await _depo.BildirimleriKaydetAsync(iptal);
+    }
+}

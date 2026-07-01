@@ -1,0 +1,6 @@
+{
+  "apiKey": "BURAYA_FIREBASE_API_KEY",
+  "projectId": "BURAYA_PROJE_ID",
+  "guncellemeManifestUrl": "https://raw.githubusercontent.com/KULLANICI/REPO/main/version.json",
+  "fcmServerKey": "BURAYA_FCM_LEGACY_SERVER_KEY"
+}

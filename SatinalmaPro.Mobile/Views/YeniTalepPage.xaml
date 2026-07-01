@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SatinalmaPro.Mobile.Views.YeniTalepPage"
+             Title="Yeni Talep">
+
+    <ScrollView Padding="16">
+        <VerticalStackLayout Spacing="12">
+            <Entry x:Name="TxtAciklama" Placeholder="Talep açıklaması" />
+            <Picker x:Name="PickerTur" Title="Talep türü" />
+            <Label Text="Kalemler" Style="{StaticResource LblSection}" />
+            <VerticalStackLayout x:Name="KalemlerPanel" Spacing="8" />
+            <Button Text="+ Kalem Ekle" Clicked="KalemEkle_Clicked" Style="{StaticResource BtnSecondary}" />
+            <Button Text="Kaydet" Clicked="Kaydet_Clicked" Style="{StaticResource BtnBrand}" />
+            <Button x:Name="BtnGonder" Text="Yönetime Gönder" Clicked="Gonder_Clicked" Style="{StaticResource BtnSuccess}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

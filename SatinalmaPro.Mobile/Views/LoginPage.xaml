@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SatinalmaPro.Mobile.ViewModels"
+             x:Class="SatinalmaPro.Mobile.Views.LoginPage"
+             x:DataType="vm:LoginViewModel"
+             Title="Giriş">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16" VerticalOptions="Center">
+            <Image Source="app_logo.png" HeightRequest="96" WidthRequest="96"
+                   HorizontalOptions="Center" Aspect="AspectFit" Margin="0,0,0,8" />
+            <Label Text="Satınalma Pro" FontSize="28" FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+            <Label Text="Mobil" FontSize="16" HorizontalOptions="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource SecondaryTextLight}, Dark={StaticResource SecondaryTextDark}}" Margin="0,0,0,16" />
+
+            <Border Stroke="{AppThemeBinding Light={StaticResource CardBorderLight}, Dark={StaticResource CardBorderDark}}"
+                    StrokeThickness="1"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                    Padding="16" StrokeShape="RoundRectangle 12">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="İlk giriş veya çıkış sonrası" FontSize="12"
+                           TextColor="{AppThemeBinding Light={StaticResource SecondaryTextLight}, Dark={StaticResource SecondaryTextDark}}" />
+                    <Entry Placeholder="E-posta" Text="{Binding Eposta}" Keyboard="Email" />
+                    <Entry Placeholder="Şifre" Text="{Binding Sifre}" IsPassword="True" />
+                    <Label Text="{Binding Hata}" TextColor="Red" />
+                    <Button Text="Giriş Yap" Command="{Binding GirisYapCommand}" Style="{StaticResource BtnBrand}" />
+                    <ActivityIndicator IsRunning="{Binding Yukleniyor}" IsVisible="{Binding Yukleniyor}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label x:Name="LblFirebaseUyari" Text="Firebase ayarları henüz yapılandırılmadı."
+                   TextColor="OrangeRed" HorizontalOptions="Center" IsVisible="False" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

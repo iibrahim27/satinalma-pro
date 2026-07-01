@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SatinalmaPro.Shared.Models;assembly=SatinalmaPro.Shared"
+             x:Class="SatinalmaPro.Mobile.Views.OnayBekleyenTaleplerPage"
+             Title="Onay Bekleyen">
+
+    <RefreshView x:Name="RefreshView" Padding="12">
+        <CollectionView x:Name="Liste" SelectionMode="Single" SelectionChanged="Liste_SelectionChanged">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:SatinalmaTalep">
+                    <Border Style="{StaticResource TalepKartBorderStyle}" Margin="0,4">
+                        <VerticalStackLayout Spacing="4">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="{Binding TalepNo}" FontAttributes="Bold" />
+                                <Label Grid.Column="1" Text="{Binding TalepTuru}" Style="{StaticResource LblWarning}" />
+                            </Grid>
+                            <Label Text="{Binding GorunenDurum}" TextColor="Gray" />
+                            <Label Text="{Binding TalepEden}" FontSize="12" />
+                            <Label Text="{Binding Tarih}" FontSize="11" TextColor="Gray" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+</ContentPage>

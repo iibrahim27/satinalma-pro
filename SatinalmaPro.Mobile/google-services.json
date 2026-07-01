@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "524965229207",
+    "project_id": "satinalmapro-8e7da",
+    "storage_bucket": "satinalmapro-8e7da.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:524965229207:android:7e0e474898c5bf3f49afd2",
+        "android_client_info": {
+          "package_name": "com.metrik.satinalmapro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCuepDIoKGQ-3t7y81xqUgWHohpyKvgeoc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

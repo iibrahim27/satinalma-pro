@@ -1,0 +1,35 @@
+<Window x:Class="SatinalmaPro.Views.Modules.FiloSevkWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Araç Sevk"
+        Width="480" Height="380" MinWidth="420"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" Background="White">
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <StackPanel Grid.Row="0" Margin="0,0,0,16">
+      <TextBlock x:Name="TxtBaslik" FontSize="20" FontWeight="SemiBold" />
+      <TextBlock Text="Araç başka şantiyeye sevk edilir, sevk formu oluşturulur ve araç pasif yapılır."
+                 FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+    </StackPanel>
+    <StackPanel Grid.Row="1">
+      <TextBlock Text="Kaynak Saha" Style="{StaticResource FilterLabelStyle}" />
+      <TextBox x:Name="TxtKaynakSaha" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True"
+               Background="#F8FAFC" Margin="0,0,0,12" />
+      <TextBlock Text="Hedef Şantiye / Saha" Style="{StaticResource FilterLabelStyle}" />
+      <TextBox x:Name="TxtHedefSaha" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,12" />
+      <TextBlock Text="Açıklama" Style="{StaticResource FilterLabelStyle}" />
+      <TextBox x:Name="TxtAciklama" Style="{StaticResource FilterBoxStyle}" Height="80"
+               TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Padding="12,10" />
+    </StackPanel>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button Content="İptal" Style="{StaticResource ToolbarButtonStyle}" Width="100" Margin="0,0,8,0" Click="Iptal_Click" />
+      <Button Content="Sevk Et" Style="{StaticResource PrimaryToolbarButtonStyle}" Width="110" Click="Sevk_Click" />
+    </StackPanel>
+  </Grid>
+</Window>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SatinalmaPro.Mobile.Views.TalepDetayPage"
+             Title="Talep Detay">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Talep PDF" Clicked="BelgePaylas_Clicked" Order="Primary" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView Padding="16">
+        <VerticalStackLayout Spacing="8">
+            <Label x:Name="LblTalepNo" FontSize="20" Style="{StaticResource LblSection}" />
+            <Label x:Name="LblDurum" Style="{StaticResource LblSecondary}" />
+            <Label x:Name="LblTur" Style="{StaticResource LblWarning}" />
+            <Label x:Name="LblAciklama" Style="{StaticResource LblSecondary}" />
+            <Label x:Name="LblRed" Style="{StaticResource LblDanger}" IsVisible="False" />
+
+            <Border x:Name="ImzaBilgiPanel" Style="{StaticResource OnayPanelBorder}" IsVisible="False">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="İmza süreci" FontAttributes="Bold" Style="{StaticResource LblWarning}" />
+                    <Label Text="Talep yönetime gönderildi. PDF oluşturuldu / imza bekleniyor — imza işlemi masaüstünden tamamlanır."
+                           Style="{StaticResource LblSecondary}" FontSize="12" LineBreakMode="WordWrap" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border x:Name="OnayBilgiPanel" Style="{StaticResource OnayPanelBorder}" IsVisible="False">
+                <VerticalStackLayout Spacing="4">
+                    <Label x:Name="LblOnayTipi" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light={StaticResource OnayPanelTextLight}, Dark={StaticResource OnayPanelTextDark}}" />
+                    <Label x:Name="LblOnaylayan" FontSize="12"
+                           TextColor="{AppThemeBinding Light={StaticResource OnayPanelDetailLight}, Dark={StaticResource OnayPanelDetailDark}}" />
+                    <Label x:Name="LblOnayTarihi" FontSize="12"
+                           TextColor="{AppThemeBinding Light={StaticResource OnayPanelDetailLight}, Dark={StaticResource OnayPanelDetailDark}}" />
+                    <Label x:Name="LblOnayFirma" FontSize="12"
+                           TextColor="{AppThemeBinding Light={StaticResource OnayPanelDetailLight}, Dark={StaticResource OnayPanelDetailDark}}" />
+                    <Button x:Name="BtnOnayBelgesi" Text="Onay PDF Paylaş" Clicked="OnayBelgesi_Clicked"
+                            Style="{StaticResource BtnInfoDark}" IsVisible="False" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border x:Name="SiparisPanel" Style="{StaticResource OnayPanelBorder}" IsVisible="False">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Sipariş durumu" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light={StaticResource OnayPanelTextLight}, Dark={StaticResource OnayPanelTextDark}}" />
+                    <Label x:Name="LblSiparisNo" FontSize="12"
+                           TextColor="{AppThemeBinding Light={StaticResource OnayPanelDetailLight}, Dark={StaticResource OnayPanelDetailDark}}" />
+                    <Label x:Name="LblSiparisDurum" FontSize="12"
+                           TextColor="{AppThemeBinding Light={StaticResource OnayPanelDetailLight}, Dark={StaticResource OnayPanelDetailDark}}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label x:Name="LblKalemOnayBaslik" Text="Onaylanan kalemler" Style="{StaticResource LblSection}"
+                   Margin="0,12,0,0" IsVisible="False" />
+            <VerticalStackLayout x:Name="KalemOnayPanel" Spacing="6" IsVisible="False" />
+
+            <Label Text="Talep kalemleri" Style="{StaticResource LblSection}" Margin="0,12,0,0" />
+            <VerticalStackLayout x:Name="KalemlerPanel" Spacing="6" />
+            <Button x:Name="BtnGonder" Text="Yönetime Gönder" Clicked="Gonder_Clicked"
+                    Style="{StaticResource BtnSuccess}" IsVisible="False" />
+            <Button x:Name="BtnDuzenle" Text="Düzenle" Clicked="Duzenle_Clicked"
+                    Style="{StaticResource BtnInfoDark}" IsVisible="False" />
+            <Button x:Name="BtnSil" Text="Talebi Sil" Clicked="Sil_Clicked"
+                    Style="{StaticResource BtnDanger}" IsVisible="False" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

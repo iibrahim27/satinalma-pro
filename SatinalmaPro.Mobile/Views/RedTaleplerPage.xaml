@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SatinalmaPro.Shared.Models;assembly=SatinalmaPro.Shared"
+             x:Class="SatinalmaPro.Mobile.Views.RedTaleplerPage"
+             Title="Red Talepler">
+
+    <RefreshView x:Name="RefreshView" Padding="12">
+        <CollectionView x:Name="Liste" SelectionMode="Single" SelectionChanged="Liste_SelectionChanged">
+            <CollectionView.EmptyView>
+                <Label Text="Reddedilmiş talep yok." Style="{StaticResource LblMuted}"
+                       HorizontalOptions="Center" VerticalOptions="Center" Margin="24" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:SatinalmaTalep">
+                    <Border Style="{StaticResource TalepKartBorderStyle}">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding TalepNo}" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+                            <Label Text="{Binding TalepEden, StringFormat='Talep eden: {0}'}"
+                                   FontSize="12" Style="{StaticResource LblSecondary}" />
+                            <Label Text="{Binding TalepTuru}" FontSize="12" Style="{StaticResource LblWarning}" />
+                            <Label Text="{Binding RedGerekcesi, StringFormat='Red: {0}'}"
+                                   FontSize="12" TextColor="#C0392B" LineBreakMode="WordWrap" />
+                            <Label Text="{Binding Tarih}" FontSize="11" Style="{StaticResource LblMuted}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+</ContentPage>

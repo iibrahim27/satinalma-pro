@@ -1,0 +1,93 @@
+================================================================================
+  ANDROID İÇİN SADECE FIREBASE CONSOLE'DA YAPILACAKLAR
+  (Masaüstü Firebase zaten kurulu — aynı proje kullanılır)
+================================================================================
+
+Aşağıdaki adımları Firebase Console'da yapmanız yeterlidir.
+Uygulama / Android kod tarafı otomatik halledilir.
+
+Console: https://console.firebase.google.com
+(Masaüstünde zaten kullandığınız Firebase projesini açın)
+
+
+--------------------------------------------------------------------------------
+ADIM 1 — Android uygulamasını projeye ekleyin
+--------------------------------------------------------------------------------
+
+1. Proje ayarları (dişli simgesi) → "Your apps"
+2. "Add app" → Android simgesi
+3. Android package name (AYNEN yazın):
+     com.metrik.satinalmapro
+4. App nickname: Satınalma Pro Mobil
+5. "Register app"
+6. "Download google-services.json" → İNDİRİN (Adım 2'de masaüstünden yüklenecek)
+7. Sonraki adımları atlayabilirsiniz → Console'a dönün
+
+
+--------------------------------------------------------------------------------
+ADIM 2 — google-services.json dosyasını yükleyin (masaüstü uygulamasından)
+--------------------------------------------------------------------------------
+
+1. Satınalma Pro masaüstü uygulamasını açın (Admin giriş)
+2. Ayarlar → Genel → "Bulut ve Kullanıcılar" bölümü
+3. "Android google-services.json Yükle" butonuna tıklayın
+4. Adım 1'de indirdiğiniz google-services.json dosyasını seçin
+
+   → Dosya otomatik kaydedilir ve Android derlemesine aktarılır.
+
+
+--------------------------------------------------------------------------------
+ADIM 3 — Push bildirim (FCM) Server Key
+--------------------------------------------------------------------------------
+
+1. Proje ayarları → "Cloud Messaging" sekmesi
+2. "Cloud Messaging API (Legacy)" etkin değilse Google Cloud Console'dan etkinleştirin
+3. "Server key" (Legacy) değerini kopyalayın
+4. Masaüstü uygulamasında:
+     Ayarlar → Genel → "FCM Server Key (Android push)" kutusuna yapıştırın
+     → "Bulut Ayarlarını Kaydet" butonuna tıklayın
+
+   → Hem masaüstü hem Android otomatik aynı ayarı kullanır.
+
+
+--------------------------------------------------------------------------------
+ADIM 4 — Firestore güvenlik kurallarını güncelleyin
+--------------------------------------------------------------------------------
+
+1. Firestore Database → Rules sekmesi
+2. Program klasöründeki firestore.rules dosyasının TAMAMINI kopyalayın
+   (Satinalma Pro\firestore.rules)
+3. Firebase kurallar kutusuna yapıştırın
+4. "Publish" / "Yayınla"
+
+   → Mobil roller (Yönetim, Depo, Saha) ve bildirimler çalışır.
+
+
+--------------------------------------------------------------------------------
+ADIM 5 — Test
+--------------------------------------------------------------------------------
+
+1. Android uygulamasını telefona yükleyin (geliştirici derlemesi)
+2. Masaüstünde oluşturduğunuz kullanıcı ile giriş yapın
+3. Mobilden talep gönderin → masaüstünde bildirim gelmeli
+4. Masaüstünden işlem yapın → mobilde bildirim gelmeli
+
+Firestore'da kontrol (isteğe bağlı):
+  veri → bildirimler → json alanı
+
+
+--------------------------------------------------------------------------------
+ÖZET — Sizin yapacağınız (Firebase + 2 tık masaüstünde)
+--------------------------------------------------------------------------------
+
+Firebase Console:
+  [1] Android app ekle (com.metrik.satinalmapro)
+  [2] google-services.json indir
+  [3] Cloud Messaging Server key kopyala
+  [4] firestore.rules yayınla
+
+Masaüstü uygulama (Ayarlar ekranı — dosya düzenleme yok):
+  [5] google-services.json yükle (buton)
+  [6] FCM Server key yapıştır + kaydet (buton)
+
+================================================================================

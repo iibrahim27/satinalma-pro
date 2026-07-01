@@ -1,0 +1,171 @@
+================================================================================
+  SATINALMA PRO — GITHUB RELEASES KURULUM KILAVUZU
+  (Uygulama indirme + otomatik güncelleme)
+================================================================================
+
+Bu kılavuz ile:
+  - Diğer PC'ler uygulamayı internetten indirebilir
+  - Yeni sürüm yayınladığınızda uygulama kendini günceller
+
+================================================================================
+BÖLÜM 1 — GITHUB HESABI VE REPO
+================================================================================
+
+ADIM 1.1 — Hesap
+  1. https://github.com adresine gidin
+  2. Sign up ile ücretsiz hesap açın (yoksa)
+
+ADIM 1.2 — Yeni depo (repository)
+  1. Sağ üst + -> New repository
+  2. Repository name: satinalma-pro
+  3. Private veya Public seçin (Public = herkes indirebilir)
+  4. "Add a README file" işaretleyebilirsiniz
+  5. Create repository
+
+  NOT: Kullanıcı adınızı not alın (ör. pekbalcibrahim)
+       Adresiniz: https://github.com/KULLANICI_ADI/satinalma-pro
+
+
+================================================================================
+BÖLÜM 2 — version.json DOSYASINI YÜKLEME
+================================================================================
+
+Bu dosya güncelleme kontrolü için kullanılır. Adresi hiç değişmez.
+
+ADIM 2.1
+  1. GitHub'da satinalma-pro reposuna girin
+  2. "Add file" -> "Upload files"
+  3. Bilgisayarınızdan şu dosyayı sürükleyin:
+       Satinalma Pro\version.json
+  4. Commit changes
+
+  Dosyanın internet adresi şöyle olur:
+  https://raw.githubusercontent.com/KULLANICI_ADI/satinalma-pro/main/version.json
+
+  (KULLANICI_ADI yerine kendi GitHub kullanıcı adınız)
+
+
+================================================================================
+BÖLÜM 3 — YAYIN PAKETİ OLUŞTURMA (SİZİN BİLGİSAYARINIZDA)
+================================================================================
+
+ADIM 3.1 — PowerShell açın
+  1. Başlat -> PowerShell
+  2. Şu komutları sırayla çalıştırın (kendi kullanıcı adınızı yazın):
+
+     cd "C:\Users\pekba\OneDrive\Desktop\METRİK\Satinalma Pro"
+     .\scripts\yayin-paketi.ps1 -Version "1.1.0" -GitHubKullanici "KULLANICI_ADI"
+
+  Örnek:
+     .\scripts\yayin-paketi.ps1 -Version "1.1.0" -GitHubKullanici "pekbalcibrahim"
+
+ADIM 3.2 — Script ne üretir?
+  - SatinalmaPro.zip          (diğer PC'lere kurulacak program)
+  - version.json              (güncellenmiş sürüm bilgisi)
+  - firebase_ayarlar.json     (guncellemeManifestUrl otomatik yazılır)
+
+  İlk çalıştırma 2-5 dakika sürebilir (.NET derlemesi).
+
+
+================================================================================
+BÖLÜM 4 — GITHUB RELEASE OLUŞTURMA
+================================================================================
+
+ADIM 4.1
+  1. GitHub -> satinalma-pro reposu
+  2. Sağ tarafta "Releases" -> "Create a new release"
+
+ADIM 4.2 — Sürüm bilgileri
+  1. Choose a tag: "v1.1.0" yazın -> "Create new tag on publish"
+  2. Release title: Satinalma Pro v1.1.0
+  3. Description: ne değiştiğini yazın (isteğe bağlı)
+
+ADIM 4.3 — Zip dosyasını ekleyin
+  1. "Attach binaries" / dosya ekle alanına tıklayın
+  2. SatinalmaPro.zip dosyasını seçin
+     (Satinalma Pro klasöründe oluşur)
+  3. ÖNEMLİ: Zip adı tam olarak SatinalmaPro.zip olmalı
+
+ADIM 4.4
+  1. "Publish release" tıklayın
+
+  İndirme linki örneği:
+  https://github.com/KULLANICI_ADI/satinalma-pro/releases/download/v1.1.0/SatinalmaPro.zip
+
+
+================================================================================
+BÖLÜM 5 — version.json GÜNCELLEME (HER YENİ SÜRÜMDE)
+================================================================================
+
+Script her çalıştığında version.json içindeki sürüm ve indirme linki güncellenir.
+
+Her yeni sürümde:
+  1. yayin-paketi.ps1 scriptini yeni sürüm numarasıyla çalıştırın
+  2. GitHub'da version.json dosyasını güncelleyin (Upload / Edit)
+  3. Yeni Release oluşturup yeni SatinalmaPro.zip yükleyin
+
+Diğer PC'ler uygulamayı açınca güncelleme uyarısı alır.
+
+
+================================================================================
+BÖLÜM 6 — DİĞER PC'LER NASIL KURAR?
+================================================================================
+
+YÖNTEM A — Release linki (önerilen)
+  1. GitHub Releases sayfasını açın:
+     https://github.com/KULLANICI_ADI/satinalma-pro/releases
+  2. En son sürümdeki SatinalmaPro.zip indirin
+  3. Zip'i açın (ör. C:\SatinalmaPro\)
+  4. SatinalmaPro.exe çalıştırın
+  5. E-posta ve şifre ile giriş yapın
+
+YÖNTEM B — USB
+  1. SatinalmaPro.zip'i USB'ye kopyalayın
+  2. Diğer PC'de açıp exe çalıştırın
+
+  firebase_ayarlar.json zip içinde gelir, ek ayar gerekmez.
+
+
+================================================================================
+BÖLÜM 7 — OTOMATİK GÜNCELLEME NASIL ÇALIŞIR?
+================================================================================
+
+  Uygulama açılışında:
+    firebase_ayarlar.json -> guncellemeManifestUrl
+    -> version.json okunur (GitHub)
+    -> Sürüm sizinkinden yüksekse "Güncellensin mi?" sorar
+    -> Evet -> zip indirilir, dosyalar güncellenir, uygulama yeniden başlar
+
+  guncellemeManifestUrl örneği:
+  https://raw.githubusercontent.com/KULLANICI_ADI/satinalma-pro/main/version.json
+
+
+================================================================================
+BÖLÜM 8 — YENİ SÜRÜM YAYINLAMA ÖZET (TEKRAR)
+================================================================================
+
+  1. Kod değişikliklerini yapın
+  2. PowerShell:
+     .\scripts\yayin-paketi.ps1 -Version "1.2.0" -GitHubKullanici "KULLANICI_ADI"
+  3. GitHub'da version.json güncelle
+  4. GitHub'da Release v1.2.0 + SatinalmaPro.zip yükle
+  5. Bitti — tüm PC'ler güncellemeyi alır
+
+
+================================================================================
+SORUN GİDERME
+================================================================================
+
+"Script çalışmıyor / execution policy"
+  PowerShell'de bir kez çalıştırın:
+  Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+
+Güncelleme gelmiyor
+  -> version.json GitHub'da güncel mi?
+  -> downloadUrl doğru Release linkine mi bakıyor?
+  -> firebase_ayarlar.json içinde guncellemeManifestUrl dolu mu?
+
+Zip açılmıyor / exe çalışmıyor
+  -> Windows "Engellenmiş" uyarısı: dosyaya sağ tık -> Özellikler -> Engeli kaldır
+
+================================================================================
