@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.7.7",
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.7/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.7/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.7/SatinalmaPro.apk",
-    "notes":  "Bildirim ve cihazlar arasi senkron duzeltmeleri: Android push, rol bazli masaustu bildirimleri, anlik veri yenileme",
+    "version":  "1.7.9",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.9/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.9/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.7.9/SatinalmaPro.apk",
+    "notes":  "Mal kabul/stok aktar yalnizca Satinalma; panel ozet sayilari duzeltildi; acilis karsilama ekrani (rol ve ad soyad)",
     "zorunlu":  false
 }
