@@ -9,8 +9,8 @@ public static class SatinalmaTabFiltreleri
         || SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep)
         || SatinalmaTalepKuyrugu.SatinalmaKarsilastirma(talep);
 
-    public static bool OnayBekleyen(SatinalmaTalep talep) =>
-        SatinalmaTalepKuyrugu.OnayBekleyen(talep);
+    public static bool OnayBekleyen(SatinalmaTalep talep, bool talepSahibiModu) =>
+        SatinalmaTalepKuyrugu.OnayBekleyenListede(talep, talepSahibiModu);
 
     /// <summary>Onaylanmış talepler: sipariş bekleyen (Onaylandı) ve sipariş verilmiş (Sipariş Oluşturuldu).</summary>
     public static bool Onaylananlar(SatinalmaTalep talep) =>

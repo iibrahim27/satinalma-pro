@@ -1,3 +1,4 @@
+using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Models;
 
 namespace SatinalmaPro.Shared.Services;
@@ -15,15 +16,28 @@ public sealed class BildirimServisi
 
     public async Task EkleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
     {
+        BildirimBirlestirme.Dokun(bildirim);
         await _depo.BildirimleriYukleAsync(iptal);
         _depo.Bildirimler.Insert(0, bildirim);
         await _depo.BildirimleriKaydetAsync(iptal);
+        await FcmGonderAsync(bildirim, iptal);
+    }
 
-        if (_fcm?.Aktif == true)
-        {
-            try { await _fcm.BildirimGonderAsync(bildirim, iptal); }
-            catch { /* push isteğe bağlı */ }
-        }
+    public async Task CokluEkleAsync(IReadOnlyList<BildirimKaydi> bildirimler, CancellationToken iptal = default)
+    {
+        if (bildirimler.Count == 0)
+            return;
+
+        foreach (var b in bildirimler)
+            BildirimBirlestirme.Dokun(b);
+
+        await _depo.BildirimleriYukleAsync(iptal);
+        foreach (var b in bildirimler)
+            _depo.Bildirimler.Insert(0, b);
+        await _depo.BildirimleriKaydetAsync(iptal);
+
+        foreach (var b in bildirimler)
+            await FcmGonderAsync(b, iptal);
     }
 
     public IEnumerable<BildirimKaydi> KullaniciBildirimleri(KullaniciProfili? kullanici) =>
@@ -35,13 +49,17 @@ public sealed class BildirimServisi
     public async Task OkunduIsaretleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
     {
         bildirim.Okundu = true;
+        BildirimBirlestirme.Dokun(bildirim);
         await _depo.BildirimleriKaydetAsync(iptal);
     }
 
     public async Task TumunuOkunduIsaretleAsync(KullaniciProfili kullanici, CancellationToken iptal = default)
     {
         foreach (var b in KullaniciBildirimleri(kullanici))
+        {
             b.Okundu = true;
+            BildirimBirlestirme.Dokun(b);
+        }
         await _depo.BildirimleriKaydetAsync(iptal);
     }
 
@@ -57,6 +75,7 @@ public sealed class BildirimServisi
                 continue;
 
             b.Okundu = true;
+            BildirimBirlestirme.Dokun(b);
             degisti = true;
         }
 
@@ -81,5 +100,20 @@ public sealed class BildirimServisi
         await _depo.BildirimleriYukleAsync(iptal);
         _depo.Bildirimler.RemoveAll(b => b.TalepId == talepId);
         await _depo.BildirimleriKaydetAsync(iptal);
+    }
+
+    private async Task FcmGonderAsync(BildirimKaydi bildirim, CancellationToken iptal)
+    {
+        if (_fcm?.Aktif != true)
+            return;
+
+        try
+        {
+            await _fcm.BildirimGonderAsync(bildirim, iptal);
+        }
+        catch
+        {
+            // push isteğe bağlı
+        }
     }
 }

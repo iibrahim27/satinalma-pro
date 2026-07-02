@@ -13,6 +13,7 @@ public class BildirimKaydi
     public string OlusturanAd { get; set; } = "";
     public string OlusturmaTarihi { get; set; } = "";
     public bool Okundu { get; set; }
+    public long GuncellemeUtc { get; set; }
 }
 
 public static class BildirimTipleri

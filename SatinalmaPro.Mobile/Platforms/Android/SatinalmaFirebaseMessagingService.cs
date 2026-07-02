@@ -3,6 +3,7 @@ using Android.Content;
 using Android.OS;
 using AndroidX.Core.App;
 using Firebase.Messaging;
+using SatinalmaPro.Mobile.Services;
 using SatinalmaPro.Shared.Models;
 using SatinalmaPro.Shared.Services;
 
@@ -51,7 +52,7 @@ public class BildirimForegroundService : Service
             if (!await oturum.OturumuGerekirseYukleAsync())
                 return;
 
-            await oturum.Dinleyici.SenkronizeVeGosterAsync();
+            await oturum.Dinleyici.SenkronizeSessizAsync();
         }
         catch
         {
@@ -117,8 +118,12 @@ public class SatinalmaFirebaseMessagingService : FirebaseMessagingService
             Tip = VeriAl(data, "tip") ?? "",
             TalepId = Guid.TryParse(VeriAl(data, "talepId"), out var g) ? g : null
         };
-        if (Guid.TryParse(bildirimId, out var bid))
-            bildirim.Id = bid;
+        if (!Guid.TryParse(bildirimId, out var bid))
+            bid = bildirim.Id;
+
+        bildirim.Id = bid;
+        if (!BildirimGosterimKaydi.IlkGosterimMi(bid))
+            return;
 
         if (IsAppInForeground())
         {
@@ -138,6 +143,9 @@ public class SatinalmaFirebaseMessagingService : FirebaseMessagingService
 
             MainThread.BeginInvokeOnMainThread(() =>
             {
+                if (Guid.TryParse(bildirimId, out var gosterimId))
+                    BildirimGosterimKaydi.Isaretle(gosterimId);
+
                 var oturum = IPlatformApplication.Current?.Services.GetService<Services.OturumServisi>();
                 if (string.IsNullOrWhiteSpace(route) && bildirim.TalepId is { } talepId)
                     route = BildirimRotaServisi.HedefRoute(bildirim, oturum?.Rol);
@@ -151,6 +159,13 @@ public class SatinalmaFirebaseMessagingService : FirebaseMessagingService
 
     private void GosterVeYonlendir(string baslik, string govde, string route, int id, string bildirimId)
     {
+        if (Guid.TryParse(bildirimId, out var bid))
+        {
+            if (!BildirimGosterimKaydi.IlkGosterimMi(bid))
+                return;
+            BildirimGosterimKaydi.Isaretle(bid);
+        }
+
         var launchIntent = PackageManager?.GetLaunchIntentForPackage(PackageName!)?.SetFlags(ActivityFlags.ClearTop | ActivityFlags.SingleTop);
         if (launchIntent is null)
             return;

@@ -1,11 +1,14 @@
+using System.Threading;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services.Firebase;
 using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Services;
+using SharedBildirim = SatinalmaPro.Shared.Models.BildirimKaydi;
 
 namespace SatinalmaPro.Services;
 
@@ -18,6 +21,8 @@ public static class BildirimDeposu
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
+
+    private static readonly SemaphoreSlim BulutYazmaKilidi = new(1, 1);
 
     public static List<BildirimKaydi> Bildirimler { get; } = [];
 
@@ -35,14 +40,12 @@ public static class BildirimDeposu
             return;
 
         var json = await OturumYoneticisi.Firestore.BelgeJsonOkuAsync(FirestoreYol, iptal);
-        Bildirimler.Clear();
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            _sonYukleme = DateTime.Now;
-            return;
-        }
+        var bulut = Deserialize(json);
+        var yerel = Bildirimler.Select(ToShared).ToList();
+        var birlesik = BildirimBirlestirme.Birlestir(yerel, bulut);
 
-        Bildirimler.AddRange(JsonSerializer.Deserialize<List<BildirimKaydi>>(json, Json) ?? []);
+        Bildirimler.Clear();
+        Bildirimler.AddRange(birlesik.Select(FromShared));
         _sonYukleme = DateTime.Now;
     }
 
@@ -51,17 +54,51 @@ public static class BildirimDeposu
         if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
             return;
 
-        var json = JsonSerializer.Serialize(Bildirimler, Json);
-        await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
-            FirestoreYol, json, OturumYoneticisi.Auth?.Uid, iptal);
+        await BulutYazmaKilidi.WaitAsync(iptal);
+        try
+        {
+            var bulutJson = await OturumYoneticisi.Firestore.BelgeJsonOkuAsync(FirestoreYol, iptal);
+            var bulut = Deserialize(bulutJson);
+            var yerel = Bildirimler.Select(ToShared).ToList();
+            var birlesik = BildirimBirlestirme.Birlestir(yerel, bulut);
+
+            Bildirimler.Clear();
+            Bildirimler.AddRange(birlesik.Select(FromShared));
+
+            var json = JsonSerializer.Serialize(Bildirimler, Json);
+            await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
+                FirestoreYol, json, OturumYoneticisi.Auth?.Uid, iptal);
+        }
+        finally
+        {
+            BulutYazmaKilidi.Release();
+        }
     }
 
     public static async Task EkleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
     {
+        bildirim.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         await YukleAsync(zorla: true, iptal);
         Bildirimler.Insert(0, bildirim);
         await KaydetAsync(iptal);
         await FcmPushGonderAsync(bildirim, iptal);
+    }
+
+    public static async Task CokluEkleAsync(IReadOnlyList<BildirimKaydi> bildirimler, CancellationToken iptal = default)
+    {
+        if (bildirimler.Count == 0)
+            return;
+
+        foreach (var b in bildirimler)
+            b.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        await YukleAsync(zorla: true, iptal);
+        foreach (var b in bildirimler)
+            Bildirimler.Insert(0, b);
+        await KaydetAsync(iptal);
+
+        foreach (var b in bildirimler)
+            await FcmPushGonderAsync(b, iptal);
     }
 
     private static async Task FcmPushGonderAsync(BildirimKaydi bildirim, CancellationToken iptal)
@@ -82,7 +119,7 @@ public static class BildirimDeposu
         {
             var hedefler = await HedefleriAlAsync(bildirim, iptal);
             var projectId = FirebaseAyarDeposu.Ayarlar.ProjectId;
-            var mobil = MobilBildirim(bildirim);
+            var mobil = ToShared(bildirim);
 
             foreach (var hedef in hedefler)
             {
@@ -104,12 +141,6 @@ public static class BildirimDeposu
                     {
                         to = hedef.Token,
                         priority = "high",
-                        notification = new
-                        {
-                            title = bildirim.Baslik,
-                            body = bildirim.Mesaj,
-                            sound = "default"
-                        },
                         data = new Dictionary<string, string>(veri)
                     };
 
@@ -160,7 +191,15 @@ public static class BildirimDeposu
             .ToList();
     }
 
-    private static SatinalmaPro.Shared.Models.BildirimKaydi MobilBildirim(BildirimKaydi b) => new()
+    private static List<SharedBildirim> Deserialize(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return [];
+
+        return JsonSerializer.Deserialize<List<SharedBildirim>>(json, Json) ?? [];
+    }
+
+    private static SharedBildirim ToShared(BildirimKaydi b) => new()
     {
         Id = b.Id,
         Baslik = b.Baslik,
@@ -172,6 +211,23 @@ public static class BildirimDeposu
         OlusturanUid = b.OlusturanUid,
         OlusturanAd = b.OlusturanAd,
         OlusturmaTarihi = b.OlusturmaTarihi,
-        Okundu = b.Okundu
+        Okundu = b.Okundu,
+        GuncellemeUtc = b.GuncellemeUtc
+    };
+
+    private static BildirimKaydi FromShared(SharedBildirim b) => new()
+    {
+        Id = b.Id,
+        Baslik = b.Baslik,
+        Mesaj = b.Mesaj,
+        Tip = b.Tip,
+        TalepId = b.TalepId,
+        HedefRol = b.HedefRol,
+        HedefUid = b.HedefUid,
+        OlusturanUid = b.OlusturanUid,
+        OlusturanAd = b.OlusturanAd,
+        OlusturmaTarihi = b.OlusturmaTarihi,
+        Okundu = b.Okundu,
+        GuncellemeUtc = b.GuncellemeUtc
     };
 }

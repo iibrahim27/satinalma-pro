@@ -16,6 +16,7 @@ public sealed class MobilVeriDeposu
 
     private static readonly TimeSpan TamSenkronBekleme = TimeSpan.FromSeconds(45);
     private static readonly SemaphoreSlim TalepBulutYazmaKilidi = new(1, 1);
+    private static readonly SemaphoreSlim BildirimBulutYazmaKilidi = new(1, 1);
 
     private readonly FirestoreVeriServisi _firestore;
     private readonly FirebaseAuthServisi _auth;
@@ -309,16 +310,38 @@ public sealed class MobilVeriDeposu
     public async Task BildirimleriYukleAsync(CancellationToken iptal = default)
     {
         var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Bildirimler, iptal);
+        var bulut = BildirimleriOku(json);
+        var birlesik = BildirimBirlestirme.Birlestir(Bildirimler, bulut);
         Bildirimler.Clear();
-        if (string.IsNullOrWhiteSpace(json))
-            return;
-        Bildirimler.AddRange(JsonSerializer.Deserialize<List<BildirimKaydi>>(json, Json) ?? []);
+        Bildirimler.AddRange(birlesik);
     }
 
     public async Task BildirimleriKaydetAsync(CancellationToken iptal = default)
     {
-        var json = JsonSerializer.Serialize(Bildirimler, Json);
-        await _firestore.BelgeJsonYazAsync(FirestoreYollari.Bildirimler, json, _auth.Uid, iptal);
+        await BildirimBulutYazmaKilidi.WaitAsync(iptal);
+        try
+        {
+            var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Bildirimler, iptal);
+            var bulut = BildirimleriOku(bulutJson);
+            var birlesik = BildirimBirlestirme.Birlestir(Bildirimler, bulut);
+            Bildirimler.Clear();
+            Bildirimler.AddRange(birlesik);
+
+            var json = JsonSerializer.Serialize(Bildirimler, Json);
+            await _firestore.BelgeJsonYazAsync(FirestoreYollari.Bildirimler, json, _auth.Uid, iptal);
+        }
+        finally
+        {
+            BildirimBulutYazmaKilidi.Release();
+        }
+    }
+
+    private static List<BildirimKaydi> BildirimleriOku(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return [];
+
+        return JsonSerializer.Deserialize<List<BildirimKaydi>>(json, Json) ?? [];
     }
 
     public async Task AlinanMalzemeleriYukleAsync(CancellationToken iptal = default)

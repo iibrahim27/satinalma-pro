@@ -41,22 +41,11 @@ public static class FcmV1Api
             message = new
             {
                 token = cihazToken,
-                notification = new
-                {
-                    title = baslik,
-                    body = mesaj
-                },
                 data,
                 android = new
                 {
                     priority = "HIGH",
-                    ttl = "86400s",
-                    notification = new
-                    {
-                        channel_id = "satinalma_pro",
-                        sound = "default",
-                        notification_priority = "PRIORITY_MAX"
-                    }
+                    ttl = "86400s"
                 }
             }
         };

@@ -19,9 +19,11 @@ public static class SatinalmaTalepKuyrugu
     public static bool OnayBekleyen(SatinalmaTalep t) =>
         t.Durum is SatinalmaTalepDurumlari.Hazirlaniyor
             or SatinalmaTalepDurumlari.ImzaSurecinde
-            or SatinalmaTalepDurumlari.TeklifGirisi
-            or SatinalmaTalepDurumlari.Karsilastirma
             or SatinalmaTalepDurumlari.YonetimOnayinda;
+
+    public static bool OnayBekleyenListede(SatinalmaTalep t, bool talepSahibiModu) =>
+        OnayBekleyen(t)
+        && (talepSahibiModu || !SatinalmaTeklifGirisiAktif(t));
 
     public static bool Onaylanmis(SatinalmaTalep t) =>
         t.Durum is SatinalmaTalepDurumlari.Onaylandi or SatinalmaTalepDurumlari.SiparisOlusturuldu

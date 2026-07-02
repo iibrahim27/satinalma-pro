@@ -172,7 +172,7 @@ public sealed class OturumServisi
 #if ANDROID
             AndroidBildirimKanali.Olustur();
             BildirimForegroundService.Baslat(global::Android.App.Application.Context);
-            await Dinleyici.SenkronizeVeGosterAsync();
+            await Dinleyici.IlkKontrolAsync();
 #endif
         }
         catch (Exception ex)

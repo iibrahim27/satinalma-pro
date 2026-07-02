@@ -19,7 +19,7 @@ public static class SatinalmaSekmeSayaclari
         {
             "Taleplerim" => talepler.Count(t => SatinalmaTalepKuyrugu.TaleplerimListesindeGoster(t, uid, ad)),
             "Gelen Talepler" => talepler.Count(SatinalmaTabFiltreleri.GelenTalepler),
-            "Onay Bekleyen" => talepler.Count(SatinalmaTabFiltreleri.OnayBekleyen),
+            "Onay Bekleyen" => talepler.Count(t => SatinalmaTabFiltreleri.OnayBekleyen(t, KullaniciYetkileri.SatinalmaSadeceTalepModu())),
             "Teklif Bekleyen" => talepler.Count(TeklifBekleyenSatiri.KuyruktaGoster),
             "Teklif Girişi" => talepler.Count(SatinalmaTalepKuyrugu.SatinalmaTeklifGirisiAktif),
             "Karşılaştırma" => talepler.Count(SatinalmaTabFiltreleri.TeklifDegerlendirme),

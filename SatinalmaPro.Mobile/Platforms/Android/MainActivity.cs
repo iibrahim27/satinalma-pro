@@ -13,6 +13,7 @@ namespace SatinalmaPro.Mobile;
 public class MainActivity : MauiAppCompatActivity
 {
     private const int BildirimIzinKodu = 1001;
+    private static DateTime _sonBildirimYenileme = DateTime.MinValue;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -33,11 +34,16 @@ public class MainActivity : MauiAppCompatActivity
 
     private static async Task BildirimleriYenileAsync()
     {
+        if ((DateTime.UtcNow - _sonBildirimYenileme).TotalSeconds < 45)
+            return;
+
+        _sonBildirimYenileme = DateTime.UtcNow;
+
         try
         {
             var oturum = MauiProgram.Services?.GetService<Services.OturumServisi>();
             if (oturum?.GirisYapildi == true)
-                await oturum.Dinleyici.SenkronizeVeGosterAsync();
+                await oturum.Dinleyici.SenkronizeSessizAsync();
         }
         catch
         {

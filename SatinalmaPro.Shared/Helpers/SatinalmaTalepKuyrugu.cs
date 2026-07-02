@@ -19,13 +19,16 @@ public static class SatinalmaTalepKuyrugu
     public static bool Reddedildi(SatinalmaTalep t) =>
         t.Durum == SatinalmaTalepDurumlari.Reddedildi;
 
-    /// <summary>Onay sürecinde — henüz onaylanmamış veya reddedilmemiş talepler.</summary>
+    /// <summary>Onay sürecinde — satınalma teklif/karşılaştırma kuyrukları hariç.</summary>
     public static bool OnayBekleyen(SatinalmaTalep t) =>
         t.Durum is SatinalmaTalepDurumlari.Hazirlaniyor
             or SatinalmaTalepDurumlari.ImzaSurecinde
-            or SatinalmaTalepDurumlari.TeklifGirisi
-            or SatinalmaTalepDurumlari.Karsilastirma
             or SatinalmaTalepDurumlari.YonetimOnayinda;
+
+    /// <summary>Onay Bekleyen sekmesi — satınalma/yönetim için teklif kuyruğuyla örtüşme yok.</summary>
+    public static bool OnayBekleyenListede(SatinalmaTalep t, bool talepSahibiModu) =>
+        OnayBekleyen(t)
+        && (talepSahibiModu || !SatinalmaTeklifGirisiAktif(t));
 
     /// <summary>Onaylanmış talepler (sipariş aşaması dahil).</summary>
     public static bool Onaylanmis(SatinalmaTalep t) =>

@@ -65,6 +65,7 @@ public static class BildirimYoneticisi
     public static async Task OkunduIsaretleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
     {
         bildirim.Okundu = true;
+        bildirim.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         await BildirimDeposu.KaydetAsync(iptal);
         BildirimlerDegisti?.Invoke();
     }
@@ -72,7 +73,10 @@ public static class BildirimYoneticisi
     public static async Task TumunuOkunduIsaretleAsync(CancellationToken iptal = default)
     {
         foreach (var b in KullaniciBildirimleri())
+        {
             b.Okundu = true;
+            b.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        }
         await BildirimDeposu.KaydetAsync(iptal);
         BildirimlerDegisti?.Invoke();
     }
@@ -89,6 +93,7 @@ public static class BildirimYoneticisi
                 continue;
 
             b.Okundu = true;
+            b.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             degisti = true;
         }
 

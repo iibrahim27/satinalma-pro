@@ -12,8 +12,9 @@ public partial class SatinalmaView
 
     private void OnayBekleyenListesiniYenile()
     {
+        var sahipModu = KullaniciYetkileri.SatinalmaSadeceTalepModu();
         var liste = SatinalmaDepo.Talepler
-            .Where(SatinalmaTabFiltreleri.OnayBekleyen)
+            .Where(t => SatinalmaTabFiltreleri.OnayBekleyen(t, sahipModu))
             .OrderByDescending(t => t.TalepTuru == Models.TalepTurleri.Acil)
             .ThenByDescending(t => t.Tarih)
             .ThenByDescending(t => t.TalepNo)

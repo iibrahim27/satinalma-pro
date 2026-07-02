@@ -13,6 +13,8 @@ public class BildirimKaydi
     public string OlusturanAd { get; set; } = "";
     public string OlusturmaTarihi { get; set; } = "";
     public bool Okundu { get; set; }
+    /// <summary>UTC ms — birleştirme ve çakışma çözümü.</summary>
+    public long GuncellemeUtc { get; set; }
 }
 
 public static class BildirimTipleri

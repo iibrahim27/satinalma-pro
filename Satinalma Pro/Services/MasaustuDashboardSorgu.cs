@@ -52,7 +52,7 @@ public sealed class MasaustuDashboardSorgu : ISatinalmaDashboardSorgu
         var ad = OturumYoneticisi.AktifKullanici?.AdSoyad;
         var sadeceKendi = MobilYetkiServisi.SatinalmaSadeceTalepModu(rol);
 
-        return SatinalmaTalepKuyrugu.Filtrele(_talepler, SatinalmaTalepKuyrugu.OnayBekleyen)
+        return SatinalmaTalepKuyrugu.Filtrele(_talepler, t => SatinalmaTalepKuyrugu.OnayBekleyenListede(t, sadeceKendi))
             .Where(t => !sadeceKendi || SatinalmaTalepKuyrugu.KullanicininTalebi(t, uid, ad));
     }
 

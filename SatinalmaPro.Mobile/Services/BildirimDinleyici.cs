@@ -5,20 +5,13 @@ namespace SatinalmaPro.Mobile.Services;
 
 public sealed class BildirimDinleyici : IDisposable
 {
-    private const string GosterilenAnahtar = "bildirim_gosterilen";
-
     private readonly OturumServisi _oturum;
-    private readonly HashSet<Guid> _gosterilen = [];
     private Timer? _zamanlayici;
     private bool _kontrolEdiliyor;
 
     public event Action? BildirimlerDegisti;
 
-    public BildirimDinleyici(OturumServisi oturum)
-    {
-        _oturum = oturum;
-        GosterilenleriYukle();
-    }
+    public BildirimDinleyici(OturumServisi oturum) => _oturum = oturum;
 
     public int OkunmamisSayisi =>
         _oturum.Bildirimler.OkunmamisSayisi(_oturum.Depo.AktifKullanici);
@@ -35,9 +28,12 @@ public sealed class BildirimDinleyici : IDisposable
         _zamanlayici = null;
     }
 
-    public Task IlkKontrolAsync() => KontrolEtAsync(bildirimGoster: true, agYenile: true);
+    public Task IlkKontrolAsync() => KontrolEtAsync(bildirimGoster: !BildirimGosterimKaydi.FcmAktif, agYenile: true);
 
-    public Task SenkronizeVeGosterAsync() => KontrolEtAsync(bildirimGoster: true, agYenile: true);
+    public Task SenkronizeVeGosterAsync() =>
+        KontrolEtAsync(bildirimGoster: !BildirimGosterimKaydi.FcmAktif, agYenile: true);
+
+    public Task SenkronizeSessizAsync() => KontrolEtAsync(bildirimGoster: false, agYenile: true);
 
     private async Task KontrolEtAsync(bool bildirimGoster = true, bool agYenile = true)
     {
@@ -65,16 +61,18 @@ public sealed class BildirimDinleyici : IDisposable
             if (kullanici is null)
                 return;
 
+            var toastGoster = bildirimGoster && !BildirimGosterimKaydi.FcmAktif;
+
             foreach (var bildirim in _oturum.Bildirimler.KullaniciBildirimleri(kullanici))
             {
-                if (!bildirimGoster
+                if (!toastGoster
                     || !BildirimFiltreleme.ToastGosterilmeli(bildirim, kullanici, _oturum.Depo.Talepler))
                     continue;
 
-                if (!_gosterilen.Add(bildirim.Id))
+                if (!BildirimGosterimKaydi.IlkGosterimMi(bildirim.Id))
                     continue;
 
-                GosterilenleriKaydet();
+                BildirimGosterimKaydi.Isaretle(bildirim.Id);
 
                 MainThread.BeginInvokeOnMainThread(() =>
                     YerelBildirimGosterici.Goster(bildirim, kullanici.Rol));
@@ -96,28 +94,5 @@ public sealed class BildirimDinleyici : IDisposable
         }
     }
 
-    private void GosterilenleriYukle()
-    {
-        _gosterilen.Clear();
-        var ham = Preferences.Default.Get(GosterilenAnahtar, "");
-        foreach (var parca in ham.Split(',', StringSplitOptions.RemoveEmptyEntries))
-        {
-            if (Guid.TryParse(parca, out var id))
-                _gosterilen.Add(id);
-        }
-    }
-
-    private void GosterilenleriKaydet()
-    {
-        if (_gosterilen.Count == 0)
-        {
-            Preferences.Default.Remove(GosterilenAnahtar);
-            return;
-        }
-
-        Preferences.Default.Set(GosterilenAnahtar, string.Join(',', _gosterilen));
-    }
-
     public void Dispose() => Durdur();
 }
-

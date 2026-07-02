@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.9.2",
-    "build":  39,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.2/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.2/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.2/SatinalmaPro.apk",
-    "notes":  "Kritik iş akışlarında anında bulut senkronu (onaya gönder, yönetim kararı, teklif, sipariş, mal kabul).\nBulut yazma kilidi ve talep/ayar birlikte gönderim — eşzamanlı kayıt çakışmaları azaltıldı.\nTeklif istendi / düzeltme bildirimleri doğru geçerlilik kurallarıyla filtreleniyor.\nStoğa aktarım bildirimleri Satınalma, Depo ve talep sahibine gidiyor.\nMasaüstü bildirim tıklaması rol bazlı doğru sekmeye yönlendiriyor.",
+    "version":  "1.9.3",
+    "build":  40,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.3/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.3/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.3/SatinalmaPro.apk",
+    "notes":  "Onay Bekleyen kuyruğu daraltıldı — Teklif Girişi/Karşılaştırma ile liste çakışması giderildi.\nFirestore bildirim listesi birleştirmeli kayıt (last-write-wins yerine kayıt bazlı merge).\nAndroid çift bildirim düzeltildi: FCM data-only + paylaşılan gösterim kaydı, polling sessiz senkron.\nParalel bildirim eklemeleri tek yazma işlemine indirildi.",
     "zorunlu":  false
 }
