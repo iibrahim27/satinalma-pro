@@ -35,12 +35,14 @@ public static class SatinalmaSiparisIslemleri
 
         talep.SiparisNo = talep.FirmaSiparisNolari[anaTeklifId];
         YonetimOnayKaydet(talep);
+        SatinalmaTalepYardimcisi.Dokun(talep);
         SatinalmaDepo.Kaydet();
     }
 
     public static async Task KalemBazliOnaylaAsync(SatinalmaTalep talep)
     {
         KalemBazliOnayla(talep);
+        await SatinalmaKayitYardimcisi.BulutaHemenGonderAsync();
 
         try
         {
@@ -87,12 +89,14 @@ public static class SatinalmaSiparisIslemleri
             talep.SiparisNo = SatinalmaDepo.SiparisNoAl(talep, anaId);
 
         talep.Durum = SatinalmaTalepDurumlari.SiparisOlusturuldu;
+        SatinalmaTalepYardimcisi.Dokun(talep);
         SatinalmaDepo.Kaydet();
     }
 
     public static async Task SiparisVerAsync(SatinalmaTalep talep)
     {
         SiparisVer(talep);
+        await SatinalmaKayitYardimcisi.BulutaHemenGonderAsync();
         try { await SatinalmaBildirimleri.SiparisOlusturulduAsync(talep); } catch { /* */ }
     }
 
@@ -123,7 +127,14 @@ public static class SatinalmaSiparisIslemleri
         talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
         talep.YonetimOnayKilitli = false;
 
+        SatinalmaTalepYardimcisi.Dokun(talep);
         SatinalmaDepo.Kaydet();
+    }
+
+    public static async Task FirmaOnaylariniGeriAlAsync(SatinalmaTalep talep)
+    {
+        FirmaOnaylariniGeriAl(talep);
+        await SatinalmaKayitYardimcisi.BulutaHemenGonderAsync();
     }
 
     public static void MalKabulVeDepoyaKaydet(
@@ -167,7 +178,9 @@ public static class SatinalmaSiparisIslemleri
         AlinanMalzemeAktarimServisi.StogaGirisKaydet(
             satir, miktar, kategori, tarih, teslimAlan, depoSaha);
 
+        SatinalmaTalepYardimcisi.Dokun(talep);
         SatinalmaDepo.Kaydet();
+        _ = SatinalmaKayitYardimcisi.BulutaHemenGonderAsync();
 
         try
         {

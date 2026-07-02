@@ -46,10 +46,14 @@ public static class BildirimFiltreleme
                 && talep.Durum is SatinalmaTalepDurumlari.ImzaSurecinde
                     or SatinalmaTalepDurumlari.YonetimOnayinda,
             BildirimTipleri.TeklifIstendi =>
-                talep.Durum == SatinalmaTalepDurumlari.TeklifGirisi
-                && (talep.Teklifler?.Count ?? 0) == 0,
+                !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep)
+                && !talep.YonetimOnayKilitli
+                && (SatinalmaTalepKuyrugu.SatinalmaTeklifGirisiAktif(talep)
+                    || (talep.Durum == SatinalmaTalepDurumlari.TeklifGirisi
+                        && (talep.Teklifler?.Count ?? 0) == 0)),
             BildirimTipleri.TeklifDuzeltmeIstendi =>
-                SatinalmaTalepYardimcisi.TeklifDuzenlemeDevamEdiyor(talep),
+                SatinalmaTalepYardimcisi.TeklifDuzenlemeDevamEdiyor(talep)
+                && talep.Durum != SatinalmaTalepDurumlari.YonetimOnayinda,
             BildirimTipleri.TeklifOnayda =>
                 SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep),
             BildirimTipleri.Reddedildi =>

@@ -90,6 +90,7 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
 
         OlusturanRolunuTamamla(talep);
         talep.Durum = SatinalmaTalepDurumlari.ImzaSurecinde;
+        SatinalmaTalepSenkronYardimcisi.Dokun(talep);
         await TalepKaydetAsync(talep, iptal);
 
         await _bildirimler.EkleAsync(BildirimKaydiOlustur(BildirimTipleri.YonetimeGonderildi, talep, hedefRol: KullaniciRolleri.Yonetim), iptal);
@@ -798,9 +799,19 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         }
 
         var talep = _depo.Talepler.First(t => t.Id == satir.TalepId);
+        var ek = $"{satir.Malzeme} · {miktar:N2} {satir.Birim} stoğa aktarıldı";
         await _bildirimler.EkleAsync(
-            BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, ek: $"{satir.Malzeme} · {miktar:N2} {satir.Birim} stoğa aktarıldı"),
+            BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, hedefRol: KullaniciRolleri.Satinalma, ek: ek),
             iptal);
+        await _bildirimler.EkleAsync(
+            BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, hedefRol: KullaniciRolleri.Depo, ek: ek),
+            iptal);
+        if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
+        {
+            await _bildirimler.EkleAsync(
+                BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, hedefUid: talep.OlusturanUid, ek: ek),
+                iptal);
+        }
     }
 
     private BildirimKaydi BildirimKaydiOlustur(

@@ -555,6 +555,7 @@ public partial class SatinalmaView
         SatinalmaDepo.TalepNoAtaIfNeeded(_seciliTalep);
         SatinalmaDepo.KorunanBosTaslakId = null;
         _seciliTalep!.Durum = SatinalmaTalepDurumlari.Hazirlaniyor;
+        SatinalmaTalepYardimcisi.Dokun(_seciliTalep);
         SatinalmaDepo.Kaydet();
 
         var kaydedilenNo = _seciliTalep.TalepNo;
@@ -594,12 +595,11 @@ public partial class SatinalmaView
         SatinalmaDepo.KorunanBosTaslakId = null;
         _seciliTalep.Durum = SatinalmaTalepDurumlari.ImzaSurecinde;
         SatinalmaTalepYardimcisi.Dokun(_seciliTalep);
-        SatinalmaDepo.Kaydet();
+        await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(_seciliTalep);
 
         try
         {
-            if (OturumYoneticisi.BulutAktif && OturumYoneticisi.GirisYapildi)
-                await BulutVeriSenkronu.TalepleriHemenGonderAsync();
+            await BildirimYoneticisi.GecersizleriOkunduYapAsync();
             await SatinalmaBildirimleri.YonetimeGonderildiAsync(_seciliTalep);
         }
         catch

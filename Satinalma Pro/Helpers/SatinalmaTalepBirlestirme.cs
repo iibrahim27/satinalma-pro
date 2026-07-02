@@ -38,8 +38,33 @@ public static class SatinalmaTalepBirlestirme
     {
         var kazanan = KazananKayit(a, b);
         var diger = ReferenceEquals(kazanan, a) ? b : a;
+        SurecDurumunuBirlestir(kazanan, diger);
+        kazanan.GuncellemeUtc = Math.Max(kazanan.GuncellemeUtc, diger.GuncellemeUtc);
         TeklifleriBirlestir(kazanan, diger);
         return kazanan;
+    }
+
+    private static void SurecDurumunuBirlestir(SatinalmaTalep hedef, SatinalmaTalep kaynak)
+    {
+        if (ReferenceEquals(hedef, kaynak))
+            return;
+
+        if (kaynak.Durum == SatinalmaTalepDurumlari.Reddedildi
+            && hedef.Durum != SatinalmaTalepDurumlari.Reddedildi
+            && kaynak.GuncellemeUtc > hedef.GuncellemeUtc)
+        {
+            hedef.Durum = kaynak.Durum;
+            return;
+        }
+
+        if (hedef.Durum == SatinalmaTalepDurumlari.Reddedildi
+            && kaynak.Durum != SatinalmaTalepDurumlari.Reddedildi)
+            return;
+
+        var hedefAsama = SharedDurumlar.SurecAsamaSkoru(hedef.Durum);
+        var kaynakAsama = SharedDurumlar.SurecAsamaSkoru(kaynak.Durum);
+        if (kaynakAsama > hedefAsama)
+            hedef.Durum = kaynak.Durum;
     }
 
     private static SatinalmaTalep KazananKayit(SatinalmaTalep a, SatinalmaTalep b)

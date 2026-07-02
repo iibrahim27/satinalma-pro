@@ -119,7 +119,8 @@ public partial class SatinalmaView
             return false;
 
         talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
-        SatinalmaDepo.Kaydet();
+        SatinalmaTalepYardimcisi.Dokun(talep);
+        await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
 
         try
         {
@@ -286,7 +287,7 @@ public partial class SatinalmaView
             _teklifGirisTalep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
 
         SatinalmaDepo.TeklifDegisikligiIsle(_teklifGirisTalep);
-        SatinalmaDepo.Kaydet();
+        _ = SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(_teklifGirisTalep);
         TeklifListesiniYenile();
         TeklifGirisTalepListesiniYenile();
         GuncelleTeklifYonetimeYenidenGonder();
@@ -305,7 +306,7 @@ public partial class SatinalmaView
             return;
 
         SatinalmaDepo.TeklifDegisikligiIsle(_teklifGirisTalep);
-        SatinalmaDepo.Kaydet();
+        _ = SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(_teklifGirisTalep);
         TeklifListesiniYenile();
         GuncelleTeklifYonetimeYenidenGonder();
     }
@@ -333,7 +334,7 @@ public partial class SatinalmaView
         }
         _seciliTeklif = null;
         SatinalmaDepo.TeklifDegisikligiIsle(_teklifGirisTalep);
-        SatinalmaDepo.Kaydet();
+        _ = SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(_teklifGirisTalep);
         TeklifListesiniYenile();
         TeklifGirisTalepListesiniYenile();
         GuncelleTeklifYonetimeYenidenGonder();
@@ -393,7 +394,7 @@ public partial class SatinalmaView
 
         _teklifGirisTalep.SatinalmaOnerisiElleSecildi = true;
         _teklifGirisTalep.YonetimOnerilenTeklifId = seciliTeklifId;
-        SatinalmaDepo.Kaydet();
+        _ = SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(_teklifGirisTalep);
         TeklifListesiniYenile();
 
         var satir = TeklifListesiTablosu.Items.Cast<TeklifGirisSatiri>()
@@ -422,7 +423,7 @@ public partial class SatinalmaView
 
         SatinalmaDepo.TeklifDegisikligiIsle(_teklifGirisTalep);
         var talepNo = _teklifGirisTalep.TalepNo;
-        SatinalmaDepo.Kaydet();
+        _ = SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(_teklifGirisTalep);
         TeklifGirisTalepListesiniYenile();
         SatinalmaOnerisiniGuncelle();
         SekmeSayaclariniYenile();

@@ -45,7 +45,7 @@ public static class SatinalmaYonetimGonderimi
         {
             talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
             SatinalmaTalepYardimcisi.Dokun(talep);
-            SatinalmaDepo.Kaydet();
+            await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync();
 
             try
             {
@@ -65,17 +65,7 @@ public static class SatinalmaYonetimGonderimi
 
         talep.Durum = SatinalmaTalepDurumlari.ImzaSurecinde;
         SatinalmaTalepYardimcisi.Dokun(talep);
-        SatinalmaDepo.Kaydet();
-
-        try
-        {
-            if (OturumYoneticisi.BulutAktif && OturumYoneticisi.GirisYapildi)
-                await BulutVeriSenkronu.TalepleriHemenGonderAsync();
-        }
-        catch
-        {
-            // bulut gecikse de bildirim gönderilir
-        }
+        await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync();
 
         try
         {

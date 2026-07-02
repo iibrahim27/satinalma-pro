@@ -15,6 +15,7 @@ public sealed class MobilVeriDeposu
     };
 
     private static readonly TimeSpan TamSenkronBekleme = TimeSpan.FromSeconds(45);
+    private static readonly SemaphoreSlim TalepBulutYazmaKilidi = new(1, 1);
 
     private readonly FirestoreVeriServisi _firestore;
     private readonly FirebaseAuthServisi _auth;
@@ -153,41 +154,49 @@ public sealed class MobilVeriDeposu
 
     public async Task TalepleriKaydetAsync(CancellationToken iptal = default, bool ayarlariKaydet = true)
     {
+        await TalepBulutYazmaKilidi.WaitAsync(iptal);
         try
         {
-            var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaTalepler, iptal);
-            var bulutAyarJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaAyarlar, iptal);
-            if (!string.IsNullOrWhiteSpace(bulutAyarJson))
+            try
             {
-                var bulutAyarlar = JsonSerializer.Deserialize<SatinalmaAyarlar>(bulutAyarJson, Json);
-                if (bulutAyarlar is not null)
-                    SatinalmaTalepSenkronYardimcisi.AyarlariBirlestir(Ayarlar, bulutAyarlar);
-            }
-
-            if (!string.IsNullOrWhiteSpace(bulutJson))
-            {
-                var bulut = JsonSerializer.Deserialize<List<SatinalmaTalep>>(bulutJson, Json) ?? [];
-                var birlesik = SatinalmaTalepBirlestirme.Birlestir(Talepler, bulut, Ayarlar.SilinenTalepIdleri);
-                Talepler.Clear();
-                foreach (var talep in birlesik)
+                var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaTalepler, iptal);
+                var bulutAyarJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaAyarlar, iptal);
+                if (!string.IsNullOrWhiteSpace(bulutAyarJson))
                 {
-                    TalepHazirla(talep);
-                    Talepler.Add(talep);
+                    var bulutAyarlar = JsonSerializer.Deserialize<SatinalmaAyarlar>(bulutAyarJson, Json);
+                    if (bulutAyarlar is not null)
+                        SatinalmaTalepSenkronYardimcisi.AyarlariBirlestir(Ayarlar, bulutAyarlar);
+                }
+
+                if (!string.IsNullOrWhiteSpace(bulutJson))
+                {
+                    var bulut = JsonSerializer.Deserialize<List<SatinalmaTalep>>(bulutJson, Json) ?? [];
+                    var birlesik = SatinalmaTalepBirlestirme.Birlestir(Talepler, bulut, Ayarlar.SilinenTalepIdleri);
+                    Talepler.Clear();
+                    foreach (var talep in birlesik)
+                    {
+                        TalepHazirla(talep);
+                        Talepler.Add(talep);
+                    }
                 }
             }
+            catch
+            {
+                // Bulut okunamazsa yerel kayıtla devam et
+            }
+
+            SilinenTalepleriTemizle();
+
+            if (ayarlariKaydet)
+                await AyarlariKaydetAsync(iptal);
+
+            var json = JsonSerializer.Serialize(Talepler, Json);
+            await _firestore.BelgeJsonYazAsync(FirestoreYollari.SatinalmaTalepler, json, _auth.Uid, iptal);
         }
-        catch
+        finally
         {
-            // Bulut okunamazsa yerel kayıtla devam et
+            TalepBulutYazmaKilidi.Release();
         }
-
-        SilinenTalepleriTemizle();
-
-        if (ayarlariKaydet)
-            await AyarlariKaydetAsync(iptal);
-
-        var json = JsonSerializer.Serialize(Talepler, Json);
-        await _firestore.BelgeJsonYazAsync(FirestoreYollari.SatinalmaTalepler, json, _auth.Uid, iptal);
     }
 
     /// <summary>Talepler + bildirimler — arka plan ve bildirim dinleyicisi için.</summary>
