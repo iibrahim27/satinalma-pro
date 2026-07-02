@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.9.3",
-    "build":  40,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.3/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.3/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.3/SatinalmaPro.apk",
-    "notes":  "Onay Bekleyen kuyruğu daraltıldı — Teklif Girişi/Karşılaştırma ile liste çakışması giderildi.\nFirestore bildirim listesi birleştirmeli kayıt (last-write-wins yerine kayıt bazlı merge).\nAndroid çift bildirim düzeltildi: FCM data-only + paylaşılan gösterim kaydı, polling sessiz senkron.\nParalel bildirim eklemeleri tek yazma işlemine indirildi.",
+    "version":  "1.9.4",
+    "build":  42,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.4/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.4/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.4/SatinalmaPro.apk",
+    "notes":  "Android push duzeltildi: FCM notification+data ile arka plan bildirimi. Service Account otomatik kurulum; polling yedek bildirim aktif. Bulut senkron, talep yetki ve Onay Bekleyen duzeltmeleri.",
     "zorunlu":  false
 }
