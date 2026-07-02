@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.8.9",
-    "build":  36,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.9/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.9/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.8.9/SatinalmaPro.apk",
-    "notes":  "Teklif girisi kaydetme ve yonetime gonder duzeltmeleri. Satinalma panel menu (kart butonlari). Akis: yonetim yalnizca gonderildikten sonra teklif gorur. Bildirim navigasyonu ve onay bildirimleri. Bulut birlestirmede teklif kaybi onlemi. Android bildirim iyilestirmeleri.",
+    "version":  "1.9.0",
+    "build":  37,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.0/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.0/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.0/SatinalmaPro.apk",
+    "notes":  "Teklif onay: Reddet ve Satınalmaya Geri Gönder butonları (masaüstü + Android).\nOnay öncesi talep kalemi ve teklif düzenleme; düzeltme sonrası yönetime yeniden gönderim.\nBulut senkron düzeltmesi: silinen talebin geri gelmesi ve düzenlemenin kaybolması giderildi.",
     "zorunlu":  false
 }
