@@ -57,6 +57,12 @@ public static class SatinalmaBildirimleri
         return BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.TeklifOnayda, baslik, mesaj, hedefRol: KullaniciRolleri.Yonetim));
     }
 
+    public static Task TeklifDuzeltmeyeGonderildiAsync(SatinalmaTalep talep, string? not = null)
+    {
+        var (baslik, mesaj) = Metin(SharedBildirimTipleri.TeklifDuzeltmeIstendi, talep, ek: not);
+        return BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.TeklifDuzeltmeIstendi, baslik, mesaj, hedefRol: KullaniciRolleri.Satinalma));
+    }
+
     public static Task OnaylandiAsync(SatinalmaTalep talep, string? firmaAdi = null, string? hedefRol = null, string? hedefUid = null)
     {
         var (baslik, mesaj) = Metin(SharedBildirimTipleri.Onaylandi, talep, firmaAdi);
@@ -67,6 +73,28 @@ public static class SatinalmaBildirimleri
     {
         var (baslik, mesaj) = Metin(SharedBildirimTipleri.Reddedildi, talep, ek: gerekce);
         return BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.Reddedildi, baslik, mesaj, hedefUid: talep.OlusturanUid));
+    }
+
+    public static Task SiparisOlusturulduAsync(SatinalmaTalep talep)
+    {
+        var ek = string.IsNullOrWhiteSpace(talep.SiparisNo) ? null : $"Sipariş No: {talep.SiparisNo}";
+        var (baslik, mesaj) = Metin(SharedBildirimTipleri.SiparisOlusturuldu, talep, ek: ek);
+        return Task.WhenAll(
+            BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.SiparisOlusturuldu, baslik, mesaj, hedefRol: KullaniciRolleri.Satinalma)),
+            string.IsNullOrWhiteSpace(talep.OlusturanUid)
+                ? Task.CompletedTask
+                : BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.SiparisOlusturuldu, baslik, mesaj, hedefUid: talep.OlusturanUid)));
+    }
+
+    public static Task MalKabulEdildiAsync(SatinalmaTalep talep, string? malzemeOzeti = null)
+    {
+        var (baslik, mesaj) = Metin(SharedBildirimTipleri.MalKabulEdildi, talep, ek: malzemeOzeti);
+        return Task.WhenAll(
+            BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.MalKabulEdildi, baslik, mesaj, hedefRol: KullaniciRolleri.Satinalma)),
+            BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.MalKabulEdildi, baslik, mesaj, hedefRol: KullaniciRolleri.Depo)),
+            string.IsNullOrWhiteSpace(talep.OlusturanUid)
+                ? Task.CompletedTask
+                : BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.MalKabulEdildi, baslik, mesaj, hedefUid: talep.OlusturanUid)));
     }
 }
 

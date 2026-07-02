@@ -56,11 +56,17 @@ public static class BildirimMetniOlusturucu
             BildirimTipleri.YonetimeGonderildi => ($"Yeni talep: {talepNo}", satir),
             BildirimTipleri.TeklifIstendi => ($"Teklif istendi: {talepNo}", satir),
             BildirimTipleri.TeklifOnayda => ($"Teklif onayda: {talepNo}", satir),
+            BildirimTipleri.TeklifDuzeltmeIstendi => ($"Teklif düzeltme: {talepNo}",
+                string.IsNullOrWhiteSpace(ek) ? satir : TalepSatiri(talepNo, talepEden, ek, null)),
             BildirimTipleri.Reddedildi => ($"Talep reddedildi: {talepNo}",
                 string.IsNullOrWhiteSpace(ek) ? satir : TalepSatiri(talepNo, talepEden, ek, null)),
             BildirimTipleri.Onaylandi when !string.IsNullOrWhiteSpace(firmaAdi) =>
                 ($"Firma onaylandı: {talepNo}", $"Yönetim {firmaAdi} firmasına onay verdi."),
             BildirimTipleri.Onaylandi => ($"Talep onaylandı: {talepNo}", satir),
+            BildirimTipleri.SiparisOlusturuldu => ($"Sipariş verildi: {talepNo}",
+                string.IsNullOrWhiteSpace(ek) ? satir : $"{satir} · {ek}"),
+            BildirimTipleri.MalKabulEdildi => ($"Mal kabul: {talepNo}",
+                string.IsNullOrWhiteSpace(ek) ? satir : $"{satir} · {ek}"),
             _ => ($"Talep: {talepNo}", satir)
         };
     }

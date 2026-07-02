@@ -23,7 +23,7 @@ public static class BulutVeriSenkronu
     private static DispatcherTimer? _yoklamaZamanlayici;
     private static int _yoklamaDongusu;
 
-    private static readonly string[] SikYoklamaAnahtarlari = ["satinalma_talepler", "satinalma_ayarlar"];
+    private static readonly string[] SikYoklamaAnahtarlari = ["satinalma_ayarlar", "satinalma_talepler"];
     private static readonly TimeSpan YoklamaAraligi = TimeSpan.FromSeconds(30);
 
     public static bool BuluttanYuklendi { get; private set; }
@@ -58,7 +58,7 @@ public static class BulutVeriSenkronu
 
         try
         {
-            foreach (var (anahtar, yol) in BelgeHaritasi)
+            foreach (var (anahtar, yol) in BelgeHaritasiSirali())
             {
                 iptal.ThrowIfCancellationRequested();
                 ilerleme?.Report((tamamlanan, toplam, SenkronAdimMetni(anahtar)));
@@ -171,9 +171,12 @@ public static class BulutVeriSenkronu
         _senkronYukleniyor = true;
         try
         {
-            foreach (var (anahtar, yol) in BelgeHaritasi)
+            foreach (var (anahtar, yol) in BelgeHaritasiSirali())
             {
-                var json = YerelJsonOku(anahtar) ?? Olustur(anahtar);
+                var json = Olustur(anahtar);
+                if (string.IsNullOrWhiteSpace(json) || json is "[]" or "{}")
+                    json = YerelJsonOku(anahtar) ?? json;
+
                 await OturumYoneticisi.Firestore!.BelgeJsonYazAsync(
                     yol, json, OturumYoneticisi.Auth?.Uid, iptal);
             }
@@ -194,7 +197,10 @@ public static class BulutVeriSenkronu
         if (!BelgeHaritasi.TryGetValue(anahtar, out var yol))
             return;
 
-        var json = YerelJsonOku(anahtar) ?? Olustur(anahtar);
+        var json = Olustur(anahtar);
+        if (string.IsNullOrEmpty(json) || json is "[]" or "{}")
+            json = YerelJsonOku(anahtar) ?? json;
+
         await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
             yol, json, OturumYoneticisi.Auth?.Uid, iptal);
         YerelOnbellegeYaz(anahtar, json);
@@ -231,7 +237,7 @@ public static class BulutVeriSenkronu
         _senkronYukleniyor = true;
         try
         {
-            foreach (var (anahtar, yol) in BelgeHaritasi)
+            foreach (var (anahtar, yol) in BelgeHaritasiSirali())
             {
                 var (json, _) = await OturumYoneticisi.Firestore.BelgeOkuAsync(yol, iptal);
                 if (json is null)
@@ -298,10 +304,13 @@ public static class BulutVeriSenkronu
 
     private static async Task BuluttanCekAsync(IEnumerable<string> anahtarlar, CancellationToken iptal = default)
     {
-        foreach (var anahtar in anahtarlar)
+        foreach (var anahtar in anahtarlar.OrderBy(a => BulutGonderimOnceligi(a)))
         {
             if (!BelgeHaritasi.TryGetValue(anahtar, out var yol))
                 continue;
+
+            if (anahtar == "satinalma_talepler")
+                await SatinalmaAyarlariniBuluttanOncelikleAsync(iptal);
 
             var (json, guncelleme) = await OturumYoneticisi.Firestore!.BelgeOkuAsync(yol, iptal);
             if (json is null)
@@ -332,6 +341,34 @@ public static class BulutVeriSenkronu
         }
     }
 
+    public static async Task SilmeSonrasiGonderAsync(CancellationToken iptal = default)
+    {
+        if (!OturumYoneticisi.GirisYapildi || !KullaniciYetkileri.Duzenleyebilir
+            || OturumYoneticisi.Firestore is null)
+            return;
+
+        await AnahtarBulutaGonderAsync("satinalma_ayarlar", iptal);
+        await AnahtarBulutaGonderAsync("satinalma_talepler", iptal);
+    }
+
+    public static async Task TalepleriHemenGonderAsync(CancellationToken iptal = default)
+    {
+        if (!OturumYoneticisi.GirisYapildi || !KullaniciYetkileri.Duzenleyebilir
+            || OturumYoneticisi.Firestore is null)
+            return;
+
+        await AnahtarBulutaGonderAsync("satinalma_talepler", iptal);
+    }
+
+    public static async Task AyarlariHemenGonderAsync(CancellationToken iptal = default)
+    {
+        if (!OturumYoneticisi.GirisYapildi || !KullaniciYetkileri.Duzenleyebilir
+            || OturumYoneticisi.Firestore is null)
+            return;
+
+        await AnahtarBulutaGonderAsync("satinalma_ayarlar", iptal);
+    }
+
     public static async Task BulutaGonderAsync(CancellationToken iptal = default)
     {
         if (_senkronYukleniyor || !OturumYoneticisi.GirisYapildi || !KullaniciYetkileri.Duzenleyebilir)
@@ -347,6 +384,8 @@ public static class BulutVeriSenkronu
         if (anahtarlar.Length == 0 || OturumYoneticisi.Firestore is null)
             return;
 
+        Array.Sort(anahtarlar, (a, b) => BulutGonderimOnceligi(a).CompareTo(BulutGonderimOnceligi(b)));
+
         foreach (var anahtar in anahtarlar)
         {
             if (!BelgeHaritasi.TryGetValue(anahtar, out var yol))
@@ -359,8 +398,28 @@ public static class BulutVeriSenkronu
                 if (!string.IsNullOrWhiteSpace(bulutJson))
                 {
                     var bulut = JsonSerializer.Deserialize<List<SatinalmaTalep>>(bulutJson, JsonSecenekleri) ?? [];
-                    var birlesik = SatinalmaTalepBirlestirme.Birlestir(SatinalmaDepo.Talepler, bulut);
+                    var bulutAyarlar = await BulutAyarlariniOkuAsync(iptal);
+                    var silinen = SatinalmaTalepSenkronYardimcisi.SilinenleriBirlestir(
+                        SatinalmaDepo.Ayarlar.SilinenTalepIdleri,
+                        bulutAyarlar?.SilinenTalepIdleri);
+                    SatinalmaDepo.Ayarlar.SilinenTalepIdleri = silinen;
+                    var birlesik = SatinalmaTalepBirlestirme.Birlestir(SatinalmaDepo.Talepler, bulut, silinen);
                     json = JsonSerializer.Serialize(birlesik, JsonSecenekleri);
+                }
+            }
+            else if (anahtar == "satinalma_ayarlar")
+            {
+                var bulutAyarlar = await BulutAyarlariniOkuAsync(iptal);
+                if (bulutAyarlar is not null)
+                {
+                    SatinalmaDepo.Ayarlar.SilinenTalepIdleri = SatinalmaTalepSenkronYardimcisi.SilinenleriBirlestir(
+                        SatinalmaDepo.Ayarlar.SilinenTalepIdleri,
+                        bulutAyarlar.SilinenTalepIdleri);
+                    SatinalmaDepo.Ayarlar.SonTalepSira = Math.Max(
+                        SatinalmaDepo.Ayarlar.SonTalepSira, bulutAyarlar.SonTalepSira);
+                    SatinalmaDepo.Ayarlar.SonSiparisSira = Math.Max(
+                        SatinalmaDepo.Ayarlar.SonSiparisSira, bulutAyarlar.SonSiparisSira);
+                    json = JsonSerializer.Serialize(SatinalmaDepo.Ayarlar, JsonSecenekleri);
                 }
             }
 
@@ -467,6 +526,7 @@ public static class BulutVeriSenkronu
                     ModulVeriDeposu.FiloYukle(json);
                     break;
                 case "satinalma_talepler":
+                    SatinalmaAyarlariniDisktenYenile();
                     SatinalmaDepo.TalepleriBirlestirVeYukle(json);
                     break;
                 case "satinalma_ayarlar":
@@ -483,6 +543,26 @@ public static class BulutVeriSenkronu
         finally
         {
             ModulVeriDeposu.BulutYuklemesiBitir();
+        }
+    }
+
+    private static async Task<SatinalmaAyarlar?> BulutAyarlariniOkuAsync(CancellationToken iptal = default)
+    {
+        if (OturumYoneticisi.Firestore is null)
+            return null;
+
+        try
+        {
+            var (json, _) = await OturumYoneticisi.Firestore
+                .BelgeOkuAsync(BelgeHaritasi["satinalma_ayarlar"], iptal);
+            if (string.IsNullOrWhiteSpace(json))
+                return null;
+
+            return JsonSerializer.Deserialize<SatinalmaAyarlar>(json, JsonSecenekleri);
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -519,5 +599,68 @@ public static class BulutVeriSenkronu
         }
 
         return trimmed.Length > 2;
+    }
+
+    private static IEnumerable<KeyValuePair<string, string>> BelgeHaritasiSirali()
+    {
+        string[] oncelik = ["satinalma_ayarlar", "satinalma_talepler"];
+        var islenen = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var anahtar in oncelik)
+        {
+            if (BelgeHaritasi.TryGetValue(anahtar, out var yol))
+            {
+                islenen.Add(anahtar);
+                yield return new KeyValuePair<string, string>(anahtar, yol);
+            }
+        }
+
+        foreach (var kv in BelgeHaritasi)
+        {
+            if (islenen.Contains(kv.Key))
+                continue;
+            yield return kv;
+        }
+    }
+
+    private static int BulutGonderimOnceligi(string? anahtar) => anahtar switch
+    {
+        "satinalma_ayarlar" => 0,
+        "satinalma_talepler" => 1,
+        _ => 2
+    };
+
+    private static void SatinalmaAyarlariniDisktenYenile()
+    {
+        var yol = YerelDosyaYolu("satinalma_ayarlar");
+        if (!File.Exists(yol))
+            return;
+
+        try
+        {
+            SatinalmaDepo.AyarlarYukle(File.ReadAllText(yol));
+        }
+        catch
+        {
+            // disk okunamazsa bellekteki ayarlarla devam
+        }
+    }
+
+    private static async Task SatinalmaAyarlariniBuluttanOncelikleAsync(CancellationToken iptal)
+    {
+        if (OturumYoneticisi.Firestore is null)
+            return;
+
+        try
+        {
+            var (json, _) = await OturumYoneticisi.Firestore
+                .BelgeOkuAsync(BelgeHaritasi["satinalma_ayarlar"], iptal);
+            if (!string.IsNullOrWhiteSpace(json))
+                SatinalmaDepo.AyarlarYukle(json);
+        }
+        catch
+        {
+            SatinalmaAyarlariniDisktenYenile();
+        }
     }
 }

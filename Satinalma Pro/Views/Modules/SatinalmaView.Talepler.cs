@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -5,6 +6,7 @@ using System.Windows.Media;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
+using SatinalmaPro.Views.Controls;
 
 namespace SatinalmaPro.Views.Modules;
 
@@ -58,8 +60,10 @@ public partial class SatinalmaView
 
         if (_seciliTalep is not null)
         {
+            var depoda = SatinalmaDepo.Talepler.FirstOrDefault(t => t.Id == _seciliTalep.Id);
             var guncel = liste.FirstOrDefault(s => s.Talep.Id == _seciliTalep.Id);
-            if (guncel is null)
+
+            if (depoda is null)
             {
                 _seciliTalep = null;
                 _talepFormModu = false;
@@ -67,13 +71,18 @@ public partial class SatinalmaView
                 TalepFormuGizle();
                 TalepOnizlemePenceresiniKapat();
             }
+            else if (_talepFormModu)
+            {
+                _seciliTalep = depoda;
+                if (_acikOnizleme is null)
+                    TalepFormuGoster(depoda);
+            }
             else if (_acikOnizleme is not null)
             {
-                var guncelTalep = SatinalmaDepo.Talepler.FirstOrDefault(t => t.Id == _seciliTalep.Id);
-                if (guncelTalep is not null)
-                    _acikOnizleme.Goster(guncelTalep);
+                _seciliTalep = depoda;
+                _acikOnizleme.Goster(depoda);
             }
-            else if (_talepFormModu && (_talepSerbestDuzenleme || guncel.Duzenlenebilir))
+            else if (guncel is not null && (_talepSerbestDuzenleme || guncel.Duzenlenebilir))
                 TalepFormuGoster(guncel.Talep);
         }
 
@@ -101,12 +110,23 @@ public partial class SatinalmaView
             return;
         }
 
+        if (_talepFormModu && _seciliTalep is not null
+            && _seciliTalep.Durum == SatinalmaTalepDurumlari.Taslak
+            && !SatinalmaTalepYardimcisi.IcerikVar(_seciliTalep))
+        {
+            SatinalmaDepo.KorunanBosTaslakId = _seciliTalep.Id;
+            TalepFormuGoster(_seciliTalep);
+            return;
+        }
+
+        BosTaslakTaslagiTemizle();
+
         var talep = SatinalmaDepo.YeniTalepOlustur();
         talep.TalepEden = KullaniciYetkileri.AktifKullaniciAdi() ?? "";
         talep.OlusturanUid = OturumYoneticisi.AktifKullanici?.Uid ?? "";
         talep.OlusturanRol = OturumYoneticisi.AktifKullanici?.Rol ?? "";
         SatinalmaDepo.Talepler.Insert(0, talep);
-        SatinalmaDepo.Kaydet();
+        SatinalmaDepo.KorunanBosTaslakId = talep.Id;
 
         _seciliTalep = talep;
         _talepFormModu = true;
@@ -119,10 +139,30 @@ public partial class SatinalmaView
         TalepFormuGoster(talep);
     }
 
+    private static void BosTaslakTaslagiTemizle()
+    {
+        if (SatinalmaDepo.BosTaslaklariTemizle())
+            SatinalmaDepo.Kaydet();
+    }
+
+    private void BosTaslakTaslagiBirak()
+    {
+        SatinalmaDepo.KorunanBosTaslakId = null;
+        BosTaslakTaslagiTemizle();
+        _talepFormModu = false;
+    }
+
     private void TalepListesi_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (TalepListesi.SelectedItem is not TalepListeSatiri satir)
+        {
+            if (e.RemovedItems.Count > 0 && _talepFormModu)
+                BosTaslakTaslagiBirak();
             return;
+        }
+
+        if (_seciliTalep is not null && _seciliTalep.Id != satir.Talep.Id && _talepFormModu)
+            BosTaslakTaslagiBirak();
 
         _seciliTalep = satir.Talep;
 
@@ -147,11 +187,14 @@ public partial class SatinalmaView
 
     private void TalepFormuGoster(SatinalmaTalep talep)
     {
+        if (_talepFormModu && talep.Durum == SatinalmaTalepDurumlari.Taslak)
+            SatinalmaDepo.KorunanBosTaslakId = talep.Id;
+
         TxtTalepFormBos.Visibility = Visibility.Collapsed;
         TalepFormScroll.Visibility = Visibility.Visible;
 
         TxtTalepTarih.Text = talep.Tarih;
-        TxtTalepNo.Text = talep.TalepNo;
+        TxtTalepNo.Text = string.IsNullOrWhiteSpace(talep.TalepNo) ? "Yeni" : talep.TalepNo;
         TxtTalepEden.Text = string.IsNullOrWhiteSpace(talep.TalepEden)
             ? KullaniciYetkileri.AktifKullaniciAdi() ?? ""
             : talep.TalepEden;
@@ -168,7 +211,9 @@ public partial class SatinalmaView
         _seciliKalem = null;
 
         var duzenlenebilir = KullaniciYetkileri.SatinalmaTalepDuzenleyebilir(talep.TalepEden)
-                             && (_talepSerbestDuzenleme || TalepGirisDurumlari.Contains(talep.Durum));
+                             && (_talepSerbestDuzenleme
+                                 ? SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(talep)
+                                 : TalepGirisDurumlari.Contains(talep.Durum));
         TxtTalepAciklama.IsReadOnly = !duzenlenebilir;
         CmbTalepTuru.IsEnabled = duzenlenebilir;
         KalemTablosu.IsReadOnly = !duzenlenebilir;
@@ -381,7 +426,55 @@ public partial class SatinalmaView
     private void KalemTablosu_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
         _seciliKalem = KalemTablosu.SelectedItem as SatinalmaTalepKalemi;
 
-    private void KalemTablosu_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) { }
+    private void KalemTablosu_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
+    {
+        if (e.Column.Header?.ToString() != "Malzeme")
+            return;
+
+        if (e.EditingElement is MalzemeOneriGiris oneri)
+        {
+            oneri.OneriKaynaginiAyarla(MalzemeAdiOneriServisi.Ara);
+            oneri.MetneOdaklan();
+            return;
+        }
+
+        if (e.EditingElement is FrameworkElement kok)
+        {
+            var bulunan = BulAltEleman<MalzemeOneriGiris>(kok);
+            if (bulunan is not null)
+            {
+                bulunan.OneriKaynaginiAyarla(MalzemeAdiOneriServisi.Ara);
+                bulunan.MetneOdaklan();
+            }
+        }
+    }
+
+    private void KalemTablosu_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+    {
+        if (e.Column.Header?.ToString() == "Miktar"
+            && e.Row.Item is SatinalmaTalepKalemi kalem
+            && e.EditingElement is TextBox tb
+            && double.TryParse(tb.Text.Replace(',', '.'), NumberStyles.Any, CultureInfo.CurrentCulture, out var miktar))
+        {
+            kalem.Miktar = miktar;
+        }
+    }
+
+    private static T? BulAltEleman<T>(DependencyObject kok) where T : DependencyObject
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(kok); i++)
+        {
+            var cocuk = VisualTreeHelper.GetChild(kok, i);
+            if (cocuk is T bulunan)
+                return bulunan;
+
+            var alt = BulAltEleman<T>(cocuk);
+            if (alt is not null)
+                return alt;
+        }
+
+        return null;
+    }
 
     private static void KalemSiraNumaralariniGuncelle(IEnumerable<SatinalmaTalepKalemi> kalemler)
     {
@@ -437,12 +530,21 @@ public partial class SatinalmaView
         if (!TalepFormunuModeleAktar(zorunluKalem: true))
             return;
 
+        SatinalmaTalepYardimcisi.Dokun(_seciliTalep!);
+
         if (_talepSerbestDuzenleme && _seciliTalep is not null
-            && !TalepGirisDurumlari.Contains(_seciliTalep.Durum))
+            && SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(_seciliTalep))
         {
+            if ((_seciliTalep.Teklifler?.Count ?? 0) > 0)
+                SatinalmaDepo.TeklifDegisikligiIsle(_seciliTalep);
+
             SatinalmaDepo.Kaydet();
             TalepListesiniYenile();
-            MessageBox.Show($"{_seciliTalep.TalepNo} güncellendi.", UygulamaBilgisi.Ad,
+            TalepFormuGoster(_seciliTalep);
+            var mesaj = (_seciliTalep.Teklifler?.Count ?? 0) > 0
+                ? $"{_seciliTalep.TalepNo} güncellendi. Teklifler senkronize edildi — düzeltmeleri yönetime «Yeniden Gönder» ile iletin."
+                : $"{_seciliTalep.TalepNo} güncellendi.";
+            MessageBox.Show(mesaj, UygulamaBilgisi.Ad,
                 MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
@@ -450,6 +552,8 @@ public partial class SatinalmaView
         SatinalmaTalepYardimcisi.KayitOncesiHazirla(_seciliTalep!);
         if (string.IsNullOrWhiteSpace(_seciliTalep!.OlusturanRol))
             _seciliTalep.OlusturanRol = OturumYoneticisi.AktifKullanici?.Rol ?? "";
+        SatinalmaDepo.TalepNoAtaIfNeeded(_seciliTalep);
+        SatinalmaDepo.KorunanBosTaslakId = null;
         _seciliTalep!.Durum = SatinalmaTalepDurumlari.Hazirlaniyor;
         SatinalmaDepo.Kaydet();
 
@@ -482,11 +586,20 @@ public partial class SatinalmaView
             return;
 
         SatinalmaTalepYardimcisi.KayitOncesiHazirla(_seciliTalep!);
-        _seciliTalep!.Durum = SatinalmaTalepDurumlari.ImzaSurecinde;
+        if (string.IsNullOrWhiteSpace(_seciliTalep!.OlusturanUid))
+            _seciliTalep.OlusturanUid = OturumYoneticisi.AktifKullanici?.Uid ?? "";
+        if (string.IsNullOrWhiteSpace(_seciliTalep.OlusturanRol))
+            _seciliTalep.OlusturanRol = OturumYoneticisi.AktifKullanici?.Rol ?? "";
+        SatinalmaDepo.TalepNoAtaIfNeeded(_seciliTalep);
+        SatinalmaDepo.KorunanBosTaslakId = null;
+        _seciliTalep.Durum = SatinalmaTalepDurumlari.ImzaSurecinde;
+        SatinalmaTalepYardimcisi.Dokun(_seciliTalep);
         SatinalmaDepo.Kaydet();
 
         try
         {
+            if (OturumYoneticisi.BulutAktif && OturumYoneticisi.GirisYapildi)
+                await BulutVeriSenkronu.TalepleriHemenGonderAsync();
             await SatinalmaBildirimleri.YonetimeGonderildiAsync(_seciliTalep);
         }
         catch
@@ -498,6 +611,8 @@ public partial class SatinalmaView
         _seciliTalep = null;
         _talepFormModu = false;
         _talepSerbestDuzenleme = false;
+        SatinalmaDepo.KorunanBosTaslakId = null;
+        BosTaslakTaslagiTemizle();
         TalepListesiniYenile();
         TalepFormuGizle();
         TalepOnizlemePenceresiniKapat();

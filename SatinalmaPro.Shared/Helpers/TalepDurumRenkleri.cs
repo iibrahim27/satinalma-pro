@@ -14,7 +14,8 @@ public static class TalepDurumRenkleri
         SatinalmaTalepDurumEtiketi.Onaylandi or SatinalmaTalepDurumEtiketi.TeklifOnaylandi => GrupOnaylandi,
         SatinalmaTalepDurumEtiketi.Sipariste => GrupSiparis,
         SatinalmaTalepDurumEtiketi.DepoTeslimOldu => GrupOnaylandi,
-        SatinalmaTalepDurumEtiketi.TeklifBekleniyor => GrupBekliyor,
+        SatinalmaTalepDurumEtiketi.TeklifBekleniyor or SatinalmaTalepDurumEtiketi.OnayBekliyor => GrupBekliyor,
+        SatinalmaTalepDurumEtiketi.Karsilastirmada => GrupBekliyor,
         _ => GrupBekliyor
     };
 

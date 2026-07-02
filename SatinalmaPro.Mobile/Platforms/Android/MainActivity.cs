@@ -17,9 +17,32 @@ public class MainActivity : MauiAppCompatActivity
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
+        AndroidBildirimKanali.Olustur();
         BildirimIzniIste();
         try { SatinalmaPro.Mobile.Services.YerelBildirimGosterici.KanaliHazirla(); } catch { }
         IntentRouteIsle(Intent);
+    }
+
+    protected override void OnResume()
+    {
+        base.OnResume();
+        AndroidBildirimKanali.Olustur();
+        BildirimIzniIste();
+        _ = BildirimleriYenileAsync();
+    }
+
+    private static async Task BildirimleriYenileAsync()
+    {
+        try
+        {
+            var oturum = MauiProgram.Services?.GetService<Services.OturumServisi>();
+            if (oturum?.GirisYapildi == true)
+                await oturum.Dinleyici.SenkronizeVeGosterAsync();
+        }
+        catch
+        {
+            // sessiz
+        }
     }
 
     protected override void OnNewIntent(Intent? intent)

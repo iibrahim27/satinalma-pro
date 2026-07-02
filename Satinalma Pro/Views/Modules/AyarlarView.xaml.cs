@@ -382,13 +382,17 @@ public partial class AyarlarView : UserControl
         if (e.EditAction == DataGridEditAction.Cancel)
             return;
 
+        if (sender is DataGrid grid)
+            grid.CommitEdit(DataGridEditingUnit.Row, true);
+
         if (e.EditingElement is TextBox textBox)
         {
             var binding = textBox.GetBindingExpression(TextBox.TextProperty);
             binding?.UpdateSource();
         }
 
-        Dispatcher.BeginInvoke(SatinalmaDepo.Kaydet);
+        SatinalmaDepo.KaydetAyarlar();
+        _ = BulutVeriSenkronu.AyarlariHemenGonderAsync();
     }
 
     #endregion

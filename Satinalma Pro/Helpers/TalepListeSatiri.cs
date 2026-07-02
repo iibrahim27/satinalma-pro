@@ -6,12 +6,6 @@ namespace SatinalmaPro.Helpers;
 
 public class TalepListeSatiri
 {
-    private static readonly string[] DuzenlenebilirDurumlar =
-    [
-        SatinalmaTalepDurumlari.Taslak,
-        SatinalmaTalepDurumlari.Hazirlaniyor
-    ];
-
     private static readonly SolidColorBrush BenimKartArka = new(Color.FromRgb(0xDB, 0xEA, 0xFE));
     private static readonly SolidColorBrush BenimKartKenar = new(Color.FromRgb(0x3B, 0x82, 0xF6));
 
@@ -44,7 +38,7 @@ public class TalepListeSatiri
     public SatinalmaTalep Talep { get; }
     public bool BenimTalebim { get; }
 
-    public string TalepNo => Talep.TalepNo;
+    public string TalepNo => string.IsNullOrWhiteSpace(Talep.TalepNo) ? "Yeni" : Talep.TalepNo;
     public string Tarih => Talep.Tarih;
     public string TalepEden => Talep.TalepEden;
     public string KalemSayisiMetni => Talep.KalemSayisiMetni;
@@ -53,7 +47,7 @@ public class TalepListeSatiri
     public Brush KartKenar { get; }
     public Brush RozetArkaPlan { get; }
     public Brush RozetYazi { get; }
-    public bool Duzenlenebilir => DuzenlenebilirDurumlar.Contains(Talep.Durum);
+    public bool Duzenlenebilir => SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(Talep);
 
     public static string DurumEtiketiOlustur(SatinalmaTalep talep, Func<Guid, Guid, bool>? stokAktarildiMi = null) =>
         SatinalmaTalepDurumEtiketiMasaustu.Olustur(talep, stokAktarildiMi);

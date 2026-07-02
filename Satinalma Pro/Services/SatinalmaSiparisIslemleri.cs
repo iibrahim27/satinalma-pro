@@ -38,6 +38,37 @@ public static class SatinalmaSiparisIslemleri
         SatinalmaDepo.Kaydet();
     }
 
+    public static async Task KalemBazliOnaylaAsync(SatinalmaTalep talep)
+    {
+        KalemBazliOnayla(talep);
+
+        try
+        {
+            await BildirimYoneticisi.GecersizleriOkunduYapAsync();
+        }
+        catch
+        {
+            // bildirim hatası onayı engellemez
+        }
+
+        var onayliKalemler = talep.Kalemler.Where(k => k.OnaylananTeklifId != null).ToList();
+        var anaTeklifId = talep.OnaylananTeklifId;
+        var anaTeklif = anaTeklifId is { } tid
+            ? talep.Teklifler.FirstOrDefault(t => t.Id == tid)
+            : null;
+        var firmaSayisi = onayliKalemler.Select(k => k.OnaylananTeklifId).Distinct().Count();
+        var firmaAdi = firmaSayisi == 1 ? anaTeklif?.FirmaAdi : null;
+
+        await SatinalmaBildirimleri.OnaylandiAsync(
+            talep, firmaAdi, hedefRol: KullaniciRolleri.Satinalma);
+
+        if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
+        {
+            await SatinalmaBildirimleri.OnaylandiAsync(
+                talep, hedefUid: talep.OlusturanUid);
+        }
+    }
+
     public static void SiparisVer(SatinalmaTalep talep)
     {
         if (talep.Durum != SatinalmaTalepDurumlari.Onaylandi)
@@ -57,6 +88,12 @@ public static class SatinalmaSiparisIslemleri
 
         talep.Durum = SatinalmaTalepDurumlari.SiparisOlusturuldu;
         SatinalmaDepo.Kaydet();
+    }
+
+    public static async Task SiparisVerAsync(SatinalmaTalep talep)
+    {
+        SiparisVer(talep);
+        try { await SatinalmaBildirimleri.SiparisOlusturulduAsync(talep); } catch { /* */ }
     }
 
     public static void FirmaOnaylariniGeriAl(SatinalmaTalep talep)
@@ -131,6 +168,15 @@ public static class SatinalmaSiparisIslemleri
             satir, miktar, kategori, tarih, teslimAlan, depoSaha);
 
         SatinalmaDepo.Kaydet();
+
+        try
+        {
+            _ = SatinalmaBildirimleri.MalKabulEdildiAsync(talep, $"{satir.Malzeme} · {miktar:N2} {satir.Birim}");
+        }
+        catch
+        {
+            // bildirim hatası mal kabulü engellemez
+        }
     }
 
     private static void YonetimOnayKaydet(SatinalmaTalep talep)

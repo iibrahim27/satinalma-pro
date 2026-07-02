@@ -7,14 +7,18 @@ public static class SatinalmaTalepDurumEtiketi
 {
     public const string RedEdildi = "Red Edildi";
     public const string Onaylandi = "Onaylandı";
+    public const string OnayBekliyor = "Onay Bekliyor";
     public const string TeklifBekleniyor = "Teklif Bekleniyor";
+    public const string Taslak = "Taslak";
+    public const string Karsilastirmada = "Karşılaştırma";
     public const string TeklifOnaylandi = "Teklif Onaylandı";
     public const string Sipariste = "Siparişte";
     public const string DepoTeslimOldu = "Depo Teslim Oldu";
 
     public static readonly IReadOnlyList<string> Tum =
     [
-        RedEdildi, Onaylandi, TeklifBekleniyor, TeklifOnaylandi, Sipariste, DepoTeslimOldu
+        RedEdildi, Onaylandi, OnayBekliyor, TeklifBekleniyor, Karsilastirmada,
+        TeklifOnaylandi, Sipariste, DepoTeslimOldu
     ];
 
     public static string Olustur(SatinalmaTalep talep, Func<Guid, Guid, bool>? stokAktarildiMi = null)
@@ -34,6 +38,26 @@ public static class SatinalmaTalepDurumEtiketi
 
         if (talep.Durum == SatinalmaTalepDurumlari.Onaylandi)
             return Onaylandi;
+
+        if (talep.Durum is SatinalmaTalepDurumlari.Hazirlaniyor
+            or SatinalmaTalepDurumlari.ImzaSurecinde
+            or SatinalmaTalepDurumlari.YonetimOnayinda)
+        {
+            if (talep.Durum == SatinalmaTalepDurumlari.ImzaSurecinde && talep.TeklifGirilmis)
+                return Karsilastirmada;
+            return OnayBekliyor;
+        }
+
+        if (talep.Durum == SatinalmaTalepDurumlari.TeklifGirisi
+            && (talep.Teklifler?.Count ?? 0) == 0)
+            return TeklifBekleniyor;
+
+        if (talep.Durum == SatinalmaTalepDurumlari.Taslak)
+            return Taslak;
+
+        if (talep.Durum == SatinalmaTalepDurumlari.Karsilastirma
+            || (talep.Durum == SatinalmaTalepDurumlari.TeklifGirisi && talep.TeklifGirilmis))
+            return Karsilastirmada;
 
         return TeklifBekleniyor;
     }

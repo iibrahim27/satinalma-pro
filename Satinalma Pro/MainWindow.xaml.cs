@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -80,7 +80,7 @@ public partial class MainWindow : Window
             ShowHome();
     }
 
-    private void AnaSayfayaDon()
+    public void AnaSayfayaDon()
     {
         if (!AnasayfadaMi())
             ShowHome();
@@ -178,7 +178,7 @@ public partial class MainWindow : Window
 
     private bool AnasayfadaMi() => MainRegion.Content is HomeView;
 
-    private void Home_Click(object sender, RoutedEventArgs e) => ShowHome();
+    private void Home_Click(object sender, RoutedEventArgs e) => AnaSayfayaDon();
 
     private void ShowHome()
     {

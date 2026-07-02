@@ -4,21 +4,32 @@ namespace SatinalmaPro.Shared.Helpers;
 
 public static class SatinalmaTalepYardimcisi
 {
-    /// <summary>Teklifler girildi, yönetim onayı bekleniyor (eski kayıtlarda Karşılaştırma da sayılır).</summary>
+    /// <summary>Yönetime gönderilmiş — yönetim teklif onayı bekliyor.</summary>
     public static bool TeklifYonetimOnayiBekliyor(SatinalmaTalep talep) =>
-        (talep.Durum is SatinalmaTalepDurumlari.YonetimOnayinda or SatinalmaTalepDurumlari.Karsilastirma)
+        talep.Durum == SatinalmaTalepDurumlari.YonetimOnayinda
         && (talep.Teklifler?.Count ?? 0) > 0
         && !talep.HerhangiKalemOnayli
         && !talep.YonetimOnayKilitli;
 
-    /// <summary>Teklif girilmiş — yönetim teklif kararı verecek (kısmi kalem onayı dahil).</summary>
+    /// <summary>Satınalma — teklifler girildi, henüz yönetime iletilmedi veya düzeltme aşamasında.</summary>
+    public static bool SatinalmaTeklifDegerlendirmede(SatinalmaTalep talep) =>
+        TeklifDuzenlemeDevamEdiyor(talep);
+
+    /// <summary>Onay öncesi talep kalemi ve teklif düzenleme devam ediyor.</summary>
+    public static bool TeklifDuzenlemeDevamEdiyor(SatinalmaTalep talep) =>
+        !talep.YonetimOnayKilitli
+        && !talep.HerhangiKalemOnayli
+        && (talep.Teklifler?.Count ?? 0) > 0
+        && talep.Durum is SatinalmaTalepDurumlari.Karsilastirma
+            or SatinalmaTalepDurumlari.TeklifGirisi
+            or SatinalmaTalepDurumlari.ImzaSurecinde
+            or SatinalmaTalepDurumlari.Hazirlaniyor
+            or SatinalmaTalepDurumlari.YonetimOnayinda;
+
+    /// <summary>Teklif girilmiş — yönetim teklif kararı verecek (yalnızca yönetime gönderilmiş).</summary>
     public static bool YonetimTeklifKarariBekliyor(SatinalmaTalep talep) =>
-        (talep.Teklifler?.Count ?? 0) > 0
-        && !talep.YonetimOnayKilitli
-        && !talep.TeklifsizYonetimOnayi
-        && talep.Durum is SatinalmaTalepDurumlari.YonetimOnayinda
-            or SatinalmaTalepDurumlari.Karsilastirma
-            or SatinalmaTalepDurumlari.TeklifGirisi;
+        TeklifYonetimOnayiBekliyor(talep)
+        && !talep.TeklifsizYonetimOnayi;
 
     public static bool IcerikVar(SatinalmaTalep talep) =>
         !string.IsNullOrWhiteSpace(talep.TalepAciklamasi)
@@ -30,6 +41,43 @@ public static class SatinalmaTalepYardimcisi
 
     public static bool FormDuzenlenebilir(SatinalmaTalep talep) =>
         talep.Durum == SatinalmaTalepDurumlari.Taslak || GonderimOncesiDuzenlenebilir(talep);
+
+    /// <summary>Talep kalemleri düzenlenebilir — gönderim öncesi veya onay öncesi teklif aşamasında.</summary>
+    public static bool TalepKalemleriDuzenlenebilir(SatinalmaTalep talep) =>
+        FormDuzenlenebilir(talep) || TeklifDuzenlemeDevamEdiyor(talep);
+
+    public static void TalepKalemleriniTekliflerleSenkronla(SatinalmaTalep talep)
+    {
+        talep.Kalemler ??= [];
+        talep.Teklifler ??= [];
+
+        foreach (var teklif in talep.Teklifler)
+        {
+            teklif.Fiyatlar ??= [];
+            teklif.Fiyatlar.RemoveAll(f => talep.Kalemler.All(k => k.Id != f.KalemId));
+
+            foreach (var kalem in talep.Kalemler.OrderBy(k => k.SiraNo))
+            {
+                if (teklif.Fiyatlar.All(f => f.KalemId != kalem.Id))
+                {
+                    teklif.Fiyatlar.Add(new SatinalmaTeklifFiyati
+                    {
+                        KalemId = kalem.Id,
+                        KdvOrani = teklif.KdvOrani > 0 ? teklif.KdvOrani : 20
+                    });
+                }
+            }
+
+            teklif.FiyatlariHesapla(talep.Kalemler);
+        }
+    }
+
+    public static void TeklifDegisikligiIsle(SatinalmaTalep talep)
+    {
+        TalepKalemleriniTekliflerleSenkronla(talep);
+        SatinalmaTalepSenkronYardimcisi.Dokun(talep);
+        SatinalmaIsAkisi.TeklifRevizyonuBaslat(talep);
+    }
 
     /// <summary>Satınalma rolüyle oluşturulmuş talep — yönetime göndermeden teklif girişi yalnızca buna izin verilir.</summary>
     public static bool SatinalmaOlusturdu(SatinalmaTalep talep) =>
@@ -57,7 +105,7 @@ public static class SatinalmaTalepYardimcisi
         SatinalmaOlusturdu(olusturanRol)
         && talepTuru != TalepTurleri.Acil
         && !yonetimOnayKilitli
-        && durum == SatinalmaTalepDurumlari.Hazirlaniyor
+        && durum is SatinalmaTalepDurumlari.Hazirlaniyor or SatinalmaTalepDurumlari.ImzaSurecinde
         && teklifSayisi == 0;
 
     public static void KayitOncesiHazirla(SatinalmaTalep talep)
@@ -67,7 +115,30 @@ public static class SatinalmaTalepYardimcisi
     }
 
     /// <summary>Kalıcı kayıtlarda Taslak kalmamalı — boş olanları at, dolu olanları Hazırlanıyor yap.</summary>
-    public static bool TaslaklariNormalizeEt(IList<SatinalmaTalep> talepler)
+    public static bool BosTaslaklariTemizle(IList<SatinalmaTalep> talepler, Guid? korunanId = null)
+    {
+        var silindi = false;
+
+        for (var i = talepler.Count - 1; i >= 0; i--)
+        {
+            var talep = talepler[i];
+            if (talep.Durum != SatinalmaTalepDurumlari.Taslak)
+                continue;
+
+            if (IcerikVar(talep))
+                continue;
+
+            if (korunanId.HasValue && talep.Id == korunanId.Value)
+                continue;
+
+            talepler.RemoveAt(i);
+            silindi = true;
+        }
+
+        return silindi;
+    }
+
+    public static bool TaslaklariNormalizeEt(IList<SatinalmaTalep> talepler, bool silBosTaslaklari = true)
     {
         var degisti = false;
         for (var i = talepler.Count - 1; i >= 0; i--)
@@ -78,8 +149,12 @@ public static class SatinalmaTalepYardimcisi
 
             if (!IcerikVar(talep))
             {
-                talepler.RemoveAt(i);
-                degisti = true;
+                if (silBosTaslaklari)
+                {
+                    talepler.RemoveAt(i);
+                    degisti = true;
+                }
+
                 continue;
             }
 

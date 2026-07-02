@@ -81,15 +81,50 @@ public static class SatinalmaTalepKuyrugu
     }
 
     public static bool SatinalmaTeklifGirisi(SatinalmaTalep t) =>
-        t.Durum == SatinalmaTalepDurumlari.TeklifGirisi
-        && (t.Teklifler?.Count ?? 0) == 0
-        && !t.YonetimOnayKilitli;
+        SatinalmaTeklifGirisi(
+            t.Durum,
+            t.OlusturanRol,
+            t.Teklifler?.Count ?? 0,
+            t.YonetimOnayKilitli,
+            t.TalepTuru);
+
+    public static bool SatinalmaTeklifGirisi(
+        string durum,
+        string olusturanRol,
+        int teklifSayisi,
+        bool yonetimOnayKilitli,
+        string talepTuru) =>
+        (durum == SatinalmaTalepDurumlari.TeklifGirisi
+         && teklifSayisi == 0
+         && !yonetimOnayKilitli)
+        || (durum == SatinalmaTalepDurumlari.ImzaSurecinde
+            && teklifSayisi == 0
+            && !yonetimOnayKilitli
+            && talepTuru != TalepTurleri.Acil)
+        || SatinalmaTalepYardimcisi.SatinalmaIcTeklifGirisi(
+            durum, olusturanRol, teklifSayisi, yonetimOnayKilitli, talepTuru);
 
     public static bool SatinalmaKarsilastirma(SatinalmaTalep t) =>
-        (t.Durum == SatinalmaTalepDurumlari.Karsilastirma
-         || (t.Durum == SatinalmaTalepDurumlari.TeklifGirisi && (t.Teklifler?.Count ?? 0) > 0))
-        && !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(t)
-        && !t.YonetimOnayKilitli;
+        ((t.Durum == SatinalmaTalepDurumlari.Karsilastirma
+          || (t.Durum == SatinalmaTalepDurumlari.TeklifGirisi && (t.Teklifler?.Count ?? 0) > 0))
+         && !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(t)
+         && !t.YonetimOnayKilitli)
+        || ((t.Teklifler?.Count ?? 0) > 0
+            && !t.YonetimOnayKilitli
+            && t.TalepTuru != TalepTurleri.Acil
+            && t.Durum is SatinalmaTalepDurumlari.Karsilastirma
+                or SatinalmaTalepDurumlari.Hazirlaniyor
+                or SatinalmaTalepDurumlari.ImzaSurecinde
+            && !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(t));
+
+    /// <summary>Teklif girişi devam ediyor — yönetime gönderilene kadar (teklifsiz veya karşılaştırma aşaması).</summary>
+    public static bool SatinalmaTeklifGirisiAktif(SatinalmaTalep t) =>
+        SatinalmaTeklifGirisi(t)
+        || SatinalmaKarsilastirma(t)
+        || SatinalmaTeklifDuzenlemeDevamEdiyor(t);
+
+    private static bool SatinalmaTeklifDuzenlemeDevamEdiyor(SatinalmaTalep t) =>
+        SatinalmaTalepYardimcisi.TeklifDuzenlemeDevamEdiyor(t);
 
     public static bool SatinalmaTeklifsizFirmaFiyat(SatinalmaTalep t) =>
         t.TeklifsizFirmaFiyatBekliyor;

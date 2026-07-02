@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.9.0",
-    "build":  37,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.0/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.0/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.0/SatinalmaPro.apk",
-    "notes":  "Teklif onay: Reddet ve Satınalmaya Geri Gönder butonları (masaüstü + Android).\nOnay öncesi talep kalemi ve teklif düzenleme; düzeltme sonrası yönetime yeniden gönderim.\nBulut senkron düzeltmesi: silinen talebin geri gelmesi ve düzenlemenin kaybolması giderildi.",
+    "version":  "1.9.1",
+    "build":  38,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.1/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.1/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.1/SatinalmaPro.apk",
+    "notes":  "İmza ad-soyad bulut senkronunda artık silinmiyor.\nTeklif düzeltme bildirimi mobilde doğru sayfaya yönlendiriyor.\nAdmin mobilde mal kabul yapabilir; stok senkronu birleştirmeli.\nSipariş verildi ve mal kabul bildirimleri eklendi.\nMobil sayfa yetki koruması güçlendirildi.",
     "zorunlu":  false
 }

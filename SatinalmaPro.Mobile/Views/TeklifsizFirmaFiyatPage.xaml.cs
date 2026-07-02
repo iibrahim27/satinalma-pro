@@ -20,6 +20,8 @@ public partial class TeklifsizFirmaFiyatPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (!await MobilSayfaKorumasi.RotaErisimAsync(this, _oturum, "teklifsiz-firma-fiyat"))
+            return;
         await YukleAsync();
     }
 

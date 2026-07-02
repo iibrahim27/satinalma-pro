@@ -1,3 +1,4 @@
+using SatinalmaPro.Mobile.Helpers;
 using SatinalmaPro.Mobile;
 using SatinalmaPro.Mobile.Services;
 using SatinalmaPro.Shared.Helpers;
@@ -26,6 +27,15 @@ public partial class TalepDetayPage : ContentPage
     {
         InitializeComponent();
         _oturum = oturum;
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        if (!await MobilSayfaKorumasi.StackErisimAsync(this, _oturum, "talep-detay"))
+            return;
+        if (!string.IsNullOrWhiteSpace(_talepId))
+            await YukleAsync();
     }
 
     private async Task YukleAsync()

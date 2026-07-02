@@ -51,8 +51,8 @@ public sealed class MobilVeriDeposu
 
         try
         {
-            await TalepleriYukleAsync(iptal);
             await AyarlariYukleAsync(iptal);
+            await TalepleriYukleAsync(iptal);
             await StokYukleAsync(iptal);
             await StokHareketYukleAsync(iptal);
             await AlinanMalzemeleriYukleAsync(iptal);
@@ -122,13 +122,16 @@ public sealed class MobilVeriDeposu
     {
         var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaTalepler, iptal);
         if (string.IsNullOrWhiteSpace(json))
+        {
+            SilinenTalepleriTemizle();
             return;
+        }
 
         var gelen = JsonSerializer.Deserialize<List<SatinalmaTalep>>(json, Json) ?? [];
         var yerel = Talepler.ToList();
         var birlesik = yerel.Count > 0
-            ? SatinalmaTalepBirlestirme.Birlestir(yerel, gelen)
-            : gelen;
+            ? SatinalmaTalepBirlestirme.Birlestir(yerel, gelen, Ayarlar.SilinenTalepIdleri)
+            : gelen.Where(t => !SatinalmaTalepSenkronYardimcisi.SilinenKumesi(Ayarlar.SilinenTalepIdleri).Contains(t.Id)).ToList();
 
         Talepler.Clear();
         foreach (var talep in birlesik)
@@ -137,21 +140,34 @@ public sealed class MobilVeriDeposu
             Talepler.Add(talep);
         }
 
-        if (SatinalmaTalepYardimcisi.TaslaklariNormalizeEt(Talepler))
+        SilinenTalepleriTemizle();
+
+        if (SatinalmaTalepYardimcisi.BosTaslaklariTemizle(Talepler))
+            await TalepleriKaydetAsync(iptal, ayarlariKaydet: false);
+
+        if (SatinalmaTalepYardimcisi.TaslaklariNormalizeEt(Talepler, silBosTaslaklari: false))
             await TalepleriKaydetAsync(iptal);
         else if (SatinalmaTalepYardimcisi.YonetimOnayMiraslariniGuncelle(Talepler))
             await TalepleriKaydetAsync(iptal);
     }
 
-    public async Task TalepleriKaydetAsync(CancellationToken iptal = default)
+    public async Task TalepleriKaydetAsync(CancellationToken iptal = default, bool ayarlariKaydet = true)
     {
         try
         {
             var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaTalepler, iptal);
+            var bulutAyarJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaAyarlar, iptal);
+            if (!string.IsNullOrWhiteSpace(bulutAyarJson))
+            {
+                var bulutAyarlar = JsonSerializer.Deserialize<SatinalmaAyarlar>(bulutAyarJson, Json);
+                if (bulutAyarlar is not null)
+                    SatinalmaTalepSenkronYardimcisi.AyarlariBirlestir(Ayarlar, bulutAyarlar);
+            }
+
             if (!string.IsNullOrWhiteSpace(bulutJson))
             {
                 var bulut = JsonSerializer.Deserialize<List<SatinalmaTalep>>(bulutJson, Json) ?? [];
-                var birlesik = SatinalmaTalepBirlestirme.Birlestir(Talepler, bulut);
+                var birlesik = SatinalmaTalepBirlestirme.Birlestir(Talepler, bulut, Ayarlar.SilinenTalepIdleri);
                 Talepler.Clear();
                 foreach (var talep in birlesik)
                 {
@@ -165,6 +181,11 @@ public sealed class MobilVeriDeposu
             // Bulut okunamazsa yerel kayıtla devam et
         }
 
+        SilinenTalepleriTemizle();
+
+        if (ayarlariKaydet)
+            await AyarlariKaydetAsync(iptal);
+
         var json = JsonSerializer.Serialize(Talepler, Json);
         await _firestore.BelgeJsonYazAsync(FirestoreYollari.SatinalmaTalepler, json, _auth.Uid, iptal);
     }
@@ -172,22 +193,45 @@ public sealed class MobilVeriDeposu
     /// <summary>Talepler + bildirimler — arka plan ve bildirim dinleyicisi için.</summary>
     public async Task HizliSenkronAsync(CancellationToken iptal = default)
     {
+        await AyarlariYukleAsync(iptal);
         await TalepleriYukleAsync(iptal);
         await BildirimleriYukleAsync(iptal);
         await YerelOnbellegeKaydetAsync();
     }
 
+    private void SilinenTalepleriTemizle() =>
+        SatinalmaTalepSenkronYardimcisi.SilinenleriListedenCikar(Talepler, Ayarlar.SilinenTalepIdleri);
+
     public async Task AyarlariYukleAsync(CancellationToken iptal = default)
     {
         var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaAyarlar, iptal);
-        Ayarlar = string.IsNullOrWhiteSpace(json)
-            ? new SatinalmaAyarlar()
-            : JsonSerializer.Deserialize<SatinalmaAyarlar>(json, Json) ?? new SatinalmaAyarlar();
+        if (string.IsNullOrWhiteSpace(json))
+            return;
+
+        var gelen = JsonSerializer.Deserialize<SatinalmaAyarlar>(json, Json) ?? new SatinalmaAyarlar();
+        SatinalmaTalepSenkronYardimcisi.AyarlariBirlestir(Ayarlar, gelen);
+        SilinenTalepleriTemizle();
     }
 
     public async Task AyarlariKaydetAsync(CancellationToken iptal = default)
     {
-        var json = JsonSerializer.Serialize(Ayarlar, Json);
+        string? bulutJson = null;
+        try
+        {
+            bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaAyarlar, iptal);
+            if (!string.IsNullOrWhiteSpace(bulutJson))
+            {
+                var bulutAyarlar = JsonSerializer.Deserialize<SatinalmaAyarlar>(bulutJson, Json);
+                if (bulutAyarlar is not null)
+                    SatinalmaTalepSenkronYardimcisi.AyarlariBirlestir(Ayarlar, bulutAyarlar);
+            }
+        }
+        catch
+        {
+            // bulut okunamazsa yerel ayarlarla devam
+        }
+
+        var json = SatinalmaAyarlarSenkronYardimcisi.MobilGuncellemesiniUygula(bulutJson, Ayarlar, Json);
         await _firestore.BelgeJsonYazAsync(FirestoreYollari.SatinalmaAyarlar, json, _auth.Uid, iptal);
     }
 
@@ -202,6 +246,22 @@ public sealed class MobilVeriDeposu
 
     public async Task StokKaydetAsync(CancellationToken iptal = default)
     {
+        try
+        {
+            var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Stok, iptal);
+            if (!string.IsNullOrWhiteSpace(bulutJson))
+            {
+                var bulut = JsonSerializer.Deserialize<List<StokKaydi>>(bulutJson, Json) ?? [];
+                var birlesik = StokBirlestirme.Birlestir(Stok, bulut);
+                Stok.Clear();
+                Stok.AddRange(birlesik);
+            }
+        }
+        catch
+        {
+            // bulut okunamazsa yerel ile devam
+        }
+
         var json = JsonSerializer.Serialize(Stok, Json);
         await _firestore.BelgeJsonYazAsync(FirestoreYollari.Stok, json, _auth.Uid, iptal);
     }
@@ -217,6 +277,22 @@ public sealed class MobilVeriDeposu
 
     public async Task StokHareketKaydetAsync(CancellationToken iptal = default)
     {
+        try
+        {
+            var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.StokHareket, iptal);
+            if (!string.IsNullOrWhiteSpace(bulutJson))
+            {
+                var bulut = JsonSerializer.Deserialize<List<StokHareketKaydi>>(bulutJson, Json) ?? [];
+                var birlesik = StokBirlestirme.HareketleriBirlestir(StokHareketleri, bulut);
+                StokHareketleri.Clear();
+                StokHareketleri.AddRange(birlesik);
+            }
+        }
+        catch
+        {
+            // bulut okunamazsa yerel ile devam
+        }
+
         var json = JsonSerializer.Serialize(StokHareketleri, Json);
         await _firestore.BelgeJsonYazAsync(FirestoreYollari.StokHareket, json, _auth.Uid, iptal);
     }

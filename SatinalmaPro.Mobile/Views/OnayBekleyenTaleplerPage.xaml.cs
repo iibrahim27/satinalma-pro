@@ -1,4 +1,5 @@
 using SatinalmaPro.Mobile;
+using SatinalmaPro.Mobile.Helpers;
 using SatinalmaPro.Mobile.Services;
 using SatinalmaPro.Mobile.ViewModels;
 using SatinalmaPro.Shared.Helpers;
@@ -27,6 +28,8 @@ public partial class OnayBekleyenTaleplerPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (!await MobilSayfaKorumasi.RotaErisimAsync(this, _oturum, "onay-bekleyen"))
+            return;
         await _vm.YukleCommand.ExecuteAsync(null);
         Liste.ItemsSource = _vm.Talepler;
     }

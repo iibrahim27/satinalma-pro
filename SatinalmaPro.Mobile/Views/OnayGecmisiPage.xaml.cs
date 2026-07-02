@@ -1,3 +1,4 @@
+using SatinalmaPro.Mobile.Helpers;
 using SatinalmaPro.Mobile;
 using SatinalmaPro.Mobile.Services;
 using SatinalmaPro.Shared.Models;
@@ -43,6 +44,8 @@ public partial class OnayGecmisiPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (!await MobilSayfaKorumasi.RotaErisimAsync(this, _oturum, "onay-gecmisi"))
+            return;
         await YukleAsync();
     }
 

@@ -1,4 +1,5 @@
 using Plugin.LocalNotification;
+using Plugin.LocalNotification.AndroidOption;
 using SatinalmaPro.Shared.Models;
 using SatinalmaPro.Shared.Services;
 
@@ -8,6 +9,9 @@ public static class YerelBildirimGosterici
 {
     public static void KanaliHazirla()
     {
+#if ANDROID
+        AndroidBildirimKanali.Olustur();
+#endif
         try
         {
             LocalNotificationCenter.Current.RequestNotificationPermission();
@@ -39,7 +43,9 @@ public static class YerelBildirimGosterici
                 Android =
                 {
                     AutoCancel = true,
-                    ChannelId = "satinalma_pro"
+                    ChannelId = AndroidBildirimKanali.KanalId,
+                    Priority = AndroidPriority.High,
+                    VisibilityType = AndroidVisibilityType.Public
                 }
             });
         }

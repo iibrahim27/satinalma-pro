@@ -298,11 +298,18 @@ public partial class SatinalmaView
             OnaylananFormuGoster(talep);
     }
 
-    private static string? RedGerekcesiIste()
+    private static string? RedGerekcesiIste() =>
+        RedGerekcesiIste("Talep Red", "Red gerekçesini girin:");
+
+    private static string? RedGerekcesiIste(
+        string baslik,
+        string etiket,
+        string onayMetni = "Reddet",
+        bool zorunlu = true)
     {
         var dialog = new Window
         {
-            Title = "Talep Red",
+            Title = baslik,
             Width = 440,
             Height = 200,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -322,7 +329,7 @@ public partial class SatinalmaView
         var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
         panel.Children.Add(new TextBlock
         {
-            Text = "Red gerekçesini girin:",
+            Text = etiket,
             Margin = new Thickness(16, 16, 16, 0),
             FontWeight = FontWeights.SemiBold
         });
@@ -335,7 +342,7 @@ public partial class SatinalmaView
             Margin = new Thickness(16, 8, 16, 16)
         };
         var iptal = new Button { Content = "İptal", Width = 88, Margin = new Thickness(0, 0, 8, 0) };
-        var tamam = new Button { Content = "Reddet", Width = 88, IsDefault = true };
+        var tamam = new Button { Content = onayMetni, Width = 100, IsDefault = true };
         iptal.Click += (_, _) => { dialog.DialogResult = false; dialog.Close(); };
         tamam.Click += (_, _) => { dialog.DialogResult = true; dialog.Close(); };
         butonlar.Children.Add(iptal);
@@ -349,10 +356,9 @@ public partial class SatinalmaView
             return null;
 
         var metin = kutu.Text.Trim();
-        if (string.IsNullOrWhiteSpace(metin))
+        if (zorunlu && string.IsNullOrWhiteSpace(metin))
         {
-            MessageBox.Show("Red gerekçesi zorunludur.", UygulamaBilgisi.Ad,
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Gerekçe zorunludur.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 

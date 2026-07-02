@@ -1,3 +1,4 @@
+using SatinalmaPro.Mobile.Helpers;
 using SatinalmaPro.Mobile;
 using SatinalmaPro.Mobile.Services;
 using SatinalmaPro.Shared.Models;
@@ -23,6 +24,8 @@ public partial class BildirimPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (!await MobilSayfaKorumasi.RotaErisimAsync(this, _oturum, "bildirimler"))
+            return;
         await Yukle();
     }
 

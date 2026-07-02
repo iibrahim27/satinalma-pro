@@ -1,6 +1,6 @@
 using Microsoft.Maui.Controls.Shapes;
+using SatinalmaPro.Mobile.Helpers;
 using SatinalmaPro.Mobile.Services;
-using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Models;
 using SatinalmaPro.Shared.Services;
@@ -38,6 +38,8 @@ public partial class TeklifOnayDetayPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (!await MobilSayfaKorumasi.StackErisimAsync(this, _oturum, "teklif-onay-detay"))
+            return;
         if (!string.IsNullOrWhiteSpace(_talepId))
             await YukleAsync();
     }
@@ -86,6 +88,24 @@ public partial class TeklifOnayDetayPage : ContentPage
             TextColor = TemaKaynaklari.BirincilMetin
         });
 
+        if (!string.IsNullOrWhiteSpace(talep.TeklifDuzeltmeNotu))
+        {
+            Icerik.Add(new Border
+            {
+                Padding = 10,
+                Margin = new Thickness(0, 0, 0, 8),
+                BackgroundColor = Color.FromArgb("#FEF3C7"),
+                Stroke = Color.FromArgb("#FCD34D"),
+                StrokeShape = new RoundRectangle { CornerRadius = 8 },
+                Content = new Label
+                {
+                    Text = $"Yönetim düzeltme notu: {talep.TeklifDuzeltmeNotu}",
+                    FontSize = 12,
+                    TextColor = Color.FromArgb("#92400E")
+                }
+            });
+        }
+
         Icerik.Add(KalemKutusu(talep));
         Icerik.Add(KarsilastirmaTablosu(talep));
 
@@ -111,7 +131,10 @@ public partial class TeklifOnayDetayPage : ContentPage
             Margin = new Thickness(0, 0, 0, 4)
         });
 
-        Icerik.Add(KalemOnayPaneli(talep, onerilen, duzenlemeModu, onayVerebilir));
+        Icerik.Add(KalemOnayPaneli(talep, onerilen, duzenlemeModu, onayVerebilir, onayBekliyor));
+
+        if (onayBekliyor && SatinalmaOnayYetkisi.YonetimKararVerebilir(_oturum.Depo.AktifKullanici))
+            Icerik.Add(YonetimKararPaneli(talep));
 
         var siraliTeklifler = talep.Teklifler
             .OrderByDescending(t => onerilen is not null && t.Id == onerilen.Id)
@@ -211,7 +234,7 @@ public partial class TeklifOnayDetayPage : ContentPage
         }
     }
 
-    private View KalemOnayPaneli(SatinalmaTalep talep, SatinalmaTeklif? onerilen, bool duzenlemeModu, bool onayVerebilir)
+    private View KalemOnayPaneli(SatinalmaTalep talep, SatinalmaTeklif? onerilen, bool duzenlemeModu, bool onayVerebilir, bool onayBekliyor)
     {
         var panel = new VerticalStackLayout { Spacing = 8, Margin = new Thickness(0, 8, 0, 12) };
 
@@ -408,6 +431,105 @@ public partial class TeklifOnayDetayPage : ContentPage
             };
             panel.Add(geriAlBtn);
         }
+
+        return new Border
+        {
+            Padding = 12,
+            BackgroundColor = TemaKaynaklari.KartArkaPlan,
+            Stroke = TemaKaynaklari.KartCerceve,
+            StrokeShape = new RoundRectangle { CornerRadius = 8 },
+            Content = panel
+        };
+    }
+
+    private View YonetimKararPaneli(SatinalmaTalep talep)
+    {
+        var panel = new VerticalStackLayout { Spacing = 8, Margin = new Thickness(0, 0, 0, 12) };
+        panel.Add(new Label
+        {
+            Text = "Yönetim Kararı",
+            FontAttributes = FontAttributes.Bold,
+            FontSize = 15,
+            TextColor = TemaKaynaklari.BirincilMetin
+        });
+
+        var geriBtn = new Button
+        {
+            Text = "Satınalmaya Geri Gönder",
+            Style = (Style)Application.Current!.Resources["BtnInfoDark"]
+        };
+        geriBtn.Clicked += async (_, _) =>
+        {
+            var not = await DisplayPromptAsync(
+                "Satınalmaya Geri Gönder",
+                "Düzeltme notu (isteğe bağlı):",
+                "Geri Gönder",
+                "İptal",
+                maxLength: 500);
+            if (not is null)
+                return;
+
+            try
+            {
+                geriBtn.IsEnabled = false;
+                await _oturum.Satinalma.TeklifGeriGonderAsync(talep, not);
+                _ = _oturum.Dinleyici.SenkronizeVeGosterAsync();
+                await DisplayAlert("Gönderildi", $"{talep.TalepNo} satınalmaya düzeltme için geri gönderildi.", "Tamam");
+                await ShellGuvenli.GoToAsync("//teklif-onay");
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Hata", ex.Message, "Tamam");
+            }
+            finally
+            {
+                geriBtn.IsEnabled = true;
+            }
+        };
+        panel.Add(geriBtn);
+
+        var redBtn = new Button
+        {
+            Text = "Reddet",
+            Style = (Style)Application.Current!.Resources["BtnDanger"]
+        };
+        redBtn.Clicked += async (_, _) =>
+        {
+            var gerekce = await DisplayPromptAsync(
+                "Teklif Red",
+                "Red gerekçesini girin:",
+                "Reddet",
+                "İptal",
+                maxLength: 500);
+            if (string.IsNullOrWhiteSpace(gerekce))
+            {
+                if (gerekce is not null)
+                    await DisplayAlert("Uyarı", "Red gerekçesi zorunludur.", "Tamam");
+                return;
+            }
+
+            var onay = await DisplayAlert("Teklif Red", $"{talep.TalepNo} reddedilsin mi?", "Reddet", "İptal");
+            if (!onay)
+                return;
+
+            try
+            {
+                redBtn.IsEnabled = false;
+                await _oturum.Satinalma.TeklifReddetAsync(talep, gerekce);
+                _ = _oturum.Dinleyici.SenkronizeVeGosterAsync();
+                await DisplayAlert("Reddedildi", $"{talep.TalepNo} reddedildi.", "Tamam");
+                await ShellGuvenli.GoToAsync("//teklif-onay");
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Hata", ex.Message, "Tamam");
+            }
+            finally
+            {
+                redBtn.IsEnabled = true;
+            }
+        };
+        panel.Add(redBtn);
 
         return new Border
         {

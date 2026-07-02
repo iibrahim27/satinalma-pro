@@ -1,3 +1,4 @@
+using SatinalmaPro.Mobile.Helpers;
 using SatinalmaPro.Mobile.Services;
 using SatinalmaPro.Mobile.Views.Controls;
 using SatinalmaPro.Shared.Helpers;
@@ -29,6 +30,9 @@ public partial class YeniTalepPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        var route = string.IsNullOrWhiteSpace(_talepId) ? "yeni-talep" : "talep-duzenle";
+        if (!await MobilSayfaKorumasi.StackErisimAsync(this, _oturum, route))
+            return;
         await _oturum.VerileriYenileAsync();
         PickerTur.ItemsSource = TalepTurleri.Tum.Select(TalepTurleri.TurkceAd).ToList();
 

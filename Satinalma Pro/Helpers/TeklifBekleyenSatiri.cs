@@ -21,5 +21,5 @@ public class TeklifBekleyenSatiri
             or SatinalmaTalepDurumEtiketi.Onaylandi;
 
     public static bool KuyruktaGoster(SatinalmaTalep talep) =>
-        SatinalmaTalepKuyrugu.SatinalmaTeklifGirisi(talep);
+        SatinalmaTalepKuyrugu.YonetimTeklifBekleyen(talep);
 }

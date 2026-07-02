@@ -48,10 +48,17 @@ public static class BildirimFiltreleme
             BildirimTipleri.TeklifIstendi =>
                 talep.Durum == SatinalmaTalepDurumlari.TeklifGirisi
                 && (talep.Teklifler?.Count ?? 0) == 0,
+            BildirimTipleri.TeklifDuzeltmeIstendi =>
+                SatinalmaTalepYardimcisi.TeklifDuzenlemeDevamEdiyor(talep),
             BildirimTipleri.TeklifOnayda =>
                 SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep),
             BildirimTipleri.Reddedildi =>
                 talep.Durum == SatinalmaTalepDurumlari.Reddedildi,
+            BildirimTipleri.Onaylandi =>
+                talep.Durum is SatinalmaTalepDurumlari.Onaylandi or SatinalmaTalepDurumlari.SiparisOlusturuldu,
+            BildirimTipleri.SiparisOlusturuldu =>
+                talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu,
+            BildirimTipleri.MalKabulEdildi => true,
             _ => true
         };
     }

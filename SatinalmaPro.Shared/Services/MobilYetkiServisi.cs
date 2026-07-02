@@ -20,9 +20,9 @@ public static class MobilYetkiServisi
             return false;
 
         if (KullaniciRolleri.AdminMi(rol))
-            return SatinalmaTalepYardimcisi.FormDuzenlenebilir(talep);
+            return SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(talep);
 
-        if (!SatinalmaTalepYardimcisi.FormDuzenlenebilir(talep))
+        if (!SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(talep))
             return false;
 
         return talep.OlusturanUid == kullaniciUid
@@ -48,7 +48,7 @@ public static class MobilYetkiServisi
         KullaniciRolleri.Normalize(rol) is KullaniciRolleri.Admin or KullaniciRolleri.Satinalma;
 
     public static bool MalKabulVeStokAktarYapabilir(string? rol) =>
-        KullaniciRolleri.Normalize(rol) == KullaniciRolleri.Satinalma;
+        KullaniciRolleri.Normalize(rol) is KullaniciRolleri.Admin or KullaniciRolleri.Satinalma;
 
     public static bool YonetimIslemiYapabilir(string? rol) =>
         KullaniciRolleri.Normalize(rol) is KullaniciRolleri.Admin

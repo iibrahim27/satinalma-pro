@@ -1,6 +1,7 @@
 <UserControl x:Class="SatinalmaPro.Views.Modules.SatinalmaView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:SatinalmaPro.Views.Controls"
              Background="#F8FAFC">
 
   <UserControl.Resources>
@@ -76,8 +77,13 @@
           <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
-          <Border Width="36" Height="36" CornerRadius="10" Margin="0,0,14,0">
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <Border Width="36" Height="36" CornerRadius="10" Margin="0,0,14,0">
             <Border.Background>
               <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                 <GradientStop Color="#F97316" Offset="0" />
@@ -89,113 +95,42 @@
           </Border>
           <StackPanel VerticalAlignment="Center">
             <TextBlock Text="Satınalma" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" />
+            <TextBlock x:Name="TxtAktifSekmeBaslik" FontSize="13" FontWeight="SemiBold"
+                       Foreground="#F97316" Margin="0,2,0,0" Visibility="Collapsed" />
             <TextBlock Text="Talep, teklif, onay ve sipariş süreçleri" FontSize="11"
                        Foreground="{StaticResource InkMutedBrush}" Margin="0,2,0,0" />
           </StackPanel>
         </StackPanel>
-
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-          <Border Background="#F8FAFC" CornerRadius="10" Padding="4"
-                  BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
-            <StackPanel Orientation="Horizontal">
-              <Button x:Name="BtnSekmePanel" Tag="Panel" Style="{StaticResource SatSekmeBtnAktif}"
-                      Content="Panel" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeTalepler" Tag="Taleplerim" Style="{StaticResource SatSekmeBtn}"
-                      Content="Taleplerim" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeGelenTalepler" Tag="Gelen Talepler" Style="{StaticResource SatSekmeBtn}"
-                      Content="Gelen Talepler" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeOnayBekleyen" Tag="Onay Bekleyen" Style="{StaticResource SatSekmeBtn}"
-                      Content="Onay Bekleyen" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeTeklifBekleyen" Tag="Teklif Bekleyen" Style="{StaticResource SatSekmeBtn}"
-                      Content="Teklif Bekleyen" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeTeklifGirisi" Tag="Teklif Girişi" Style="{StaticResource SatSekmeBtn}"
-                      Content="Teklif Girişi" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeTeklifDeger" Tag="Karşılaştırma" Style="{StaticResource SatSekmeBtn}"
-                      Content="Karşılaştırma" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeTeklifOnay" Tag="Teklif Onay" Style="{StaticResource SatSekmeBtn}"
-                      Content="Teklif Onay" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeOnaylananlar" Tag="Onaylanan Talepler" Style="{StaticResource SatSekmeBtn}"
-                      Content="Onaylanan Talepler" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeReddedilenler" Tag="Red Talepler" Style="{StaticResource SatSekmeBtn}"
-                      Content="Red Talepler" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeOnayGecmisi" Tag="Geçmiş Talepler" Style="{StaticResource SatSekmeBtn}"
-                      Content="Geçmiş Talepler" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeGecmisTeklifli" Tag="Geçmiş Teklifli Onaylar" Style="{StaticResource SatSekmeBtn}"
-                      Content="Geçmiş Teklifli Onaylar" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeAlinanMalzemeler" Tag="Alınan Malzemeler" Style="{StaticResource SatSekmeBtn}"
-                      Content="Alınan Malzemeler" Click="Sekme_Click" />
-              <Button x:Name="BtnSekmeGelenSiparis" Tag="Gelen Siparişler" Style="{StaticResource SatSekmeBtn}"
-                      Content="Gelen Siparişler" Click="Sekme_Click" />
-            </StackPanel>
-          </Border>
-        </ScrollViewer>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <Button x:Name="BtnMenuyeDon" Style="{StaticResource ToolbarButtonStyle}" Padding="10,6"
+                    Margin="0,0,8,0" Visibility="Collapsed" Click="MenuyeDon_Click" ToolTip="Menüye dön">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="13" Margin="0,0,6,0" />
+                <TextBlock Text="Menü" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Button Style="{StaticResource ToolbarButtonStyle}" Padding="10,6"
+                    VerticalAlignment="Center" Click="SatinalmaAnaSayfa_Click" ToolTip="Ana sayfaya dön">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="13" Margin="0,0,6,0" />
+                <TextBlock Text="Ana Sayfa" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
       </Grid>
     </Border>
 
+    <!-- Sekme menüsü (panel kartları) -->
+    <Border x:Name="PanelSekmeMenu" Grid.Row="1" Background="White" BorderBrush="{StaticResource LineBrush}"
+            BorderThickness="1" CornerRadius="14" Padding="20">
+      <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <WrapPanel x:Name="SekmeMenuPanel" HorizontalAlignment="Center" />
+      </ScrollViewer>
+    </Border>
+
     <!-- Sekme içerikleri -->
-    <Grid Grid.Row="1">
-      <Border x:Name="PanelDashboard" Background="White" BorderBrush="{StaticResource LineBrush}"
-              BorderThickness="1" CornerRadius="14" Visibility="Visible">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel Margin="24" MaxWidth="920">
-            <Grid Margin="0,0,0,20">
-              <StackPanel>
-                <TextBlock x:Name="TxtPanelBaslik" Text="Panel" FontSize="22" FontWeight="SemiBold"
-                           Foreground="{StaticResource InkBrush}" />
-                <TextBlock x:Name="TxtPanelAltBaslik" FontSize="14" Foreground="{StaticResource InkMutedBrush}"
-                           Margin="0,4,0,0" />
-                <TextBlock x:Name="TxtPanelGuncelleme" FontSize="11" Foreground="{StaticResource InkMutedBrush}"
-                           Margin="0,4,0,0" Opacity="0.8" />
-              </StackPanel>
-            </Grid>
-
-            <TextBlock Text="Özet" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}"
-                       Margin="0,0,0,12" />
-            <WrapPanel x:Name="DashboardKartlarPanel" />
-
-            <TextBlock Text="Son İşlemler" FontSize="16" FontWeight="SemiBold"
-                       Foreground="{StaticResource InkBrush}" Margin="0,16,0,12" />
-            <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="12"
-                    Background="#FAFBFC" Padding="4">
-              <StackPanel>
-                <ItemsControl x:Name="DashboardAktiviteListe">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                      <Border Padding="12,10" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1"
-                              Background="Transparent" Cursor="Hand" Tag="{Binding}"
-                              MouseLeftButtonUp="DashboardAktivite_Click">
-                        <Grid>
-                          <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                          </Grid.ColumnDefinitions>
-                          <StackPanel>
-                            <TextBlock Text="{Binding Baslik}" FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{StaticResource InkBrush}" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Text="{Binding Alt}" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
-                                       TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
-                          </StackPanel>
-                          <TextBlock Grid.Column="1" Text="{Binding Durum}" FontSize="11"
-                                     Foreground="{StaticResource InkMutedBrush}" VerticalAlignment="Center"
-                                     Margin="12,0,0,0" />
-                        </Grid>
-                      </Border>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <TextBlock x:Name="TxtSonIslemBos" Text="Henüz kayıtlı işlem yok." FontSize="12"
-                           Foreground="{StaticResource InkMutedBrush}" Margin="12,16" Visibility="Collapsed"
-                           HorizontalAlignment="Center" />
-              </StackPanel>
-            </Border>
-
-            <TextBlock Text="Kartlara tıklayarak ilgili sekmeye gidebilirsiniz."
-                       FontSize="11" Foreground="{StaticResource InkMutedBrush}"
-                       HorizontalAlignment="Center" Margin="0,16,0,8" TextAlignment="Center" />
-          </StackPanel>
-        </ScrollViewer>
-      </Border>
-
+    <Grid x:Name="PanelSekmeIcerik" Grid.Row="1" Visibility="Collapsed">
       <Border x:Name="PanelTalepler" Background="White" BorderBrush="{StaticResource LineBrush}"
               BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
         <Grid>
@@ -291,6 +226,13 @@
 
             <ScrollViewer x:Name="TalepFormScroll" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
               <StackPanel x:Name="TalepFormPanel">
+                <Button Style="{StaticResource ToolbarButtonStyle}" HorizontalAlignment="Left"
+                        Margin="0,0,0,12" Padding="8,4" Click="TalepDetayGeri_Click">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0" />
+                    <TextBlock Text="Listeye dön" />
+                  </StackPanel>
+                </Button>
                 <StackPanel x:Name="TalepFormIcerik">
                   <TextBlock Text="Talep Girişi" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16" />
 
@@ -342,9 +284,21 @@
                           BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
                           RowHeight="36" FontSize="12" MinHeight="160"
                           SelectionChanged="KalemTablosu_SelectionChanged"
+                          PreparingCellForEdit="KalemTablosu_PreparingCellForEdit"
                           CellEditEnding="KalemTablosu_CellEditEnding">
                   <DataGrid.Columns>
-                    <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme, UpdateSourceTrigger=PropertyChanged}" Width="*" />
+                    <DataGridTemplateColumn Header="Malzeme" Width="*" MinWidth="140">
+                      <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding Malzeme}" VerticalAlignment="Center" Margin="8,0" />
+                        </DataTemplate>
+                      </DataGridTemplateColumn.CellTemplate>
+                      <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                          <controls:MalzemeOneriGiris Metin="{Binding Malzeme, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </DataTemplate>
+                      </DataGridTemplateColumn.CellEditingTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTextColumn Header="Miktar" Binding="{Binding Miktar, UpdateSourceTrigger=PropertyChanged}" Width="80" />
                     <DataGridComboBoxColumn Header="Birim"
                                             SelectedItemBinding="{Binding Birim, UpdateSourceTrigger=PropertyChanged}" Width="90" />
@@ -454,6 +408,13 @@
                          HorizontalAlignment="Center" Margin="0,60,0,0" />
 
               <StackPanel x:Name="TeklifGirisIcerik" Visibility="Collapsed">
+                <Button Style="{StaticResource ToolbarButtonStyle}" HorizontalAlignment="Left"
+                        Margin="0,0,0,12" Padding="8,4" Click="TeklifGirisDetayGeri_Click">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0" />
+                    <TextBlock Text="Listeye dön" />
+                  </StackPanel>
+                </Button>
                 <TextBlock Text="Teklif Girişi" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16" />
 
                 <Grid Margin="0,0,0,14">
@@ -504,6 +465,11 @@
                             Click="TeklifSil_Click" Content="Sil" />
                   </StackPanel>
                 </Grid>
+
+                <Border x:Name="TeklifDuzeltmeNotuPanel" Background="#FEF3C7" BorderBrush="#FCD34D" BorderThickness="1"
+                        CornerRadius="10" Padding="12,10" Margin="0,0,0,10" Visibility="Collapsed">
+                  <TextBlock x:Name="TxtTeklifDuzeltmeNotu" FontSize="13" Foreground="#92400E" TextWrapping="Wrap" />
+                </Border>
 
                 <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1"
                         CornerRadius="10" Padding="12,10" Margin="0,0,0,10">
@@ -583,6 +549,13 @@
                          Foreground="{StaticResource InkMutedBrush}" FontSize="14"
                          HorizontalAlignment="Center" Margin="0,60,0,0" />
               <StackPanel x:Name="TeklifDegerIcerik" Visibility="Collapsed">
+                <Button Style="{StaticResource ToolbarButtonStyle}" HorizontalAlignment="Left"
+                        Margin="0,0,0,12" Padding="8,4" Click="TeklifDegerDetayGeri_Click">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0" />
+                    <TextBlock Text="Listeye dön" />
+                  </StackPanel>
+                </Button>
                 <TextBlock Text="Karşılaştırma" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,12" />
                 <TextBlock x:Name="TxtTeklifDegerOzet" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
                            TextWrapping="Wrap" Margin="0,0,0,14" />
@@ -602,12 +575,19 @@
                 <ItemsControl x:Name="KalemOnayListesi" Margin="0,0,0,16"
                               ItemTemplate="{StaticResource KalemOnaySatirSablonu}" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                  <Button x:Name="BtnTeklifDegerYonetimeGonder" Style="{StaticResource PrimaryToolbarButtonStyle}"
+                          Margin="0,0,8,0" Visibility="Collapsed"
+                          Click="TeklifDegerYonetimeGonder_Click" Content="Yönetime Gönder" />
                   <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
                           Click="TeklifDegerKarsilastirmaPdf_Click" Content="Karşılaştırma PDF" />
                   <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
                           Click="TeklifDegerYonetimOnayPdf_Click" Content="Yönetim Onay PDF" />
                   <Button x:Name="BtnTeklifDegerOnayGeriAl" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
                           Click="TeklifDegerOnayGeriAl_Click" Content="Onayı Geri Al" Visibility="Collapsed" />
+                  <Button x:Name="BtnTeklifDegerGeriGonder" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                          Click="TeklifDegerGeriGonder_Click" Content="Satınalmaya Geri Gönder" Visibility="Collapsed" />
+                  <Button x:Name="BtnTeklifDegerReddet" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                          Click="TeklifDegerReddet_Click" Content="Reddet" Visibility="Collapsed" />
                   <Button x:Name="BtnTeklifDegerOnayla" Style="{StaticResource PrimaryToolbarButtonStyle}"
                           Click="TeklifDegerOnayla_Click" Content="Onayla" />
                 </StackPanel>
@@ -695,6 +675,13 @@
                          Foreground="{StaticResource InkMutedBrush}" FontSize="14"
                          HorizontalAlignment="Center" Margin="0,60,0,0" />
               <StackPanel x:Name="OnaylananIcerik" Visibility="Collapsed">
+                <Button Style="{StaticResource ToolbarButtonStyle}" HorizontalAlignment="Left"
+                        Margin="0,0,0,12" Padding="8,4" Click="OnaylananDetayGeri_Click">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0" />
+                    <TextBlock Text="Listeye dön" />
+                  </StackPanel>
+                </Button>
                 <TextBlock Text="Onaylanan Talep" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,12" />
                 <TextBlock x:Name="TxtOnaylananOzet" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
                            TextWrapping="Wrap" Margin="0,0,0,8" />

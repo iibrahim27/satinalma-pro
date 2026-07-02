@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using SatinalmaPro.Helpers;
+using SatinalmaPro.Models;
 using SatinalmaPro.Services;
 using SatinalmaPro.Shared.Services;
 
@@ -8,50 +9,48 @@ namespace SatinalmaPro.Views.Modules;
 
 public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
 {
-    private readonly Dictionary<string, (Button Btn, Border Panel)> _sekmeler;
-    private string _aktifSekme = MasaustuRolHaritasi.Panel;
+    private readonly Dictionary<string, Border> _sekmePanelleri;
+    private string _aktifSekme = MasaustuRolHaritasi.Taleplerim;
     private string? _sekmePanelOverride;
 
     public SatinalmaView()
     {
         InitializeComponent();
 
-        _sekmeler = new Dictionary<string, (Button, Border)>(StringComparer.Ordinal)
+        _sekmePanelleri = new Dictionary<string, Border>(StringComparer.Ordinal)
         {
-            [MasaustuRolHaritasi.Panel] = (BtnSekmePanel, PanelDashboard),
-            ["Taleplerim"] = (BtnSekmeTalepler, PanelTalepler),
-            ["Gelen Talepler"] = (BtnSekmeGelenTalepler, PanelGelenTalepler),
-            ["Onay Bekleyen"] = (BtnSekmeOnayBekleyen, PanelOnayBekleyen),
-            ["Teklif Bekleyen"] = (BtnSekmeTeklifBekleyen, PanelTeklifBekleyen),
-            ["Teklif Girişi"] = (BtnSekmeTeklifGirisi, PanelTeklifGirisi),
-            ["Karşılaştırma"] = (BtnSekmeTeklifDeger, PanelTeklifDeger),
-            ["Teklif Onay"] = (BtnSekmeTeklifOnay, PanelTeklifOnay),
-            ["Onaylanan Talepler"] = (BtnSekmeOnaylananlar, PanelOnaylananlar),
-            ["Geçmiş Talepler"] = (BtnSekmeOnayGecmisi, PanelOnayGecmisi),
-            ["Geçmiş Teklifli Onaylar"] = (BtnSekmeGecmisTeklifli, PanelGecmisTeklifli),
-            ["Red Talepler"] = (BtnSekmeReddedilenler, PanelReddedilenler),
-            ["Alınan Malzemeler"] = (BtnSekmeAlinanMalzemeler, PanelSiparisler),
-            ["Gelen Siparişler"] = (BtnSekmeGelenSiparis, PanelGelenSiparis)
+            ["Taleplerim"] = PanelTalepler,
+            ["Gelen Talepler"] = PanelGelenTalepler,
+            ["Onay Bekleyen"] = PanelOnayBekleyen,
+            ["Teklif Bekleyen"] = PanelTeklifBekleyen,
+            ["Teklif Girişi"] = PanelTeklifGirisi,
+            ["Karşılaştırma"] = PanelTeklifDeger,
+            ["Teklif Onay"] = PanelTeklifOnay,
+            ["Onaylanan Talepler"] = PanelOnaylananlar,
+            ["Geçmiş Talepler"] = PanelOnayGecmisi,
+            ["Geçmiş Teklifli Onaylar"] = PanelGecmisTeklifli,
+            ["Red Talepler"] = PanelReddedilenler,
+            ["Alınan Malzemeler"] = PanelSiparisler,
+            ["Gelen Siparişler"] = PanelGelenSiparis
         };
 
         Loaded += (_, _) =>
         {
             SekmeleriYetkiyeGoreAyarla();
-            PanelSekmesiniHazirla();
+            SekmeSayaclariniHazirla();
             TalepSekmesiniHazirla();
             TeklifGirisSekmesiniHazirla();
             AkisSekmeleriniHazirla();
-            SekmeyeGec(_aktifSekme);
+            MenuGoster();
         };
     }
 
     public void KisayolYenile()
     {
-        if (_aktifSekme == MasaustuRolHaritasi.Panel)
-            PaneliYenile();
         TalepListesiniYenile();
         TeklifGirisTalepListesiniYenile();
         AkisSekmeleriniYenile();
+        SekmeSayaclariniYenile();
     }
 
     public void BildirimdenAc(Guid? talepId, int adim = 0, string sekme = "talepler")
@@ -80,26 +79,76 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
             }
         };
         SekmeyeGec(hedef);
+        BildirimTalebiniAc(talepId, hedef);
     }
 
-    private void Sekme_Click(object sender, RoutedEventArgs e)
+    private void BildirimTalebiniAc(Guid? talepId, string sekmeAdi)
     {
-        if (sender is Button { Tag: string ad })
-            SekmeyeGec(ad);
+        if (talepId is not { } id)
+            return;
+
+        var talep = SatinalmaDepo.Talepler.FirstOrDefault(t => t.Id == id);
+        if (talep is null)
+            return;
+
+        switch (sekmeAdi)
+        {
+            case "Teklif Girişi":
+                TeklifGirisTalebiAc(talep);
+                break;
+            case "Karşılaştırma":
+            case "Teklif Onay":
+                _teklifOnaySecili = talep;
+                TeklifOnayListesi.SelectedItem = talep;
+                TeklifDegerTalebiAc(talep);
+                break;
+            case "Gelen Talepler":
+                _gelenTalepSecili = talep;
+                GelenTalepTablosu.SelectedItem = talep;
+                GelenTalepButonlariniGuncelle();
+                break;
+            case "Onaylanan Talepler":
+                var onaySatir = OnaylananTalepListesi.Items.Cast<OnaylananTalepListeSatiri>()
+                    .FirstOrDefault(s => s.Talep.Id == id);
+                if (onaySatir is not null)
+                {
+                    OnaylananTalepListesi.SelectedItem = onaySatir;
+                    _onaylananTalep = talep;
+                    OnaylananFormuGoster(talep);
+                }
+                break;
+            case "Red Talepler":
+                ReddedilenTablosu.SelectedItem = talep;
+                break;
+            case "Taleplerim":
+                var satir = TalepListesi.Items.Cast<TalepListeSatiri>()
+                    .FirstOrDefault(s => s.Talep.Id == id);
+                if (satir is not null)
+                {
+                    TalepListesi.SelectedItem = satir;
+                    _seciliTalep = talep;
+                    if (satir.Duzenlenebilir)
+                    {
+                        _talepFormModu = true;
+                        TalepFormuGoster(talep);
+                    }
+                    else
+                        TalepOnizlemePenceresiniAc(talep);
+                }
+                break;
+        }
     }
 
     private void SekmeyeGec(string sekmeAdi)
     {
-        sekmeAdi = SatinalmaPro.Shared.Services.MasaustuRolHaritasi.SatinalmaSekmeNormalize(sekmeAdi);
+        sekmeAdi = MasaustuRolHaritasi.SatinalmaSekmeNormalize(sekmeAdi);
 
-        if (!_sekmeler.ContainsKey(sekmeAdi))
-            sekmeAdi = KullaniciYetkileri.SekmeGorebilir("Satınalma", MasaustuRolHaritasi.Panel)
-                ? MasaustuRolHaritasi.Panel
-                : "Taleplerim";
+        if (!_sekmePanelleri.ContainsKey(sekmeAdi))
+            sekmeAdi = VarsayilanSekme();
 
         if (!KullaniciYetkileri.SekmeGorebilir("Satınalma", sekmeAdi))
         {
-            var ilk = _sekmeler.Keys.FirstOrDefault(k =>
+            var ilk = _sekmePanelleri.Keys.FirstOrDefault(k =>
                 KullaniciYetkileri.SekmeGorebilir("Satınalma", k));
             if (ilk is null)
                 return;
@@ -110,12 +159,10 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
         var gosterilecekPanel = _sekmePanelOverride ?? sekmeAdi;
         _sekmePanelOverride = null;
 
-        foreach (var (ad, (btn, panel)) in _sekmeler)
-        {
-            var aktif = ad == sekmeAdi;
+        IcerikGoster(sekmeAdi);
+
+        foreach (var (ad, panel) in _sekmePanelleri)
             panel.Visibility = ad == gosterilecekPanel ? Visibility.Visible : Visibility.Collapsed;
-            btn.Style = (Style)FindResource(aktif ? "SatSekmeBtnAktif" : "SatSekmeBtn");
-        }
 
         if (sekmeAdi == "Teklif Bekleyen")
             TeklifBekleyenListesiniYenile();
@@ -144,24 +191,19 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
             GecmisTeklifliListesiniYenile();
         else if (sekmeAdi == "Alınan Malzemeler")
             AlinanMalzemeListesiniYenile();
-        else if (sekmeAdi == MasaustuRolHaritasi.Panel)
-            PaneliYenile();
         else if (sekmeAdi == "Gelen Siparişler")
             GelenSiparisListesiniYenile();
+        else if (sekmeAdi == "Taleplerim")
+            TalepListesiniYenile();
+
+        SekmeSayaclariniYenile();
     }
 
     private void SekmeleriYetkiyeGoreAyarla()
     {
-        foreach (var (ad, (btn, _)) in _sekmeler)
-        {
-            btn.Visibility = KullaniciYetkileri.SekmeGorebilir("Satınalma", ad)
-                ? Visibility.Visible
-                : Visibility.Collapsed;
-        }
-
         if (!KullaniciYetkileri.SekmeGorebilir("Satınalma", _aktifSekme))
         {
-            var ilk = _sekmeler.Keys.FirstOrDefault(k =>
+            var ilk = _sekmePanelleri.Keys.FirstOrDefault(k =>
                 KullaniciYetkileri.SekmeGorebilir("Satınalma", k));
             if (ilk is not null)
                 _aktifSekme = ilk;

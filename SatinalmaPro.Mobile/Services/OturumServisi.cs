@@ -155,14 +155,24 @@ public sealed class OturumServisi
             if (fcm is not null)
             {
                 await fcm.BaslatAsync();
-                var token = await fcm.TokenAlAsync();
-                if (!string.IsNullOrWhiteSpace(token))
-                    FcmTokenAyarla(token);
+                for (var deneme = 0; deneme < 3; deneme++)
+                {
+                    var token = await fcm.TokenAlAsync();
+                    if (!string.IsNullOrWhiteSpace(token))
+                    {
+                        FcmTokenAyarla(token);
+                        break;
+                    }
+
+                    await Task.Delay(1500 * (deneme + 1), iptal);
+                }
             }
 
             await FcmTokenKaydetAsync(iptal);
 #if ANDROID
+            AndroidBildirimKanali.Olustur();
             BildirimForegroundService.Baslat(global::Android.App.Application.Context);
+            await Dinleyici.SenkronizeVeGosterAsync();
 #endif
         }
         catch (Exception ex)

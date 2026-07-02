@@ -1,5 +1,6 @@
 using System.Globalization;
 using SatinalmaPro.Mobile.Helpers;
+using SatinalmaPro.Mobile.Helpers;
 using SatinalmaPro.Mobile.Services;
 using SatinalmaPro.Shared.Models;
 
@@ -28,10 +29,12 @@ public partial class TeklifGirisPage : ContentPage
         MobilGirisYardimcisi.AndroidGirisHazirla(TxtEurKuru);
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
-        _ = SayfayiYenileAsync();
+        if (!await MobilSayfaKorumasi.RotaErisimAsync(this, _oturum, "teklif-gir"))
+            return;
+        await SayfayiYenileAsync();
     }
 
     private async Task SayfayiYenileAsync()

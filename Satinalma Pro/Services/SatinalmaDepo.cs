@@ -23,6 +23,10 @@ public static class SatinalmaDepo
 
     public static ObservableCollection<SatinalmaTalep> Talepler { get; } = [];
     public static SatinalmaAyarlar Ayarlar { get; private set; } = SatinalmaAyarlar.VarsayilanOlustur();
+
+    /// <summary>Formda düzenlenen boş taslak — senkron sırasında silinmez.</summary>
+    public static Guid? KorunanBosTaslakId { get; set; }
+
     private static bool _yuklendi;
 
     /// <summary>Bulut senkronu veya toplu yükleme sonrası UI listesini yenilemek için.</summary>
@@ -99,6 +103,8 @@ public static class SatinalmaDepo
             }
         }
 
+        SilinenTalepleriTemizle();
+
         if (!File.Exists(TalepDosyasi) && !OturumYoneticisi.BulutAktif)
             OrnekTalepEkle();
     }
@@ -109,10 +115,15 @@ public static class SatinalmaDepo
         var talepJson = JsonSerializer.Serialize(Talepler.ToList(), JsonSecenekleri);
         File.WriteAllText(TalepDosyasi, talepJson);
 
+        KaydetAyarlar();
+        BulutVeriSenkronu.Planla("satinalma_talepler");
+    }
+
+    public static void KaydetAyarlar()
+    {
+        Directory.CreateDirectory(Klasor);
         var ayarJson = JsonSerializer.Serialize(Ayarlar, JsonSecenekleri);
         File.WriteAllText(AyarDosyasi, ayarJson);
-
-        BulutVeriSenkronu.Planla("satinalma_talepler");
         BulutVeriSenkronu.Planla("satinalma_ayarlar");
     }
 
@@ -131,7 +142,7 @@ public static class SatinalmaDepo
             {
                 var disk = JsonSerializer.Deserialize<List<SatinalmaTalep>>(
                     File.ReadAllText(TalepDosyasi), JsonSecenekleri) ?? [];
-                yerel = SatinalmaTalepBirlestirme.Birlestir(yerel, disk);
+                yerel = SatinalmaTalepBirlestirme.Birlestir(yerel, disk, Ayarlar.SilinenTalepIdleri);
             }
             catch
             {
@@ -140,8 +151,8 @@ public static class SatinalmaDepo
         }
 
         var birlesik = yerelBirlestir
-            ? SatinalmaTalepBirlestirme.Birlestir(yerel, gelen)
-            : gelen;
+            ? SatinalmaTalepBirlestirme.Birlestir(yerel, gelen, Ayarlar.SilinenTalepIdleri)
+            : gelen.Where(t => !SatinalmaTalepSenkronYardimcisi.SilinenKumesi(Ayarlar.SilinenTalepIdleri).Contains(t.Id)).ToList();
 
         Talepler.Clear();
         foreach (var talep in birlesik)
@@ -152,17 +163,32 @@ public static class SatinalmaDepo
         }
 
         var kaydet = false;
-        if (SatinalmaTalepYardimcisi.TaslaklariNormalizeEt(Talepler))
+        if (SatinalmaTalepYardimcisi.TaslaklariNormalizeEt(Talepler, silBosTaslaklari: false))
             kaydet = true;
         else if (SatinalmaTalepYardimcisi.YonetimOnayMiraslariniGuncelle(Talepler))
             kaydet = true;
         else if (yerelBirlestir && birlesik.Count > gelen.Count)
             kaydet = true;
 
+        SilinenTalepleriTemizle();
+
+        if (BosTaslaklariTemizle())
+            kaydet = true;
+
         if (kaydet)
             Kaydet();
 
         TaleplerGuncellendi?.Invoke();
+    }
+
+    /// <summary>İçeriksiz taslakları kaldırır; formda açık olan korunur.</summary>
+    public static bool BosTaslaklariTemizle(Guid? korunanId = null) =>
+        SatinalmaTalepYardimcisi.BosTaslaklariTemizle(Talepler, korunanId ?? KorunanBosTaslakId);
+
+    public static void TalepNoAtaIfNeeded(SatinalmaTalep talep)
+    {
+        if (string.IsNullOrWhiteSpace(talep.TalepNo))
+            talep.TalepNo = YeniTalepNoOlustur();
     }
 
     public static void TalebiHazirla(SatinalmaTalep talep)
@@ -189,11 +215,81 @@ public static class SatinalmaDepo
         return ayarlar;
     }
 
-    public static void AyarlarYukle(string json)
+    public static void AyarlarYukle(string json, bool birlestir = true)
     {
-        Ayarlar = JsonSerializer.Deserialize<SatinalmaAyarlar>(json, JsonSecenekleri)
-                  ?? SatinalmaAyarlar.VarsayilanOlustur();
+        var gelen = JsonSerializer.Deserialize<SatinalmaAyarlar>(json, JsonSecenekleri)
+                    ?? SatinalmaAyarlar.VarsayilanOlustur();
+
+        if (birlestir)
+        {
+            Ayarlar.SilinenTalepIdleri = SatinalmaTalepSenkronYardimcisi.SilinenleriBirlestir(
+                Ayarlar.SilinenTalepIdleri, gelen.SilinenTalepIdleri);
+            Ayarlar.SonTalepSira = Math.Max(Ayarlar.SonTalepSira, gelen.SonTalepSira);
+            Ayarlar.SonSiparisSira = Math.Max(Ayarlar.SonSiparisSira, gelen.SonSiparisSira);
+            if (Ayarlar.VarsayilanUsdKuru <= 0 && gelen.VarsayilanUsdKuru > 0)
+                Ayarlar.VarsayilanUsdKuru = gelen.VarsayilanUsdKuru;
+            if (Ayarlar.VarsayilanEurKuru <= 0 && gelen.VarsayilanEurKuru > 0)
+                Ayarlar.VarsayilanEurKuru = gelen.VarsayilanEurKuru;
+            if (string.IsNullOrWhiteSpace(Ayarlar.FirmaAdi) && !string.IsNullOrWhiteSpace(gelen.FirmaAdi))
+                Ayarlar.FirmaAdi = gelen.FirmaAdi;
+
+            ImzaListeleriniBirlestir(Ayarlar.SefImzalari, gelen.SefImzalari);
+            ImzaListeleriniBirlestir(Ayarlar.YonetimImzalari, gelen.YonetimImzalari);
+
+            if (string.IsNullOrWhiteSpace(Ayarlar.SartnameMetni) && !string.IsNullOrWhiteSpace(gelen.SartnameMetni))
+                Ayarlar.SartnameMetni = gelen.SartnameMetni;
+            if (string.IsNullOrWhiteSpace(Ayarlar.TeklifIstemeSartnameleri) &&
+                !string.IsNullOrWhiteSpace(gelen.TeklifIstemeSartnameleri))
+                Ayarlar.TeklifIstemeSartnameleri = gelen.TeklifIstemeSartnameleri;
+        }
+        else
+            Ayarlar = gelen;
+
         AyarlariHazirla(Ayarlar);
+        SilinenTalepleriTemizle();
+    }
+
+    private static void ImzaListeleriniBirlestir(
+        ObservableCollection<ImzaAyari> hedef,
+        IEnumerable<ImzaAyari>? kaynak)
+    {
+        if (kaynak is null)
+            return;
+
+        foreach (var kaynakImza in kaynak)
+        {
+            if (string.IsNullOrWhiteSpace(kaynakImza.Unvan))
+                continue;
+
+            var mevcut = hedef.FirstOrDefault(h =>
+                string.Equals(h.Unvan?.Trim(), kaynakImza.Unvan.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (mevcut is not null)
+            {
+                if (string.IsNullOrWhiteSpace(mevcut.AdSoyad) && !string.IsNullOrWhiteSpace(kaynakImza.AdSoyad))
+                    mevcut.AdSoyad = kaynakImza.AdSoyad.Trim();
+
+                mevcut.Unvan = kaynakImza.Unvan.Trim();
+                mevcut.Aktif = mevcut.Aktif || kaynakImza.Aktif;
+            }
+            else
+            {
+                hedef.Add(new ImzaAyari
+                {
+                    Unvan = kaynakImza.Unvan.Trim(),
+                    AdSoyad = kaynakImza.AdSoyad?.Trim() ?? "",
+                    Aktif = kaynakImza.Aktif
+                });
+            }
+        }
+    }
+
+    public static void SilinenTalepleriTemizle()
+    {
+        var once = Talepler.Count;
+        SatinalmaTalepSenkronYardimcisi.SilinenleriListedenCikar(Talepler, Ayarlar.SilinenTalepIdleri);
+        if (Talepler.Count != once)
+            TaleplerGuncellendi?.Invoke();
     }
 
     public static string YeniTalepNoOlustur()
@@ -222,17 +318,23 @@ public static class SatinalmaDepo
         return no;
     }
 
-    public static SatinalmaTalep YeniTalepOlustur()
+    public static SatinalmaTalep YeniTalepOlustur(bool talepNoVer = false)
     {
         var talep = new SatinalmaTalep
         {
-            TalepNo = YeniTalepNoOlustur(),
+            TalepNo = talepNoVer ? YeniTalepNoOlustur() : "",
             Tarih = DateTime.Now.ToString("dd.MM.yyyy"),
             Durum = SatinalmaTalepDurumlari.Taslak
         };
         talep.Kalemler.Add(new SatinalmaTalepKalemi { SiraNo = 1, Birim = "Adet" });
         return talep;
     }
+
+    public static void TalepKalemleriniTekliflerleSenkronla(SatinalmaTalep talep) =>
+        SatinalmaTalepYardimcisi.TalepKalemleriniTekliflerleSenkronla(talep);
+
+    public static void TeklifDegisikligiIsle(SatinalmaTalep talep) =>
+        SatinalmaTalepYardimcisi.TeklifDegisikligiIsle(talep);
 
     public static void TeklifFiyatlariniHazirla(SatinalmaTalep talep, SatinalmaTeklif teklif)
     {

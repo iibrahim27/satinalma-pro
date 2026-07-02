@@ -286,6 +286,25 @@ public static class SatinalmaYonetimIslemleri
 
 
 
+    public static async Task TeklifGeriGonderAsync(SatinalmaTalep talep, string? gerekce)
+    {
+        if (!KullaniciYetkileri.YonetimKararVerebilir())
+            throw new InvalidOperationException("Geri gönderme yetkiniz yok.");
+
+        if (!SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep))
+            throw new InvalidOperationException("Bu talep için geri gönderilecek teklif onayı bulunamadı.");
+
+        talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
+        talep.TeklifDuzeltmeNotu = string.IsNullOrWhiteSpace(gerekce) ? "" : gerekce.Trim();
+        SatinalmaDepo.Kaydet();
+
+        await BildirimYoneticisi.GecersizleriOkunduYapAsync();
+        await BildirimGonderAsync(() => SatinalmaBildirimleri.TeklifDuzeltmeyeGonderildiAsync(talep, talep.TeklifDuzeltmeNotu));
+    }
+
+    public static async Task TeklifReddetAsync(SatinalmaTalep talep, string? gerekce) =>
+        await ReddetAsync(talep, gerekce);
+
     private static void YonetimOnayiKaydet(SatinalmaTalep talep)
 
 

@@ -1,4 +1,6 @@
+using SatinalmaPro.Mobile.Helpers;
 using SatinalmaPro.Mobile;
+using SatinalmaPro.Mobile.Services;
 using SatinalmaPro.Mobile.ViewModels;
 using SatinalmaPro.Shared.Models;
 
@@ -7,11 +9,13 @@ namespace SatinalmaPro.Mobile.Views;
 public partial class TalepListPage : ContentPage
 {
     private readonly TalepListViewModel _vm;
+    private readonly OturumServisi _oturum;
 
-    public TalepListPage(TalepListViewModel vm)
+    public TalepListPage(TalepListViewModel vm, OturumServisi oturum)
     {
         InitializeComponent();
         _vm = vm;
+        _oturum = oturum;
         BindingContext = vm;
         RefreshView.Command = new Command(async () =>
         {
@@ -23,6 +27,8 @@ public partial class TalepListPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (!await MobilSayfaKorumasi.RotaErisimAsync(this, _oturum, "taleplerim"))
+            return;
         await Yukle();
     }
 

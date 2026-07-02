@@ -32,4 +32,21 @@ public static class MobilSayfaKorumasi
 
     public static async Task<bool> AlinanMalzemeErisimAsync(ContentPage sayfa, OturumServisi oturum) =>
         await RotaErisimAsync(sayfa, oturum, "onaylanan-malzemeler", "Alınan malzemeler modülüne erişim yetkiniz yok.");
+
+    public static async Task<bool> StackErisimAsync(ContentPage sayfa, OturumServisi oturum, string stackRoute, string? mesaj = null)
+    {
+        var soru = stackRoute.IndexOf('?');
+        var taban = soru >= 0 ? stackRoute[..soru] : stackRoute;
+
+        if (MobilYetkiServisi.RotaGorebilir(oturum.Rol, taban))
+            return true;
+
+        var parent = RolRouteServisi.StackRouteUstSekmesi(taban, oturum.Rol);
+        if (parent is not null && MobilYetkiServisi.RotaGorebilir(oturum.Rol, parent))
+            return true;
+
+        await sayfa.DisplayAlert("Yetki", mesaj ?? "Bu sayfaya erişim yetkiniz yok.", "Tamam");
+        await Shell.Current.GoToAsync("//main");
+        return false;
+    }
 }

@@ -12,7 +12,7 @@ namespace SatinalmaPro.Mobile;
 public class BildirimForegroundService : Service
 {
     private const int BildirimId = 9001;
-    private const int KontrolAraligiMs = 60_000;
+    private const int KontrolAraligiMs = 30_000;
     private Timer? _zamanlayici;
     private bool _calisiyor;
     private static Services.OturumServisi? _yalnizOturum;
@@ -23,6 +23,7 @@ public class BildirimForegroundService : Service
             return StartCommandResult.Sticky;
 
         _calisiyor = true;
+        AndroidBildirimKanali.Olustur();
         var kanal = new NotificationChannel("satinalma_pro_bg", "Satınalma Pro", NotificationImportance.Low)
         {
             Description = "Arka plan bildirim senkronu"
@@ -164,7 +165,7 @@ public class SatinalmaFirebaseMessagingService : FirebaseMessagingService
             launchIntent,
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
-        var kanal = new NotificationChannel("satinalma_pro", "Satınalma Pro", NotificationImportance.High)
+        var kanal = new NotificationChannel(AndroidBildirimKanali.KanalId, "Satınalma Pro", NotificationImportance.High)
         {
             Description = "Talep ve onay bildirimleri",
             LockscreenVisibility = NotificationVisibility.Public
@@ -173,7 +174,7 @@ public class SatinalmaFirebaseMessagingService : FirebaseMessagingService
         var nm = (NotificationManager?)GetSystemService(NotificationService);
         nm?.CreateNotificationChannel(kanal);
 
-        var bildirim = new NotificationCompat.Builder(this, "satinalma_pro")
+        var bildirim = new NotificationCompat.Builder(this, AndroidBildirimKanali.KanalId)
             .SetContentTitle(baslik)
             .SetContentText(govde)
             .SetStyle(new NotificationCompat.BigTextStyle().BigText(govde))

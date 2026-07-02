@@ -52,7 +52,7 @@ public partial class SatinalmaTalepOnizlemeWindow : Window
         }
 
         var duzenlenebilir = KullaniciYetkileri.SatinalmaTalepDuzenleyebilir(talep.TalepEden)
-                             && talep.Durum is SatinalmaTalepDurumlari.Taslak or SatinalmaTalepDurumlari.Hazirlaniyor;
+                             && SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(talep);
         BtnDuzenle.Visibility = duzenlenebilir ? Visibility.Visible : Visibility.Collapsed;
     }
 

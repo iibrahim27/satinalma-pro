@@ -115,6 +115,9 @@ public class SatinalmaTalep
     /// <summary>Talebi oluşturan kullanıcının rolü — satınalma iç teklif akışı için.</summary>
     public string OlusturanRol { get; set; } = "";
     public string RedGerekcesi { get; set; } = "";
+    public string TeklifDuzeltmeNotu { get; set; } = "";
+    /// <summary>UTC unix ms — bulut birleştirmede en güncel kayıt kazanır.</summary>
+    public long GuncellemeUtc { get; set; }
     public Guid? YonetimOnerilenTeklifId { get; set; }
     /// <summary>Satınalmacı öneriyi elle seçtiyse true; aksi halde sistem en düşük fiyatlı teklifi önerir.</summary>
     public bool SatinalmaOnerisiElleSecildi { get; set; }
@@ -269,6 +272,7 @@ public class SatinalmaAyarlar
     public ObservableCollection<SartnameDosyasi> Sartnameler { get; set; } = [];
     public int SonTalepSira { get; set; }
     public int SonSiparisSira { get; set; }
+    public List<Guid> SilinenTalepIdleri { get; set; } = [];
     public decimal VarsayilanUsdKuru { get; set; }
     public decimal VarsayilanEurKuru { get; set; }
 

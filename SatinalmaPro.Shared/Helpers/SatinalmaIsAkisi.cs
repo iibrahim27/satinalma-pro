@@ -34,7 +34,26 @@ public static class SatinalmaIsAkisi
         if (durum is SatinalmaTalepDurumlari.TeklifGirisi or SatinalmaTalepDurumlari.Karsilastirma)
             return true;
 
+        // Yönetime gönderilmiş ama onaylanmamış — satınalma düzeltebilir
+        if (durum == SatinalmaTalepDurumlari.YonetimOnayinda
+            && kullaniciAktif
+            && SatinalmaRoluMu(kullaniciRol)
+            && !yonetimOnayKilitli)
+            return true;
+
+        // Satınalma: yönetime gönderilmiş talebe onay beklemeden teklif girebilir
+        if (durum == SatinalmaTalepDurumlari.ImzaSurecinde
+            && kullaniciAktif
+            && SatinalmaRoluMu(kullaniciRol))
+            return true;
+
         return SatinalmaIcTeklifEklenebilir(durum, olusturanRol, kullaniciRol, kullaniciAktif);
+    }
+
+    private static bool SatinalmaRoluMu(string? rol)
+    {
+        var n = KullaniciRolleri.Normalize(rol);
+        return n == KullaniciRolleri.Satinalma || KullaniciRolleri.AdminMi(rol);
     }
 
     /// <summary>Yalnızca satınalma: kayıt sonrası yönetime göndermeden teklif girişi.</summary>
@@ -56,7 +75,9 @@ public static class SatinalmaIsAkisi
 
         return !string.IsNullOrWhiteSpace(olusturanRol)
                && KullaniciRolleri.Normalize(olusturanRol) == KullaniciRolleri.Satinalma
-               && durum is SatinalmaTalepDurumlari.Hazirlaniyor or SatinalmaTalepDurumlari.Karsilastirma;
+               && durum is SatinalmaTalepDurumlari.Hazirlaniyor
+                   or SatinalmaTalepDurumlari.ImzaSurecinde
+                   or SatinalmaTalepDurumlari.Karsilastirma;
     }
 
     public static bool YonetimeTeklifGonderilebilir(SatinalmaTalep talep) =>
@@ -109,6 +130,16 @@ public static class SatinalmaIsAkisi
 
     public static bool DirektOnaylanabilir(SatinalmaTalep talep) => TeklifIstenebilir(talep);
 
+    /// <summary>Teklif veya kalem değişikliği sonrası yönetim kuyruğundan çekilir — yeniden gönderim gerekir.</summary>
+    public static void TeklifRevizyonuBaslat(SatinalmaTalep talep)
+    {
+        if (talep.Durum == SatinalmaTalepDurumlari.YonetimOnayinda)
+            talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
+    }
+
+    public static bool TeklifDuzenlemeDevamEdiyor(SatinalmaTalep talep) =>
+        SatinalmaTalepYardimcisi.TeklifDuzenlemeDevamEdiyor(talep);
+
     public static string TeklifEklemeEngelMesaji(SatinalmaTalep talep, KullaniciProfili? kullanici = null) =>
         TeklifEklemeEngelMesaji(
             talep.Durum,
@@ -140,7 +171,9 @@ public static class SatinalmaIsAkisi
                 ? "Satınalma talebi: önce kaydedin, teklifleri girin, ardından yönetime gönderin."
                 : "Talep henüz onaylanmadı. Yönetim veya satınalma «Teklif İste» demeden teklif girilemez.",
         SatinalmaTalepDurumlari.ImzaSurecinde =>
-            "Yönetim veya satınalma henüz «Teklif İste» demedi. Onaylanmayan talebe teklif girilmez.",
+            SatinalmaRoluMu(kullaniciRol)
+                ? "Teklifleri girebilirsiniz; tamamlayınca karşılaştırmadan yönetime gönderin."
+                : "Yönetim veya satınalma henüz «Teklif İste» demedi. Onaylanmayan talebe teklif girilmez.",
         SatinalmaTalepDurumlari.Reddedildi =>
             "Reddedilmiş talebe teklif eklenemez.",
         _ when talepTuru == TalepTurleri.Acil =>

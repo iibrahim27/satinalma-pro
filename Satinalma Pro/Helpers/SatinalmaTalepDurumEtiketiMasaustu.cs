@@ -23,6 +23,26 @@ public static class SatinalmaTalepDurumEtiketiMasaustu
         if (talep.Durum == SatinalmaTalepDurumlari.Onaylandi)
             return SatinalmaTalepDurumEtiketi.Onaylandi;
 
+        if (talep.Durum is SatinalmaTalepDurumlari.Hazirlaniyor
+            or SatinalmaTalepDurumlari.ImzaSurecinde
+            or SatinalmaTalepDurumlari.YonetimOnayinda)
+        {
+            if (talep.Durum == SatinalmaTalepDurumlari.ImzaSurecinde && (talep.Teklifler?.Count ?? 0) > 0)
+                return SatinalmaTalepDurumEtiketi.Karsilastirmada;
+            return SatinalmaTalepDurumEtiketi.OnayBekliyor;
+        }
+
+        if (talep.Durum == SatinalmaTalepDurumlari.TeklifGirisi
+            && (talep.Teklifler?.Count ?? 0) == 0)
+            return SatinalmaTalepDurumEtiketi.TeklifBekleniyor;
+
+        if (talep.Durum == SatinalmaTalepDurumlari.Taslak)
+            return SatinalmaTalepDurumEtiketi.Taslak;
+
+        if (talep.Durum == SatinalmaTalepDurumlari.Karsilastirma
+            || (talep.Durum == SatinalmaTalepDurumlari.TeklifGirisi && (talep.Teklifler?.Count ?? 0) > 0))
+            return SatinalmaTalepDurumEtiketi.Karsilastirmada;
+
         return SatinalmaTalepDurumEtiketi.TeklifBekleniyor;
     }
 

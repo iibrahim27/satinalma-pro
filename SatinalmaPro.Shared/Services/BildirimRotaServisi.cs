@@ -19,6 +19,7 @@ public static class BildirimRotaServisi
             BildirimTipleri.TeklifIstendi => rol == KullaniciRolleri.Yonetim
                 ? "gelen-talepler"
                 : "teklif-gir",
+            BildirimTipleri.TeklifDuzeltmeIstendi => "teklif-gir",
             BildirimTipleri.TeklifOnayda when bildirim.TalepId is { } tid => $"teklif-onay-detay?id={tid}",
             BildirimTipleri.TeklifOnayda => "teklif-onay",
             BildirimTipleri.Onaylandi when bildirim.TalepId is { } tid =>
@@ -31,6 +32,12 @@ public static class BildirimRotaServisi
             BildirimTipleri.Onaylandi => rol == KullaniciRolleri.Yonetim
                 ? "gecmis-talepler"
                 : "bildirimler",
+            BildirimTipleri.SiparisOlusturuldu => "onaylanan-malzemeler",
+            BildirimTipleri.MalKabulEdildi => rol switch
+            {
+                KullaniciRolleri.Depo => "stok-durum",
+                _ => "onaylanan-malzemeler"
+            },
             _ => bildirim.TalepId is { } t ? $"talep-detay?id={t}" : "bildirimler"
         };
     }
@@ -38,11 +45,14 @@ public static class BildirimRotaServisi
     public static MasaustuBildirimHedef MasaustuHedef(BildirimKaydi bildirim) =>
         bildirim.Tip switch
         {
-            BildirimTipleri.TeklifOnayda => new("Satınalma", "talepler", 2, bildirim.TalepId),
-            BildirimTipleri.TeklifIstendi => new("Satınalma", "talepler", 1, bildirim.TalepId),
+            BildirimTipleri.TeklifOnayda => new("Satınalma", "teklif-onay", 0, bildirim.TalepId),
+            BildirimTipleri.TeklifIstendi => new("Satınalma", "teklif-giris", 0, bildirim.TalepId),
+            BildirimTipleri.TeklifDuzeltmeIstendi => new("Satınalma", "teklif-giris", 0, bildirim.TalepId),
             BildirimTipleri.Onaylandi => new("Satınalma", "onaylanan", 0, bildirim.TalepId),
-            BildirimTipleri.YonetimeGonderildi => new("Satınalma", "talepler", 0, bildirim.TalepId),
-            BildirimTipleri.Reddedildi => new("Satınalma", "talepler", 0, bildirim.TalepId),
+            BildirimTipleri.YonetimeGonderildi => new("Satınalma", "gelen-talepler", 0, bildirim.TalepId),
+            BildirimTipleri.Reddedildi => new("Satınalma", "red-talepler", 0, bildirim.TalepId),
+            BildirimTipleri.SiparisOlusturuldu => new("Satınalma", "alinan-malzemeler", 0, bildirim.TalepId),
+            BildirimTipleri.MalKabulEdildi => new("Satınalma", "alinan-malzemeler", 0, bildirim.TalepId),
             _ => new("Satınalma", "talepler", 0, bildirim.TalepId)
         };
 

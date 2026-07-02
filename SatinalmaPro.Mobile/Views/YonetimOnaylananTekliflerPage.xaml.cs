@@ -1,3 +1,4 @@
+using SatinalmaPro.Mobile.Helpers;
 using SatinalmaPro.Mobile.Services;
 using SatinalmaPro.Shared.Services;
 
@@ -21,6 +22,8 @@ public partial class YonetimOnaylananTekliflerPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (!await MobilSayfaKorumasi.RotaErisimAsync(this, _oturum, "onaylanan-teklifler"))
+            return;
         await YukleAsync();
     }
 

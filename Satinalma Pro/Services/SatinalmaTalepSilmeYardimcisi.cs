@@ -1,4 +1,5 @@
 using SatinalmaPro.Models;
+using SatinalmaPro.Helpers;
 
 namespace SatinalmaPro.Services;
 
@@ -19,13 +20,17 @@ public static class SatinalmaTalepSilmeYardimcisi
             ModulVeriDeposu.AlinanMalzemeler.Remove(kayit);
 
         SatinalmaDepo.Talepler.Remove(talep);
+        SatinalmaTalepSenkronYardimcisi.SilindiIsaretle(talepId, SatinalmaDepo.Ayarlar);
         SatinalmaDepo.Kaydet();
 
         if (silinenMalzeme.Count > 0)
             ModulVeriDeposu.KaydetAlinanMalzemeler();
 
         if (OturumYoneticisi.BulutAktif && OturumYoneticisi.GirisYapildi)
+        {
+            await BulutVeriSenkronu.SilmeSonrasiGonderAsync(iptal);
             await BildirimDeposu.KaydetAsync(iptal);
+        }
     }
 
     private static HashSet<string> BelgeNumaralariniTopla(SatinalmaTalep talep)

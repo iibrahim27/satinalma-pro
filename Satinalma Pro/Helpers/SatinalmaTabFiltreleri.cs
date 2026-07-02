@@ -5,7 +5,8 @@ namespace SatinalmaPro.Helpers;
 public static class SatinalmaTabFiltreleri
 {
     public static bool TeklifDegerlendirme(SatinalmaTalep talep) =>
-        SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep)
+        SatinalmaTalepYardimcisi.SatinalmaTeklifDegerlendirmede(talep)
+        || SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep)
         || SatinalmaTalepKuyrugu.SatinalmaKarsilastirma(talep);
 
     public static bool OnayBekleyen(SatinalmaTalep talep) =>

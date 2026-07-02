@@ -66,23 +66,6 @@ public static class KullaniciYetkileri
         if (!ModulOkuyabilir(modulAdi))
             return false;
 
-        if (modulAdi.Equals("Satınalma", StringComparison.OrdinalIgnoreCase)
-            && sekmeAdi.Equals(SatinalmaPro.Shared.Services.MasaustuRolHaritasi.Panel, StringComparison.OrdinalIgnoreCase))
-        {
-            if (!OturumYoneticisi.BulutAktif)
-                return true;
-
-            var kullaniciPanel = OturumYoneticisi.AktifKullanici;
-            if (KullaniciRolleri.AdminMi(kullaniciPanel?.Rol))
-                return true;
-
-            var panelYetki = kullaniciPanel is null ? null : ModulYetkisiniBul(kullaniciPanel, modulAdi);
-            if (panelYetki?.Sekmeler.Count > 0)
-                return true;
-
-            return SatinalmaPro.Shared.Services.MasaustuRolHaritasi.SatinalmaSekmeleri(kullaniciPanel?.Rol).Count > 0;
-        }
-
         if (!OturumYoneticisi.BulutAktif)
             return true;
 

@@ -40,7 +40,7 @@ public sealed class MasaustuDashboardSorgu : ISatinalmaDashboardSorgu
         SatinalmaTalepKuyrugu.Filtrele(_talepler, SatinalmaTalepKuyrugu.YonetimGecmisTeklifli);
 
     public IEnumerable<SharedTalep> TeklifGirisiBekleyenleri() =>
-        SatinalmaTalepKuyrugu.Filtrele(_talepler, SatinalmaTalepKuyrugu.SatinalmaTeklifGirisi);
+        SatinalmaTalepKuyrugu.Filtrele(_talepler, SatinalmaTalepKuyrugu.SatinalmaTeklifGirisiAktif);
 
     public IEnumerable<SharedTalep> KarsilastirmaBekleyenleri() =>
         SatinalmaTalepKuyrugu.Filtrele(_talepler, SatinalmaTalepKuyrugu.SatinalmaKarsilastirma);

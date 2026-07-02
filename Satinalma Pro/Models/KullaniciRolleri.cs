@@ -35,4 +35,4 @@ public static class KullaniciRolleri
         return SatinalmaPro.Shared.Services.MasaustuRolHaritasi.MasaustuModulleri(rol).ToList();
     }
 }
-
+

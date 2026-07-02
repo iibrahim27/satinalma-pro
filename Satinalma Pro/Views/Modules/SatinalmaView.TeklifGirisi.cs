@@ -33,18 +33,32 @@ public partial class SatinalmaView
 
     private void TeklifGirisTalepListesiniYenile()
     {
+        var seciliId = _teklifGirisTalep?.Id;
+        var formAcik = TeklifGirisIcerik.Visibility == Visibility.Visible;
+
         var liste = SatinalmaDepo.Talepler
-            .Where(t => SatinalmaPro.Shared.Helpers.SatinalmaTalepKuyrugu.SatinalmaTeklifGirisi(
-                t.Durum,
-                t.OlusturanRol,
-                t.Teklifler?.Count ?? 0,
-                t.YonetimOnayKilitli,
-                t.TalepTuru))
+            .Where(SatinalmaTalepKuyrugu.SatinalmaTeklifGirisiAktif)
             .OrderByDescending(t => t.Tarih)
             .ThenByDescending(t => t.TalepNo)
             .ToList();
 
         TeklifGirisTalepListesi.ItemsSource = liste;
+
+        if (seciliId is { } id)
+        {
+            var hedef = liste.FirstOrDefault(t => t.Id == id)
+                        ?? SatinalmaDepo.Talepler.FirstOrDefault(t => t.Id == id);
+            if (hedef is not null)
+            {
+                _teklifGirisTalep = hedef;
+                if (liste.Contains(hedef))
+                    TeklifGirisTalepListesi.SelectedItem = hedef;
+                if (formAcik)
+                    TeklifGirisFormuGoster(hedef);
+                TeklifBekleyenListesiniYenile();
+                return;
+            }
+        }
 
         if (_teklifGirisTalep is not null && liste.All(t => t.Id != _teklifGirisTalep.Id))
         {
@@ -54,6 +68,70 @@ public partial class SatinalmaView
         }
 
         TeklifBekleyenListesiniYenile();
+    }
+
+    private static SatinalmaTalep? GuncelTalepGetir(SatinalmaTalep? talep) =>
+        talep is null ? null : SatinalmaDepo.Talepler.FirstOrDefault(t => t.Id == talep.Id) ?? talep;
+
+    private async Task<bool> YonetimeTeklifDegerlendirmeyeGonderAsync(SatinalmaTalep? talep)
+    {
+        talep = GuncelTalepGetir(talep);
+        if (talep is null)
+            return false;
+
+        talep.Teklifler ??= [];
+        talep.Kalemler ??= [];
+        foreach (var teklif in talep.Teklifler)
+            teklif.FiyatlariHesapla(talep.Kalemler);
+
+        if (talep.Teklifler.Count == 0)
+        {
+            MessageBox.Show("Göndermek için en az bir teklif girin.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        foreach (var teklif in talep.Teklifler)
+        {
+            if (teklif.GenelToplam <= 0)
+            {
+                MessageBox.Show($"'{teklif.FirmaAdi}' teklifinde geçerli fiyat bulunamadı.", UygulamaBilgisi.Ad,
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+        }
+
+        var oneri = talep.OnerilenTeklif();
+        if (oneri is null)
+        {
+            MessageBox.Show("Geçerli bir satınalma önerisi oluşturulamadı. Teklif fiyatlarını kontrol edin.",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        if (!talep.SatinalmaOnerisiElleSecildi)
+            talep.YonetimOnerilenTeklifId = oneri.Id;
+
+        var onay = MessageBox.Show(
+            $"Teklifler yönetim onayına gönderilsin mi?\n\nSatınalma önerisi: {oneri.FirmaAdi}",
+            UygulamaBilgisi.Ad, MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (onay != MessageBoxResult.Yes)
+            return false;
+
+        talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
+        SatinalmaDepo.Kaydet();
+
+        try
+        {
+            await BildirimYoneticisi.GecersizleriOkunduYapAsync();
+            await SatinalmaBildirimleri.TeklifOnaydaAsync(talep);
+        }
+        catch
+        {
+            // bildirim hatası kaydı engellemez
+        }
+
+        return true;
     }
 
     private void TeklifBekleyenTablosu_DoubleClick(object sender, MouseButtonEventArgs e)
@@ -94,6 +172,16 @@ public partial class SatinalmaView
 
         _seciliTeklif = null;
         GuncelleTeklifYonetimeYenidenGonder();
+
+        if (!string.IsNullOrWhiteSpace(talep.TeklifDuzeltmeNotu))
+        {
+            TxtTeklifDuzeltmeNotu.Text = $"Yönetim düzeltme notu: {talep.TeklifDuzeltmeNotu}";
+            TeklifDuzeltmeNotuPanel.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            TeklifDuzeltmeNotuPanel.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void GuncelleTeklifYonetimeYenidenGonder()
@@ -192,11 +280,16 @@ public partial class SatinalmaView
             return;
 
         _teklifGirisTalep.Teklifler.Add(teklif);
-        if (_teklifGirisTalep.Durum is SatinalmaTalepDurumlari.TeklifGirisi or SatinalmaTalepDurumlari.Hazirlaniyor)
+        if (_teklifGirisTalep.Durum is SatinalmaTalepDurumlari.TeklifGirisi
+            or SatinalmaTalepDurumlari.Hazirlaniyor
+            or SatinalmaTalepDurumlari.ImzaSurecinde)
             _teklifGirisTalep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
+
+        SatinalmaDepo.TeklifDegisikligiIsle(_teklifGirisTalep);
         SatinalmaDepo.Kaydet();
         TeklifListesiniYenile();
         TeklifGirisTalepListesiniYenile();
+        GuncelleTeklifYonetimeYenidenGonder();
     }
 
     private void TeklifDuzenle_Click(object sender, RoutedEventArgs e)
@@ -211,8 +304,10 @@ public partial class SatinalmaView
         if (!TeklifPenceresiAc(_seciliTeklif))
             return;
 
+        SatinalmaDepo.TeklifDegisikligiIsle(_teklifGirisTalep);
         SatinalmaDepo.Kaydet();
         TeklifListesiniYenile();
+        GuncelleTeklifYonetimeYenidenGonder();
     }
 
     private void TeklifSil_Click(object sender, RoutedEventArgs e)
@@ -237,9 +332,11 @@ public partial class SatinalmaView
             _teklifGirisTalep.SatinalmaOnerisiElleSecildi = false;
         }
         _seciliTeklif = null;
+        SatinalmaDepo.TeklifDegisikligiIsle(_teklifGirisTalep);
         SatinalmaDepo.Kaydet();
         TeklifListesiniYenile();
         TeklifGirisTalepListesiniYenile();
+        GuncelleTeklifYonetimeYenidenGonder();
     }
 
     private bool TeklifPenceresiAc(SatinalmaTeklif teklif)
@@ -310,80 +407,49 @@ public partial class SatinalmaView
 
     private void TeklifGirisKaydet_Click(object sender, RoutedEventArgs e)
     {
+        _teklifGirisTalep = GuncelTalepGetir(_teklifGirisTalep);
         if (_teklifGirisTalep is null)
             return;
 
         foreach (var teklif in _teklifGirisTalep.Teklifler ?? [])
             teklif.FiyatlariHesapla(_teklifGirisTalep.Kalemler);
 
+        if ((_teklifGirisTalep.Teklifler?.Count ?? 0) > 0
+            && _teklifGirisTalep.Durum is SatinalmaTalepDurumlari.TeklifGirisi
+                or SatinalmaTalepDurumlari.Hazirlaniyor
+                or SatinalmaTalepDurumlari.ImzaSurecinde)
+            _teklifGirisTalep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
+
+        SatinalmaDepo.TeklifDegisikligiIsle(_teklifGirisTalep);
+        var talepNo = _teklifGirisTalep.TalepNo;
         SatinalmaDepo.Kaydet();
         TeklifGirisTalepListesiniYenile();
         SatinalmaOnerisiniGuncelle();
+        SekmeSayaclariniYenile();
+        GuncelleTeklifYonetimeYenidenGonder();
 
         MessageBox.Show(
-            $"{_teklifGirisTalep.TalepNo} kaydedildi. Tüm teklifler tamamlandığında «Değerlendirmeye Gönder» ile yönetime iletebilirsiniz.",
+            $"{talepNo} ve teklifler kaydedildi. Daha fazla teklif ekleyebilir veya «Değerlendirmeye Gönder» ile yönetime iletebilirsiniz.",
             UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private async void DegerlendirmeyeGonder_Click(object sender, RoutedEventArgs e)
     {
-        if (_teklifGirisTalep is null)
+        if (!await YonetimeTeklifDegerlendirmeyeGonderAsync(_teklifGirisTalep))
             return;
 
-        if ((_teklifGirisTalep.Teklifler?.Count ?? 0) == 0)
-        {
-            MessageBox.Show("Göndermek için en az bir teklif girin.", UygulamaBilgisi.Ad,
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        foreach (var teklif in _teklifGirisTalep.Teklifler ?? [])
-        {
-            teklif.FiyatlariHesapla(_teklifGirisTalep.Kalemler);
-            if (teklif.GenelToplam <= 0)
-            {
-                MessageBox.Show($"'{teklif.FirmaAdi}' teklifinde geçerli fiyat bulunamadı.", UygulamaBilgisi.Ad,
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-        }
-
-        if (!_teklifGirisTalep.SatinalmaOnerisiElleSecildi || _teklifGirisTalep.YonetimOnerilenTeklifId is null)
-        {
-            MessageBox.Show("Yönetime göndermeden önce satınalma önerisi için bir firma işaretleyin.",
-                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        var onay = MessageBox.Show(
-            "Teklifler değerlendirme aşamasına gönderilsin mi?",
-            UygulamaBilgisi.Ad, MessageBoxButton.YesNo, MessageBoxImage.Question);
-        if (onay != MessageBoxResult.Yes)
-            return;
-
-        _teklifGirisTalep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
-        SatinalmaDepo.Kaydet();
-
-        try
-        {
-            await BildirimYoneticisi.GecersizleriOkunduYapAsync();
-            await SatinalmaBildirimleri.TeklifOnaydaAsync(_teklifGirisTalep);
-        }
-        catch
-        {
-            // bildirim hatası kaydı engellemez
-        }
-
-        var no = _teklifGirisTalep.TalepNo;
+        var no = _teklifGirisTalep?.TalepNo ?? "";
         _teklifGirisTalep = null;
         _seciliTeklif = null;
         TeklifGirisTalepListesiniYenile();
         TeklifGirisFormuGizle();
         TeklifGirisTalepListesi.SelectedItem = null;
+        SekmeSayaclariniYenile();
+        AkisSekmeleriniYenile();
 
-        SekmeyeGec("Onay Bekleyen");
-        MessageBox.Show($"{no} yönetim teklif onayına gönderildi.", UygulamaBilgisi.Ad,
-            MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(
+            $"{no} yönetim teklif onayına gönderildi.\n\nYönetim kullanıcıları «Teklif Onay» ekranından inceleyebilir.",
+            UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private async void TeklifYonetimeYenidenGonder_Click(object sender, RoutedEventArgs e)

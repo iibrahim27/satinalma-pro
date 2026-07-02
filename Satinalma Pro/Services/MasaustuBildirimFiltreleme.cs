@@ -40,10 +40,17 @@ public static class MasaustuBildirimFiltreleme
             BildirimTipleri.TeklifIstendi =>
                 talep.Durum == SatinalmaTalepDurumlari.TeklifGirisi
                 && (talep.Teklifler?.Count ?? 0) == 0,
+            BildirimTipleri.TeklifDuzeltmeIstendi =>
+                SatinalmaTalepYardimcisi.TeklifDuzenlemeDevamEdiyor(talep),
             BildirimTipleri.TeklifOnayda =>
                 SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep),
             BildirimTipleri.Reddedildi =>
                 talep.Durum == SatinalmaTalepDurumlari.Reddedildi,
+            BildirimTipleri.Onaylandi =>
+                talep.Durum is SatinalmaTalepDurumlari.Onaylandi or SatinalmaTalepDurumlari.SiparisOlusturuldu,
+            BildirimTipleri.SiparisOlusturuldu =>
+                talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu,
+            BildirimTipleri.MalKabulEdildi => true,
             _ => true
         };
     }
@@ -74,7 +81,8 @@ public static class MasaustuBildirimFiltreleme
         {
             BildirimTipleri.YonetimeGonderildi or BildirimTipleri.TeklifIstendi
                 or BildirimTipleri.TeklifOnayda or BildirimTipleri.Onaylandi
-                or BildirimTipleri.Reddedildi => "Satınalma",
+                or BildirimTipleri.Reddedildi or BildirimTipleri.SiparisOlusturuldu
+                or BildirimTipleri.MalKabulEdildi => "Satınalma",
             _ => "Satınalma"
         };
 }

@@ -36,6 +36,7 @@ public partial class SatinalmaView
         ReddedilenListesiniYenile();
         SiparisMalzemeListesiniYenile();
         GelenSiparisListesiniYenile();
+        SekmeSayaclariniYenile();
     }
 
     public void TeklifDegerTalebiAc(SatinalmaTalep? talep)
@@ -132,6 +133,93 @@ public partial class SatinalmaView
         BtnTeklifDegerOnayla.Visibility = bekleyenTeklif && KullaniciYetkileri.TeklifOnayVerebilir()
             ? Visibility.Visible
             : Visibility.Collapsed;
+
+        var yonetimKarar = bekleyenTeklif && KullaniciYetkileri.YonetimKararVerebilir();
+        BtnTeklifDegerGeriGonder.Visibility = yonetimKarar ? Visibility.Visible : Visibility.Collapsed;
+        BtnTeklifDegerReddet.Visibility = yonetimKarar ? Visibility.Visible : Visibility.Collapsed;
+
+        var yonetimGonder = SatinalmaTalepYardimcisi.SatinalmaTeklifDegerlendirmede(talep)
+            && !yonetimModu;
+        BtnTeklifDegerYonetimeGonder.Visibility = yonetimGonder
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private async void TeklifDegerYonetimeGonder_Click(object sender, RoutedEventArgs e)
+    {
+        if (!await YonetimeTeklifDegerlendirmeyeGonderAsync(_teklifDegerTalep))
+            return;
+
+        var no = _teklifDegerTalep?.TalepNo ?? "";
+        _teklifDegerTalep = null;
+        _kalemOnaySatirlari = [];
+        TeklifDegerTalepListesiniYenile();
+        TeklifDegerFormuGizle();
+        TeklifDegerTalepListesi.SelectedItem = null;
+        TeklifGirisTalepListesiniYenile();
+        SekmeSayaclariniYenile();
+
+        MessageBox.Show(
+            $"{no} yönetim teklif onayına gönderildi.\n\nYönetim kullanıcıları «Teklif Onay» ekranından inceleyebilir.",
+            UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private async void TeklifDegerGeriGonder_Click(object sender, RoutedEventArgs e)
+    {
+        if (_teklifDegerTalep is null)
+            return;
+
+        var gerekce = RedGerekcesiIste("Teklifleri Satınalmaya Geri Gönder", "Düzeltme notu (isteğe bağlı):", "Geri Gönder", zorunlu: false);
+        if (gerekce is null)
+            return;
+
+        try
+        {
+            await SatinalmaYonetimIslemleri.TeklifGeriGonderAsync(_teklifDegerTalep, gerekce);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var no = _teklifDegerTalep.TalepNo;
+        _teklifDegerTalep = null;
+        _kalemOnaySatirlari = [];
+        AkisSekmeleriniYenile();
+        TeklifDegerFormuGizle();
+        TeklifDegerTalepListesi.SelectedItem = null;
+        MessageBox.Show($"{no} satınalmaya düzeltme için geri gönderildi.", UygulamaBilgisi.Ad,
+            MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private async void TeklifDegerReddet_Click(object sender, RoutedEventArgs e)
+    {
+        if (_teklifDegerTalep is null)
+            return;
+
+        var gerekce = RedGerekcesiIste("Teklif Red", "Red gerekçesini girin:");
+        if (gerekce is null)
+            return;
+
+        try
+        {
+            await SatinalmaYonetimIslemleri.TeklifReddetAsync(_teklifDegerTalep, gerekce);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var no = _teklifDegerTalep.TalepNo;
+        _teklifDegerTalep = null;
+        _kalemOnaySatirlari = [];
+        AkisSekmeleriniYenile();
+        TeklifDegerFormuGizle();
+        TeklifDegerTalepListesi.SelectedItem = null;
+        MessageBox.Show($"{no} reddedildi.", UygulamaBilgisi.Ad,
+            MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private static bool FirmaOnayiGeriAlGoster(SatinalmaTalep talep) =>
@@ -219,9 +307,17 @@ public partial class SatinalmaView
             return;
         }
 
+        _ = TeklifDegerOnaylaAsync();
+    }
+
+    private async Task TeklifDegerOnaylaAsync()
+    {
+        if (_teklifDegerTalep is null)
+            return;
+
         try
         {
-            SatinalmaSiparisIslemleri.KalemBazliOnayla(_teklifDegerTalep);
+            await SatinalmaSiparisIslemleri.KalemBazliOnaylaAsync(_teklifDegerTalep);
         }
         catch (Exception ex)
         {
@@ -350,7 +446,7 @@ public partial class SatinalmaView
                 : "Onaylı — sipariş bekliyor"
         };
 
-    private void SiparisVer_Click(object sender, RoutedEventArgs e)
+    private async void SiparisVer_Click(object sender, RoutedEventArgs e)
     {
         if (_onaylananTalep is null)
             return;
@@ -363,7 +459,7 @@ public partial class SatinalmaView
 
         try
         {
-            SatinalmaSiparisIslemleri.SiparisVer(_onaylananTalep);
+            await SatinalmaSiparisIslemleri.SiparisVerAsync(_onaylananTalep);
         }
         catch (Exception ex)
         {
@@ -402,7 +498,13 @@ public partial class SatinalmaView
             .ToList();
     }
 
-    private void ReddedilenTablosu_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
+    private void ReddedilenTablosu_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ReddedilenTablosu.SelectedItem is not SatinalmaTalep talep)
+            return;
+
+        TalepOnizlemePenceresiniAc(talep);
+    }
 
     private void AlinanMalzemeListesiniYenile() => SiparisMalzemeListesiniYenile();
 
