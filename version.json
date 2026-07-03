@@ -1,9 +1,9 @@
 {
-    "version": "1.9.6",
-    "build": 43,
-    "downloadUrl": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.6/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.6/SatinalmaPro.zip",
-    "downloadUrlApk": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.6/SatinalmaPro.apk",
-    "notes": "Android push hizlandirildi: FCM data-only HIGH priority, polling 5sn, arka plan servisi 10sn. Sef talep duzeltmeleri ve aninda talep no.",
+    "version": "1.9.7",
+    "build": 44,
+    "downloadUrl": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.7/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.7/SatinalmaPro.zip",
+    "downloadUrlApk": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.9.7/SatinalmaPro.apk",
+    "notes": "Satinalma ve sef talep formu duzeltildi: yeni talepte malzeme girisi, aninda disk kaydi, bulut hatasinda yerel kayit korunur.",
     "zorunlu": false
 }
