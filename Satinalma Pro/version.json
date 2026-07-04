@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.6",
-    "build":  52,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.6/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.6/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.6/SatinalmaPro.apk",
-    "notes":  "FCM push, cok kalem talep, taslak, offline onbellek, firma/fiyat, bildirimler, stok sayim.",
+    "version":  "2.1.7",
+    "build":  53,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.7/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.7/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.7/SatinalmaPro.apk",
+    "notes":  "Android giris duzeltmeleri, dashboard ana sayfa, sol menu, ag hata mesajlari.",
     "zorunlu":  false
 }

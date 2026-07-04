@@ -9,6 +9,8 @@ import com.satinalmapro.android.core.model.StokHareket
 import com.satinalmapro.android.core.model.StokKaydi
 import com.satinalmapro.android.core.model.TalepItem
 import com.satinalmapro.android.core.model.TalepQueue
+import com.satinalmapro.android.core.NetworkError
+import com.satinalmapro.android.core.NetworkMonitor
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.core.roles.MalzemeOneri
 import com.satinalmapro.android.data.repository.BildirimRepository
@@ -75,21 +77,38 @@ class AppContainer(private val context: Context) {
                 obj.optString("uid").ifBlank { null },
                 obj.optString("email").ifBlank { null }
             )
-            loadProfile()
-            syncData()
+            loadProfile(allowCached = true)
+            runCatching { syncData() }
             registerFcmIfNeeded()
             true
         } catch (_: Exception) {
+            auth.clear()
             false
         }
     }
 
     suspend fun login(email: String, password: String, rememberMe: Boolean) {
-        auth.signIn(email, password)
-        loadProfile()
-        if (rememberMe) prefs.edit().putString(KEY_SESSION, auth.sessionJson(true)).apply()
-        syncData()
-        registerFcmIfNeeded()
+        if (!NetworkMonitor.isOnline(context)) {
+            throw IllegalStateException(NetworkError.translate("Unable to resolve host"))
+        }
+        if (!config.isConfigured) {
+            throw IllegalStateException("Firebase ayarları yapılandırılmamış.")
+        }
+        try {
+            auth.signIn(email, password)
+            loadProfile(allowCached = false)
+            if (rememberMe) {
+                prefs.edit().putString(KEY_SESSION, auth.sessionJson(true)).apply()
+            } else {
+                prefs.edit().remove(KEY_SESSION).apply()
+            }
+            runCatching { syncData() }
+            registerFcmIfNeeded()
+        } catch (e: Exception) {
+            auth.clear()
+            prefs.edit().remove(KEY_SESSION).apply()
+            throw if (e is IllegalStateException) e else IllegalStateException(NetworkError.translate(e.message))
+        }
     }
 
     fun logout() {
@@ -278,12 +297,55 @@ class AppContainer(private val context: Context) {
         )
     }
 
-    private suspend fun loadProfile() {
+    private suspend fun loadProfile(allowCached: Boolean = false) {
         val uid = auth.uid ?: throw IllegalStateException("Oturum bulunamadı")
-        val fields = firestore.readUser(uid) ?: throw IllegalStateException("Kullanıcı profili bulunamadı")
-        val profile = parseUserFields(uid, fields)
-        if (!profile.active) throw IllegalStateException("Hesabınız pasif durumda")
-        _user.value = profile
+        try {
+            val fields = firestore.readUser(uid)
+                ?: throw IllegalStateException("Kullanıcı profili bulunamadı. Masaüstünden kullanıcı oluşturulmalıdır.")
+            val profile = parseUserFields(uid, fields)
+            if (!profile.active) throw IllegalStateException("Hesabınız pasif durumda")
+            saveProfileCache(profile)
+            _user.value = profile
+        } catch (e: Exception) {
+            if (allowCached && NetworkError.isNetworkRelated(e)) {
+                loadProfileCache(uid)?.takeIf { it.active }?.let { cached ->
+                    _user.value = cached
+                    return
+                }
+            }
+            throw if (e is IllegalStateException) e else IllegalStateException(NetworkError.translate(e.message))
+        }
+    }
+
+    private fun saveProfileCache(profile: UserProfile) {
+        val obj = JSONObject()
+            .put("uid", profile.uid)
+            .put("email", profile.email)
+            .put("fullName", profile.fullName)
+            .put("role", profile.role)
+            .put("active", profile.active)
+            .put("site", profile.site.orEmpty())
+            .put("phone", profile.phone.orEmpty())
+        prefs.edit().putString(KEY_PROFILE, obj.toString()).apply()
+    }
+
+    private fun loadProfileCache(uid: String): UserProfile? {
+        val json = prefs.getString(KEY_PROFILE, null) ?: return null
+        return try {
+            val obj = JSONObject(json)
+            if (obj.optString("uid") != uid) return null
+            UserProfile(
+                uid = uid,
+                email = obj.optString("email"),
+                fullName = obj.optString("fullName"),
+                role = KullaniciRolleri.normalize(obj.optString("role")),
+                active = obj.optBoolean("active", true),
+                site = obj.optString("site").ifBlank { null },
+                phone = obj.optString("phone").ifBlank { null }
+            )
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private suspend fun loadMaterialNames() {
@@ -396,6 +458,7 @@ class AppContainer(private val context: Context) {
 
     companion object {
         private const val KEY_SESSION = "session_json"
+        private const val KEY_PROFILE = "profile_cache"
 
         fun loadFirebaseConfig(context: Context): FirebaseConfig {
             return try {

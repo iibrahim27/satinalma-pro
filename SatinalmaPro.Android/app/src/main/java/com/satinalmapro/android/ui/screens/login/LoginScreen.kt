@@ -107,6 +107,7 @@ fun LoginScreen(viewModel: AppViewModel) {
                 colors = fieldColors()
             )
             RowRememberMe(rememberMe) { rememberMe = it }
+            val loading by viewModel.loading.collectAsState()
             error?.let {
                 Text(it, color = AppColors.Danger, modifier = Modifier.padding(top = 8.dp))
             }
@@ -115,9 +116,10 @@ fun LoginScreen(viewModel: AppViewModel) {
                 onClick = { viewModel.login(email, password, rememberMe) },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = AppShapes.medium,
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary),
+                enabled = !loading
             ) {
-                Text("Giriş Yap", style = MaterialTheme.typography.labelLarge)
+                Text(if (loading) "Giriş yapılıyor..." else "Giriş Yap", style = MaterialTheme.typography.labelLarge)
             }
             Spacer(Modifier.height(32.dp))
             Text(

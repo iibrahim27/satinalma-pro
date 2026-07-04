@@ -7,6 +7,7 @@ import com.satinalmapro.android.core.model.MenuItem
 import com.satinalmapro.android.core.model.TalepItem
 import com.satinalmapro.android.core.model.TalepQueue
 import com.satinalmapro.android.core.model.UserProfile
+import com.satinalmapro.android.core.NetworkError
 import com.satinalmapro.android.core.roles.BildirimRota
 import com.satinalmapro.android.core.roles.RolNavigasyon
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -98,7 +99,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 _isLoggedIn.value = true
                 _currentRoute.value = RolNavigasyon.defaultRoute(container.user.value?.role)
             }.onFailure {
-                _loginError.value = it.message ?: "Giriş başarısız"
+                _loginError.value = NetworkError.translate(it.message)
             }
             _loading.value = false
         }

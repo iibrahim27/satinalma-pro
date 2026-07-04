@@ -80,11 +80,10 @@ fun NewRequestScreen(viewModel: AppViewModel) {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp)
+            .padding(horizontal = 20.dp, vertical = 8.dp)
     ) {
-        Text("Yeni Satınalma Talebi", style = MaterialTheme.typography.headlineMedium, color = AppColors.TextPrimary)
         Text("Birden fazla kalem ekleyebilirsiniz. Taslak otomatik kaydedilir.", color = AppColors.TextSecondary)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
 
         lines.forEachIndexed { index, line ->
             Text("Kalem ${index + 1}", style = MaterialTheme.typography.titleSmall)

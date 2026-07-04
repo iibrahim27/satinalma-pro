@@ -1,5 +1,7 @@
 package com.satinalmapro.android.data.firebase
 
+import com.satinalmapro.android.core.NetworkError
+import java.net.UnknownHostException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -171,23 +173,31 @@ object HttpClients {
         .build()
 
     suspend fun get(url: String, token: String? = null): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        val request = okhttp3.Request.Builder().url(url).apply {
-            token?.let { addHeader("Authorization", "Bearer $it") }
-        }.build()
-        client.newCall(request).execute().use { response ->
-            if (response.code == 404) return@withContext ""
-            if (!response.isSuccessful) throw IllegalStateException(response.body?.string() ?: "HTTP ${response.code}")
-            response.body?.string() ?: ""
+        try {
+            val request = okhttp3.Request.Builder().url(url).apply {
+                token?.let { addHeader("Authorization", "Bearer $it") }
+            }.build()
+            client.newCall(request).execute().use { response ->
+                if (response.code == 404) return@withContext ""
+                if (!response.isSuccessful) throw IllegalStateException(parseFirebaseError(response.body?.string() ?: "HTTP ${response.code}"))
+                response.body?.string() ?: ""
+            }
+        } catch (e: UnknownHostException) {
+            throw IllegalStateException(NetworkError.translate(e.message))
         }
     }
 
     suspend fun postJson(url: String, json: String): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        val body = json.toRequestBodyJson()
-        val request = okhttp3.Request.Builder().url(url).post(body).build()
-        client.newCall(request).execute().use { response ->
-            val text = response.body?.string() ?: ""
-            if (!response.isSuccessful) throw IllegalStateException(parseFirebaseError(text))
-            text
+        try {
+            val body = json.toRequestBodyJson()
+            val request = okhttp3.Request.Builder().url(url).post(body).build()
+            client.newCall(request).execute().use { response ->
+                val text = response.body?.string() ?: ""
+                if (!response.isSuccessful) throw IllegalStateException(parseFirebaseError(text))
+                text
+            }
+        } catch (e: UnknownHostException) {
+            throw IllegalStateException(NetworkError.translate(e.message))
         }
     }
 
@@ -231,11 +241,12 @@ object HttpClients {
         }
 
     private fun parseFirebaseError(body: String): String {
-        return try {
+        val raw = try {
             JSONObject(body).optJSONObject("error")?.optString("message") ?: body
         } catch (_: Exception) {
             body
         }
+        return NetworkError.translate(raw)
     }
 
     private fun String.toRequestBodyJson() = this.toRequestBody("application/json".toMediaType())

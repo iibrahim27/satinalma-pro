@@ -40,6 +40,7 @@ object KullaniciRolleri {
 }
 
 object RolNavigasyon {
+    private val dashboard = MenuItem("Ana Sayfa", "dashboard", "Genel")
     private val profil = MenuItem("Profil", "profil")
     private val bildirimler = MenuItem("Bildirimler", "bildirimler", "Genel")
     private val yeniTalep = MenuItem("Yeni Talep", "yeni-talep", "Talep")
@@ -92,12 +93,12 @@ object RolNavigasyon {
             KullaniciRolleri.DEPO -> listOf(stokDurum, stokGiris, stokCikis, stokHareket, bildirimler)
             else -> listOf(yeniTalep, taleplerim, bildirimler)
         }
-        return items + profil
+        return listOf(dashboard) + items + profil
     }
 
     fun accessibleRoutes(role: String?): Set<String> = menus(role).map { it.route }.toSet()
 
-    fun defaultRoute(role: String?): String = menus(role).firstOrNull()?.route ?: "taleplerim"
+    fun defaultRoute(role: String?): String = "dashboard"
 
     fun canAccess(role: String?, route: String): Boolean {
         val base = route.substringBefore('?')
