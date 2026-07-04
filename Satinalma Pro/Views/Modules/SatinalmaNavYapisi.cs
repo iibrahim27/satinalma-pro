@@ -56,6 +56,7 @@ public static class SatinalmaNavYapisi
             [
                 Nav("Teklif Bekleyen", "Teklif Bekleyen", "Teklif istenen talepler", DashboardIconKind.FileBarChart),
                 Nav("Teklif Girişi", "Teklif Girişi", "Tedarikçi teklifleri", DashboardIconKind.ShoppingCart),
+                Nav("Firma/Fiyat Girişi", "Firma/Fiyat Girişi", "Teklifsiz onay sonrası fiyat", DashboardIconKind.ShoppingCart),
                 Nav("Karşılaştırma", "Karşılaştırma", "Teklif karşılaştırma", DashboardIconKind.Layers)
             ]
         },
@@ -65,6 +66,8 @@ public static class SatinalmaNavYapisi
             Ogeler =
             [
                 Nav("Teklif Onay", "Teklif Onay", "Yönetim teklif onayı", DashboardIconKind.Wallet),
+                Nav("Onaylanan Teklifler", "Onaylanan Teklifler", "Onaylanmış teklifler", DashboardIconKind.FileBarChart),
+                Nav("Onay Geçmişi", "Onay Geçmişi", "Tüm onay geçmişi", DashboardIconKind.FileBarChart),
                 Nav("Onaylanan Talepler", "Onaylanan Talepler", "Onaylanmış talepler", DashboardIconKind.Package),
                 Nav("Geçmiş Talepler", "Geçmiş Talepler", "Tamamlanan teklifsiz", DashboardIconKind.FileBarChart),
                 Nav("Geçmiş Teklifli Onaylar", "Geçmiş Teklifli", "Teklifli geçmiş", DashboardIconKind.FileBarChart)

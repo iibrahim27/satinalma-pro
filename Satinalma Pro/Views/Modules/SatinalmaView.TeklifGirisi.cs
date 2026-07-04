@@ -33,6 +33,12 @@ public partial class SatinalmaView
 
     private void TeklifGirisTalepListesiniYenile()
     {
+        if (_aktifSekme.Equals("Firma/Fiyat Girişi", StringComparison.Ordinal))
+        {
+            TeklifsizFirmaFiyatListesiniYenile();
+            return;
+        }
+
         var seciliId = _teklifGirisTalep?.Id;
         var formAcik = TeklifGirisIcerik.Visibility == Visibility.Visible;
 
@@ -143,11 +149,17 @@ public partial class SatinalmaView
 
     private void TeklifGirisTalepListesi_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (TeklifGirisTalepListesi.SelectedItem is SatinalmaTalep talep)
+        if (TeklifGirisTalepListesi.SelectedItem is not SatinalmaTalep talep)
+            return;
+
+        if (_aktifSekme.Equals("Firma/Fiyat Girişi", StringComparison.Ordinal))
         {
-            _teklifGirisTalep = talep;
-            TeklifGirisFormuGoster(talep);
+            TeklifsizFirmaFiyatPenceresiniAc(talep);
+            return;
         }
+
+        _teklifGirisTalep = talep;
+        TeklifGirisFormuGoster(talep);
     }
 
     private void TeklifGirisFormuGizle()
@@ -487,5 +499,45 @@ public partial class SatinalmaView
         AkisSekmeleriniYenile();
         MessageBox.Show($"{_teklifGirisTalep.TalepNo} için yönetime yeniden bildirim gönderildi.",
             UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void TeklifsizFirmaFiyatListesiniYenile()
+    {
+        var liste = SatinalmaDepo.Talepler
+            .Where(SatinalmaTabFiltreleri.TeklifsizFirmaFiyat)
+            .OrderByDescending(t => t.Tarih)
+            .ThenByDescending(t => t.TalepNo)
+            .ToList();
+
+        TeklifGirisTalepListesi.ItemsSource = liste;
+        TeklifGirisIcerik.Visibility = Visibility.Collapsed;
+        TxtTeklifGirisBos.Visibility = Visibility.Visible;
+        TxtTeklifGirisBos.Text = "Firma/fiyat girilecek talebi soldan seçin.";
+    }
+
+    private void TeklifsizFirmaFiyatPenceresiniAc(SatinalmaTalep talep)
+    {
+        var satirlar = talep.Kalemler
+            .OrderBy(k => k.SiraNo)
+            .Select(k => new TeklifsizFirmaFiyatSatiri(k))
+            .ToList();
+
+        var pencere = new TeklifsizFirmaFiyatWindow(talep, satirlar) { Owner = Window.GetWindow(this) };
+        if (pencere.ShowDialog() != true)
+            return;
+
+        try
+        {
+            SatinalmaDepo.TeklifsizFirmaFiyatKaydet(talep, satirlar);
+            SatinalmaDepo.Kaydet();
+            TeklifsizFirmaFiyatListesiniYenile();
+            AkisSekmeleriniYenile();
+            MessageBox.Show($"{talep.TalepNo} firma/fiyat kaydedildi.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 }

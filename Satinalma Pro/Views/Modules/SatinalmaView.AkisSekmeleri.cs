@@ -31,6 +31,8 @@ public partial class SatinalmaView
         TeklifDegerTalepListesiniYenile();
         TeklifOnayListesiniYenile();
         OnaylananTalepListesiniYenile();
+        OnayGecmisiListesiniYenile();
+        OnaylananTeklifListesiniYenile();
         GecmisTalepListesiniYenile();
         GecmisTeklifliListesiniYenile();
         ReddedilenListesiniYenile();

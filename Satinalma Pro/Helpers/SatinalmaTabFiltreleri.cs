@@ -44,4 +44,10 @@ public static class SatinalmaTabFiltreleri
 
     public static bool GecmisTeklifliOnaylar(SatinalmaTalep talep) =>
         SatinalmaTalepKuyrugu.YonetimGecmisTeklifli(talep);
+
+    public static bool OnaylananTeklifler(SatinalmaTalep talep) =>
+        SatinalmaTalepKuyrugu.OnaylananTeklif(talep);
+
+    public static bool TeklifsizFirmaFiyat(SatinalmaTalep talep) =>
+        SatinalmaTalepKuyrugu.SatinalmaTeklifsizFirmaFiyat(talep);
 }

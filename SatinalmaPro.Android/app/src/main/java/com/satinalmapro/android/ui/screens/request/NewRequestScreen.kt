@@ -1,7 +1,10 @@
 package com.satinalmapro.android.ui.screens.request
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,49 +12,69 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.Text
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.satinalmapro.android.data.local.RequestDraft
+import com.satinalmapro.android.data.local.RequestDraftLine
+import com.satinalmapro.android.ui.AppViewModel
+import com.satinalmapro.android.ui.components.MaterialAutocompleteField
 import com.satinalmapro.android.ui.theme.AppColors
 import com.satinalmapro.android.ui.theme.AppShapes
 
-private val materials = listOf("Demir Ø12", "Mıcır 0-11", "Çimento CEM I")
-private val units = listOf("kg", "ton", "adet")
-private val sites = listOf("Merkez Şantiye", "Doğu Sahası", "Batı Sahası")
+private val units = listOf("kg", "ton", "adet", "m3", "m2")
 private val priorities = listOf("Düşük", "Orta", "Yüksek")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewRequestScreen(onBack: () -> Unit, onSubmit: () -> Unit) {
-    var material by remember { mutableStateOf(materials[0]) }
-    var unit by remember { mutableStateOf(units[0]) }
-    var site by remember { mutableStateOf(sites[0]) }
-    var quantity by remember { mutableStateOf("") }
+fun NewRequestScreen(viewModel: AppViewModel) {
+    val user by viewModel.user.collectAsState()
+    val lines = remember { mutableStateListOf(RequestDraftLine()) }
+    var site by remember { mutableStateOf(user?.site ?: "Merkez Şantiye") }
     var description by remember { mutableStateOf("") }
     var priorityIndex by remember { mutableIntStateOf(1) }
+
+    LaunchedEffect(user?.site) {
+        viewModel.loadDraft()?.let { draft ->
+            site = draft.site.ifBlank { user?.site ?: site }
+            description = draft.aciklama
+            priorityIndex = draft.oncelikIndex
+            lines.clear()
+            lines.addAll(draft.lines.ifEmpty { listOf(RequestDraftLine()) })
+        }
+    }
+
+    LaunchedEffect(site, description, priorityIndex, lines.size) {
+        viewModel.saveDraft(
+            RequestDraft(
+                site = site,
+                aciklama = description,
+                oncelikIndex = priorityIndex,
+                lines = lines.toList()
+            )
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -59,26 +82,78 @@ fun NewRequestScreen(onBack: () -> Unit, onSubmit: () -> Unit) {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        RowBackTitle("Yeni Satınalma Talebi", onBack)
+        Text("Yeni Satınalma Talebi", style = MaterialTheme.typography.headlineMedium, color = AppColors.TextPrimary)
+        Text("Birden fazla kalem ekleyebilirsiniz. Taslak otomatik kaydedilir.", color = AppColors.TextSecondary)
+        Spacer(Modifier.height(16.dp))
 
-        Spacer(Modifier.height(20.dp))
-        DropdownField("Malzeme", material, materials) { material = it }
+        lines.forEachIndexed { index, line ->
+            Text("Kalem ${index + 1}", style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.height(8.dp))
+            MaterialAutocompleteField(
+                value = line.malzeme,
+                onValueChange = { value -> lines[index] = line.copy(malzeme = value) },
+                suggestions = viewModel.materialSuggestions(line.malzeme),
+                label = "Malzeme"
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = line.miktar,
+                    onValueChange = { value -> lines[index] = line.copy(miktar = value) },
+                    modifier = Modifier.weight(1f),
+                    label = { Text("Miktar") },
+                    singleLine = true,
+                    shape = AppShapes.medium,
+                    colors = fieldColors()
+                )
+                Box(Modifier.weight(1f)) {
+                    var expanded by remember { mutableStateOf(false) }
+                    OutlinedTextField(
+                        value = line.birim,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Birim") },
+                        modifier = Modifier.fillMaxWidth().clickable { expanded = true },
+                        shape = AppShapes.medium,
+                        colors = fieldColors()
+                    )
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        units.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    lines[index] = line.copy(birim = option)
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            if (lines.size > 1) {
+                OutlinedButton(onClick = { lines.removeAt(index) }, modifier = Modifier.padding(top = 8.dp)) {
+                    Text("Kalemi Sil")
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+
+        OutlinedButton(onClick = { lines.add(RequestDraftLine()) }, modifier = Modifier.fillMaxWidth()) {
+            Text("+ Kalem Ekle")
+        }
+
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
-            value = quantity,
-            onValueChange = { quantity = it },
+            value = site,
+            onValueChange = { site = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Miktar") },
+            label = { Text("Şantiye") },
             singleLine = true,
             shape = AppShapes.medium,
             colors = fieldColors()
         )
-        Spacer(Modifier.height(12.dp))
-        DropdownField("Birim", unit, units) { unit = it }
-        Spacer(Modifier.height(12.dp))
-        DropdownField("Şantiye", site, sites) { site = it }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
         Text("Aciliyet", style = MaterialTheme.typography.titleMedium, color = AppColors.TextPrimary)
         Spacer(Modifier.height(8.dp))
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -109,54 +184,23 @@ fun NewRequestScreen(onBack: () -> Unit, onSubmit: () -> Unit) {
         )
 
         Spacer(Modifier.height(24.dp))
+        val submitError by viewModel.submitError.collectAsState()
+        val loading by viewModel.loading.collectAsState()
+        submitError?.let { Text(it, color = AppColors.Danger, modifier = Modifier.padding(bottom = 8.dp)) }
         Button(
-            onClick = onSubmit,
+            onClick = {
+                val payload = lines.map { Triple(it.malzeme, it.miktar, it.birim) }
+                viewModel.submitRequest(site, description, priorities[priorityIndex], payload) {
+                    viewModel.navigate("taleplerim")
+                }
+            },
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = AppShapes.medium,
-            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary),
+            enabled = lines.all { it.malzeme.isNotBlank() && it.miktar.isNotBlank() } && !loading
         ) {
-            Text("Talebi Gönder", style = MaterialTheme.typography.labelLarge)
+            Text(if (loading) "Gönderiliyor..." else "Talebi Gönder", style = MaterialTheme.typography.labelLarge)
         }
-        Spacer(Modifier.height(88.dp))
-    }
-}
-
-@Composable
-private fun DropdownField(label: String, value: String, options: List<String>, onSelect: (String) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true },
-            shape = AppShapes.medium,
-            colors = fieldColors()
-        )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option) },
-                    onClick = { onSelect(option); expanded = false }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RowBackTitle(title: String, onBack: () -> Unit) {
-    androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Geri")
-        }
-        Text(title, style = MaterialTheme.typography.headlineMedium, color = AppColors.TextPrimary)
     }
 }
 

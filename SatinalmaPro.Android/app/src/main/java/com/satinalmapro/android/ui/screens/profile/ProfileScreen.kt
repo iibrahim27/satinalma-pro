@@ -18,21 +18,24 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.satinalmapro.android.data.DemoData
+import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppCard
 import com.satinalmapro.android.ui.components.DetailRow
 import com.satinalmapro.android.ui.theme.AppColors
 import com.satinalmapro.android.ui.theme.AppShapes
 
 @Composable
-fun ProfileScreen(onLogout: () -> Unit) {
+fun ProfileScreen(viewModel: AppViewModel, onLogout: () -> Unit) {
+    val user by viewModel.user.collectAsState()
+    val profile = user ?: return
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -40,18 +43,14 @@ fun ProfileScreen(onLogout: () -> Unit) {
             .padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Surface(
-            modifier = Modifier.size(88.dp),
-            shape = AppShapes.extraLarge,
-            color = AppColors.PrimaryContainer
-        ) {
+        Surface(modifier = Modifier.size(88.dp), shape = AppShapes.extraLarge, color = AppColors.PrimaryContainer) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = DemoData.USER_NAME.split(' ').mapNotNull { it.firstOrNull()?.uppercaseChar() }.take(2).joinToString(""),
+                    text = profile.fullName.split(' ').mapNotNull { it.firstOrNull()?.uppercaseChar() }.take(2).joinToString(""),
                     style = MaterialTheme.typography.headlineMedium,
                     color = AppColors.Primary,
                     fontWeight = FontWeight.Bold
@@ -59,49 +58,41 @@ fun ProfileScreen(onLogout: () -> Unit) {
             }
         }
         Spacer(Modifier.height(12.dp))
-        Text(DemoData.USER_NAME, style = MaterialTheme.typography.headlineMedium, color = AppColors.TextPrimary)
-        Text(DemoData.USER_ROLE, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
+        Text(profile.fullName, style = MaterialTheme.typography.headlineMedium, color = AppColors.TextPrimary)
+        Text(profile.role, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
 
         Spacer(Modifier.height(24.dp))
-
         AppCard {
             Column(Modifier.padding(20.dp)) {
-                DetailRow("Kullanıcı Adı", DemoData.USER_USERNAME)
+                DetailRow("E-posta", profile.email)
                 HorizontalDivider(color = AppColors.Border)
-                DetailRow("Telefon", DemoData.USER_PHONE)
-                HorizontalDivider(color = AppColors.Border)
-                DetailRow("E-posta", DemoData.USER_EMAIL)
-                HorizontalDivider(color = AppColors.Border)
-                DetailRow("Departman", DemoData.USER_DEPARTMENT)
+                DetailRow("Rol", profile.role)
+                profile.phone?.let {
+                    HorizontalDivider(color = AppColors.Border)
+                    DetailRow("Telefon", it)
+                }
+                profile.site?.let {
+                    HorizontalDivider(color = AppColors.Border)
+                    DetailRow("Şantiye / Saha", it)
+                }
             }
         }
 
         Spacer(Modifier.height(16.dp))
-
         AppCard(onClick = { }) {
             RowMenuItem(Icons.Rounded.Lock, "Şifre Değiştir", AppColors.TextPrimary)
         }
-
         Spacer(Modifier.height(12.dp))
-
         AppCard(onClick = onLogout) {
             RowMenuItem(Icons.AutoMirrored.Rounded.Logout, "Çıkış Yap", AppColors.Danger)
         }
-
-        Spacer(Modifier.height(88.dp))
     }
 }
 
 @Composable
-private fun RowMenuItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    color: Color
-) {
+private fun RowMenuItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, color: androidx.compose.ui.graphics.Color) {
     androidx.compose.foundation.layout.Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(18.dp),
+        modifier = Modifier.fillMaxWidth().padding(18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, null, tint = color)

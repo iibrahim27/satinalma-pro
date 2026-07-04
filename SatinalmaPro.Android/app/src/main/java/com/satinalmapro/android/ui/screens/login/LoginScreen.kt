@@ -1,7 +1,7 @@
 package com.satinalmapro.android.ui.screens.login
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,9 +25,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,42 +43,25 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.satinalmapro.android.BuildConfig
 import com.satinalmapro.android.R
-import com.satinalmapro.android.data.DemoData
+import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.theme.AppColors
 import com.satinalmapro.android.ui.theme.AppShapes
 
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit) {
-    var username by remember { mutableStateOf("") }
+fun LoginScreen(viewModel: AppViewModel) {
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var rememberMe by remember { mutableStateOf(true) }
     var showPassword by remember { mutableStateOf(false) }
+    val error by viewModel.loginError.collectAsState()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(AppColors.Background, Color(0xFFEAF2FF), AppColors.Background)
-                )
-            )
+            .background(Brush.verticalGradient(listOf(AppColors.Background, Color(0xFFEAF2FF), AppColors.Background)))
     ) {
-        Box(
-            modifier = Modifier
-                .size(260.dp)
-                .align(Alignment.TopEnd)
-                .clip(RoundedCornerShape(bottomStart = 180.dp))
-                .background(AppColors.Primary.copy(alpha = 0.08f))
-        )
-        Box(
-            modifier = Modifier
-                .size(200.dp)
-                .align(Alignment.BottomStart)
-                .clip(RoundedCornerShape(topEnd = 160.dp))
-                .background(AppColors.IconPurple.copy(alpha = 0.06f))
-        )
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -93,23 +76,16 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 modifier = Modifier.size(96.dp),
                 contentScale = ContentScale.Fit
             )
-
             Spacer(Modifier.height(24.dp))
             Text("Satınalma Pro", style = MaterialTheme.typography.headlineMedium, color = AppColors.TextPrimary)
-            Text(
-                "Hoş Geldiniz",
-                style = MaterialTheme.typography.bodyLarge,
-                color = AppColors.TextSecondary,
-                modifier = Modifier.padding(top = 6.dp)
-            )
+            Text("Hoş Geldiniz", style = MaterialTheme.typography.bodyLarge, color = AppColors.TextSecondary)
 
             Spacer(Modifier.height(36.dp))
-
             OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
+                value = email,
+                onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Kullanıcı Adı") },
+                label = { Text("E-posta") },
                 singleLine = true,
                 shape = AppShapes.medium,
                 colors = fieldColors()
@@ -125,37 +101,31 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { showPassword = !showPassword }) {
-                        Icon(
-                            if (showPassword) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                            contentDescription = null
-                        )
+                        Icon(if (showPassword) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, null)
                     }
                 },
                 colors = fieldColors()
             )
-
             RowRememberMe(rememberMe) { rememberMe = it }
-
+            error?.let {
+                Text(it, color = AppColors.Danger, modifier = Modifier.padding(top = 8.dp))
+            }
             Spacer(Modifier.height(24.dp))
-
             Button(
-                onClick = onLoginSuccess,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
+                onClick = { viewModel.login(email, password, rememberMe) },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = AppShapes.medium,
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
             ) {
                 Text("Giriş Yap", style = MaterialTheme.typography.labelLarge)
             }
-
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(32.dp))
             Text(
-                "Versiyon ${DemoData.VERSION}",
+                "Versiyon ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                 style = MaterialTheme.typography.labelMedium,
                 color = AppColors.TextSecondary,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(top = 32.dp)
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
@@ -164,9 +134,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 @Composable
 private fun RowRememberMe(checked: Boolean, onChecked: (Boolean) -> Unit) {
     androidx.compose.foundation.layout.Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(checked = checked, onCheckedChange = onChecked)

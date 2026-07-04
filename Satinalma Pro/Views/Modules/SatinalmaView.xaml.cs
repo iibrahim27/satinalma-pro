@@ -26,8 +26,11 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
             ["Onay Bekleyen"] = PanelOnayBekleyen,
             ["Teklif Bekleyen"] = PanelTeklifBekleyen,
             ["Teklif Girişi"] = PanelTeklifGirisi,
+            ["Firma/Fiyat Girişi"] = PanelTeklifGirisi,
             ["Karşılaştırma"] = PanelTeklifDeger,
             ["Teklif Onay"] = PanelTeklifOnay,
+            ["Onaylanan Teklifler"] = PanelGecmisTeklifli,
+            ["Onay Geçmişi"] = PanelOnayGecmisi,
             ["Onaylanan Talepler"] = PanelOnaylananlar,
             ["Geçmiş Talepler"] = PanelOnayGecmisi,
             ["Geçmiş Teklifli Onaylar"] = PanelGecmisTeklifli,
@@ -71,8 +74,11 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
             "gelen-talepler" => "Gelen Talepler",
             "teklif-onay" => "Teklif Onay",
             "onaylar" or "onaylanan" or "onaylanan-talepler" => "Onaylanan Talepler",
+            "onaylanan-teklifler" => "Onaylanan Teklifler",
             "onay-bekleyen" or "bekleyen" => "Onay Bekleyen",
-            "gecmis-talepler" or "onay-gecmisi" => "Geçmiş Talepler",
+            "gecmis-talepler" => "Geçmiş Talepler",
+            "onay-gecmisi" => "Onay Geçmişi",
+            "teklifsiz-firma-fiyat" => "Firma/Fiyat Girişi",
             "gecmis-teklifli-onaylar" => "Geçmiş Teklifli Onaylar",
             "siparisler" or "alinan-malzemeler" or "onaylanan-malzemeler" => "Alınan Malzemeler",
             "teklif-karsilastirma" or "karsilastirma" =>
@@ -180,6 +186,8 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
             OnayBekleyenListesiniYenile();
         else if (sekmeAdi == "Teklif Girişi")
             TeklifGirisTalepListesiniYenile();
+        else if (sekmeAdi == "Firma/Fiyat Girişi")
+            TeklifsizFirmaFiyatListesiniYenile();
         else if (sekmeAdi == "Karşılaştırma")
             TeklifDegerTalepListesiniYenile();
         else if (sekmeAdi == "Gelen Talepler")
@@ -193,12 +201,16 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
         }
         else if (sekmeAdi == "Onaylanan Talepler")
             OnaylananTalepListesiniYenile();
+        else if (sekmeAdi == "Onay Geçmişi")
+            OnayGecmisiListesiniYenile();
         else if (sekmeAdi == "Red Talepler")
             ReddedilenListesiniYenile();
         else if (sekmeAdi == "Geçmiş Talepler")
             GecmisTalepListesiniYenile();
         else if (sekmeAdi == "Geçmiş Teklifli Onaylar")
             GecmisTeklifliListesiniYenile();
+        else if (sekmeAdi == "Onaylanan Teklifler")
+            OnaylananTeklifListesiniYenile();
         else if (sekmeAdi == "Alınan Malzemeler")
             AlinanMalzemeListesiniYenile();
         else if (sekmeAdi == "Gelen Siparişler")

@@ -1,0 +1,423 @@
+package com.satinalmapro.android.core
+
+import android.content.Context
+import com.satinalmapro.android.BuildConfig
+import com.satinalmapro.android.core.model.AppNotification
+import com.satinalmapro.android.core.model.UpdateManifest
+import com.satinalmapro.android.core.model.UserProfile
+import com.satinalmapro.android.core.model.StokHareket
+import com.satinalmapro.android.core.model.StokKaydi
+import com.satinalmapro.android.core.model.TalepItem
+import com.satinalmapro.android.core.model.TalepQueue
+import com.satinalmapro.android.core.roles.KullaniciRolleri
+import com.satinalmapro.android.core.roles.MalzemeOneri
+import com.satinalmapro.android.data.repository.BildirimRepository
+import com.satinalmapro.android.data.repository.StokRepository
+import com.satinalmapro.android.data.repository.TalepRepository
+import com.satinalmapro.android.data.firebase.FirebaseAuthClient
+import com.satinalmapro.android.data.firebase.FirebaseConfig
+import com.satinalmapro.android.data.firebase.FirestoreClient
+import com.satinalmapro.android.data.firebase.HttpClients
+import com.satinalmapro.android.data.local.OfflineCache
+import com.satinalmapro.android.data.local.RequestDraft
+import com.satinalmapro.android.data.local.RequestDraftStore
+import com.satinalmapro.android.services.ApkUpdateInstaller
+import com.satinalmapro.android.services.FcmPushService
+import kotlin.coroutines.resume
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
+
+class AppContainer(private val context: Context) {
+    private val prefs = context.getSharedPreferences("satinalma_pro", Context.MODE_PRIVATE)
+    val config: FirebaseConfig = loadFirebaseConfig(context)
+    val auth = FirebaseAuthClient(config)
+    val firestore = FirestoreClient(config, auth)
+    val apkInstaller = ApkUpdateInstaller(context)
+    private val offlineCache = OfflineCache(context)
+    val draftStore = RequestDraftStore(context)
+    private val fcmPush = FcmPushService(context, config.projectId, firestore)
+    val bildirimler = BildirimRepository(firestore, auth, fcmPush)
+    val talepler = TalepRepository(firestore, auth, bildirimler)
+    val stokRepo = StokRepository(firestore, auth)
+
+    private val _user = MutableStateFlow<UserProfile?>(null)
+    val user: StateFlow<UserProfile?> = _user.asStateFlow()
+
+    private val _talepler = MutableStateFlow<List<TalepItem>>(emptyList())
+    val talepList: StateFlow<List<TalepItem>> = _talepler.asStateFlow()
+
+    private val _stok = MutableStateFlow<List<StokKaydi>>(emptyList())
+    val stokList: StateFlow<List<StokKaydi>> = _stok.asStateFlow()
+
+    private val _stokHareketleri = MutableStateFlow<List<StokHareket>>(emptyList())
+    val stokHareketleri: StateFlow<List<StokHareket>> = _stokHareketleri.asStateFlow()
+
+    private val _materialNames = MutableStateFlow<List<String>>(emptyList())
+    val materialNames: StateFlow<List<String>> = _materialNames.asStateFlow()
+
+    private val _notifications = MutableStateFlow<List<AppNotification>>(emptyList())
+    val notifications: StateFlow<List<AppNotification>> = _notifications.asStateFlow()
+
+    var pendingRoute: String? = null
+
+    suspend fun restoreSession(): Boolean {
+        val json = prefs.getString(KEY_SESSION, null) ?: return false
+        return try {
+            val obj = JSONObject(json)
+            if (!obj.optBoolean("rememberMe", true)) return false
+            auth.restoreSession(
+                obj.getString("refreshToken"),
+                obj.optString("uid").ifBlank { null },
+                obj.optString("email").ifBlank { null }
+            )
+            loadProfile()
+            syncData()
+            registerFcmIfNeeded()
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    suspend fun login(email: String, password: String, rememberMe: Boolean) {
+        auth.signIn(email, password)
+        loadProfile()
+        if (rememberMe) prefs.edit().putString(KEY_SESSION, auth.sessionJson(true)).apply()
+        syncData()
+        registerFcmIfNeeded()
+    }
+
+    fun logout() {
+        auth.clear()
+        _user.value = null
+        _materialNames.value = emptyList()
+        _notifications.value = emptyList()
+        _talepler.value = emptyList()
+        _stok.value = emptyList()
+        _stokHareketleri.value = emptyList()
+        prefs.edit().remove(KEY_SESSION).apply()
+    }
+
+    suspend fun syncData() {
+        val uid = auth.uid ?: return
+        loadMaterialNames()
+        loadTalepler()
+        loadStok()
+        loadNotifications(uid)
+    }
+
+    private suspend fun reloadTalepler() {
+        _talepler.value = talepler.loadTalepler()
+    }
+
+    private suspend fun loadStok() {
+        _stok.value = runCatching { stokRepo.loadStok() }.getOrDefault(emptyList())
+        _stokHareketleri.value = runCatching { stokRepo.loadHareketler() }.getOrDefault(emptyList())
+    }
+
+    suspend fun createRequest(
+        site: String,
+        aciklama: String,
+        oncelik: String,
+        kalemler: List<Triple<String, String, String>>
+    ): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val talep = talepler.createWithKalemler(user, site, aciklama, oncelik, kalemler)
+        reloadTalepler()
+        loadNotifications(user.uid)
+        draftStore.clear()
+        return talep
+    }
+
+    fun loadDraft(): RequestDraft? = draftStore.load()
+
+    fun saveDraft(draft: RequestDraft) = draftStore.save(draft)
+
+    suspend fun addTeklif(talepId: String, firmaAdi: String, marka: String, vadeGunu: Int, teslimSuresi: String, odemeSekli: String, kalemFiyatlari: Map<String, Double>): TalepItem {
+        val result = talepler.addTeklif(talepId, firmaAdi, marka, vadeGunu, teslimSuresi, odemeSekli, kalemFiyatlari)
+        reloadTalepler()
+        return result
+    }
+
+    suspend fun sendQuotesToManagement(talepId: String): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepler.sendQuotesToManagement(talepId, user)
+        reloadTalepler()
+        loadNotifications(user.uid)
+        return result
+    }
+
+    suspend fun yonetimOnayla(talepId: String, teklifIste: Boolean): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepler.yonetimOnayla(talepId, user, teklifIste)
+        reloadTalepler()
+        loadNotifications(user.uid)
+        return result
+    }
+
+    suspend fun yonetimReddet(talepId: String, gerekce: String): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepler.yonetimReddet(talepId, user, gerekce)
+        reloadTalepler()
+        loadNotifications(user.uid)
+        return result
+    }
+
+    suspend fun yonetimTeklifOnayla(talepId: String, teklifId: String): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepler.yonetimTeklifOnayla(talepId, user, teklifId)
+        reloadTalepler()
+        loadNotifications(user.uid)
+        return result
+    }
+
+    suspend fun teklifsizFirmaFiyatKaydet(talepId: String, girdiler: List<Triple<String, String, Double>>): TalepItem {
+        val result = talepler.teklifsizFirmaFiyatKaydet(talepId, girdiler)
+        reloadTalepler()
+        return result
+    }
+
+    suspend fun malKabul(talepId: String, kalemId: String, miktar: Double): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepler.malKabul(talepId, kalemId, miktar, user)
+        reloadTalepler()
+        loadNotifications(user.uid)
+        return result
+    }
+
+    suspend fun stokGiris(malzeme: String, miktar: Double, birim: String, kategori: String, depo: String, birimMaliyet: Double, belgeNo: String, teslimEden: String, teslimAlan: String) {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        stokRepo.girisYap(user, malzeme, miktar, birim, kategori, depo, birimMaliyet, belgeNo, teslimEden, teslimAlan)
+        loadStok()
+    }
+
+    suspend fun stokCikis(malzeme: String, miktar: Double, depo: String, belgeNo: String, teslimEden: String, teslimAlan: String) {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        stokRepo.cikisYap(user, malzeme, miktar, depo, belgeNo, teslimEden, teslimAlan)
+        loadStok()
+    }
+
+    suspend fun stokSayim(malzeme: String, depo: String, sayimMiktari: Double) {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        stokRepo.sayimYap(user, malzeme, depo, sayimMiktari)
+        loadStok()
+    }
+
+    fun filteredTalepler(queue: TalepQueue): List<TalepItem> =
+        talepler.filter(queue, _talepler.value, _user.value)
+
+    fun findTalep(id: String?): TalepItem? =
+        id?.let { target -> _talepler.value.firstOrNull { it.id.equals(target, true) } }
+
+    fun dashboardData() = talepler.dashboard(
+        _user.value,
+        _talepler.value,
+        _notifications.value.count { !it.read }
+    )
+
+    fun approvedMaterials(): List<TalepItem> = talepler.approvedMaterials(_talepler.value)
+
+    suspend fun markNotificationRead(id: String) {
+        val uid = auth.uid ?: return
+        runCatching { firestore.markInboxRead(uid, id) }
+        runCatching { bildirimler.okunduIsaretle(id) }
+        loadNotifications(uid)
+    }
+
+    private suspend fun loadTalepler() {
+        _talepler.value = runCatching {
+            talepler.loadTalepler().also { offlineCache.saveTalepler(it) }
+        }.getOrElse { offlineCache.loadTalepler() }
+    }
+
+    fun materialSuggestions(query: String): List<String> =
+        MalzemeOneri.filtrele(_materialNames.value, query)
+
+    suspend fun checkAndApplyUpdate(onProgress: (String, Int) -> Unit): Boolean {
+        if (config.updateManifestUrl.isBlank()) return false
+        val url = config.updateManifestUrl + "?_=${System.currentTimeMillis()}"
+        onProgress("Sürüm kontrol ediliyor...", 5)
+        val manifest = try {
+            val json = HttpClients.get(url)
+            parseManifest(json)
+        } catch (_: Exception) {
+            return false
+        }
+        if (manifest.version.isBlank()) return false
+        val needsUpdate = manifest.build > BuildConfig.VERSION_CODE ||
+            versionGreater(manifest.version, BuildConfig.VERSION_NAME)
+        if (!needsUpdate) return false
+
+        val apkUrl = manifest.downloadUrlApk.ifBlank {
+            "https://github.com/iibrahim27/satinalma-pro/releases/download/v${manifest.version}/SatinalmaPro.apk"
+        }
+        onProgress("Güncelleme indiriliyor...", 20)
+        val target = File(context.cacheDir, "SatinalmaPro_${manifest.version}_b${manifest.build}.apk")
+        downloadFile(apkUrl, target) { p -> onProgress("İndiriliyor... %$p", 20 + (p * 0.65).toInt()) }
+        onProgress("Kurulum başlatılıyor...", 92)
+        apkInstaller.install(target)
+        return true
+    }
+
+    fun parseUserFields(uid: String, fields: JSONObject): UserProfile {
+        fun field(name: String) = fields.optJSONObject(name)?.optString("stringValue").orEmpty()
+        return UserProfile(
+            uid = uid,
+            email = field("eposta").ifBlank { field("email") },
+            fullName = field("adSoyad").ifBlank { field("fullName") },
+            role = KullaniciRolleri.normalize(field("rol").ifBlank { field("role") }),
+            active = fields.optJSONObject("aktif")?.optBoolean("booleanValue")
+                ?: fields.optJSONObject("active")?.optBoolean("booleanValue") ?: true,
+            site = field("saha").ifBlank { field("site") }.ifBlank { null },
+            phone = field("telefon").ifBlank { field("phone") }.ifBlank { null }
+        )
+    }
+
+    private suspend fun loadProfile() {
+        val uid = auth.uid ?: throw IllegalStateException("Oturum bulunamadı")
+        val fields = firestore.readUser(uid) ?: throw IllegalStateException("Kullanıcı profili bulunamadı")
+        val profile = parseUserFields(uid, fields)
+        if (!profile.active) throw IllegalStateException("Hesabınız pasif durumda")
+        _user.value = profile
+    }
+
+    private suspend fun loadMaterialNames() {
+        val names = linkedSetOf<String>()
+        try {
+            firestore.readDocumentJson("veri/alinan_malzemeler")?.let { json ->
+                val arr = JSONArray(json)
+                for (i in 0 until arr.length()) {
+                    val item = arr.optJSONObject(i) ?: continue
+                    item.optString("MalzemeHizmet").takeIf { it.isNotBlank() }?.let(names::add)
+                    item.optString("malzemeHizmet").takeIf { it.isNotBlank() }?.let(names::add)
+                }
+            }
+        } catch (_: Exception) { }
+        try {
+            firestore.readDocumentJson("veri/stok")?.let { json ->
+                val arr = JSONArray(json)
+                for (i in 0 until arr.length()) {
+                    val item = arr.optJSONObject(i) ?: continue
+                    item.optString("MalzemeAdi").takeIf { it.isNotBlank() }?.let(names::add)
+                    item.optString("malzemeAdi").takeIf { it.isNotBlank() }?.let(names::add)
+                }
+            }
+        } catch (_: Exception) { }
+        _materialNames.value = names.toList()
+    }
+
+    private suspend fun loadNotifications(uid: String) {
+        val user = _user.value
+        val talepList = _talepler.value
+        val cloud = runCatching { bildirimler.loadAll() }.getOrDefault(emptyList())
+        val cloudMapped = bildirimler.toAppNotifications(cloud, user, talepList)
+        val inbox = runCatching {
+            firestore.readInbox(uid).mapNotNull { doc ->
+                val fields = doc.optJSONObject("fields") ?: return@mapNotNull null
+                fun s(key: String) = fields.optJSONObject(key)?.optString("stringValue").orEmpty()
+                AppNotification(
+                    id = doc.optString("name").substringAfterLast('/'),
+                    title = s("baslik").ifBlank { s("title") },
+                    message = s("mesaj").ifBlank { s("message") },
+                    type = s("tip").ifBlank { s("type") },
+                    time = s("zaman").ifBlank { s("time") },
+                    requestId = s("talepId").ifBlank { null },
+                    route = s("route").ifBlank { null },
+                    read = fields.optJSONObject("isRead")?.optBoolean("booleanValue")
+                        ?: fields.optJSONObject("okundu")?.optBoolean("booleanValue") ?: false
+                )
+            }
+        }.getOrDefault(emptyList())
+        val merged = linkedMapOf<String, AppNotification>()
+        cloudMapped.forEach { merged[it.id] = it }
+        inbox.forEach { item ->
+            val existing = merged[item.id]
+            merged[item.id] = if (existing == null) item else item.copy(read = item.read || existing.read)
+        }
+        _notifications.value = merged.values.sortedByDescending { it.time }
+    }
+
+    private suspend fun registerFcmIfNeeded() {
+        val uid = auth.uid ?: return
+        try {
+            val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.awaitTask()
+            firestore.updateFcmToken(uid, token)
+        } catch (_: Exception) { }
+    }
+
+    private suspend fun downloadFile(url: String, target: File, onProgress: (Int) -> Unit) {
+        val client = okhttp3.OkHttpClient()
+        val request = okhttp3.Request.Builder().url(url).build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IllegalStateException("İndirme başarısız: ${response.code}")
+            val body = response.body ?: throw IllegalStateException("Boş yanıt")
+            val total = body.contentLength()
+            target.outputStream().use { out ->
+                body.byteStream().use { input ->
+                    val buffer = ByteArray(8192)
+                    var read: Int
+                    var downloaded = 0L
+                    while (input.read(buffer).also { read = it } != -1) {
+                        out.write(buffer, 0, read)
+                        downloaded += read
+                        if (total > 0) onProgress(((downloaded * 100) / total).toInt())
+                    }
+                }
+            }
+        }
+    }
+
+    private fun parseManifest(json: String): UpdateManifest {
+        val obj = JSONObject(json)
+        return UpdateManifest(
+            version = obj.optString("version"),
+            build = obj.optInt("build"),
+            downloadUrlApk = obj.optString("downloadUrlApk"),
+            notes = obj.optString("notes")
+        )
+    }
+
+    private fun versionGreater(remote: String, local: String): Boolean {
+        fun parts(v: String) = v.split('.').map { it.toIntOrNull() ?: 0 }
+        val r = parts(remote)
+        val l = parts(local)
+        for (i in 0 until maxOf(r.size, l.size)) {
+            val rv = r.getOrElse(i) { 0 }
+            val lv = l.getOrElse(i) { 0 }
+            if (rv != lv) return rv > lv
+        }
+        return false
+    }
+
+    companion object {
+        private const val KEY_SESSION = "session_json"
+
+        fun loadFirebaseConfig(context: Context): FirebaseConfig {
+            return try {
+                context.assets.open("firebase_ayarlar.json").bufferedReader().use { reader ->
+                    val obj = JSONObject(reader.readText())
+                    FirebaseConfig(
+                        apiKey = obj.optString("apiKey"),
+                        projectId = obj.optString("projectId"),
+                        updateManifestUrl = obj.optString("guncellemeManifestUrl")
+                    )
+                }
+            } catch (_: Exception) {
+                FirebaseConfig("", "", "")
+            }
+        }
+    }
+
+    private suspend fun <T> com.google.android.gms.tasks.Task<T>.awaitTask(): T =
+        suspendCancellableCoroutine { cont ->
+            addOnCompleteListener { task ->
+                if (task.isSuccessful) cont.resume(task.result)
+                else cont.cancel(task.exception ?: IllegalStateException("Task failed"))
+            }
+        }
+}

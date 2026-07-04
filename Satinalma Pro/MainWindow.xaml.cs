@@ -59,21 +59,13 @@ public partial class MainWindow : Window
 
     private void YonetimTeklifOnay_Click(object sender, RoutedEventArgs e)
     {
-        var rol = Models.KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol);
-        if (rol is Models.KullaniciRolleri.Satinalma or Models.KullaniciRolleri.Yonetim)
-        {
-            OnModuleSelected("Satınalma");
-            if (MainRegion.Content is SatinalmaMerkeziView merkez)
-                merkez.BildirimdenAc(null);
-            else if (MainRegion.Content is SatinalmaShellView shell)
-                shell.BildirimdenAc(null, 0, "teklif-onay");
-            else if (MainRegion.Content is SatinalmaView satinalma)
-                satinalma.BildirimdenAc(null, 0, "teklif-onay");
-            return;
-        }
-
-        var pencere = new YonetimTeklifOnayWindow { Owner = this };
-        pencere.ShowDialog();
+        OnModuleSelected("Satınalma");
+        if (MainRegion.Content is SatinalmaMerkeziView merkez)
+            merkez.BildirimdenAc(null, 0, "teklif-onay");
+        else if (MainRegion.Content is SatinalmaShellView shell)
+            shell.BildirimdenAc(null, 0, "teklif-onay");
+        else if (MainRegion.Content is SatinalmaView satinalma)
+            satinalma.BildirimdenAc(null, 0, "teklif-onay");
     }
 
     private void KisayollariBagla()

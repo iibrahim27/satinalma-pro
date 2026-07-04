@@ -16,6 +16,7 @@ public static class MasaustuRolHaritasi
     public const string TeklifsizFirmaFiyat = "Firma/Fiyat Girişi";
     public const string TeklifOnay = "Teklif Onay";
     public const string OnaylananTeklifler = "Onaylanan Teklifler";
+    public const string OnayGecmisi = "Onay Geçmişi";
     public const string AlinanMalzemeler = "Alınan Malzemeler";
     public const string GecmisTalepler = "Geçmiş Talepler";
     public const string GecmisTeklifliOnaylar = "Geçmiş Teklifli Onaylar";
@@ -32,14 +33,14 @@ public static class MasaustuRolHaritasi
             ["teklif-gir"] = TeklifGirisi,
             ["teklif-giris"] = TeklifGirisi,
             ["teklif-karsilastirma"] = Karsilastirma,
-            ["teklifsiz-firma-fiyat"] = TeklifGirisi,
+            ["teklifsiz-firma-fiyat"] = TeklifsizFirmaFiyat,
             ["teklif-onay"] = TeklifOnay,
-            ["onaylanan-teklifler"] = OnaylananTalepler,
+            ["onaylanan-teklifler"] = OnaylananTeklifler,
             ["onaylanan-malzemeler"] = AlinanMalzemeler,
             ["gecmis-talepler"] = GecmisTalepler,
             ["gecmis-teklifli-onaylar"] = GecmisTeklifliOnaylar,
             ["red-talepler"] = RedTalepler,
-            ["onay-gecmisi"] = GecmisTalepler
+            ["onay-gecmisi"] = OnayGecmisi
         };
 
     private static readonly Dictionary<string, string> StokRouteToSekme =
@@ -59,8 +60,7 @@ public static class MasaustuRolHaritasi
             ["Onaylananlar"] = OnaylananTalepler,
             ["Reddedilenler"] = RedTalepler,
             ["Teklif Değerlendirme"] = Karsilastirma,
-            ["Firma/Fiyat Girişi"] = TeklifGirisi,
-            ["Onaylanan Teklifler"] = OnaylananTalepler,
+            ["Onaylanan Teklifler"] = OnaylananTeklifler,
             ["Siparişler"] = AlinanMalzemeler,
             ["Gelen Siparişler"] = AlinanMalzemeler
         };

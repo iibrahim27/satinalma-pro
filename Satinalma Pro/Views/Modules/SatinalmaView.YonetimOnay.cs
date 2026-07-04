@@ -39,7 +39,25 @@ public partial class SatinalmaView
             _teklifOnaySecili = null;
     }
 
-    private void OnayGecmisiListesiniYenile() => GecmisTalepListesiniYenile();
+    private void OnayGecmisiListesiniYenile()
+    {
+        OnayGecmisiTablosu.ItemsSource = SatinalmaDepo.Talepler
+            .Where(SatinalmaTabFiltreleri.OnayGecmisi)
+            .OrderByDescending(t => t.YonetimOnayTarihi)
+            .ThenByDescending(t => t.Tarih)
+            .ThenByDescending(t => t.TalepNo)
+            .ToList();
+    }
+
+    private void OnaylananTeklifListesiniYenile()
+    {
+        GecmisTeklifliTablosu.ItemsSource = SatinalmaDepo.Talepler
+            .Where(SatinalmaTabFiltreleri.OnaylananTeklifler)
+            .OrderByDescending(t => t.YonetimOnayTarihi)
+            .ThenByDescending(t => t.Tarih)
+            .ThenByDescending(t => t.TalepNo)
+            .ToList();
+    }
 
     private void GecmisTalepListesiniYenile()
     {
