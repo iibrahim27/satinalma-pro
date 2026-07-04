@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SatinalmaPro.Mobile.ViewModels"
+             x:Class="SatinalmaPro.Mobile.Views.LoginPage"
+             x:DataType="vm:LoginViewModel"
+             Title=""
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0" StrokeThickness="0" Padding="24,48,24,32">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#2563EB" Offset="0" />
+                    <GradientStop Color="#1D4ED8" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+            <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                <Border Width="72" Height="72" StrokeShape="RoundRectangle 20" StrokeThickness="0"
+                        BackgroundColor="#33FFFFFF" HorizontalOptions="Center">
+                    <Image Source="app_logo.png" HeightRequest="48" WidthRequest="48"
+                           HorizontalOptions="Center" VerticalOptions="Center" Aspect="AspectFit" />
+                </Border>
+                <Label Text="Satınalma Pro" FontSize="26" FontAttributes="Bold"
+                       TextColor="White" HorizontalOptions="Center" />
+                <Label Text="Tek uygulama · Tüm roller" FontSize="14"
+                       TextColor="#BFDBFE" HorizontalOptions="Center" />
+            </VerticalStackLayout>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="24,24,24,32" Spacing="16">
+                <Border Style="{StaticResource MetrikCard}">
+                    <VerticalStackLayout Spacing="14">
+                        <Label Text="Hesabınıza giriş yapın" Style="{StaticResource MetrikPageSubtitle}" />
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="E-posta" FontSize="13" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+                            <Border Style="{StaticResource MetrikInputBorder}">
+                                <Entry Placeholder="ornek@firma.com" Text="{Binding Eposta}" Keyboard="Email"
+                                       BackgroundColor="Transparent" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Şifre" FontSize="13" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+                            <Border Style="{StaticResource MetrikInputBorder}">
+                                <Entry Placeholder="••••••••" Text="{Binding Sifre}" IsPassword="True"
+                                       BackgroundColor="Transparent" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <Label Text="{Binding Hata}" TextColor="{StaticResource Danger}" FontSize="13" />
+
+                        <Button Text="Giriş Yap" Command="{Binding GirisYapCommand}" Style="{StaticResource MetrikPrimaryButton}" />
+                        <ActivityIndicator IsRunning="{Binding Yukleniyor}" IsVisible="{Binding Yukleniyor}"
+                                           Color="{StaticResource BrandPrimary}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label x:Name="LblFirebaseUyari" Text="Firebase ayarları henüz yapılandırılmadı."
+                       TextColor="{StaticResource Warning}" HorizontalOptions="Center" IsVisible="False" FontSize="12" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

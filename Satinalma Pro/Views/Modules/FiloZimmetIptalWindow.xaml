@@ -1,0 +1,33 @@
+<Window x:Class="SatinalmaPro.Views.Modules.FiloZimmetIptalWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Zimmet İptal"
+        Width="500" Height="360" MinWidth="440"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" Background="White">
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <StackPanel Grid.Row="0" Margin="0,0,0,12">
+      <TextBlock x:Name="TxtBaslik" FontSize="20" FontWeight="SemiBold" />
+      <TextBlock Text="İptal edilecek aktif zimmeti seçin."
+                 FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,4,0,0" />
+    </StackPanel>
+    <DataGrid x:Name="ZimmetGrid" Grid.Row="1" Style="{StaticResource ModuleDataGridStyle}"
+              AlternatingRowBackground="Transparent" IsReadOnly="True" AutoGenerateColumns="False"
+              SelectionMode="Single">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Şoför" Binding="{Binding SoforAdi}" Width="*" MinWidth="140" />
+        <DataGridTextColumn Header="Zimmet Tarihi" Binding="{Binding Tarih}" Width="110" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button Content="Kapat" Style="{StaticResource ToolbarButtonStyle}" Width="100" Margin="0,0,8,0" Click="Kapat_Click" />
+      <Button Content="Zimmet İptal" Style="{StaticResource PrimaryToolbarButtonStyle}" Width="120" Click="Iptal_Click" />
+    </StackPanel>
+  </Grid>
+</Window>

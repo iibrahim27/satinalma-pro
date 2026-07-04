@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Material Design 3 — Yönetim Paneli -->
+
+    <Color x:Key="Md3Primary">#2563EB</Color>
+    <Color x:Key="Md3PrimaryContainer">#DBEAFE</Color>
+    <Color x:Key="Md3OnPrimaryContainer">#1E3A8A</Color>
+    <Color x:Key="Md3Surface">#FFFFFF</Color>
+    <Color x:Key="Md3SurfaceDark">#1C1B1F</Color>
+    <Color x:Key="Md3SurfaceVariant">#F3F4F6</Color>
+    <Color x:Key="Md3SurfaceVariantDark">#2B2930</Color>
+    <Color x:Key="Md3Outline">#E5E7EB</Color>
+    <Color x:Key="Md3OutlineDark">#49454F</Color>
+    <Color x:Key="Md3Acil">#DC2626</Color>
+    <Color x:Key="Md3AcilContainer">#FEE2E2</Color>
+    <Color x:Key="Md3Normal">#EA580C</Color>
+    <Color x:Key="Md3NormalContainer">#FFEDD5</Color>
+    <Color x:Key="Md3EnUygun">#16A34A</Color>
+    <Color x:Key="Md3EnUygunContainer">#DCFCE7</Color>
+    <Color x:Key="Md3EnUygunContainerDark">#14532D</Color>
+
+    <Shadow x:Key="Md3CardShadow" Radius="8" Opacity="0.12" Brush="{StaticResource Black}" Offset="0,2" />
+
+    <Style x:Key="Md3ElevatedCard" TargetType="Border">
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Md3Surface}, Dark={StaticResource CardBackgroundDark}}" />
+        <Setter Property="Shadow" Value="{StaticResource Md3CardShadow}" />
+    </Style>
+
+    <Style x:Key="Md3OutlinedCard" TargetType="Border">
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Md3Outline}, Dark={StaticResource Md3OutlineDark}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Md3Surface}, Dark={StaticResource CardBackgroundDark}}" />
+    </Style>
+
+    <Style x:Key="Md3SectionTitle" TargetType="Label">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+    </Style>
+
+    <Style x:Key="Md3CardTitle" TargetType="Label">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+    </Style>
+
+    <Style x:Key="Md3CardSubtitle" TargetType="Label">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource SecondaryTextLight}, Dark={StaticResource SecondaryTextDark}}" />
+    </Style>
+
+    <Style x:Key="Md3Muted" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MutedTextLight}, Dark={StaticResource MutedTextDark}}" />
+    </Style>
+
+    <Style x:Key="Md3StatValue" TargetType="Label">
+        <Setter Property="FontSize" Value="28" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+    </Style>
+
+    <Style x:Key="Md3ActionButton" TargetType="Button">
+        <Setter Property="MinimumHeightRequest" Value="52" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+        <Setter Property="Padding" Value="16,14" />
+        <Setter Property="TextColor" Value="{StaticResource OnPrimary}" />
+    </Style>
+
+    <Style x:Key="Md3BtnPrimary" TargetType="Button" BasedOn="{StaticResource Md3ActionButton}">
+        <Setter Property="BackgroundColor" Value="{StaticResource Md3Primary}" />
+    </Style>
+
+    <Style x:Key="Md3BtnSuccess" TargetType="Button" BasedOn="{StaticResource Md3ActionButton}">
+        <Setter Property="BackgroundColor" Value="{StaticResource Success}" />
+    </Style>
+
+    <Style x:Key="Md3BtnDanger" TargetType="Button" BasedOn="{StaticResource Md3ActionButton}">
+        <Setter Property="BackgroundColor" Value="{StaticResource Danger}" />
+    </Style>
+
+    <Style x:Key="Md3BtnInfo" TargetType="Button" BasedOn="{StaticResource Md3ActionButton}">
+        <Setter Property="BackgroundColor" Value="{StaticResource Info}" />
+    </Style>
+
+    <Style x:Key="Md3BtnOutlined" TargetType="Button">
+        <Setter Property="MinimumHeightRequest" Value="52" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+        <Setter Property="Padding" Value="16,14" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderWidth" Value="1.5" />
+        <Setter Property="BorderColor" Value="{AppThemeBinding Light={StaticResource Md3Outline}, Dark={StaticResource Md3OutlineDark}}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+    </Style>
+
+    <Style x:Key="Md3FilterChip" TargetType="Border">
+        <Setter Property="Padding" Value="14,8" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 20" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Md3Outline}, Dark={StaticResource Md3OutlineDark}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Md3Surface}, Dark={StaticResource CardBackgroundDark}}" />
+    </Style>
+
+    <Style x:Key="Md3FilterChipSelected" TargetType="Border">
+        <Setter Property="Padding" Value="14,8" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 20" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Md3Primary}" />
+    </Style>
+
+    <Style x:Key="Md3SearchBar" TargetType="Border">
+        <Setter Property="Padding" Value="12,4" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 28" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Md3Outline}, Dark={StaticResource Md3OutlineDark}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Md3SurfaceVariant}, Dark={StaticResource Md3SurfaceVariantDark}}" />
+    </Style>
+
+    <Style x:Key="Md3AppBar" TargetType="Grid">
+        <Setter Property="Padding" Value="16,12" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Md3Surface}, Dark={StaticResource PageBackgroundDark}}" />
+    </Style>
+
+</ResourceDictionary>

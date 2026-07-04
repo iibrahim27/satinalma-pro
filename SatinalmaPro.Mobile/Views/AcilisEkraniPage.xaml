@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SatinalmaPro.Mobile.Views.AcilisEkraniPage"
+             NavigationPage.HasNavigationBar="False"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+
+    <Grid Padding="28" RowDefinitions="*,Auto,*">
+        <VerticalStackLayout x:Name="YuklemeLayout" Grid.Row="1" Spacing="18" VerticalOptions="Center">
+            <Image Source="app_logo.png" HeightRequest="88" WidthRequest="88"
+                   HorizontalOptions="Center" Aspect="AspectFit" />
+
+            <Label x:Name="TxtBaslik"
+                   Text="Uygulama yükleniyor..."
+                   FontSize="20"
+                   FontAttributes="Bold"
+                   HorizontalTextAlignment="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+
+            <Label x:Name="TxtDurum"
+                   Text="Başlatılıyor..."
+                   FontSize="14"
+                   HorizontalTextAlignment="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource SecondaryTextLight}, Dark={StaticResource SecondaryTextDark}}" />
+
+            <ProgressBar x:Name="PrgCubuk"
+                         Progress="0"
+                         HeightRequest="10"
+                         ProgressColor="#DC2626"
+                         Margin="0,4,0,0" />
+
+            <Label x:Name="TxtYuzde"
+                   Text="0%"
+                   FontSize="12"
+                   HorizontalOptions="End"
+                   TextColor="{AppThemeBinding Light={StaticResource SecondaryTextLight}, Dark={StaticResource SecondaryTextDark}}" />
+        </VerticalStackLayout>
+
+        <VerticalStackLayout x:Name="KarsilamaLayout"
+                             Grid.Row="1"
+                             Spacing="12"
+                             VerticalOptions="Center"
+                             IsVisible="False">
+            <Image Source="app_logo.png" HeightRequest="72" WidthRequest="72"
+                   HorizontalOptions="Center" Aspect="AspectFit" Opacity="0.9" />
+
+            <Label Text="Hoş geldiniz"
+                   FontSize="16"
+                   HorizontalTextAlignment="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource SecondaryTextLight}, Dark={StaticResource SecondaryTextDark}}" />
+
+            <Label x:Name="LblKarsilamaRol"
+                   FontSize="26"
+                   FontAttributes="Bold"
+                   HorizontalTextAlignment="Center"
+                   TextColor="#DC2626" />
+
+            <Label x:Name="LblKarsilamaAd"
+                   FontSize="22"
+                   FontAttributes="Bold"
+                   HorizontalTextAlignment="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

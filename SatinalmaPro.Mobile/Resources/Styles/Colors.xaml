@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Metrik — modern, sade, tek marka paleti -->
+    <Color x:Key="Primary">#2563EB</Color>
+    <Color x:Key="PrimaryDark">#1D4ED8</Color>
+    <Color x:Key="PrimaryLight">#DBEAFE</Color>
+    <Color x:Key="PrimaryDarkText">#0F172A</Color>
+    <Color x:Key="Secondary">#64748B</Color>
+    <Color x:Key="SecondaryDarkText">#94A3B8</Color>
+    <Color x:Key="Tertiary">#0F172A</Color>
+
+    <Color x:Key="White">#FFFFFF</Color>
+    <Color x:Key="Black">#000000</Color>
+    <Color x:Key="OffBlack">#0F172A</Color>
+
+    <Color x:Key="Gray100">#F1F5F9</Color>
+    <Color x:Key="Gray200">#E2E8F0</Color>
+    <Color x:Key="Gray300">#CBD5E1</Color>
+    <Color x:Key="Gray400">#94A3B8</Color>
+    <Color x:Key="Gray500">#64748B</Color>
+    <Color x:Key="Gray600">#475569</Color>
+    <Color x:Key="Gray900">#0F172A</Color>
+    <Color x:Key="Gray950">#020617</Color>
+
+    <Color x:Key="PageBackgroundLight">#F8FAFC</Color>
+    <Color x:Key="PageBackgroundDark">#0F172A</Color>
+    <Color x:Key="CardBackgroundLight">#FFFFFF</Color>
+    <Color x:Key="CardBackgroundDark">#1E293B</Color>
+    <Color x:Key="CardBorderLight">#E2E8F0</Color>
+    <Color x:Key="CardBorderDark">#334155</Color>
+    <Color x:Key="PrimaryTextLight">#0F172A</Color>
+    <Color x:Key="PrimaryTextDark">#F8FAFC</Color>
+    <Color x:Key="SecondaryTextLight">#475569</Color>
+    <Color x:Key="SecondaryTextDark">#CBD5E1</Color>
+    <Color x:Key="MutedTextLight">#64748B</Color>
+    <Color x:Key="MutedTextDark">#94A3B8</Color>
+    <Color x:Key="AccentTextLight">#334155</Color>
+    <Color x:Key="AccentTextDark">#E2E8F0</Color>
+
+    <Color x:Key="BrandPrimary">#2563EB</Color>
+    <Color x:Key="BrandPrimaryDark">#1D4ED8</Color>
+    <Color x:Key="BrandPrimaryLight">#DBEAFE</Color>
+    <Color x:Key="BrandAccent">#2563EB</Color>
+    <Color x:Key="Success">#059669</Color>
+    <Color x:Key="Info">#0284C7</Color>
+    <Color x:Key="InfoDark">#0369A1</Color>
+    <Color x:Key="Warning">#D97706</Color>
+    <Color x:Key="Danger">#DC2626</Color>
+    <Color x:Key="DangerDark">#B91C1C</Color>
+    <Color x:Key="Purple">#7C3AED</Color>
+    <Color x:Key="OnPrimary">#FFFFFF</Color>
+
+    <Color x:Key="OnayPanelBgLight">#ECFDF5</Color>
+    <Color x:Key="OnayPanelBgDark">#064E3B</Color>
+    <Color x:Key="OnayPanelTextLight">#047857</Color>
+    <Color x:Key="OnayPanelTextDark">#6EE7B7</Color>
+    <Color x:Key="OnayPanelDetailLight">#334155</Color>
+    <Color x:Key="OnayPanelDetailDark">#A7F3D0</Color>
+
+    <Color x:Key="BtnSecondaryBgLight">#F1F5F9</Color>
+    <Color x:Key="BtnSecondaryBgDark">#334155</Color>
+    <Color x:Key="BtnSecondaryTextLight">#334155</Color>
+    <Color x:Key="BtnSecondaryTextDark">#E2E8F0</Color>
+
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
+    <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
+    <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource Tertiary}"/>
+    <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource White}"/>
+    <SolidColorBrush x:Key="BlackBrush" Color="{StaticResource Black}"/>
+</ResourceDictionary>

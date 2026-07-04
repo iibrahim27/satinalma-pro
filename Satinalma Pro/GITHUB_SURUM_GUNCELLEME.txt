@@ -1,0 +1,178 @@
+================================================================================
+  SATINALMA PRO — GITHUB SÜRÜM GÜNCELLEME KILAVUZU
+  (Yeni zip yükleme + version.json güncelleme)
+================================================================================
+
+GitHub kullanıcı adınız: iibrahim27
+Repo adresi: https://github.com/iibrahim27/satinalma-pro
+Releases sayfası: https://github.com/iibrahim27/satinalma-pro/releases
+
+Bu işlemi her yeni sürümde bir kez yaparsınız.
+Diğer PC'ler uygulamayı açınca otomatik güncelleme alır (tarayıcı açılmaz).
+
+
+================================================================================
+ÖNEMLİ — İKİ DOSYA VAR
+================================================================================
+
+  1) version.json     → Güncelleme kontrolü için (küçük dosya, repoda kalır)
+  2) SatinalmaPro.zip → Kurulacak program (her sürümde Release'e yüklenir)
+
+İkisi de gerekli. Sadece zip yüklemek yetmez, version.json da güncellenmeli.
+
+
+================================================================================
+ADIM 1 — BİLGİSAYARINIZDA YENİ PAKET OLUŞTURUN
+================================================================================
+
+1. Satınalma Pro uygulamasını KAPATIN (açıksa derleme başarısız olur)
+
+2. PowerShell açın (Başlat -> PowerShell)
+
+3. Şu komutları sırayla yazın (sürüm numarasını artırın):
+
+   cd "C:\Users\pekba\OneDrive\Desktop\METRİK\Satinalma Pro"
+
+   .\scripts\yayin-paketi.ps1 -Version "1.2.0" -GitHubKullanici "iibrahim27"
+
+   NOT: "1.2.0" yerine yeni sürüm numaranızı yazın.
+        Örnek sıra: 1.1.0 -> 1.1.1 -> 1.2.0 -> 1.2.1
+
+4. Script bitince şu dosyalar hazır olur:
+   - Satinalma Pro\SatinalmaPro.zip
+   - Satinalma Pro\version.json  (otomatik güncellenmiş)
+
+5. İlk kez script hata verirse şunu bir kez çalıştırın:
+   Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+
+
+================================================================================
+ADIM 2 — version.json DOSYASINI GITHUB'DA GÜNCELLEYİN
+================================================================================
+
+Bu dosya uygulamanın "yeni sürüm var mı?" kontrolünü yapmasını sağlar.
+
+YÖNTEM A — Dosyayı değiştir (kolay)
+  1. Tarayıcıda açın:
+     https://github.com/iibrahim27/satinalma-pro/blob/main/version.json
+
+  2. Sağ üstte kalem simgesi (Edit) tıklayın
+
+  3. Bilgisayarınızdaki güncel version.json içeriğini yapıştırın
+     (Satinalma Pro\version.json dosyasını Not Defteri ile açın)
+
+  4. Altta "Commit changes" -> "Commit changes" deyin
+
+YÖNTEM B — Yeniden yükle
+  1. https://github.com/iibrahim27/satinalma-pro/upload
+  2. version.json dosyasını sürükleyin
+  3. "Commit changes" deyin (eski dosyanın üzerine yazar)
+
+version.json örnek içerik:
+
+{
+  "version": "1.2.0",
+  "downloadUrl": "https://github.com/iibrahim27/satinalma-pro/releases/download/v1.2.0/SatinalmaPro.zip",
+  "notes": "Bu sürümde ne değişti kısaca yazın",
+  "zorunlu": false
+}
+
+DİKKAT:
+  - "version" numarası önceki sürümden BÜYÜK olmalı
+  - "downloadUrl" içindeki v1.2.0, ADIM 3'teki tag ile AYNI olmalı
+  - Zip dosya adı: SatinalmaPro.zip (değiştirmeyin)
+
+
+================================================================================
+ADIM 3 — YENİ ZIP'İ RELEASE OLARAK YÜKLEYİN
+================================================================================
+
+1. Tarayıcıda açın:
+   https://github.com/iibrahim27/satinalma-pro/releases/new
+
+2. Choose a tag:
+   Yeni sürüm numarasını yazın, örnek: v1.2.0
+   "Create new tag: v1.2.0 on publish" seçili olsun
+
+3. Release title:
+   Satinalma Pro v1.2.0
+
+4. Describe this release (isteğe bağlı):
+   Örnek: Hata düzeltmeleri, yeni özellikler...
+
+5. Attach binaries alanına zip dosyasını sürükleyin:
+   C:\Users\pekba\OneDrive\Desktop\METRİK\Satinalma Pro\SatinalmaPro.zip
+
+   Dosya adı listede SatinalmaPro.zip olarak görünmeli.
+
+6. Release label: None (işaretli kalsın)
+
+7. Yeşil "Publish release" butonuna tıklayın
+
+
+================================================================================
+ADIM 4 — KONTROL EDİN
+================================================================================
+
+1. Releases sayfasını açın:
+   https://github.com/iibrahim27/satinalma-pro/releases
+
+2. En üstte yeni sürümünüz görünmeli (ör. v1.2.0 Latest)
+
+3. Assets altında SatinalmaPro.zip indirilebiliyor olmalı
+
+4. version.json internetten açılabiliyor olmalı:
+   https://raw.githubusercontent.com/iibrahim27/satinalma-pro/main/version.json
+
+5. Test: Eski sürümlü bir PC'de uygulamayı açın
+   -> Açılış ekranında "Güncelleme indiriliyor..." yazmalı
+   -> Tarayıcı AÇILMAMALI
+   -> Güncelleme bitince uygulama yeniden açılmalı
+
+
+================================================================================
+SÜRÜM NUMARASI KURALLARI
+================================================================================
+
+Format: ANA.ALT.YAMA  (örnek: 1.2.0)
+
+  - 1.1.0 -> 1.1.1  küçük düzeltme
+  - 1.1.0 -> 1.2.0  yeni özellik
+  - 1.9.0 -> 2.0.0  büyük değişiklik
+
+Her yerde AYNI numarayı kullanın:
+  [x] yayin-paketi.ps1 -Version "1.2.0"
+  [x] GitHub Release tag: v1.2.0
+  [x] version.json içindeki "version": "1.2.0"
+  [x] version.json içindeki downloadUrl: .../v1.2.0/SatinalmaPro.zip
+
+
+================================================================================
+HIZLI ÖZET (TEKRAR EDİLECEK İŞLEM)
+================================================================================
+
+  1. Uygulamayı kapat
+  2. PowerShell: .\scripts\yayin-paketi.ps1 -Version "X.Y.Z" -GitHubKullanici "iibrahim27"
+  3. GitHub'da version.json güncelle
+  4. GitHub'da yeni Release (vX.Y.Z) + SatinalmaPro.zip yükle
+  5. Bitti
+
+
+================================================================================
+SORUN GİDERME
+================================================================================
+
+Güncelleme gelmiyor
+  -> version.json GitHub'da güncel mi?
+  -> version numarası eski sürümden büyük mü?
+  -> downloadUrl doğru Release linkine mi bakıyor?
+
+Zip indirilemiyor
+  -> Release yayınlandı mı (Publish release)?
+  -> Zip adı SatinalmaPro.zip mi?
+
+Script çalışmıyor
+  -> Uygulama kapalı mı?
+  -> Set-ExecutionPolicy -Scope CurrentUser RemoteSigned denediniz mi?
+
+================================================================================

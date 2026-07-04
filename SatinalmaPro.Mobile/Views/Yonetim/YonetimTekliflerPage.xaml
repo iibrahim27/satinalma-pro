@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SatinalmaPro.Mobile.ViewModels.Yonetim"
+             xmlns:mod="clr-namespace:SatinalmaPro.Mobile.Models.Yonetim"
+             xmlns:ctrl="clr-namespace:SatinalmaPro.Mobile.Views.Controls.Yonetim"
+             x:Class="SatinalmaPro.Mobile.Views.Yonetim.YonetimTekliflerPage"
+             x:DataType="vm:YonetimTekliflerViewModel"
+             Title="Teklifler"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*">
+        <Grid Grid.Row="0" Style="{StaticResource Md3AppBar}">
+            <Label Text="Teklifler" Style="{StaticResource Md3SectionTitle}" />
+        </Grid>
+
+        <ctrl:SayfaDurumGorunumu x:Name="DurumGorunumu" Grid.Row="1"
+                                  Durum="{Binding SayfaDurumu}"
+                                  HataMesaj="{Binding HataMesaji}"
+                                  BosBaslik="Teklif bekleyen talep yok"
+                                  BosMesaj="Satınalma teklif topladığında burada görünecek.">
+            <ctrl:SayfaDurumGorunumu.Icerik>
+                <RefreshView x:Name="RefreshView">
+                    <CollectionView ItemsSource="{Binding Teklifler}" SelectionMode="None" Margin="16,8">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="mod:YonetimTeklifOgesi">
+                                <Border Style="{StaticResource Md3ElevatedCard}" Margin="0,0,0,12">
+                                    <VerticalStackLayout Spacing="10">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Label Text="{Binding TalepNo}" Style="{StaticResource Md3CardTitle}" />
+                                            <Border Grid.Column="1" Padding="8,4" StrokeThickness="0"
+                                                    StrokeShape="RoundRectangle 10"
+                                                    BackgroundColor="{StaticResource Md3PrimaryContainer}">
+                                                <Label Text="{Binding ToplamTeklifSayisi, StringFormat='{0} teklif'}"
+                                                       FontSize="11" FontAttributes="Bold"
+                                                       TextColor="{StaticResource Md3Primary}" />
+                                            </Border>
+                                        </Grid>
+                                        <Label Text="{Binding Santiye, StringFormat='🏗 {0}'}" Style="{StaticResource Md3CardSubtitle}" />
+                                        <Label Text="{Binding MalzemeOzeti}" Style="{StaticResource Md3Muted}" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding FirmaSayisi, StringFormat='🏢 {0} firma teklif verdi'}" Style="{StaticResource Md3Muted}" />
+                                        <Button Text="İncele" Style="{StaticResource Md3BtnPrimary}"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:YonetimTekliflerViewModel}}, Path=TeklifDetayaGitCommand}"
+                                                CommandParameter="{Binding .}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </RefreshView>
+            </ctrl:SayfaDurumGorunumu.Icerik>
+        </ctrl:SayfaDurumGorunumu>
+    </Grid>
+
+</ContentPage>

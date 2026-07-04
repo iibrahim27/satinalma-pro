@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SatinalmaPro.Mobile.ViewModels.Yonetim"
+             xmlns:mod="clr-namespace:SatinalmaPro.Mobile.Models.Yonetim"
+             xmlns:ctrl="clr-namespace:SatinalmaPro.Mobile.Views.Controls.Yonetim"
+             x:Class="SatinalmaPro.Mobile.Views.Yonetim.YonetimAnaSayfaPage"
+             x:DataType="vm:YonetimAnaSayfaViewModel"
+             Title="Ana Sayfa"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*">
+        <Grid Grid.Row="0" Style="{StaticResource Md3AppBar}" ColumnDefinitions="*,Auto">
+            <VerticalStackLayout Spacing="2">
+                <Label Text="Yönetim Paneli" Style="{StaticResource Md3SectionTitle}" />
+                <Label Text="{Binding KullaniciAdi, StringFormat='Hoş geldiniz, {0}'}" Style="{StaticResource Md3Muted}" />
+            </VerticalStackLayout>
+            <Border Grid.Column="1" WidthRequest="44" HeightRequest="44"
+                    StrokeShape="RoundRectangle 22" BackgroundColor="{StaticResource Md3PrimaryContainer}"
+                    StrokeThickness="0" VerticalOptions="Center">
+                <Label Text="📊" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+        </Grid>
+
+        <ctrl:SayfaDurumGorunumu x:Name="DurumGorunumu" Grid.Row="1"
+                                  Durum="{Binding SayfaDurumu}"
+                                  HataMesaj="{Binding HataMesaji}"
+                                  BosBaslik="Henüz talep yok"
+                                  BosMesaj="Gelen talepler burada listelenecek.">
+            <ctrl:SayfaDurumGorunumu.Icerik>
+                <RefreshView x:Name="RefreshView">
+                    <ScrollView>
+                        <VerticalStackLayout Padding="16" Spacing="16">
+
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                                <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource Md3ElevatedCard}">
+                                    <VerticalStackLayout Spacing="4">
+                                        <Label Text="⏳" FontSize="18" />
+                                        <Label Text="{Binding Ozet.BekleyenTalepler}" Style="{StaticResource Md3StatValue}"
+                                               TextColor="{StaticResource Md3Primary}" />
+                                        <Label Text="Bekleyen Talepler" Style="{StaticResource Md3Muted}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                                <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource Md3ElevatedCard}">
+                                    <VerticalStackLayout Spacing="4">
+                                        <Label Text="💼" FontSize="18" />
+                                        <Label Text="{Binding Ozet.TeklifBekleyenler}" Style="{StaticResource Md3StatValue}"
+                                               TextColor="{StaticResource Info}" />
+                                        <Label Text="Teklif Bekleyenler" Style="{StaticResource Md3Muted}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                                <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource Md3ElevatedCard}">
+                                    <VerticalStackLayout Spacing="4">
+                                        <Label Text="✅" FontSize="18" />
+                                        <Label Text="{Binding Ozet.BugunOnaylananlar}" Style="{StaticResource Md3StatValue}"
+                                               TextColor="{StaticResource Success}" />
+                                        <Label Text="Bugün Onaylananlar" Style="{StaticResource Md3Muted}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                                <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Md3ElevatedCard}">
+                                    <VerticalStackLayout Spacing="4">
+                                        <Label Text="🚫" FontSize="18" />
+                                        <Label Text="{Binding Ozet.Reddedilenler}" Style="{StaticResource Md3StatValue}"
+                                               TextColor="{StaticResource Danger}" />
+                                        <Label Text="Reddedilenler" Style="{StaticResource Md3Muted}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </Grid>
+
+                            <Label Text="Son Gelen Talepler" Style="{StaticResource Md3SectionTitle}" Margin="0,8,0,0" />
+
+                            <CollectionView ItemsSource="{Binding SonTalepler}" SelectionMode="None">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="mod:YonetimTalepOgesi">
+                                        <Border Style="{StaticResource Md3ElevatedCard}" Margin="0,0,0,12">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:YonetimAnaSayfaViewModel}}, Path=TalepDetayaGitCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Border.GestureRecognizers>
+                                            <VerticalStackLayout Spacing="8">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <Label Text="{Binding TalepNo}" Style="{StaticResource Md3CardTitle}" />
+                                                    <Border Grid.Column="1" Padding="10,4" StrokeThickness="0"
+                                                            StrokeShape="RoundRectangle 12"
+                                                            BackgroundColor="{Binding OncelikArkaPlan}">
+                                                        <Label Text="{Binding OncelikMetni}" FontSize="11" FontAttributes="Bold"
+                                                               TextColor="{Binding OncelikRengi}" />
+                                                    </Border>
+                                                </Grid>
+                                                <Label Text="{Binding Santiye, StringFormat='🏗 {0}'}" Style="{StaticResource Md3CardSubtitle}" />
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <Label Text="{Binding TalepEden, StringFormat='👤 {0}'}" Style="{StaticResource Md3Muted}" />
+                                                    <Label Grid.Column="1" Text="{Binding TalepTarihi}" Style="{StaticResource Md3Muted}" />
+                                                </Grid>
+                                                <Label Text="{Binding MalzemeKalemSayisi, StringFormat='📦 {0} malzeme kalemi'}"
+                                                       Style="{StaticResource Md3Muted}" />
+                                                <Label Text="{Binding Aciklama}" Style="{StaticResource Md3CardSubtitle}"
+                                                       LineBreakMode="TailTruncation" MaxLines="2" />
+                                                <Label Text="{Binding DurumMetni}" FontSize="12" FontAttributes="Bold"
+                                                       TextColor="{StaticResource Md3Primary}" />
+                                            </VerticalStackLayout>
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+
+                        </VerticalStackLayout>
+                    </ScrollView>
+                </RefreshView>
+            </ctrl:SayfaDurumGorunumu.Icerik>
+        </ctrl:SayfaDurumGorunumu>
+    </Grid>
+
+</ContentPage>

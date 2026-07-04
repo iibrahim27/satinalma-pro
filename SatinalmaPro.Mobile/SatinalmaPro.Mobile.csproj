@@ -1,0 +1,121 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net9.0-android</TargetFrameworks>
+		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
+		<!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
+
+		<!-- Note for MacCatalyst:
+		The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
+		When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
+		The Mac App Store will NOT accept apps with ONLY maccatalyst-arm64 indicated;
+		either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
+		<!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
+
+		<OutputType>Exe</OutputType>
+		<RootNamespace>SatinalmaPro.Mobile</RootNamespace>
+		<UseMaui>true</UseMaui>
+		<SingleProject>true</SingleProject>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<!-- Display name -->
+		<ApplicationTitle>Satınalma Pro</ApplicationTitle>
+
+		<!-- App Identifier -->
+		<ApplicationId>com.metrik.satinalmapro</ApplicationId>
+
+		<!-- Versions -->
+		<ApplicationDisplayVersion>2.0.0</ApplicationDisplayVersion>
+		<ApplicationVersion>45</ApplicationVersion>
+
+		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
+		<WindowsPackageType>None</WindowsPackageType>
+
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">23.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Masaüstü ile aynı ikon (Satinalma Pro/Assets/app.ico) -->
+		<MauiIcon Include="Resources\AppIcon\appicon.png" />
+
+		<MauiSplashScreen Include="Resources\AppIcon\appicon.png" Color="#FFFFFF" BaseSize="256,256" />
+
+		<MauiImage Include="Resources\Images\app_logo.png" />
+
+		<MauiFont Include="Resources\Fonts\*" />
+
+		<!-- PdfSharpCore: MauiFont paketinden okunmaz, ayri MauiAsset adiyla -->
+		<MauiAsset Include="Resources\Fonts\OpenSans-Regular.ttf" LogicalName="pdf_OpenSans-Regular.ttf" />
+		<MauiAsset Include="Resources\Fonts\OpenSans-Semibold.ttf" LogicalName="pdf_OpenSans-Semibold.ttf" />
+
+		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+		<MauiAsset Include="Resources\Raw\firebase_ayarlar.json" LogicalName="firebase_ayarlar.json" Condition="Exists('Resources\Raw\firebase_ayarlar.json')" />
+		<MauiAsset Include="Resources\Raw\google-services.json" LogicalName="google-services.json" Condition="Exists('Resources\Raw\google-services.json')" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\Raw\firebase_ayarlar.json" Condition="Exists('Resources\Raw\firebase_ayarlar.json')" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.9" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="Plugin.LocalNotification" Version="12.0.2" />
+		<PackageReference Include="PdfSharpCore" Version="1.3.65" />
+	</ItemGroup>
+
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+		<PackageReference Include="Xamarin.AndroidX.Biometric" Version="1.1.0.10" />
+		<PackageReference Include="Xamarin.Firebase.Messaging" Version="124.1.0" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+		<AndroidPackageFormat>apk</AndroidPackageFormat>
+		<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+		<AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
+		<RunAOTCompilation>false</RunAOTCompilation>
+		<AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+		<AndroidManifestMerger>legacy</AndroidManifestMerger>
+	</PropertyGroup>
+
+	<Target Name="EnsureAndroidAssetsFolder" BeforeTargets="_CreateAndroidAssets">
+		<MakeDir Directories="$(IntermediateOutputPath)assets" Condition="!Exists('$(IntermediateOutputPath)assets')" />
+	</Target>
+
+	<!-- Masaüstü firebase_ayarlar.json + google-services.json otomatik kopyalanır -->
+	<PropertyGroup>
+		<SatinalmaProKaynak>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Satinalma Pro\'))</SatinalmaProKaynak>
+	</PropertyGroup>
+
+	<Target Name="SyncFirebaseDosyalari" BeforeTargets="PrepareForBuild">
+		<Copy SourceFiles="$(SatinalmaProKaynak)firebase_ayarlar.json"
+		      DestinationFiles="$(MSBuildThisFileDirectory)Resources\Raw\firebase_ayarlar.json"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(SatinalmaProKaynak)firebase_ayarlar.json')" />
+		<Copy SourceFiles="$(SatinalmaProKaynak)google-services.json"
+		      DestinationFiles="$(MSBuildThisFileDirectory)google-services.json"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(SatinalmaProKaynak)google-services.json')" />
+		<Copy SourceFiles="$(SatinalmaProKaynak)google-services.json"
+		      DestinationFiles="$(MSBuildThisFileDirectory)Resources\Raw\google-services.json"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(SatinalmaProKaynak)google-services.json')" />
+		<Copy SourceFiles="$(SatinalmaProKaynak)fcm-service-account.json"
+		      DestinationFiles="$(MSBuildThisFileDirectory)Resources\Raw\fcm-service-account.json"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(SatinalmaProKaynak)fcm-service-account.json')" />
+	</Target>
+
+	<ItemGroup Condition="Exists('google-services.json')">
+		<GoogleServicesJson Include="google-services.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\SatinalmaPro.Shared\SatinalmaPro.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

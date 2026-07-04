@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SatinalmaPro.Mobile.Views.Controls.Yonetim.SayfaDurumGorunumu"
+             x:Name="Root">
+
+    <Grid>
+        <!-- Yükleniyor -->
+        <VerticalStackLayout x:Name="YukleniyorPanel"
+                             IsVisible="False"
+                             VerticalOptions="Center"
+                             HorizontalOptions="Center"
+                             Spacing="16"
+                             Padding="32">
+            <ActivityIndicator IsRunning="True" HeightRequest="48" WidthRequest="48"
+                               Color="{StaticResource Md3Primary}" />
+            <Label Text="Yükleniyor..."
+                   HorizontalTextAlignment="Center"
+                   Style="{StaticResource Md3CardSubtitle}" />
+        </VerticalStackLayout>
+
+        <!-- Boş -->
+        <VerticalStackLayout x:Name="BosPanel"
+                             IsVisible="False"
+                             VerticalOptions="Center"
+                             HorizontalOptions="Center"
+                             Spacing="12"
+                             Padding="32">
+            <Label Text="📭"
+                   FontSize="48"
+                   HorizontalTextAlignment="Center" />
+            <Label x:Name="LblBosBaslik"
+                   Text="Kayıt bulunamadı"
+                   Style="{StaticResource Md3SectionTitle}"
+                   HorizontalTextAlignment="Center" />
+            <Label x:Name="LblBosMesaj"
+                   Text="Henüz görüntülenecek veri yok."
+                   Style="{StaticResource Md3Muted}"
+                   HorizontalTextAlignment="Center"
+                   LineBreakMode="WordWrap" />
+        </VerticalStackLayout>
+
+        <!-- Hata -->
+        <VerticalStackLayout x:Name="HataPanel"
+                             IsVisible="False"
+                             VerticalOptions="Center"
+                             HorizontalOptions="Center"
+                             Spacing="12"
+                             Padding="32">
+            <Label Text="⚠️"
+                   FontSize="48"
+                   HorizontalTextAlignment="Center" />
+            <Label Text="Bir hata oluştu"
+                   Style="{StaticResource Md3SectionTitle}"
+                   HorizontalTextAlignment="Center" />
+            <Label x:Name="LblHataMesaj"
+                   Style="{StaticResource Md3Muted}"
+                   HorizontalTextAlignment="Center"
+                   LineBreakMode="WordWrap" />
+            <Button x:Name="BtnTekrarDene"
+                    Text="Tekrar Dene"
+                    Style="{StaticResource Md3BtnPrimary}"
+                    HorizontalOptions="Center"
+                    Margin="0,8,0,0" />
+        </VerticalStackLayout>
+
+        <!-- İçerik -->
+        <ContentView x:Name="IcerikPanel" IsVisible="True" />
+    </Grid>
+
+</ContentView>

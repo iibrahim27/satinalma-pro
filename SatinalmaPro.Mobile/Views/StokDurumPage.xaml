@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SatinalmaPro.Shared.Models;assembly=SatinalmaPro.Shared"
+             x:Class="SatinalmaPro.Mobile.Views.StokDurumPage"
+             Title="Stok Durumu">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="12">
+        <SearchBar Grid.Row="0" x:Name="AramaBar" Placeholder="Malzeme ara..." TextChanged="AramaBar_TextChanged" />
+        <Label Grid.Row="1" x:Name="LblKritikOzet" Style="{StaticResource LblWarning}" FontSize="12" Margin="0,4" />
+        <RefreshView Grid.Row="2" x:Name="RefreshView">
+            <CollectionView x:Name="Liste">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:StokKaydi">
+                        <Border Margin="0,4" Padding="12"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                                Stroke="{AppThemeBinding Light={StaticResource CardBorderLight}, Dark={StaticResource CardBorderDark}}"
+                                StrokeThickness="1" StrokeShape="RoundRectangle 8">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding DurumMetin}" Value="Kritik">
+                                    <Setter Property="Stroke" Value="{StaticResource Warning}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border" Binding="{Binding DurumMetin}" Value="Tükendi">
+                                    <Setter Property="Stroke" Value="{StaticResource Danger}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Grid.Column="0">
+                                    <Label Text="{Binding MalzemeAdi}" FontAttributes="Bold" Style="{StaticResource LblPrimary}" />
+                                    <Label Text="{Binding DepoSaha}" Style="{StaticResource LblMuted}" FontSize="12" />
+                                    <Label Text="{Binding DurumMetin}" FontSize="11" Style="{StaticResource LblWarning}" />
+                                    <Label Text="{Binding MinimumStok, StringFormat='Min: {0:N2}'}" Style="{StaticResource LblMuted}" FontSize="11" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1" HorizontalOptions="End">
+                                    <Label Text="{Binding MevcutMiktar, StringFormat='{0:N2}'}" FontAttributes="Bold" Style="{StaticResource LblPrimary}" HorizontalOptions="End" />
+                                    <Label Text="{Binding Birim}" Style="{StaticResource LblMuted}" FontSize="12" HorizontalOptions="End" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

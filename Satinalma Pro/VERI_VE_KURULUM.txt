@@ -1,0 +1,82 @@
+================================================================================
+  VERİLER NEDEN DİĞER PC'DE GÖRÜNMÜYOR? — AÇIKLAMA VE ÇÖZÜM
+================================================================================
+
+Satınalma Pro ayrı bir veritabanı (SQL vb.) KULLANMAZ.
+Veriler iki yerde tutulur:
+
+  1) YEREL (her PC'de)
+     %AppData%\SatinalmaPro\
+     - alinan_malzemeler.json
+     - satinalma_talepler.json
+     - logos\ (firma logoları)
+     - vb.
+
+  2) BULUT (Firebase — ortak)
+     İnternet üzerinden tüm PC'ler aynı veriyi paylaşır.
+
+DİĞER PC'DE ÖRNEK VERİ GÖRÜNME SEBEBİ:
+  - Bulut henüz boştu (sizin PC'nizden veri yüklenmemişti)
+  - Yeni PC'de dosya yokken program eskiden örnek veri oluşturuyordu
+  - Logolar sadece yerel klasördeydi, buluta gitmiyordu
+
+BU SÜRÜMDE DÜZELTİLDİ:
+  - Bulut aktifken örnek veri oluşturulmaz
+  - Giriş sonrası Firebase'den veri çekilir
+  - Logolar da buluta kaydedilir
+  - Sizin PC'nizdeki veriler buluta otomatik yüklenir (bulut boşsa)
+
+
+================================================================================
+SİZİN ŞİMDİ YAPMANIZ GEREKEN (BİR KEZ)
+================================================================================
+
+1. Güncel programı kendi PC'nizde çalıştırın (yeni sürüm)
+
+2. Admin olarak giriş yapın
+
+3. Ayarlar -> Genel -> "Verileri Buluta Yükle" butonuna tıklayın
+   (Veriler Firebase'e gider — birkaç saniye sürer)
+
+4. Diğer PC'de uygulamayı açın, giriş yapın
+   -> "Bulut verileri senkronize ediliyor..." yazısını görün
+   -> Sizin verileriniz gelmeli
+
+
+================================================================================
+KURULUM — INNO SETUP (.exe)
+================================================================================
+
+Zip yerine kurulum programı için:
+
+1. Inno Setup 6 indirin: https://jrsoftware.org/isdl.php
+
+2. PowerShell:
+   cd "C:\Users\pekba\OneDrive\Desktop\METRİK\Satinalma Pro"
+   .\scripts\yayin-paketi.ps1 -Version "1.2.0" -GitHubKullanici "iibrahim27"
+
+3. Oluşan dosyalar:
+   - SatinalmaPro_Kurulum.exe  <- diğer PC'lere bunu verin
+   - SatinalmaPro.zip          <- otomatik güncelleme için
+
+4. GitHub Release'e İKİSİNİ de yükleyin
+
+Diğer PC: SatinalmaPro_Kurulum.exe çalıştır -> İleri -> Kur -> Bitti
+
+
+================================================================================
+VERİLER NEREDE SAKLANIR?
+================================================================================
+
+Kurulumdan sonra veriler:
+  C:\Users\KULLANICI\AppData\Roaming\SatinalmaPro\
+
+Program klasörüne (C:\Program Files\...) VERİ YAZILMAZ.
+Bu sayede güncelleme yapılınca veriler silinmez.
+
+Logolar:
+  %AppData%\SatinalmaPro\logos\
+
+Bulut senkronu açıkken logolar Firebase'e de kopyalanır.
+
+================================================================================

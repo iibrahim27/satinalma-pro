@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SatinalmaPro.Mobile.Views.TeklifGirisPage"
+             Title="Teklif Girişi"
+             HideSoftInputOnTapped="False">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="12">
+        <Picker Grid.Row="0" x:Name="PickerTalep" Title="Talep seçin" SelectedIndexChanged="PickerTalep_Changed" />
+        <Border Grid.Row="1" x:Name="OfflineBanner" IsVisible="False" Padding="10" Margin="0,6"
+                BackgroundColor="{StaticResource Warning}" StrokeThickness="0" StrokeShape="RoundRectangle 8">
+            <Label x:Name="LblOffline" TextColor="{StaticResource OnPrimary}" FontSize="12" />
+        </Border>
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout Spacing="10">
+                <VerticalStackLayout x:Name="MevcutTekliflerPanel" Spacing="6" IsVisible="False">
+                    <Label Text="Mevcut teklifler" Style="{StaticResource LblSection}" />
+                    <VerticalStackLayout x:Name="TeklifListesi" Spacing="4" />
+                </VerticalStackLayout>
+                <VerticalStackLayout x:Name="OneriPanel" Spacing="6" IsVisible="False">
+                    <Label Text="Satınalma önerisi" Style="{StaticResource LblSection}" />
+                    <Label x:Name="LblOneriAciklama" FontSize="12" TextColor="{StaticResource Gray500}" />
+                    <Button x:Name="BtnOneriOtomatik" Text="En uygun fiyata dön (otomatik)"
+                            Style="{StaticResource BtnInfoDark}" Clicked="OneriOtomatik_Clicked" IsVisible="False" />
+                </VerticalStackLayout>
+                <VerticalStackLayout x:Name="FormPanel" Spacing="10" IsVisible="False">
+                    <Label x:Name="LblFormBaslik" Text="Yeni teklif" Style="{StaticResource LblSection}" />
+                    <Border Stroke="{AppThemeBinding Light={StaticResource CardBorderLight}, Dark={StaticResource CardBorderDark}}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                            StrokeShape="RoundRectangle 8" Padding="12,6">
+                        <Entry x:Name="TxtFirma" Placeholder="Firma adı" BackgroundColor="Transparent" />
+                    </Border>
+                    <Border Stroke="{AppThemeBinding Light={StaticResource CardBorderLight}, Dark={StaticResource CardBorderDark}}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                            StrokeShape="RoundRectangle 8" Padding="12,6">
+                        <Entry x:Name="TxtMarka" Placeholder="Genel marka (isteğe bağlı)" BackgroundColor="Transparent" />
+                    </Border>
+                    <Border Stroke="{AppThemeBinding Light={StaticResource CardBorderLight}, Dark={StaticResource CardBorderDark}}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                            StrokeShape="RoundRectangle 8" Padding="12,6">
+                        <Entry x:Name="TxtVade" Placeholder="Vade (gün)" Keyboard="Numeric" BackgroundColor="Transparent" />
+                    </Border>
+                    <Border Stroke="{AppThemeBinding Light={StaticResource CardBorderLight}, Dark={StaticResource CardBorderDark}}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                            StrokeShape="RoundRectangle 8" Padding="12,6">
+                        <Entry x:Name="TxtTeslim" Placeholder="Teslim süresi" BackgroundColor="Transparent" />
+                    </Border>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Border Grid.Column="0"
+                                Stroke="{AppThemeBinding Light={StaticResource CardBorderLight}, Dark={StaticResource CardBorderDark}}"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                                StrokeShape="RoundRectangle 8" Padding="12,6">
+                            <Entry x:Name="TxtUsdKuru" Placeholder="USD kuru" Keyboard="Numeric" BackgroundColor="Transparent" />
+                        </Border>
+                        <Border Grid.Column="1"
+                                Stroke="{AppThemeBinding Light={StaticResource CardBorderLight}, Dark={StaticResource CardBorderDark}}"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                                StrokeShape="RoundRectangle 8" Padding="12,6">
+                            <Entry x:Name="TxtEurKuru" Placeholder="EUR kuru" Keyboard="Numeric" BackgroundColor="Transparent" />
+                        </Border>
+                    </Grid>
+                    <Label Text="Kalem fiyatları" Style="{StaticResource LblSection}" />
+                    <VerticalStackLayout x:Name="FiyatPanel" Spacing="6" />
+                    <Button x:Name="BtnKaydet" Text="Teklifi Kaydet" Clicked="Kaydet_Clicked" Style="{StaticResource BtnBrand}" />
+                    <Button x:Name="BtnDuzenleIptal" Text="Düzenlemeyi İptal" Clicked="DuzenleIptal_Clicked"
+                            Style="{StaticResource BtnInfoDark}" IsVisible="False" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

@@ -1,0 +1,26 @@
+{
+  "name": "metrik-erp-functions",
+  "description": "METRİK ERP Cloud Functions — bildirim fan-out, SLA, migrasyon",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "seed:templates": "npm run build && node scripts/seed-templates.mjs",
+    "migrate:legacy": "npm run build && node scripts/migrate-legacy.mjs",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.10.0"
+  },
+  "private": true
+}

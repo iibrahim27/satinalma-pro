@@ -1,0 +1,499 @@
+<UserControl x:Class="SatinalmaPro.Views.Modules.SatinalmaMerkeziView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:SatinalmaPro.Helpers"
+             Background="#F1F5F9">
+
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/Resources/SatinalmaMerkeziTheme.xaml" />
+      </ResourceDictionary.MergedDictionaries>
+      <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+      <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
+    </ResourceDictionary>
+  </UserControl.Resources>
+
+  <Grid Margin="12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="2*" MinHeight="220" />
+      <RowDefinition Height="*" MinHeight="180" />
+    </Grid.RowDefinitions>
+
+    <!-- Üst şerit -->
+    <Border Grid.Row="0" Style="{StaticResource MerkezPanel}" Padding="14,10" Margin="0,0,0,10">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <Border Width="40" Height="40" CornerRadius="10" Margin="0,0,12,0">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#F97316" Offset="0" />
+                <GradientStop Color="#FB923C" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <TextBlock Text="&#xE719;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="White"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="📦 SATINALMA MERKEZİ" FontSize="17" FontWeight="Bold" Foreground="{StaticResource InkBrush}" />
+            <TextBlock Text="Operasyon merkezi — talep, teklif, sipariş, depo" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
+          </StackPanel>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBox Width="240" Height="36" Padding="10,0" VerticalContentAlignment="Center"
+                   Text="{Binding AramaMetni, UpdateSourceTrigger=PropertyChanged}"
+                   Tag="🔍 Talep, sipariş, firma, malzeme..." />
+          <Button Style="{StaticResource ToolbarButtonStyle}" Margin="8,0,0,0" Command="{Binding BildirimKomutu}" ToolTip="Bildirimler">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="&#xE7F3;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0" />
+              <TextBlock Text="{Binding OkunmamisBildirim}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Style="{StaticResource ToolbarButtonStyle}" Margin="4,0,0,0" Command="{Binding OperasyonModuKomutu}" ToolTip="Operasyon modu (tam iş akışı)">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0" />
+              <TextBlock Text="Operasyon" VerticalAlignment="Center" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <Button Style="{StaticResource ToolbarButtonStyle}" Margin="4,0,0,0" Command="{Binding YenileKomutu}" ToolTip="Yenile">
+            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="14" />
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- KPI -->
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,10">
+      <ItemsControl ItemsSource="{Binding KpiKartlar}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Style="{StaticResource MerkezKpiKart}">
+              <Border.InputBindings>
+                <MouseBinding MouseAction="LeftClick"
+                              Command="{Binding DataContext.KpiKomutu, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding FiltreAnahtar}" />
+              </Border.InputBindings>
+              <StackPanel>
+                <TextBlock Text="{Binding Baslik}" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
+                <TextBlock Text="{Binding Deger}" FontSize="24" FontWeight="Bold" Foreground="{Binding Renk}" Margin="0,4,0,0" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+    <!-- Orta: Sol yapılacak + Orta sekmeler -->
+    <Grid Grid.Row="2" Margin="0,0,0,10">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="260" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <Border Grid.Column="0" Style="{StaticResource MerkezPanel}" Padding="12" Margin="0,0,10,0">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Yapılacak İşler" Style="{StaticResource MerkezBaslik}" />
+          <ListBox ItemsSource="{Binding YapilacakIsler}" BorderThickness="0" Background="Transparent">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="0,8">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Baslik}" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Aciklama}" FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,2,0,4" />
+                    <StackPanel Orientation="Horizontal">
+                      <Border Style="{StaticResource MerkezDurumRozet}" Background="{Binding OncelikRenk}" Opacity="0.15">
+                        <TextBlock Text="{Binding Oncelik}" FontSize="10" FontWeight="Bold" Foreground="{Binding OncelikRenk}" />
+                      </Border>
+                      <TextBlock Text="{Binding IlgiliNo}" FontSize="10" Foreground="{StaticResource InkMutedBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+
+      <Border Grid.Column="1" Style="{StaticResource MerkezPanel}" Padding="12">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+
+          <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,8">
+            <ItemsControl ItemsSource="{Binding Sekmeler}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Tag="{Binding Ad}" Click="Sekme_Click">
+                    <Button.Style>
+                      <Style TargetType="Button" BasedOn="{StaticResource MerkezSekmeBtn}">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding Aktif}" Value="True">
+                            <Setter Property="Background" Value="#FFF7ED" />
+                            <Setter Property="BorderBrush" Value="#F97316" />
+                            <Setter Property="Foreground" Value="#EA580C" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                          </DataTrigger>
+                          <DataTrigger Binding="{Binding Gorunur}" Value="False">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Button.Style>
+                    <TextBlock Text="{Binding Ad}" />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,8"
+                        Visibility="{Binding SekmeTalepler}">
+            <ItemsControl ItemsSource="{Binding Filtreler}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Content="{Binding}" Tag="{Binding}" Click="Filtre_Click"
+                          Style="{StaticResource MerkezSekmeBtn}" FontSize="11" Height="28" Padding="10,0" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <!-- Talepler -->
+          <DataGrid x:Name="GridTalepler" Grid.Row="2" ItemsSource="{Binding Talepler}"
+                    Style="{StaticResource ModuleDataGridStyle}" AutoGenerateColumns="False" IsReadOnly="True"
+                    SelectionMode="Single" SelectionChanged="GridTalepler_SelectionChanged"
+                    Visibility="{Binding SekmeTalepler}">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="110" />
+              <DataGridTextColumn Header="Tarih" Binding="{Binding TalepTarihi}" Width="90" />
+              <DataGridTextColumn Header="Şantiye" Binding="{Binding Santiye}" Width="*" MinWidth="100" />
+              <DataGridTextColumn Header="Talep Eden" Binding="{Binding TalepEden}" Width="120" />
+              <DataGridTextColumn Header="Öncelik" Binding="{Binding Oncelik}" Width="70" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="120" />
+              <DataGridTextColumn Header="Yönetim Kararı" Binding="{Binding YonetimKarari}" Width="110" />
+              <DataGridTextColumn Header="Son İşlem" Binding="{Binding SonIslemTarihi}" Width="120" />
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <!-- Teklifler -->
+          <Grid Grid.Row="2" Visibility="{Binding SekmeTeklifler}">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="*" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="160" />
+            </Grid.RowDefinitions>
+            <DataGrid Grid.Row="0" ItemsSource="{Binding Teklifler}" Style="{StaticResource ModuleEditableDataGridStyle}"
+                      AutoGenerateColumns="False" IsReadOnly="True">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="120" />
+                <DataGridTextColumn Header="Marka" Binding="{Binding Marka}" Width="80" />
+                <DataGridTextColumn Header="Birim Fiyat" Binding="{Binding BirimFiyat, StringFormat=N2}" Width="90" ElementStyle="{StaticResource SatGridSayi}" />
+                <DataGridTextColumn Header="İskonto" Binding="{Binding Iskonto, StringFormat=N1}" Width="70" ElementStyle="{StaticResource SatGridOrta}" />
+                <DataGridTextColumn Header="KDV" Binding="{Binding Kdv, StringFormat=N0}" Width="50" ElementStyle="{StaticResource SatGridOrta}" />
+                <DataGridTextColumn Header="Toplam" Binding="{Binding Toplam, StringFormat=N2}" Width="90" ElementStyle="{StaticResource SatGridSayi}" />
+                <DataGridTextColumn Header="Teslim" Binding="{Binding TeslimSuresi}" Width="70" />
+                <DataGridTextColumn Header="Vade" Binding="{Binding Vade}" Width="70" />
+                <DataGridTextColumn Header="Tarih" Binding="{Binding TeklifTarihi}" Width="90" />
+                <DataGridTextColumn Header="Dosya" Binding="{Binding Dosya}" Width="100" />
+                <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="70" />
+              </DataGrid.Columns>
+            </DataGrid>
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,8">
+              <Button Content="Toplu Karşılaştırma" Style="{StaticResource ToolbarButtonStyle}" Command="{Binding KarsilastirmaKomutu}" />
+              <TextBlock Text="En uygun / en kısa / en yüksek performans renklerle vurgulanır" VerticalAlignment="Center"
+                         Margin="12,0,0,0" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
+            </StackPanel>
+            <DockPanel Grid.Row="2">
+              <TextBlock DockPanel.Dock="Top" Text="Tedarikçi Performansı" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,6" />
+              <DataGrid ItemsSource="{Binding TedarikciPerformans}" Style="{StaticResource ModuleDataGridStyle}"
+                        AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="130">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="120" />
+                  <DataGridTextColumn Header="Sipariş" Binding="{Binding ToplamSiparis}" Width="60" ElementStyle="{StaticResource SatGridOrta}" />
+                  <DataGridTextColumn Header="Zamanında %" Binding="{Binding ZamanindaTeslim}" Width="80" ElementStyle="{StaticResource SatGridOrta}" />
+                  <DataGridTextColumn Header="Puan" Binding="{Binding PerformansPuani}" Width="50" ElementStyle="{StaticResource SatGridOrta}" />
+                  <DataGridTextColumn Header="Ort. Teslim" Binding="{Binding OrtTeslimSuresi}" Width="80" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </DockPanel>
+          </Grid>
+
+          <!-- Siparişler -->
+          <DataGrid Grid.Row="2" ItemsSource="{Binding Siparisler}" Style="{StaticResource ModuleDataGridStyle}"
+                    AutoGenerateColumns="False" IsReadOnly="True" SelectionChanged="GridSiparisler_SelectionChanged"
+                    Visibility="{Binding SekmeSiparisler}">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Sipariş No" Binding="{Binding SiparisNo}" Width="110" />
+              <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="140" />
+              <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="110" />
+              <DataGridTextColumn Header="Şantiye" Binding="{Binding Santiye}" Width="*" />
+              <DataGridTextColumn Header="Tutar" Binding="{Binding ToplamTutar, StringFormat=N2}" Width="100" ElementStyle="{StaticResource SatGridSayi}" />
+              <DataGridTextColumn Header="Tarih" Binding="{Binding SiparisTarihi}" Width="90" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="110" />
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <!-- Depo / Teslimat -->
+          <DataGrid Grid.Row="2" ItemsSource="{Binding DepoTakip}" Style="{StaticResource ModuleDataGridStyle}"
+                    AutoGenerateColumns="False" IsReadOnly="True"
+                    Visibility="{Binding SekmeTeslimatlar}">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" />
+              <DataGridTextColumn Header="Sipariş" Binding="{Binding SiparisMiktari}" Width="70" ElementStyle="{StaticResource SatGridOrta}" />
+              <DataGridTextColumn Header="Alınan" Binding="{Binding TeslimAlinan}" Width="70" ElementStyle="{StaticResource SatGridOrta}" />
+              <DataGridTextColumn Header="Kalan" Binding="{Binding Kalan}" Width="70" ElementStyle="{StaticResource SatGridOrta}" />
+              <DataGridTextColumn Header="Eksik" Binding="{Binding Eksik}" Width="70" ElementStyle="{StaticResource SatGridOrta}" />
+              <DataGridTextColumn Header="Fazla" Binding="{Binding Fazla}" Width="70" ElementStyle="{StaticResource SatGridOrta}" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="110" />
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <!-- Beklenen siparişler -->
+          <DataGrid Grid.Row="2" ItemsSource="{Binding BeklenenSiparisler}" Style="{StaticResource ModuleDataGridStyle}"
+                    AutoGenerateColumns="False" IsReadOnly="True" SelectionChanged="GridSiparisler_SelectionChanged"
+                    Visibility="{Binding SekmeBeklenen}">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Sipariş No" Binding="{Binding SiparisNo}" Width="110" />
+              <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="140" />
+              <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="110" />
+              <DataGridTextColumn Header="Şantiye" Binding="{Binding Santiye}" Width="*" />
+              <DataGridTextColumn Header="Tutar" Binding="{Binding ToplamTutar, StringFormat=N2}" Width="100" ElementStyle="{StaticResource SatGridSayi}" />
+              <DataGridTextColumn Header="Tarih" Binding="{Binding SiparisTarihi}" Width="90" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="110" />
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <!-- İadeler -->
+          <DataGrid Grid.Row="2" ItemsSource="{Binding Iadeler}" Style="{StaticResource ModuleDataGridStyle}"
+                    AutoGenerateColumns="False" IsReadOnly="True" Visibility="{Binding SekmeIadeler}">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="İade No" Binding="{Binding IadeNo}" Width="110" />
+              <DataGridTextColumn Header="Sipariş No" Binding="{Binding SiparisNo}" Width="110" />
+              <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="120" />
+              <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" />
+              <DataGridTextColumn Header="Miktar" Binding="{Binding Miktar}" Width="90" />
+              <DataGridTextColumn Header="Neden" Binding="{Binding Neden}" Width="140" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="100" />
+              <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="90" />
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <!-- Tamamlananlar -->
+          <DataGrid Grid.Row="2" ItemsSource="{Binding Tamamlananlar}" Style="{StaticResource ModuleDataGridStyle}"
+                    AutoGenerateColumns="False" IsReadOnly="True" Visibility="{Binding SekmeTamamlanan}">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Kayıt No" Binding="{Binding KayitNo}" Width="120" />
+              <DataGridTextColumn Header="Tip" Binding="{Binding Tip}" Width="80" />
+              <DataGridTextColumn Header="Şantiye" Binding="{Binding Santiye}" Width="*" />
+              <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="120" />
+              <DataGridTextColumn Header="Tutar" Binding="{Binding Tutar}" Width="100" />
+              <DataGridTextColumn Header="Tamamlanma" Binding="{Binding TamamlanmaTarihi}" Width="100" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="120" />
+            </DataGrid.Columns>
+          </DataGrid>
+
+
+          <!-- Tedarikçi performans yedek grid kaldırıldı -->
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- Alt: Son hareketler + Detay -->
+    <Grid Grid.Row="3">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="260" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <Border Grid.Column="0" Style="{StaticResource MerkezPanel}" Padding="12" Margin="0,0,10,0">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Son Hareketler" Style="{StaticResource MerkezBaslik}" />
+          <ListBox ItemsSource="{Binding SonHareketler}" BorderThickness="0" Background="Transparent">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Margin="0,0,0,8">
+                  <TextBlock Text="{Binding Mesaj}" FontSize="12" TextWrapping="Wrap" />
+                  <TextBlock FontSize="10" Foreground="{StaticResource InkMutedBrush}">
+                    <Run Text="{Binding Kullanici}" /><Run Text=" · " /><Run Text="{Binding Zaman}" />
+                  </TextBlock>
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+
+      <Border Grid.Column="1" Style="{StaticResource MerkezPanel}" Padding="12">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel DataContext="{Binding Detay}">
+            <TextBlock Text="{Binding DataContext.DetayBaslik, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                       Style="{StaticResource MerkezBaslik}" FontSize="15" />
+            <TextBlock Text="Kayıt seçin veya listeden bir talep tıklayın." Foreground="{StaticResource InkMutedBrush}"
+                       Visibility="{Binding DataContext.DetayVar, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+
+            <Grid Visibility="{Binding DataContext.DetayVar, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+
+              <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                <TextBlock Text="Talep Bilgileri" FontWeight="SemiBold" Margin="0,0,0,6" />
+                <TextBlock FontSize="12"><Run Text="Şantiye: " FontWeight="SemiBold" /><Run Text="{Binding Santiye}" /></TextBlock>
+                <TextBlock FontSize="12" Margin="0,2,0,0"><Run Text="Talep Eden: " FontWeight="SemiBold" /><Run Text="{Binding TalepEden}" /></TextBlock>
+                <TextBlock FontSize="12" Margin="0,2,0,0"><Run Text="Öncelik: " FontWeight="SemiBold" /><Run Text="{Binding Oncelik}" /></TextBlock>
+                <TextBlock FontSize="12" Margin="0,2,0,0"><Run Text="Durum: " FontWeight="SemiBold" /><Run Text="{Binding Durum}" /></TextBlock>
+                <TextBlock FontSize="12" Margin="0,2,0,0"><Run Text="Yönetim: " FontWeight="SemiBold" /><Run Text="{Binding YonetimKarari}" /></TextBlock>
+                <TextBlock Text="{Binding Aciklama}" TextWrapping="Wrap" FontSize="12" Margin="0,8,0,12" Foreground="{StaticResource InkSoftBrush}" />
+
+                <TextBlock Text="Malzeme Listesi" FontWeight="SemiBold" Margin="0,0,0,6" />
+                <ItemsControl ItemsSource="{Binding Malzemeler}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock FontSize="12" Margin="0,0,0,2">
+                        <Run Text="• " /><Run Text="{Binding Ad}" /><Run Text=" — " /><Run Text="{Binding Miktar}" /><Run Text=" " /><Run Text="{Binding Birim}" />
+                      </TextBlock>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Text="Dosyalar" FontWeight="SemiBold" Margin="0,12,0,6" />
+                <ItemsControl ItemsSource="{Binding Dosyalar}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock FontSize="12" Foreground="#2563EB" Text="{Binding Ad}" Cursor="Hand" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Text="Fotoğraflar" FontWeight="SemiBold" Margin="0,12,0,6" />
+                <ItemsControl ItemsSource="{Binding Fotograflar}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock FontSize="12" Text="{Binding Ad}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+
+              <StackPanel Grid.Column="1">
+                <TextBlock Text="Süreç Timeline" FontWeight="SemiBold" Margin="0,0,0,6" />
+                <ItemsControl ItemsSource="{Binding Timeline}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Ellipse Width="10" Height="10" Fill="#059669" Margin="0,4,8,0" />
+                        <StackPanel>
+                          <TextBlock Text="{Binding Baslik}" FontSize="12" FontWeight="SemiBold" />
+                          <TextBlock FontSize="10" Foreground="{StaticResource InkMutedBrush}">
+                            <Run Text="{Binding Tarih}" /><Run Text=" — " /><Run Text="{Binding Kullanici}" />
+                          </TextBlock>
+                        </StackPanel>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Text="Yorumlar" FontWeight="SemiBold" Margin="0,12,0,6" />
+                <ItemsControl ItemsSource="{Binding Yorumlar}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Background="#F8FAFC" CornerRadius="8" Padding="8" Margin="0,0,0,6">
+                        <TextBlock Text="{Binding}" FontSize="12" TextWrapping="Wrap" />
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Text="İşlem Geçmişi" FontWeight="SemiBold" Margin="0,12,0,6" />
+                <ItemsControl ItemsSource="{Binding IslemGecmisi}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="0,6">
+                        <StackPanel>
+                          <TextBlock FontSize="12"><Run Text="{Binding Islem}" FontWeight="SemiBold" /><Run Text=" — " /><Run Text="{Binding Kullanici}" /></TextBlock>
+                          <TextBlock FontSize="10" Foreground="{StaticResource InkMutedBrush}" Text="{Binding Tarih}" />
+                          <TextBlock FontSize="10" Foreground="{StaticResource InkMutedBrush}">
+                            <Run Text="{Binding EskiDeger}" /><Run Text=" → " /><Run Text="{Binding YeniDeger}" />
+                          </TextBlock>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Grid>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </Grid>
+
+    <!-- Karşılaştırma overlay -->
+    <Border Grid.Row="0" Grid.RowSpan="4" Background="#80000000"
+            Visibility="{Binding KarsilastirmaGoster, Converter={StaticResource BooleanToVisibilityConverter}}">
+      <Border Background="White" CornerRadius="16" Margin="40" Padding="20" MaxHeight="500" VerticalAlignment="Center">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <TextBlock Text="Teklif Karşılaştırma" FontSize="16" FontWeight="Bold" Margin="0,0,0,12" />
+          <DataGrid Grid.Row="1" ItemsSource="{Binding Teklifler}" Style="{StaticResource ModuleDataGridStyle}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.RowStyle>
+              <Style TargetType="DataGridRow">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding EnUygunFiyat}" Value="True">
+                    <Setter Property="Background" Value="#ECFDF5" />
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding EnKisaTeslim}" Value="True">
+                    <Setter Property="Background" Value="#EFF6FF" />
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding EnYuksekPerformans}" Value="True">
+                    <Setter Property="Background" Value="#F5F3FF" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </DataGrid.RowStyle>
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="120" />
+              <DataGridTextColumn Header="Toplam" Binding="{Binding Toplam, StringFormat=N2}" Width="100" />
+              <DataGridTextColumn Header="Teslim" Binding="{Binding TeslimSuresi}" Width="80" />
+              <DataGridTextColumn Header="Vade" Binding="{Binding Vade}" Width="80" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <Button Grid.Row="2" Content="Kapat" HorizontalAlignment="Right" Margin="0,12,0,0"
+                  Style="{StaticResource ToolbarButtonStyle}" Command="{Binding KarsilastirmaKomutu}" />
+        </Grid>
+      </Border>
+    </Border>
+
+    <!-- Loading -->
+    <Border Grid.Row="0" Grid.RowSpan="4" Background="#CCFFFFFF"
+            Visibility="{Binding Yukleniyor, Converter={StaticResource BooleanToVisibilityConverter}}">
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+        <ProgressBar IsIndeterminate="True" Width="200" Height="4" />
+        <TextBlock Text="Yükleniyor..." Margin="0,12,0,0" HorizontalAlignment="Center" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

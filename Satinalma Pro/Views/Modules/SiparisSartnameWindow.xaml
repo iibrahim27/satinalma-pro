@@ -1,0 +1,49 @@
+<Window x:Class="SatinalmaPro.Views.Modules.SiparisSartnameWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Sipariş Şartnamesi"
+        Width="620"
+        Height="480"
+        MinWidth="520"
+        MinHeight="380"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip"
+        Background="White">
+  <Grid Margin="20">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <StackPanel Grid.Row="0" Margin="0,0,0,12">
+      <TextBlock Text="Sipariş Şartnamesi" FontSize="18" FontWeight="SemiBold" />
+      <TextBlock x:Name="TxtAlt" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
+                 TextWrapping="Wrap" Margin="0,6,0,0" />
+    </StackPanel>
+
+    <Border Grid.Row="1" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+            CornerRadius="10" Background="#FAFBFC" Padding="2">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <TextBox x:Name="TxtSartname" BorderThickness="0" Background="Transparent"
+                 AcceptsReturn="True" TextWrapping="Wrap" FontSize="13"
+                 VerticalScrollBarVisibility="Disabled" Padding="12"
+                 ui:ControlHelper.PlaceholderText="Sipariş PDF'ine eklenecek şartname metni..." />
+      </ScrollViewer>
+    </Border>
+
+    <CheckBox x:Name="ChkAyarlaraKaydet" Grid.Row="2" Margin="0,12,0,0"
+              Content="Düzenlenen metni varsayılan şartname olarak ayarlara kaydet"
+              IsChecked="True" FontSize="12" />
+
+    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+              Click="Iptal_Click" Content="İptal" Width="96" />
+      <Button Style="{StaticResource PrimaryToolbarButtonStyle}"
+              Click="KaydetVeDevam_Click" Content="Kaydet ve PDF Oluştur" MinWidth="168" />
+    </StackPanel>
+  </Grid>
+</Window>

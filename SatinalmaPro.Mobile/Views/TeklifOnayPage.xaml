@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SatinalmaPro.Shared.Models;assembly=SatinalmaPro.Shared"
+             x:Class="SatinalmaPro.Mobile.Views.TeklifOnayPage"
+             Title="Teklif Onay">
+
+    <RefreshView x:Name="RefreshView" Padding="12">
+        <CollectionView x:Name="Liste" SelectionMode="Single" SelectionChanged="Liste_SelectionChanged">
+            <CollectionView.EmptyView>
+                <Label Text="Onay bekleyen teklif yok." TextColor="Gray"
+                       HorizontalOptions="Center" VerticalOptions="Center" Margin="24" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:SatinalmaTalep">
+                    <Border Style="{StaticResource TalepKartBorderStyle}">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding TalepNo}" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+                            <Label Text="{Binding TalepAciklamasi}" FontSize="13"
+                                   TextColor="{AppThemeBinding Light=#666, Dark=#AAA}"
+                                   LineBreakMode="WordWrap" />
+                            <Label Text="{Binding TalepEden, StringFormat='Talep eden: {0}'}"
+                                   FontSize="12"
+                                   TextColor="{AppThemeBinding Light=#888, Dark=#999}" />
+                            <Label Text="{Binding GorunenDurum}" FontSize="12" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light=#B45309, Dark=#FDE68A}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+</ContentPage>

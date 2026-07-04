@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SatinalmaPro.Mobile.ViewModels.Yonetim"
+             xmlns:mod="clr-namespace:SatinalmaPro.Mobile.Models.Yonetim"
+             xmlns:ctrl="clr-namespace:SatinalmaPro.Mobile.Views.Controls.Yonetim"
+             x:Class="SatinalmaPro.Mobile.Views.Yonetim.YonetimTeklifDetayPage"
+             x:DataType="vm:YonetimTeklifDetayViewModel"
+             Title="Teklif Detayı">
+
+    <ctrl:SayfaDurumGorunumu x:Name="DurumGorunumu"
+                              Durum="{Binding SayfaDurumu}"
+                              HataMesaj="{Binding HataMesaji}">
+        <ctrl:SayfaDurumGorunumu.Icerik>
+            <Grid RowDefinitions="*,Auto">
+                <ScrollView Grid.Row="0" Padding="16">
+                    <VerticalStackLayout Spacing="16">
+
+                        <Border Style="{StaticResource Md3ElevatedCard}">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="{Binding Teklif.TalepNo}" FontSize="20" FontAttributes="Bold"
+                                       FontFamily="OpenSansSemibold"
+                                       TextColor="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+                                <Label Text="{Binding Teklif.Santiye}" Style="{StaticResource Md3CardSubtitle}" />
+                                <Label Text="{Binding Teklif.MalzemeOzeti}" Style="{StaticResource Md3Muted}" />
+                                <Label Text="{Binding Teklif.FirmaSayisi, StringFormat='{0} firma teklif verdi'}" Style="{StaticResource Md3Muted}" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Label Text="Firma Teklifleri" Style="{StaticResource Md3SectionTitle}" />
+
+                        <CollectionView ItemsSource="{Binding Teklif.Firmalar}" SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="mod:YonetimFirmaTeklifOgesi">
+                                    <Border Margin="0,0,0,12" Padding="16" StrokeShape="RoundRectangle 16" StrokeThickness="2">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding EnUygun}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Md3EnUygunContainer}, Dark={StaticResource Md3EnUygunContainerDark}}" />
+                                                <Setter Property="Stroke" Value="{StaticResource Md3EnUygun}" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding EnUygun}" Value="False">
+                                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Md3Surface}, Dark={StaticResource CardBackgroundDark}}" />
+                                                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Md3Outline}, Dark={StaticResource Md3OutlineDark}}" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <VerticalStackLayout Spacing="10">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <Label Text="{Binding FirmaAdi}" Style="{StaticResource Md3CardTitle}" />
+                                                <Border Grid.Column="1" IsVisible="{Binding EnUygun}"
+                                                        Padding="8,3" StrokeThickness="0"
+                                                        StrokeShape="RoundRectangle 10"
+                                                        BackgroundColor="{StaticResource Md3EnUygun}">
+                                                    <Label Text="EN UYGUN" FontSize="10" FontAttributes="Bold" TextColor="White" />
+                                                </Border>
+                                            </Grid>
+                                            <Label Text="{Binding ToplamTutar}" FontSize="24" FontAttributes="Bold"
+                                                   TextColor="{StaticResource Md3Primary}" />
+                                            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="10">
+                                                <Label Grid.Row="0" Text="Teslim" Style="{StaticResource Md3Muted}" />
+                                                <Label Grid.Row="0" Grid.Column="1" Text="{Binding TeslimSuresi}" Style="{StaticResource Md3CardSubtitle}" />
+                                                <Label Grid.Row="1" Text="Ödeme" Style="{StaticResource Md3Muted}" />
+                                                <Label Grid.Row="1" Grid.Column="1" Text="{Binding OdemeSekli}" Style="{StaticResource Md3CardSubtitle}" />
+                                                <Label Grid.Row="2" Text="Not" Style="{StaticResource Md3Muted}" />
+                                                <Label Grid.Row="2" Grid.Column="1" Text="{Binding Aciklama}" Style="{StaticResource Md3Muted}" LineBreakMode="WordWrap" />
+                                            </Grid>
+                                            <Button Text="Bu Firmayı Onayla" Style="{StaticResource Md3BtnSuccess}"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:YonetimTeklifDetayViewModel}}, Path=FirmayiOnaylaCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+
+                        <BoxView HeightRequest="100" Color="Transparent" />
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <Border Grid.Row="1" Padding="16,12,16,24"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource Md3Surface}, Dark={StaticResource PageBackgroundDark}}"
+                        StrokeThickness="0">
+                    <VerticalStackLayout Spacing="10">
+                        <Button Text="Teklifleri Reddet" Style="{StaticResource Md3BtnDanger}"
+                                Command="{Binding TeklifleriReddetCommand}" />
+                        <Button Text="Satınalmaya Geri Gönder" Style="{StaticResource Md3BtnOutlined}"
+                                Command="{Binding SatinalmayaGeriGonderCommand}" />
+                        <ActivityIndicator IsRunning="{Binding IslemYapiliyor}" IsVisible="{Binding IslemYapiliyor}"
+                                           Color="{StaticResource Md3Primary}" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+        </ctrl:SayfaDurumGorunumu.Icerik>
+    </ctrl:SayfaDurumGorunumu>
+
+</ContentPage>

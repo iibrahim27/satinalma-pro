@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function girisYapildi() {
+      return request.auth != null;
+    }
+
+    function kullanici() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function adminMi() {
+      return girisYapildi() && kullanici().rol == 'Admin';
+    }
+
+    function aktifMi() {
+      return girisYapildi() && kullanici().aktif == true;
+    }
+
+    function yazabilirMi() {
+      return aktifMi() && kullanici().rol in [
+        'Admin', 'Yönetim', 'Satınalma', 'Depo', 'Şef', 'Saha'
+      ];
+    }
+
+    function sadeceFcmTokenGuncelleniyor() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fcmToken']);
+    }
+
+    match /users/{uid} {
+      allow read: if aktifMi() && (request.auth.uid == uid || adminMi());
+      allow create: if adminMi();
+      allow update: if adminMi()
+        || (aktifMi() && request.auth.uid == uid && sadeceFcmTokenGuncelleniyor());
+      allow delete: if false;
+    }
+
+    match /veri/{belge} {
+      allow read: if aktifMi();
+      allow create, update: if yazabilirMi();
+      allow delete: if false;
+    }
+  }
+}

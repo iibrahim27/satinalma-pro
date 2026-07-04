@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SatinalmaPro.Shared.Models;assembly=SatinalmaPro.Shared"
+             x:Class="SatinalmaPro.Mobile.Views.TeklifKarsilastirmaPage"
+             Title="Karşılaştırma">
+
+    <RefreshView x:Name="RefreshView" Padding="12">
+        <CollectionView x:Name="Liste">
+            <CollectionView.EmptyView>
+                <Label Text="Karşılaştırılacak talep yok." Style="{StaticResource LblMuted}"
+                       HorizontalOptions="Center" Margin="24" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:SatinalmaTalep">
+                    <Border Style="{StaticResource TalepKartBorderStyle}" Margin="0,0,0,8">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{Binding TalepNo}" FontAttributes="Bold" />
+                            <Label Text="{Binding TalepEden, StringFormat='Talep eden: {0}'}" FontSize="12" Style="{StaticResource LblSecondary}" />
+                            <Label Text="{Binding KalemOzeti}" FontSize="12" LineBreakMode="WordWrap" Style="{StaticResource LblAccent}" />
+                            <Label Text="{Binding Teklifler.Count, StringFormat='{0} teklif girildi'}" FontSize="12" Style="{StaticResource LblMuted}" />
+                            <Button Text="Yönetime Gönder" Style="{StaticResource BtnSmallSuccess}"
+                                    Clicked="YonetimeGonder_Clicked" CommandParameter="{Binding .}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+</ContentPage>

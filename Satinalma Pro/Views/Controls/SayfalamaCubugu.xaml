@@ -1,0 +1,22 @@
+<UserControl x:Class="SatinalmaPro.Views.Controls.SayfalamaCubugu"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Border Background="#F8FAFC"
+          BorderBrush="{StaticResource LineBrush}"
+          BorderThickness="0,1,0,0"
+          Padding="10,8">
+    <Grid>
+      <TextBlock x:Name="TxtSayfa"
+                 VerticalAlignment="Center"
+                 FontSize="12"
+                 Foreground="{StaticResource InkMutedBrush}"
+                 Text="Sayfa 1 / 1" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+        <Button x:Name="BtnIlk" Content="⏮ İlk" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,6,0" Click="Ilk_Click" />
+        <Button x:Name="BtnOnceki" Content="◀ Önceki" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,6,0" Click="Onceki_Click" />
+        <Button x:Name="BtnSonraki" Content="Sonraki ▶" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,6,0" Click="Sonraki_Click" />
+        <Button x:Name="BtnSon" Content="Son ⏭" Style="{StaticResource ToolbarButtonStyle}" Margin="0" Click="Son_Click" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

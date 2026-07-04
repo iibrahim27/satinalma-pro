@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SatinalmaPro.Mobile.ViewModels.Yonetim"
+             xmlns:mod="clr-namespace:SatinalmaPro.Mobile.Models.Yonetim"
+             xmlns:ctrl="clr-namespace:SatinalmaPro.Mobile.Views.Controls.Yonetim"
+             x:Class="SatinalmaPro.Mobile.Views.Yonetim.YonetimTaleplerPage"
+             x:DataType="vm:YonetimTaleplerViewModel"
+             Title="Talepler"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,Auto,*">
+        <Grid Grid.Row="0" Style="{StaticResource Md3AppBar}">
+            <Label Text="Talepler" Style="{StaticResource Md3SectionTitle}" />
+        </Grid>
+
+        <!-- Arama + Filtreler -->
+        <VerticalStackLayout Grid.Row="1" Padding="16,0,16,8" Spacing="12">
+            <Border Style="{StaticResource Md3SearchBar}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                    <Label Text="🔍" FontSize="16" VerticalOptions="Center" Margin="4,0,0,0" />
+                    <Entry Grid.Column="1" Placeholder="Talep no, şantiye veya talep eden ara..."
+                           Text="{Binding AramaMetni}" BackgroundColor="Transparent" />
+                </Grid>
+            </Border>
+
+            <CollectionView ItemsSource="{Binding Filtreler}" SelectionMode="None"
+                            HeightRequest="44" HorizontalScrollBarVisibility="Never">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="mod:YonetimFiltreOgesi">
+                        <Border Padding="14,8" StrokeShape="RoundRectangle 20" StrokeThickness="1">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding Secili}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Md3Primary}" />
+                                    <Setter Property="StrokeThickness" Value="0" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border" Binding="{Binding Secili}" Value="False">
+                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Md3Surface}, Dark={StaticResource CardBackgroundDark}}" />
+                                    <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Md3Outline}, Dark={StaticResource Md3OutlineDark}}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:YonetimTaleplerViewModel}}, Path=FiltreSecCommand}"
+                                    CommandParameter="{Binding .}" />
+                            </Border.GestureRecognizers>
+                            <Label Text="{Binding Baslik}" FontSize="13" FontAttributes="Bold">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding Secili}" Value="True">
+                                        <Setter Property="TextColor" Value="{StaticResource OnPrimary}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Label" Binding="{Binding Secili}" Value="False">
+                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+
+        <ctrl:SayfaDurumGorunumu x:Name="DurumGorunumu" Grid.Row="2"
+                                  Durum="{Binding SayfaDurumu}"
+                                  HataMesaj="{Binding HataMesaji}"
+                                  BosBaslik="Talep bulunamadı"
+                                  BosMesaj="Seçili filtreye uygun talep yok.">
+            <ctrl:SayfaDurumGorunumu.Icerik>
+                <RefreshView x:Name="RefreshView">
+                    <CollectionView ItemsSource="{Binding Talepler}" SelectionMode="None" Margin="16,0">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="mod:YonetimTalepOgesi">
+                                <Border Style="{StaticResource Md3ElevatedCard}" Margin="0,0,0,10">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:YonetimTaleplerViewModel}}, Path=TalepDetayaGitCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <VerticalStackLayout Spacing="6">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <Label Text="{Binding TalepNo}" Style="{StaticResource Md3CardTitle}" />
+                                                <Border Grid.Column="1" Padding="8,3" StrokeThickness="0"
+                                                        StrokeShape="RoundRectangle 10"
+                                                        BackgroundColor="{Binding OncelikArkaPlan}">
+                                                    <Label Text="{Binding OncelikMetni}" FontSize="10" FontAttributes="Bold"
+                                                           TextColor="{Binding OncelikRengi}" />
+                                                </Border>
+                                            </Grid>
+                                            <Label Text="{Binding Santiye}" Style="{StaticResource Md3CardSubtitle}" />
+                                            <Label Text="{Binding TalepEden, StringFormat='Talep Eden: {0}'}" Style="{StaticResource Md3Muted}" />
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <Label Text="{Binding TalepTarihi}" Style="{StaticResource Md3Muted}" />
+                                                <Label Grid.Column="1" Text="{Binding MalzemeKalemSayisi, StringFormat='{0} kalem'}" Style="{StaticResource Md3Muted}" />
+                                            </Grid>
+                                            <Label Text="{Binding DurumMetni}" FontSize="12" FontAttributes="Bold"
+                                                   TextColor="{StaticResource Md3Primary}" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1" Text="›" FontSize="28"
+                                               TextColor="{AppThemeBinding Light={StaticResource MutedTextLight}, Dark={StaticResource MutedTextDark}}"
+                                               VerticalOptions="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </RefreshView>
+            </ctrl:SayfaDurumGorunumu.Icerik>
+        </ctrl:SayfaDurumGorunumu>
+    </Grid>
+
+</ContentPage>

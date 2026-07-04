@@ -1,0 +1,45 @@
+# Build outputs
+**/bin/
+**/obj/
+**/publish/
+
+# Android / Gradle
+**/.gradle/
+**/local.properties
+**/*.apk
+**/*.aab
+**/*.keystore
+**/*.jks
+
+# Node
+**/node_modules/
+functions/lib/
+
+# IDE
+.vs/
+.idea/
+*.user
+*.suo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Secrets
+**/.env
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase-adminsdk*.json
+**/fcm-service-account.json
+**/firebase_ayarlar.json
+
+# Logs
+*.log
+
+# Installers / large binaries
+**/*Kurulum.exe
+**/*.exe
+!**/scripts/**
+
+# WebView2 cache
+**/*.WebView2/

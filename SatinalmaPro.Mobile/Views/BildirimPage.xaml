@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SatinalmaPro.Shared.Models;assembly=SatinalmaPro.Shared"
+             x:Class="SatinalmaPro.Mobile.Views.BildirimPage"
+             Title="Bildirimler">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Tümünü okundu" Clicked="TumunuOkundu_Clicked" Order="Primary" Priority="1" />
+        <ToolbarItem Text="Temizle" Clicked="Temizle_Clicked" Order="Primary" Priority="0" />
+    </ContentPage.ToolbarItems>
+
+    <RefreshView x:Name="RefreshView" Padding="12">
+        <CollectionView x:Name="Liste" SelectionMode="Single" SelectionChanged="Liste_SelectionChanged">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:BildirimKaydi">
+                    <Border Margin="0,4" Padding="12"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                            Stroke="{AppThemeBinding Light={StaticResource CardBorderLight}, Dark={StaticResource CardBorderDark}}"
+                            StrokeThickness="1" StrokeShape="RoundRectangle 8">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding Baslik}" FontAttributes="Bold" Style="{StaticResource LblPrimary}" />
+                            <Label Text="{Binding Mesaj}" Style="{StaticResource LblSecondary}" />
+                            <Label Text="{Binding OlusturmaTarihi}" Style="{StaticResource LblMuted}" FontSize="12" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+</ContentPage>

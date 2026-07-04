@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SatinalmaPro.Mobile.Views.StokAktarPage"
+             Title="Stoka Aktar">
+
+    <ScrollView Padding="16">
+        <VerticalStackLayout Spacing="12">
+            <Label x:Name="LblBaslik" FontAttributes="Bold" FontSize="18" />
+            <Label x:Name="LblOzet" FontSize="13" TextColor="{StaticResource Gray500}" />
+
+            <Border Padding="12" StrokeShape="RoundRectangle 8"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBgLight}, Dark={StaticResource CardBgDark}}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Aktarım Bilgileri" Style="{StaticResource LblSection}" />
+                    <Entry x:Name="TxtMiktar" Placeholder="Miktar" Keyboard="Numeric" />
+                    <Entry x:Name="TxtDepo" Placeholder="Depo / Saha" />
+                    <Entry x:Name="TxtKategori" Placeholder="Stok kategorisi" Text="Malzeme" />
+                    <Entry x:Name="TxtTeslimAlan" Placeholder="Teslim alan" />
+                    <Label x:Name="LblBelgeNo" FontSize="12" TextColor="{StaticResource Gray500}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button x:Name="BtnAktar" Text="Stoka Aktar" Clicked="Aktar_Clicked" Style="{StaticResource BtnBrand}" />
+            <Button Text="İptal" Clicked="Iptal_Clicked" Style="{StaticResource BtnInfoDark}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

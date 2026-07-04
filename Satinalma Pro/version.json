@@ -1,0 +1,9 @@
+﻿{
+    "version":  "2.0.0",
+    "build":  45,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.0.0/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.0.0/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.0.0/SatinalmaPro.apk",
+    "notes":  "Firebase enterprise: bildirim inbox, deep link, Android auth+FCM+Firestore, Satinalma Merkezi gercek veri, operasyon modu, santiyeAdi ve iade.",
+    "zorunlu":  false
+}

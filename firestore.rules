@@ -1,0 +1,349 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Yardımcı Fonksiyonlar ───────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userRole() {
+      return userDoc().data.rol;
+    }
+
+    function isActiveUser() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userDoc().data.aktif != false;
+    }
+
+    function isAdmin() {
+      return isActiveUser() && userRole() == 'Admin';
+    }
+
+    function isManagement() {
+      return isActiveUser() && userRole() == 'Yönetim';
+    }
+
+    function isProcurement() {
+      return isActiveUser() && userRole() == 'Satınalma';
+    }
+
+    function isWarehouse() {
+      return isActiveUser() && userRole() == 'Depo';
+    }
+
+    function isFieldRole() {
+      return isActiveUser() && userRole() in ['Şef', 'Saha', 'Atölye'];
+    }
+
+    function canReadProcurement() {
+      return isAdmin() || isManagement() || isProcurement() || isFieldRole();
+    }
+
+    function canWriteProcurement() {
+      return isAdmin() || isProcurement();
+    }
+
+    function canApproveProcurement() {
+      return isAdmin() || isManagement() || isProcurement();
+    }
+
+    function canReadStock() {
+      return isAdmin() || isProcurement() || isWarehouse() || isFieldRole() || isManagement();
+    }
+
+    function canWriteStock() {
+      return isAdmin() || isProcurement() || isWarehouse();
+    }
+
+    function isCloudFunction() {
+      // Cloud Functions service account veya custom claim
+      return isAuthenticated()
+        && request.auth.token.firebase.sign_in_provider == 'custom'
+        && request.auth.token.admin == true;
+    }
+
+    function onlyChangedFields(allowedFields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedFields);
+    }
+
+    function isValidRole(rol) {
+      return rol in ['Admin', 'Yönetim', 'Satınalma', 'Şef', 'Saha', 'Atölye', 'Depo'];
+    }
+
+    // ─── users ───────────────────────────────────────────────────────────
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin()
+        || (isManagement() && resource.data.rol in ['Şef', 'Saha', 'Atölye', 'Depo', 'Satınalma']);
+
+      allow create: if isAdmin()
+        && isValidRole(request.resource.data.rol)
+        && request.resource.data.aktif is bool;
+
+      allow update: if isAdmin()
+        || (isOwner(uid) && onlyChangedFields(['fcmToken', 'fcmUpdatedAt', 'adSoyad']));
+
+      allow delete: if isAdmin();
+
+      // notification_inbox — yalnızca sahibi okur; state alanlarını günceller
+      match /notification_inbox/{notificationId} {
+        allow read: if isOwner(uid);
+        allow create, delete: if isCloudFunction() || isAdmin();
+        allow update: if isOwner(uid)
+          && onlyChangedFields([
+            'isRead', 'readAt', 'isArchived', 'archivedAt',
+            'isStarred', 'actedAt', 'dismissedAt', 'localState'
+          ]);
+      }
+
+      // notification_settings — kullanıcı kendi ayarını yönetir
+      match /notification_settings/{categoryId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // ─── procurement_requests ────────────────────────────────────────────
+
+    match /procurement_requests/{requestId} {
+      allow read: if canReadProcurement()
+        && (isAdmin() || isManagement() || isProcurement()
+            || resource.data.requesterUid == request.auth.uid
+            || isWarehouse());
+
+      allow create: if isActiveUser()
+        && (isAdmin() || isProcurement() || isFieldRole() || isManagement())
+        && request.resource.data.requesterUid == request.auth.uid;
+
+      allow update: if canWriteProcurement()
+        || (resource.data.requesterUid == request.auth.uid
+            && resource.data.status in ['Taslak', 'Hazırlanıyor']
+            && !resource.data.managementApprovalLocked);
+
+      allow delete: if isAdmin() || isProcurement();
+
+      match /line_items/{lineItemId} {
+        allow read: if canReadProcurement();
+        allow write: if canWriteProcurement()
+          || (get(/databases/$(database)/documents/procurement_requests/$(requestId)).data.requesterUid
+              == request.auth.uid
+              && get(/databases/$(database)/documents/procurement_requests/$(requestId)).data.status
+                 in ['Taslak', 'Hazırlanıyor']);
+      }
+
+      match /quotes/{quoteId} {
+        allow read: if isAdmin() || isManagement() || isProcurement();
+        allow write: if isAdmin() || isProcurement();
+
+        match /quote_prices/{priceId} {
+          allow read: if isAdmin() || isManagement() || isProcurement();
+          allow write: if isAdmin() || isProcurement();
+        }
+      }
+
+      match /comments/{commentId} {
+        allow read: if canReadProcurement();
+        allow create: if isActiveUser() && canReadProcurement();
+        allow update, delete: if isAdmin()
+          || resource.data.authorUid == request.auth.uid;
+      }
+
+      match /attachments/{attachmentId} {
+        allow read: if canReadProcurement();
+        allow write: if canWriteProcurement()
+          || get(/databases/$(database)/documents/procurement_requests/$(requestId)).data.requesterUid
+             == request.auth.uid;
+      }
+
+      match /audit_trail/{auditId} {
+        allow read: if canReadProcurement() || isAdmin();
+        allow create: if isAuthenticated();
+        allow update, delete: if false;
+      }
+    }
+
+    // ─── orders ──────────────────────────────────────────────────────────
+
+    match /orders/{orderId} {
+      allow read: if isAdmin() || isProcurement() || isWarehouse() || isManagement();
+      allow create, update: if isAdmin() || isProcurement();
+      allow delete: if isAdmin();
+
+      match /order_lines/{lineId} {
+        allow read: if isAdmin() || isProcurement() || isWarehouse();
+        allow write: if isAdmin() || isProcurement();
+      }
+
+      match /deliveries/{deliveryId} {
+        allow read: if isAdmin() || isProcurement() || isWarehouse();
+        allow create, update: if isAdmin() || isProcurement() || isWarehouse();
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ─── returns ─────────────────────────────────────────────────────────
+
+    match /returns/{returnId} {
+      allow read: if isAdmin() || isProcurement() || isWarehouse() || isManagement();
+      allow create, update: if isAdmin() || isProcurement();
+      allow delete: if isAdmin();
+    }
+
+    // ─── tasks ───────────────────────────────────────────────────────────
+
+    match /tasks/{taskId} {
+      allow read: if isAdmin()
+        || resource.data.assignedToUid == request.auth.uid
+        || resource.data.assignedByUid == request.auth.uid
+        || isProcurement();
+      allow create: if isAdmin() || isProcurement();
+      allow update: if isAdmin() || isProcurement()
+        || resource.data.assignedToUid == request.auth.uid;
+      allow delete: if isAdmin() || isProcurement();
+    }
+
+    // ─── master data ─────────────────────────────────────────────────────
+
+    match /suppliers/{supplierId} {
+      allow read: if isActiveUser() && (isAdmin() || isProcurement() || isManagement());
+      allow write: if isAdmin() || isProcurement();
+    }
+
+    match /sites/{siteId} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+
+    match /materials/{materialId} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin() || isProcurement();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+
+    match /units/{unitId} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+
+    // ─── stock ───────────────────────────────────────────────────────────
+
+    match /stock_items/{stockItemId} {
+      allow read: if canReadStock();
+      allow write: if canWriteStock();
+    }
+
+    match /stock_movements/{movementId} {
+      allow read: if canReadStock();
+      allow create: if canWriteStock();
+      allow update, delete: if isAdmin();
+    }
+
+    match /goods_receipts/{receiptId} {
+      allow read: if isAdmin() || isProcurement() || isWarehouse() || isManagement();
+      allow create: if isAdmin() || isProcurement() || isWarehouse();
+      allow update: if isAdmin() || isProcurement() || isWarehouse();
+      allow delete: if isAdmin();
+    }
+
+    // ─── notifications (master — immutable) ──────────────────────────────
+
+    match /notifications/{notificationId} {
+      allow read: if isActiveUser()
+        && (request.auth.uid in resource.data.targetUids
+            || isAdmin()
+            || userRole() in resource.data.targetRoles);
+      allow create: if isCloudFunction() || isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /notification_queue/{queueId} {
+      allow read, write: if isCloudFunction() || isAdmin();
+    }
+
+    match /notification_templates/{eventCode} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+
+    match /notification_delivery_log/{logId} {
+      allow read: if isAdmin();
+      allow create: if isCloudFunction();
+      allow update, delete: if false;
+    }
+
+    match /device_tokens/{tokenId} {
+      allow read: if isOwner(resource.data.uid) || isAdmin();
+      allow create: if isAuthenticated()
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if isOwner(resource.data.uid)
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if isOwner(resource.data.uid) || isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+
+    // ─── system ──────────────────────────────────────────────────────────
+
+    match /system_audit_log/{auditId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    match /system_config/{configKey} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+
+    match /email_templates/{templateId} {
+      allow read: if isAdmin() || isProcurement();
+      allow write: if isAdmin();
+    }
+
+    match /procurement_settings/{settingsId} {
+      allow read: if isActiveUser() && (isAdmin() || isProcurement() || isManagement());
+      allow write: if isAdmin() || isProcurement();
+    }
+
+    match /notification_dispatch_queue/{docId} {
+      allow read, write: if isCloudFunction() || isAdmin();
+    }
+
+    match /notification_templates/{templateId} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin() || isCloudFunction();
+    }
+
+    match /sla_tracking/{docId} {
+      allow read: if isAdmin() || isProcurement() || isManagement();
+      allow write: if isCloudFunction() || isAdmin();
+    }
+
+    // ─── legacy veri/* (backward compatibility) ──────────────────────────
+
+    match /veri/{docId} {
+      allow read: if isActiveUser();
+      allow write: if isActiveUser()
+        && (isAdmin() || isProcurement() || isWarehouse()
+            || isManagement() || isFieldRole());
+    }
+  }
+}

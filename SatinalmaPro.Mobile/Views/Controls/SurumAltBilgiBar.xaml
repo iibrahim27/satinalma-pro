@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SatinalmaPro.Mobile.Views.Controls.SurumAltBilgiBar">
+
+    <Border Padding="10,6"
+            StrokeThickness="0"
+            BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+        <Label x:Name="LblAltBilgi"
+               FontSize="10"
+               HorizontalTextAlignment="Center"
+               LineBreakMode="WordWrap"
+               TextColor="{AppThemeBinding Light={StaticResource MutedTextLight}, Dark={StaticResource MutedTextDark}}" />
+    </Border>
+</ContentView>

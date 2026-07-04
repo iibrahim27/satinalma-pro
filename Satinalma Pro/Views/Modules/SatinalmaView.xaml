@@ -1,0 +1,919 @@
+<UserControl x:Class="SatinalmaPro.Views.Modules.SatinalmaView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:SatinalmaPro.Views.Controls"
+             Background="#F8FAFC">
+
+  <UserControl.Resources>
+    <Style x:Key="SatSekmeBtn" TargetType="Button" BasedOn="{StaticResource SatinalmaNavPillStyle}">
+      <Setter Property="Margin" Value="0,0,4,0" />
+      <Setter Property="Padding" Value="14,0" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="MinWidth" Value="0" />
+    </Style>
+    <Style x:Key="SatSekmeBtnAktif" TargetType="Button" BasedOn="{StaticResource SatSekmeBtn}">
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border CornerRadius="10" Padding="{TemplateBinding Padding}">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                  <GradientStop Color="#F97316" Offset="0" />
+                  <GradientStop Color="#FB923C" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="SatAlan" TargetType="TextBox">
+      <Setter Property="Height" Value="36" />
+      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <DataTemplate x:Key="KalemOnaySatirSablonu">
+      <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="8"
+              Padding="10,8" Margin="0,0,0,8" Background="#FAFBFC">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="72" />
+            <ColumnDefinition Width="56" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="*" MinWidth="140" />
+          </Grid.ColumnDefinitions>
+          <TextBlock Grid.Column="0" Text="{Binding Malzeme}" VerticalAlignment="Center" FontSize="12" />
+          <TextBlock Grid.Column="1" Text="{Binding Miktar}" VerticalAlignment="Center" FontSize="12"
+                     HorizontalAlignment="Right" />
+          <TextBlock Grid.Column="2" Text="{Binding Birim}" VerticalAlignment="Center" FontSize="12"
+                     HorizontalAlignment="Center" />
+          <ComboBox Grid.Column="4" ItemsSource="{Binding Firmalar}"
+                    SelectedValue="{Binding OnaylananTeklifId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    SelectedValuePath="Id" DisplayMemberPath="Ad"
+                    Style="{StaticResource FilterComboStyle}" />
+        </Grid>
+      </Border>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <!-- Üst şerit + sekmeler -->
+    <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+            CornerRadius="14" Padding="14,12" Margin="0,0,0,12">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <Border Width="36" Height="36" CornerRadius="10" Margin="0,0,14,0">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#F97316" Offset="0" />
+                <GradientStop Color="#FB923C" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <TextBlock Text="&#xE719;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="White"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="Satınalma" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" />
+            <TextBlock x:Name="TxtAktifSekmeBaslik" FontSize="13" FontWeight="SemiBold"
+                       Foreground="#F97316" Margin="0,2,0,0" Visibility="Collapsed" />
+            <TextBlock Text="Talep, teklif, onay ve sipariş süreçleri" FontSize="11"
+                       Foreground="{StaticResource InkMutedBrush}" Margin="0,2,0,0" />
+          </StackPanel>
+        </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <Button x:Name="BtnMenuyeDon" Style="{StaticResource ToolbarButtonStyle}" Padding="10,6"
+                    Margin="0,0,8,0" Visibility="Collapsed" Click="MenuyeDon_Click" ToolTip="Menüye dön">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="13" Margin="0,0,6,0" />
+                <TextBlock Text="Menü" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Button Style="{StaticResource ToolbarButtonStyle}" Padding="10,6"
+                    VerticalAlignment="Center" Click="SatinalmaAnaSayfa_Click" ToolTip="Ana sayfaya dön">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="13" Margin="0,0,6,0" />
+                <TextBlock Text="Ana Sayfa" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Grid>
+    </Border>
+
+    <!-- Sekme menüsü (panel kartları) -->
+    <Border x:Name="PanelSekmeMenu" Grid.Row="1" Background="White" BorderBrush="{StaticResource LineBrush}"
+            BorderThickness="1" CornerRadius="14" Padding="20">
+      <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <WrapPanel x:Name="SekmeMenuPanel" HorizontalAlignment="Center" />
+      </ScrollViewer>
+    </Border>
+
+    <!-- Sekme içerikleri -->
+    <Grid x:Name="PanelSekmeIcerik" Grid.Row="1" Visibility="Collapsed">
+      <Border x:Name="PanelTalepler" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300" />
+            <ColumnDefinition Width="16" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+
+          <!-- Sol: tüm talepler -->
+          <DockPanel Grid.Column="0">
+            <Button x:Name="BtnYeniTalep" DockPanel.Dock="Top" Style="{StaticResource PrimaryToolbarButtonStyle}"
+                    Margin="0,0,0,10" Click="YeniTalep_Click">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="13" Margin="0,0,8,0" />
+                <TextBlock Text="Yeni Talep" />
+              </StackPanel>
+            </Button>
+            <TextBlock DockPanel.Dock="Top" Text="Tüm talepler — kendi talepleriniz mavi ile vurgulanır"
+                       FontWeight="SemiBold" FontSize="12"
+                       Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,8" />
+            <ListView x:Name="TalepListesi" BorderThickness="0" Background="Transparent"
+                      SelectionChanged="TalepListesi_SelectionChanged"
+                      PreviewMouseRightButtonDown="TalepListesi_PreviewMouseRightButtonDown"
+                      ContextMenuOpening="TalepListesi_ContextMenuOpening">
+              <ListView.ContextMenu>
+                <ContextMenu>
+                  <MenuItem Header="Düzenle" Click="TalepListeDuzenle_Click" />
+                  <MenuItem x:Name="MenuTalepSil" Header="Sil" Click="TalepListeSil_Click" />
+                </ContextMenu>
+              </ListView.ContextMenu>
+              <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                  <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                  <Setter Property="Padding" Value="0" />
+                  <Setter Property="Margin" Value="0,0,0,4" />
+                  <Setter Property="Template">
+                    <Setter.Value>
+                      <ControlTemplate TargetType="ListViewItem">
+                        <Border x:Name="B" Background="#F8FAFC" CornerRadius="10" Padding="10,8" Cursor="Hand">
+                          <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                          <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="B" Property="Background" Value="#FFF7ED" />
+                          </Trigger>
+                          <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="B" Property="Background" Value="#FFEDD5" />
+                            <Setter TargetName="B" Property="BorderBrush" Value="#FDBA74" />
+                            <Setter TargetName="B" Property="BorderThickness" Value="1" />
+                          </Trigger>
+                        </ControlTemplate.Triggers>
+                      </ControlTemplate>
+                    </Setter.Value>
+                  </Setter>
+                </Style>
+              </ListView.ItemContainerStyle>
+              <ListView.ItemTemplate>
+                <DataTemplate>
+                  <Border Background="{Binding KartArkaPlan}" BorderBrush="{Binding KartKenar}"
+                          BorderThickness="1" CornerRadius="10" Padding="10,8">
+                    <StackPanel>
+                      <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding TalepNo}" FontWeight="SemiBold" FontSize="13"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                        <Border Grid.Column="1" Background="{Binding RozetArkaPlan}" CornerRadius="6" Padding="7,3"
+                                VerticalAlignment="Center">
+                          <TextBlock Text="{Binding DurumEtiketi}" FontSize="10" FontWeight="SemiBold"
+                                     Foreground="{Binding RozetYazi}" TextWrapping="NoWrap" />
+                        </Border>
+                      </Grid>
+                      <TextBlock Text="{Binding Tarih}" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
+                      <TextBlock Text="{Binding TalepEden}" FontSize="11" Foreground="{StaticResource InkMutedBrush}"
+                                 TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                      <TextBlock Text="{Binding KalemSayisiMetni}" FontSize="10" Foreground="#94A3B8" Margin="0,2,0,0" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ListView.ItemTemplate>
+            </ListView>
+          </DockPanel>
+
+          <!-- Sağ: form veya önizleme -->
+          <Grid Grid.Column="2">
+            <TextBlock x:Name="TxtTalepFormBos" Text="Yeni talep oluşturun veya soldan bir talep seçin — önizleme ayrı pencerede açılır."
+                       Foreground="{StaticResource InkMutedBrush}" FontSize="14"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"
+                       TextAlignment="Center" MaxWidth="360" />
+
+            <ScrollViewer x:Name="TalepFormScroll" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+              <StackPanel x:Name="TalepFormPanel">
+                <Button Style="{StaticResource ToolbarButtonStyle}" HorizontalAlignment="Left"
+                        Margin="0,0,0,12" Padding="8,4" Click="TalepDetayGeri_Click">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0" />
+                    <TextBlock Text="Listeye dön" />
+                  </StackPanel>
+                </Button>
+                <StackPanel x:Name="TalepFormIcerik">
+                  <TextBlock Text="Talep Girişi" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16" />
+
+                <Grid Margin="0,0,0,14">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel Grid.Column="0">
+                    <TextBlock Text="Tarih" FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,4" />
+                    <TextBox x:Name="TxtTalepTarih" Style="{StaticResource SatAlan}" IsReadOnly="True" Background="#F8FAFC" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Text="Talep No" FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,4" />
+                    <TextBox x:Name="TxtTalepNo" Style="{StaticResource SatAlan}" IsReadOnly="True" Background="#F8FAFC" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="4">
+                    <TextBlock Text="Talep Yapan" FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,4" />
+                    <TextBox x:Name="TxtTalepEden" Style="{StaticResource SatAlan}" IsReadOnly="True" Background="#F8FAFC" />
+                  </StackPanel>
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                  <StackPanel Width="220">
+                    <TextBlock Text="Talep Türü" FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,4" />
+                    <ComboBox x:Name="CmbTalepTuru" Style="{StaticResource FilterComboStyle}" Height="36" />
+                  </StackPanel>
+                </StackPanel>
+
+                <TextBlock Text="Talep Açıklaması" FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,4" />
+                <TextBox x:Name="TxtTalepAciklama" Style="{StaticResource SatAlan}" Height="72" TextWrapping="Wrap"
+                         AcceptsReturn="True" VerticalContentAlignment="Top" Padding="10,8" Margin="0,0,0,16" />
+
+                <Grid Margin="0,0,0,8">
+                  <TextBlock Text="Malzeme Kalemleri" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                            Click="KalemEkle_Click" Content="Satır Ekle" />
+                    <Button Style="{StaticResource ToolbarButtonStyle}"
+                            Click="KalemSil_Click" Content="Satır Sil" />
+                  </StackPanel>
+                </Grid>
+
+                <DataGrid x:Name="KalemTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                          BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                          RowHeight="36" FontSize="12" MinHeight="160"
+                          SelectionChanged="KalemTablosu_SelectionChanged"
+                          PreparingCellForEdit="KalemTablosu_PreparingCellForEdit"
+                          CellEditEnding="KalemTablosu_CellEditEnding">
+                  <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Malzeme" Width="*" MinWidth="140">
+                      <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding Malzeme}" VerticalAlignment="Center" Margin="8,0" />
+                        </DataTemplate>
+                      </DataGridTemplateColumn.CellTemplate>
+                      <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                          <controls:MalzemeOneriGiris Metin="{Binding Malzeme, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </DataTemplate>
+                      </DataGridTemplateColumn.CellEditingTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Miktar" Binding="{Binding Miktar, UpdateSourceTrigger=PropertyChanged}" Width="80" />
+                    <DataGridComboBoxColumn Header="Birim"
+                                            SelectedItemBinding="{Binding Birim, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+                    <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama, UpdateSourceTrigger=PropertyChanged}" Width="*" />
+                  </DataGrid.Columns>
+                </DataGrid>
+
+                <Border Background="#FAFBFC" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                        CornerRadius="12" Padding="14" Margin="0,20,0,0">
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                            Click="TalepPdf_Click" Content="Talep PDF" />
+                    <Button x:Name="BtnTalepKaydet" Style="{StaticResource PrimaryToolbarButtonStyle}" Margin="0,0,8,0"
+                            Click="TalepKaydet_Click" Content="Kaydet" />
+                    <Button x:Name="BtnTalepOnayaGonder" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                            Click="TalepOnayaGonder_Click" Content="Onaya Gönder" />
+                    <Button x:Name="BtnYonetimeYenidenGonder" Style="{StaticResource ToolbarButtonStyle}"
+                            Click="YonetimeYenidenGonder_Click" Content="Yönetime Yeniden Gönder" />
+                  </StackPanel>
+                </Border>
+                </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
+        </Grid>
+      </Border>
+      <Border x:Name="PanelTeklifBekleyen" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Teklif bekleyen talepler" FontWeight="SemiBold" Margin="0,0,0,12" />
+          <DataGrid x:Name="TeklifBekleyenTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                    HeadersVisibility="Column" IsReadOnly="True" BorderThickness="0" FontSize="12"
+                    RowHeight="40" HorizontalScrollBarVisibility="Auto"
+                    MouseDoubleClick="TeklifBekleyenTablosu_DoubleClick">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="100" />
+              <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="96" />
+              <DataGridTextColumn Header="Talep Eden" Binding="{Binding TalepEden}" Width="1.2*" MinWidth="100" />
+              <DataGridTextColumn Header="Kalem" Binding="{Binding KalemSayisiMetni}" Width="72"
+                                  ElementStyle="{StaticResource SatGridOrta}" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding DurumMetni}" Width="140" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </Border>
+      <Border x:Name="PanelTeklifGirisi" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="16" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+
+          <DockPanel Grid.Column="0">
+            <TextBlock DockPanel.Dock="Top" Text="Teklif girilecek talepler" FontWeight="SemiBold" Margin="0,0,0,10" />
+            <ListView x:Name="TeklifGirisTalepListesi" BorderThickness="0" Background="Transparent"
+                      SelectionChanged="TeklifGirisTalepListesi_SelectionChanged">
+              <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                  <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                  <Setter Property="Padding" Value="0" />
+                  <Setter Property="Margin" Value="0,0,0,4" />
+                  <Setter Property="Template">
+                    <Setter.Value>
+                      <ControlTemplate TargetType="ListViewItem">
+                        <Border x:Name="B" Background="#F8FAFC" CornerRadius="10" Padding="10,8" Cursor="Hand">
+                          <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                          <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="B" Property="Background" Value="#FFF7ED" />
+                          </Trigger>
+                          <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="B" Property="Background" Value="#FFEDD5" />
+                            <Setter TargetName="B" Property="BorderBrush" Value="#FDBA74" />
+                            <Setter TargetName="B" Property="BorderThickness" Value="1" />
+                          </Trigger>
+                        </ControlTemplate.Triggers>
+                      </ControlTemplate>
+                    </Setter.Value>
+                  </Setter>
+                </Style>
+              </ListView.ItemContainerStyle>
+              <ListView.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel>
+                    <TextBlock Text="{Binding TalepNo}" FontWeight="SemiBold" FontSize="13" />
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Text="{Binding Tarih}" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
+                      <TextBlock Text=" · " FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
+                      <TextBlock FontSize="11" Foreground="{StaticResource InkMutedBrush}">
+                        <Run Text="{Binding Teklifler.Count, Mode=OneWay}" />
+                        <Run Text=" teklif" />
+                      </TextBlock>
+                    </StackPanel>
+                  </StackPanel>
+                </DataTemplate>
+              </ListView.ItemTemplate>
+            </ListView>
+          </DockPanel>
+
+          <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+              <TextBlock x:Name="TxtTeklifGirisBos" Text="Soldan talep seçin veya Teklif Bekleyen sekmesinden çift tıklayın."
+                         Foreground="{StaticResource InkMutedBrush}" FontSize="14"
+                         HorizontalAlignment="Center" Margin="0,60,0,0" />
+
+              <StackPanel x:Name="TeklifGirisIcerik" Visibility="Collapsed">
+                <Button Style="{StaticResource ToolbarButtonStyle}" HorizontalAlignment="Left"
+                        Margin="0,0,0,12" Padding="8,4" Click="TeklifGirisDetayGeri_Click">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0" />
+                    <TextBlock Text="Listeye dön" />
+                  </StackPanel>
+                </Button>
+                <TextBlock Text="Teklif Girişi" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16" />
+
+                <Grid Margin="0,0,0,14">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel Grid.Column="0">
+                    <TextBlock Text="Talep No" FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,4" />
+                    <TextBox x:Name="TxtTeklifTalepNo" Style="{StaticResource SatAlan}" IsReadOnly="True" Background="#F8FAFC" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Text="Tarih" FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,4" />
+                    <TextBox x:Name="TxtTeklifTalepTarih" Style="{StaticResource SatAlan}" IsReadOnly="True" Background="#F8FAFC" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="4">
+                    <TextBlock Text="Talep Eden" FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,4" />
+                    <TextBox x:Name="TxtTeklifTalepEden" Style="{StaticResource SatAlan}" IsReadOnly="True" Background="#F8FAFC" />
+                  </StackPanel>
+                </Grid>
+
+                <TextBlock Text="Talep Kalemleri" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <DataGrid x:Name="TeklifKalemTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                          HeadersVisibility="Column" IsReadOnly="True" GridLinesVisibility="Horizontal"
+                          BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                          RowHeight="34" FontSize="12" MinHeight="120" Margin="0,0,0,18">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" />
+                    <DataGridTextColumn Header="Miktar" Binding="{Binding MiktarGosterim}" Width="80" />
+                    <DataGridTextColumn Header="Birim" Binding="{Binding Birim}" Width="70" />
+                    <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*" />
+                  </DataGrid.Columns>
+                </DataGrid>
+
+                <Grid Margin="0,0,0,8">
+                  <TextBlock Text="Girilen Teklifler" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                            Click="TeklifOneriYap_Click" Content="Öneri Olarak İşaretle" />
+                    <Button Style="{StaticResource PrimaryToolbarButtonStyle}" Margin="0,0,8,0"
+                            Click="YeniTeklif_Click" Content="Yeni Teklif" />
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                            Click="TeklifDuzenle_Click" Content="Düzenle" />
+                    <Button Style="{StaticResource ToolbarButtonStyle}"
+                            Click="TeklifSil_Click" Content="Sil" />
+                  </StackPanel>
+                </Grid>
+
+                <Border x:Name="TeklifDuzeltmeNotuPanel" Background="#FEF3C7" BorderBrush="#FCD34D" BorderThickness="1"
+                        CornerRadius="10" Padding="12,10" Margin="0,0,0,10" Visibility="Collapsed">
+                  <TextBlock x:Name="TxtTeklifDuzeltmeNotu" FontSize="13" Foreground="#92400E" TextWrapping="Wrap" />
+                </Border>
+
+                <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1"
+                        CornerRadius="10" Padding="12,10" Margin="0,0,0,10">
+                  <TextBlock x:Name="TxtSatinalmaOnerisi" FontSize="13" Foreground="#1E40AF" />
+                </Border>
+
+                <DataGrid x:Name="TeklifListesiTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                          HeadersVisibility="Column" IsReadOnly="True" GridLinesVisibility="Horizontal"
+                          BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                          RowHeight="36" FontSize="12" MinHeight="140" Margin="0,0,0,18"
+                          HorizontalScrollBarVisibility="Auto"
+                          SelectionChanged="TeklifListesiTablosu_SelectionChanged"
+                          MouseDoubleClick="TeklifListesiTablosu_DoubleClick">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="★" Binding="{Binding OneriMetni}" Width="36"
+                                        ElementStyle="{StaticResource SatGridOrta}" />
+                    <DataGridTextColumn Header="Firma" Binding="{Binding FirmaAdi}" Width="1.1*" MinWidth="100" />
+                    <DataGridTextColumn Header="Vade" Binding="{Binding VadeGosterim}" Width="58"
+                                        ElementStyle="{StaticResource SatGridOrta}" />
+                    <DataGridTextColumn Header="Teslim" Binding="{Binding TeslimSuresi}" Width="72" />
+                    <DataGridTextColumn Header="Ödeme" Binding="{Binding OdemeSekli}" Width="1*" MinWidth="110" />
+                    <DataGridTextColumn Header="Marka" Binding="{Binding MarkaOzeti}" Width="88" />
+                    <DataGridTextColumn Header="KDV Hariç" Binding="{Binding KdvHaricMetni}" Width="108"
+                                        ElementStyle="{StaticResource SatGridSayi}" />
+                    <DataGridTextColumn Header="KDV" Binding="{Binding KdvTutarMetni}" Width="92"
+                                        ElementStyle="{StaticResource SatGridSayi}" />
+                    <DataGridTextColumn Header="KDV Dahil" Binding="{Binding KdvDahilMetni}" Width="108"
+                                        ElementStyle="{StaticResource SatGridSayi}" />
+                  </DataGrid.Columns>
+                </DataGrid>
+
+                <Border Background="#FAFBFC" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                        CornerRadius="12" Padding="14">
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                            Click="TedarikciTeklifPdf_Click" Content="Tedarikçi Teklif PDF" />
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                            Click="KarsilastirmaPdf_Click" Content="Karşılaştırma PDF" />
+                    <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                            Click="TeklifGirisKaydet_Click" Content="Kaydet" />
+                    <Button x:Name="BtnTeklifYonetimeYenidenGonder" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                            Click="TeklifYonetimeYenidenGonder_Click" Content="Yönetime Yeniden Gönder" />
+                    <Button Style="{StaticResource PrimaryToolbarButtonStyle}"
+                            Click="DegerlendirmeyeGonder_Click" Content="Değerlendirmeye Gönder" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+      <Border x:Name="PanelTeklifDeger" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="16" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <DockPanel x:Name="TeklifDegerSolListePanel" Grid.Column="0">
+            <TextBlock DockPanel.Dock="Top" Text="Onay sürecindeki talepler" FontWeight="SemiBold" Margin="0,0,0,10" />
+            <ListView x:Name="TeklifDegerTalepListesi" BorderThickness="0" Background="Transparent"
+                      SelectionChanged="TeklifDegerTalepListesi_SelectionChanged">
+              <ListView.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel>
+                    <TextBlock Text="{Binding TalepNo}" FontWeight="SemiBold" FontSize="13" />
+                    <TextBlock Text="{Binding Tarih}" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListView.ItemTemplate>
+            </ListView>
+          </DockPanel>
+          <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+              <TextBlock x:Name="TxtTeklifDegerBos" Text="Soldan onay sürecindeki bir talep seçin."
+                         Foreground="{StaticResource InkMutedBrush}" FontSize="14"
+                         HorizontalAlignment="Center" Margin="0,60,0,0" />
+              <StackPanel x:Name="TeklifDegerIcerik" Visibility="Collapsed">
+                <Button Style="{StaticResource ToolbarButtonStyle}" HorizontalAlignment="Left"
+                        Margin="0,0,0,12" Padding="8,4" Click="TeklifDegerDetayGeri_Click">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0" />
+                    <TextBlock Text="Listeye dön" />
+                  </StackPanel>
+                </Button>
+                <TextBlock Text="Karşılaştırma" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,12" />
+                <TextBlock x:Name="TxtTeklifDegerOzet" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
+                           TextWrapping="Wrap" Margin="0,0,0,14" />
+                <TextBlock Text="Teklif Karşılaştırması" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <DataGrid x:Name="TeklifDegerTeklifTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                          IsReadOnly="True" HeadersVisibility="Column" BorderThickness="1"
+                          BorderBrush="{StaticResource LineBrush}" RowHeight="36" FontSize="12"
+                          MinHeight="100" Margin="0,0,0,16">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="★" Binding="{Binding OneriMetni}" Width="32" />
+                    <DataGridTextColumn Header="Firma" Binding="{Binding FirmaAdi}" Width="*" MinWidth="100" />
+                    <DataGridTextColumn Header="KDV Dahil" Binding="{Binding KdvDahilMetni}" Width="110"
+                                        ElementStyle="{StaticResource SatGridSayi}" />
+                  </DataGrid.Columns>
+                </DataGrid>
+                <TextBlock Text="Kalem Bazında Firma Onayı" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <ItemsControl x:Name="KalemOnayListesi" Margin="0,0,0,16"
+                              ItemTemplate="{StaticResource KalemOnaySatirSablonu}" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                  <Button x:Name="BtnTeklifDegerYonetimeGonder" Style="{StaticResource PrimaryToolbarButtonStyle}"
+                          Margin="0,0,8,0" Visibility="Collapsed"
+                          Click="TeklifDegerYonetimeGonder_Click" Content="Yönetime Gönder" />
+                  <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                          Click="TeklifDegerKarsilastirmaPdf_Click" Content="Karşılaştırma PDF" />
+                  <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                          Click="TeklifDegerYonetimOnayPdf_Click" Content="Yönetim Onay PDF" />
+                  <Button x:Name="BtnTeklifDegerOnayGeriAl" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                          Click="TeklifDegerOnayGeriAl_Click" Content="Onayı Geri Al" Visibility="Collapsed" />
+                  <Button x:Name="BtnTeklifDegerGeriGonder" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                          Click="TeklifDegerGeriGonder_Click" Content="Satınalmaya Geri Gönder" Visibility="Collapsed" />
+                  <Button x:Name="BtnTeklifDegerReddet" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                          Click="TeklifDegerReddet_Click" Content="Reddet" Visibility="Collapsed" />
+                  <Button x:Name="BtnTeklifDegerOnayla" Style="{StaticResource PrimaryToolbarButtonStyle}"
+                          Click="TeklifDegerOnayla_Click" Content="Onayla" />
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+      <Border x:Name="PanelOnaylananlar" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="16" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <DockPanel Grid.Column="0">
+            <TextBlock DockPanel.Dock="Top" Text="Onaylanan talepler"
+                       FontWeight="SemiBold" Margin="0,0,0,6" />
+            <TextBlock DockPanel.Dock="Top"
+                       Text="Onaylanan firma ve depo teslim sürecini buradan takip edin. Kendi talepleriniz mavi ile vurgulanır."
+                       FontSize="11" Foreground="{StaticResource InkMutedBrush}" TextWrapping="Wrap"
+                       Margin="0,0,0,10" />
+            <TextBlock x:Name="TxtOnaylananListeBos" DockPanel.Dock="Top" Visibility="Collapsed"
+                       Text="Henüz onaylanmış talep yok."
+                       FontSize="12" Foreground="{StaticResource InkMutedBrush}" TextWrapping="Wrap"
+                       Margin="0,8,0,0" />
+            <ListView x:Name="OnaylananTalepListesi" BorderThickness="0" Background="Transparent"
+                      SelectionChanged="OnaylananTalepListesi_SelectionChanged">
+              <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                  <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                  <Setter Property="Padding" Value="0" />
+                  <Setter Property="Margin" Value="0,0,0,6" />
+                  <Setter Property="Background" Value="Transparent" />
+                  <Setter Property="BorderThickness" Value="0" />
+                  <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                  <Setter Property="Template">
+                    <Setter.Value>
+                      <ControlTemplate TargetType="ListViewItem">
+                        <Border x:Name="SecimCercevesi" Padding="2" CornerRadius="12" Background="Transparent">
+                          <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                          <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="SecimCercevesi" Property="Background" Value="#E2E8F0" />
+                          </Trigger>
+                        </ControlTemplate.Triggers>
+                      </ControlTemplate>
+                    </Setter.Value>
+                  </Setter>
+                </Style>
+              </ListView.ItemContainerStyle>
+              <ListView.ItemTemplate>
+                <DataTemplate>
+                  <Border Background="{Binding KartArkaPlan}" BorderBrush="{Binding KartKenar}"
+                          BorderThickness="1" CornerRadius="10" Padding="10,8">
+                    <StackPanel>
+                      <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding TalepNo}" FontWeight="SemiBold" FontSize="13"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                        <Border Grid.Column="1" Background="{Binding RozetArkaPlan}" CornerRadius="6" Padding="6,2"
+                                VerticalAlignment="Center">
+                          <TextBlock Text="{Binding DurumEtiketi}" FontSize="10" FontWeight="SemiBold"
+                                     Foreground="{Binding RozetYazi}" TextWrapping="NoWrap" />
+                        </Border>
+                      </Grid>
+                      <TextBlock Text="{Binding OnayliFirmaOzet}" FontSize="11" Margin="0,4,0,0" />
+                      <TextBlock Text="{Binding TalepEden}" FontSize="11"
+                                 Foreground="{StaticResource InkMutedBrush}" Margin="0,2,0,0" />
+                      <TextBlock Text="{Binding Tarih}" FontSize="10" Foreground="#94A3B8" Margin="0,2,0,0" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ListView.ItemTemplate>
+            </ListView>
+          </DockPanel>
+          <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+              <TextBlock x:Name="TxtOnaylananBos" Text="Onaylanmış bir talep seçin."
+                         Foreground="{StaticResource InkMutedBrush}" FontSize="14"
+                         HorizontalAlignment="Center" Margin="0,60,0,0" />
+              <StackPanel x:Name="OnaylananIcerik" Visibility="Collapsed">
+                <Button Style="{StaticResource ToolbarButtonStyle}" HorizontalAlignment="Left"
+                        Margin="0,0,0,12" Padding="8,4" Click="OnaylananDetayGeri_Click">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0" />
+                    <TextBlock Text="Listeye dön" />
+                  </StackPanel>
+                </Button>
+                <TextBlock Text="Onaylanan Talep" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,12" />
+                <TextBlock x:Name="TxtOnaylananOzet" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
+                           TextWrapping="Wrap" Margin="0,0,0,8" />
+                <TextBlock x:Name="TxtOnaylananDurum" FontSize="12" FontWeight="SemiBold"
+                           TextWrapping="Wrap" Margin="0,0,0,14" />
+                <DataGrid x:Name="OnaylananKalemTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                          IsReadOnly="True" HeadersVisibility="Column" BorderThickness="1"
+                          BorderBrush="{StaticResource LineBrush}" RowHeight="36" FontSize="12"
+                          MinHeight="120" Margin="0,0,0,16">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" />
+                    <DataGridTextColumn Header="Miktar" Binding="{Binding MiktarMetni}" Width="90" />
+                    <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="*" />
+                    <DataGridTextColumn Header="Sipariş No" Binding="{Binding SiparisNo}" Width="100" />
+                    <DataGridTextColumn Header="Teslim" Binding="{Binding TeslimDurumu}" Width="130" />
+                  </DataGrid.Columns>
+                </DataGrid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                  <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                          Click="OnaylananOnayPdf_Click" Content="Onay PDF" />
+                  <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                          Click="OnaylananSiparisPdf_Click" Content="Sipariş PDF" />
+                  <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                          Click="OnaylananSiparisOnayPdf_Click" Content="Sipariş Onay PDF" />
+                  <Button x:Name="BtnOnaylananOnayGeriAl" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                          Click="OnaylananOnayGeriAl_Click" Content="Onayı Geri Al" Visibility="Collapsed" />
+                  <Button x:Name="BtnOnaylananMalKabul" Style="{StaticResource PrimaryToolbarButtonStyle}"
+                          Click="OnaylananMalKabul_Click" Content="Mal Kabul Yap (Siparişler)"
+                          Visibility="Collapsed" Margin="0,0,10,0" />
+                  <Button x:Name="BtnSiparisVer" Style="{StaticResource PrimaryToolbarButtonStyle}"
+                          Click="SiparisVer_Click" Content="Firmaya Sipariş Ver" />
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+      <Border x:Name="PanelGelenTalepler" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Gelen talepler — onay / teklif iste / red"
+                     FontWeight="SemiBold" Margin="0,0,0,6" />
+          <TextBlock DockPanel.Dock="Top"
+                     Text="Yönetime veya satınalmaya iletilen yeni talepler. Çift tıklayarak önizleyin."
+                     FontSize="11" Foreground="{StaticResource InkMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,12" />
+          <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="BtnGelenTalepOnayla" Style="{StaticResource PrimaryToolbarButtonStyle}" Margin="0,0,8,0"
+                    Click="GelenTalepOnayla_Click" Content="Onayla" IsEnabled="False" />
+            <Button x:Name="BtnGelenTalepTeklifIste" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                    Click="GelenTalepTeklifIste_Click" Content="Teklif İste" IsEnabled="False" />
+            <Button x:Name="BtnGelenTalepReddet" Style="{StaticResource ToolbarButtonStyle}"
+                    Click="GelenTalepReddet_Click" Content="Reddet" IsEnabled="False" />
+          </StackPanel>
+          <DataGrid x:Name="GelenTalepTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                    IsReadOnly="True" HeadersVisibility="Column" BorderThickness="0" FontSize="12"
+                    RowHeight="40" SelectionChanged="GelenTalepTablosu_SelectionChanged"
+                    MouseDoubleClick="GelenTalepTablosu_MouseDoubleClick">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="100" />
+              <DataGridTextColumn Header="Tür" Binding="{Binding TalepTuru}" Width="72" />
+              <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="96" />
+              <DataGridTextColumn Header="Talep Eden" Binding="{Binding TalepEden}" Width="*" />
+              <DataGridTextColumn Header="Kalem" Binding="{Binding KalemSayisiMetni}" Width="80" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </Border>
+      <Border x:Name="PanelTeklifOnay" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Teklif onay bekleyen talepler"
+                     FontWeight="SemiBold" Margin="0,0,0,6" />
+          <TextBlock DockPanel.Dock="Top"
+                     Text="Teklif girilmiş taleplerde firma seçimi ve onay için çift tıklayın veya Aç butonunu kullanın."
+                     FontSize="11" Foreground="{StaticResource InkMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,12" />
+          <Button DockPanel.Dock="Bottom" HorizontalAlignment="Right" Margin="0,12,0,0"
+                  Style="{StaticResource PrimaryToolbarButtonStyle}" Click="TeklifOnayAc_Click" Content="Karşılaştırmada Aç" />
+          <ListView x:Name="TeklifOnayListesi" BorderThickness="0" Background="Transparent"
+                    SelectionChanged="TeklifOnayListesi_SelectionChanged"
+                    MouseDoubleClick="TeklifOnayListesi_MouseDoubleClick">
+            <ListView.ItemTemplate>
+              <DataTemplate>
+                <Border Padding="8,6" Margin="0,0,0,4" CornerRadius="8"
+                        BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
+                  <StackPanel>
+                    <TextBlock FontWeight="SemiBold" Text="{Binding TalepNo}" />
+                    <TextBlock FontSize="11" Foreground="{StaticResource InkMutedBrush}"
+                               Text="{Binding TalepEden}" />
+                    <TextBlock FontSize="11" Margin="0,4,0,0"
+                               Text="{Binding Teklifler.Count, StringFormat='{}{0} teklif'}" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ListView.ItemTemplate>
+          </ListView>
+        </DockPanel>
+      </Border>
+      <Border x:Name="PanelOnayGecmisi" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Onay geçmişi"
+                     FontWeight="SemiBold" Margin="0,0,0,12" />
+          <DataGrid x:Name="OnayGecmisiTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                    IsReadOnly="True" HeadersVisibility="Column" BorderThickness="0" FontSize="12"
+                    RowHeight="40" MouseDoubleClick="OnayGecmisiTablosu_MouseDoubleClick">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="100" />
+              <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="96" />
+              <DataGridTextColumn Header="Talep Eden" Binding="{Binding TalepEden}" Width="*" />
+              <DataGridTextColumn Header="Onaylayan" Binding="{Binding YonetimOnaylayanAd}" Width="*" />
+              <DataGridTextColumn Header="Onay Tarihi" Binding="{Binding YonetimOnayTarihi}" Width="130" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </Border>
+      <Border x:Name="PanelGecmisTeklifli" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Geçmiş teklifli onaylar"
+                     FontWeight="SemiBold" Margin="0,0,0,6" />
+          <TextBlock DockPanel.Dock="Top"
+                     Text="Teklif karşılaştırması sonrası onaylanmış talepler. Çift tıklayarak önizleyin."
+                     FontSize="11" Foreground="{StaticResource InkMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,12" />
+          <DataGrid x:Name="GecmisTeklifliTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                    IsReadOnly="True" HeadersVisibility="Column" BorderThickness="0" FontSize="12"
+                    RowHeight="40" MouseDoubleClick="GecmisTeklifliTablosu_MouseDoubleClick">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="100" />
+              <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="96" />
+              <DataGridTextColumn Header="Talep Eden" Binding="{Binding TalepEden}" Width="*" />
+              <DataGridTextColumn Header="Onaylayan" Binding="{Binding YonetimOnaylayanAd}" Width="*" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="120" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </Border>
+      <Border x:Name="PanelOnayBekleyen" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Onay bekleyen talepler" FontWeight="SemiBold" Margin="0,0,0,12" />
+          <TextBlock DockPanel.Dock="Top" Text="Yönetim veya satınalma onayı bekleyen talepler. Çift tıklayarak önizleyin."
+                     FontSize="11" Foreground="{StaticResource InkMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,12" />
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,12">
+            <Button x:Name="BtnOnayBekleyenYenidenGonder" Style="{StaticResource ToolbarButtonStyle}"
+                    IsEnabled="False" Click="OnayBekleyenYenidenGonder_Click"
+                    Content="Yönetime Yeniden Gönder" />
+          </StackPanel>
+          <DataGrid x:Name="OnayBekleyenTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                    IsReadOnly="True" HeadersVisibility="Column" BorderThickness="0" FontSize="12"
+                    RowHeight="40" SelectionChanged="OnayBekleyenTablosu_SelectionChanged"
+                    MouseDoubleClick="OnayBekleyenTablosu_MouseDoubleClick">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="100" />
+              <DataGridTextColumn Header="Tür" Binding="{Binding TalepTuru}" Width="72" />
+              <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="96" />
+              <DataGridTextColumn Header="Talep Eden" Binding="{Binding TalepEden}" Width="*" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding DurumEtiketi}" Width="140" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </Border>
+      <Border x:Name="PanelReddedilenler" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Reddedilen talepler" FontWeight="SemiBold" Margin="0,0,0,12" />
+          <DataGrid x:Name="ReddedilenTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                    IsReadOnly="True" HeadersVisibility="Column" BorderThickness="0" FontSize="12"
+                    RowHeight="40" SelectionChanged="ReddedilenTablosu_SelectionChanged">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="100" />
+              <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="96" />
+              <DataGridTextColumn Header="Talep Eden" Binding="{Binding TalepEden}" Width="*" />
+              <DataGridTextColumn Header="Red Gerekçesi" Binding="{Binding RedGerekcesi}" Width="2*" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </Border>
+      <Border x:Name="PanelSiparisler" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+            <TextBlock x:Name="TxtAlinanMalzemeBaslik" Text="Onaylı sipariş kalemleri — teslim ve depo süreci"
+                       FontWeight="SemiBold" Margin="0,0,0,6" />
+            <TextBlock x:Name="TxtAlinanMalzemeAciklama"
+                       Text="Onaylanan firma, sipariş ve depo teslim durumunu buradan takip edin."
+                       FontSize="11" Foreground="{StaticResource InkMutedBrush}" TextWrapping="Wrap" />
+          </StackPanel>
+          <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+                    Click="AlinanMalzemePdf_Click" Content="Liste PDF" />
+            <Button x:Name="BtnMalKabul" Style="{StaticResource PrimaryToolbarButtonStyle}"
+                    Click="MalKabul_Click" Content="Mal Kabul — Depoya Kaydet" IsEnabled="False" />
+          </StackPanel>
+          <DataGrid x:Name="SiparisMalzemeTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                    IsReadOnly="True" HeadersVisibility="Column" BorderThickness="0" FontSize="12"
+                    RowHeight="40" SelectionChanged="SiparisMalzemeTablosu_SelectionChanged"
+                    MouseDoubleClick="SiparisMalzemeTablosu_MouseDoubleClick">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Sipariş No" Binding="{Binding SiparisNo}" Width="110" />
+              <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="96" />
+              <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="*" MinWidth="100" />
+              <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" MinWidth="120" />
+              <DataGridTextColumn Header="Sipariş" Binding="{Binding SiparisMiktariMetni}" Width="80"
+                                  ElementStyle="{StaticResource SatGridOrta}" />
+              <DataGridTextColumn Header="Kalan" Binding="{Binding KalanMiktarMetni}" Width="80"
+                                  ElementStyle="{StaticResource SatGridOrta}" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding KabulDurumu}" Width="90" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </Border>
+      <Border x:Name="PanelGelenSiparis" Background="White" BorderBrush="{StaticResource LineBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20" Visibility="Collapsed">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Depoya giren malzemeler"
+                     FontWeight="SemiBold" Margin="0,0,0,12" />
+          <DataGrid x:Name="GelenSiparisTablosu" AutoGenerateColumns="False" CanUserAddRows="False"
+                    IsReadOnly="True" HeadersVisibility="Column" BorderThickness="0" FontSize="12"
+                    RowHeight="40">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="96" />
+              <DataGridTextColumn Header="Sipariş No" Binding="{Binding SiparisNo}" Width="110" />
+              <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="*" MinWidth="100" />
+              <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" MinWidth="120" />
+              <DataGridTextColumn Header="Kabul" Binding="{Binding KabulMiktarMetni}" Width="90"
+                                  ElementStyle="{StaticResource SatGridOrta}" />
+              <DataGridTextColumn Header="Birim" Binding="{Binding Birim}" Width="64" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding KabulDurumu}" Width="90" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

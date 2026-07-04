@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SatinalmaPro.Shared.Models;assembly=SatinalmaPro.Shared"
+             x:Class="SatinalmaPro.Mobile.Views.TalepListPage"
+             Title="Taleplerim">
+
+    <Grid RowDefinitions="Auto,*" Padding="12">
+        <Button Grid.Row="0" Text="Yenile" Clicked="Yenile_Clicked"
+                Style="{StaticResource BtnBrand}" Margin="0,0,0,8" />
+        <RefreshView Grid.Row="1" x:Name="RefreshView">
+            <CollectionView x:Name="Liste" SelectionMode="Single" SelectionChanged="Liste_SelectionChanged">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:SatinalmaTalep">
+                        <Border Style="{StaticResource TalepKartBorderStyle}" Margin="0,4">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="{Binding TalepNo}" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light={StaticResource PrimaryTextLight}, Dark={StaticResource PrimaryTextDark}}" />
+                                <Label Text="{Binding GorunenDurum}"
+                                       TextColor="{AppThemeBinding Light={StaticResource SecondaryTextLight}, Dark={StaticResource SecondaryTextDark}}" />
+                                <HorizontalStackLayout Spacing="8">
+                                    <Label Text="{Binding TalepTuru}" Style="{StaticResource LblWarning}" />
+                                    <Label Text="{Binding Tarih}" TextColor="{AppThemeBinding Light={StaticResource MutedTextLight}, Dark={StaticResource MutedTextDark}}" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+        <ActivityIndicator Grid.Row="1" x:Name="Yukleniyor" IsRunning="False" IsVisible="False"
+                           VerticalOptions="Center" HorizontalOptions="Center" />
+    </Grid>
+</ContentPage>

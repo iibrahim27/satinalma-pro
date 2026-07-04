@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Satınalma Pro",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Satinalma Pro/bin/Debug/net9.0-windows/SatinalmaPro.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}/Satinalma Pro",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+<Window x:Class="SatinalmaPro.Views.Modules.AracFiloDetayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Araç Detayı"
+        Width="920"
+        Height="760"
+        MinWidth="760"
+        MinHeight="640"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="White">
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <StackPanel Grid.Row="0" Margin="0,0,0,16">
+      <TextBlock x:Name="TxtBaslik" Text="Araç Detayı" FontSize="22" FontWeight="SemiBold"
+                 Foreground="{StaticResource InkBrush}" />
+      <TextBlock Text="Araç bilgileri, ruhsat ve görseller"
+                 FontSize="13" Foreground="{StaticResource InkMutedBrush}" Margin="0,4,0,0" />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1" Style="{StaticResource ModuleScrollViewerStyle}">
+      <StackPanel>
+        <Border Background="#F8FAFC" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                CornerRadius="12" Padding="16" Margin="0,0,0,14">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="12" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,12">
+              <TextBlock Text="Plaka / Kod" Style="{StaticResource FilterLabelStyle}" />
+              <TextBox x:Name="TxtPlaka" Style="{StaticResource FilterBoxStyle}" />
+            </StackPanel>
+            <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,12">
+              <TextBlock Text="Araç Tipi" Style="{StaticResource FilterLabelStyle}" />
+              <ComboBox x:Name="CmbAracTipi" Style="{StaticResource FilterComboStyle}">
+                <ComboBoxItem Content="Binek" />
+                <ComboBoxItem Content="İş Makinası" />
+              </ComboBox>
+            </StackPanel>
+
+            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,12">
+              <TextBlock Text="Marka / Model" Style="{StaticResource FilterLabelStyle}" />
+              <TextBox x:Name="TxtMarkaModel" Style="{StaticResource FilterBoxStyle}" />
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
+              <TextBlock Text="Model Yılı" Style="{StaticResource FilterLabelStyle}" />
+              <TextBox x:Name="TxtModelYili" Style="{StaticResource FilterBoxStyle}" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,12">
+              <TextBlock Text="Şasi No" Style="{StaticResource FilterLabelStyle}" />
+              <TextBox x:Name="TxtSasiNo" Style="{StaticResource FilterBoxStyle}" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,0,0,12">
+              <TextBlock Text="Sahiplik" Style="{StaticResource FilterLabelStyle}" />
+              <ComboBox x:Name="CmbSahiplik" Style="{StaticResource FilterComboStyle}">
+                <ComboBoxItem Content="Bizim" />
+                <ComboBoxItem Content="Kiralık" />
+              </ComboBox>
+            </StackPanel>
+            <StackPanel Grid.Row="3" Grid.Column="2" Margin="0,0,0,12">
+              <TextBlock Text="Durum" Style="{StaticResource FilterLabelStyle}" />
+              <ComboBox x:Name="CmbDurum" Style="{StaticResource FilterComboStyle}">
+                <ComboBoxItem Content="Aktif" />
+                <ComboBoxItem Content="Pasif" />
+                <ComboBoxItem Content="Satıldı" />
+                <ComboBoxItem Content="Hurda" />
+              </ComboBox>
+            </StackPanel>
+
+            <StackPanel Grid.Row="4" Grid.Column="0" Margin="0,0,0,12">
+              <TextBlock Text="Şirket" Style="{StaticResource FilterLabelStyle}" />
+              <TextBox x:Name="TxtSirket" Style="{StaticResource FilterBoxStyle}" />
+            </StackPanel>
+            <StackPanel Grid.Row="4" Grid.Column="2" Margin="0,0,0,12">
+              <TextBlock Text="Saha" Style="{StaticResource FilterLabelStyle}" />
+              <TextBox x:Name="TxtSaha" Style="{StaticResource FilterBoxStyle}" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="5" Grid.Column="0">
+              <TextBlock Text="Muayene Bitiş" Style="{StaticResource FilterLabelStyle}" />
+              <TextBox x:Name="TxtMuayeneBitis" Style="{StaticResource FilterBoxStyle}"
+                       ui:ControlHelper.PlaceholderText="gg.aa.yyyy" />
+            </StackPanel>
+            <StackPanel Grid.Row="5" Grid.Column="2">
+              <TextBlock Text="Sigorta Bitiş" Style="{StaticResource FilterLabelStyle}" />
+              <TextBox x:Name="TxtSigortaBitis" Style="{StaticResource FilterBoxStyle}"
+                       ui:ControlHelper.PlaceholderText="gg.aa.yyyy" />
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <TextBlock Text="Açıklama" Style="{StaticResource FilterLabelStyle}" />
+        <TextBox x:Name="TxtAciklama" Style="{StaticResource FilterBoxStyle}" Height="70"
+                 TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
+                 Padding="12,10" Margin="0,0,0,14" />
+
+        <Grid Margin="0,0,0,14">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+
+          <Border Grid.Column="0" Margin="0,0,8,0" Background="White" BorderBrush="{StaticResource LineBrush}"
+                  BorderThickness="1" CornerRadius="12" Padding="14">
+            <StackPanel>
+              <TextBlock Text="Ruhsat" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,10" />
+              <Border Height="140" Background="#F8FAFC" BorderBrush="{StaticResource LineBrush}"
+                      BorderThickness="1" CornerRadius="8" Margin="0,0,0,10">
+                <Image x:Name="ImgRuhsat" Stretch="Uniform" Margin="8" />
+              </Border>
+              <StackPanel Orientation="Horizontal">
+                <Button Style="{StaticResource ToolbarButtonStyle}" Content="Yükle" Click="RuhsatYukle_Click" />
+                <Button Style="{StaticResource ToolbarButtonStyle}" Content="Kaldır" Margin="8,0,0,0"
+                        Click="RuhsatKaldir_Click" />
+              </StackPanel>
+              <TextBlock x:Name="TxtRuhsatAd" FontSize="11" Foreground="{StaticResource InkMutedBrush}"
+                         Margin="0,8,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <Border Grid.Column="1" Margin="8,0,0,0" Background="White" BorderBrush="{StaticResource LineBrush}"
+                  BorderThickness="1" CornerRadius="12" Padding="14">
+            <StackPanel>
+              <Grid Margin="0,0,0,10">
+                <TextBlock Text="Görseller" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
+                <Button Style="{StaticResource ToolbarButtonStyle}" Content="Görsel Ekle"
+                        HorizontalAlignment="Right" Click="GorselEkle_Click" />
+              </Grid>
+              <ListBox x:Name="GorselListesi" Height="140" BorderBrush="{StaticResource LineBrush}"
+                       SelectionChanged="GorselListesi_SelectionChanged">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding}" FontSize="12" />
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <Button Style="{StaticResource ToolbarButtonStyle}" Content="Seçili Görseli Kaldır"
+                      Margin="0,10,0,0" HorizontalAlignment="Left" Click="GorselKaldir_Click" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <StackPanel x:Name="PanelAltButonlar" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button x:Name="BtnKapat" Content="Kapat" Style="{StaticResource ToolbarButtonStyle}" Width="110" Margin="0,0,8,0"
+              Click="Iptal_Click" Visibility="Collapsed" />
+      <Button x:Name="BtnIptal" Content="İptal" Style="{StaticResource ToolbarButtonStyle}" Width="110" Margin="0,0,8,0"
+              Click="Iptal_Click" />
+      <Button x:Name="BtnKaydet" Content="Kaydet" Style="{StaticResource PrimaryToolbarButtonStyle}" Width="120"
+              Click="Kaydet_Click" />
+    </StackPanel>
+  </Grid>
+</Window>

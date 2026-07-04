@@ -1,0 +1,421 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Color x:Key="WhitePure">#FFFFFF</Color>
+  <Color x:Key="InkColor">#0F172A</Color>
+  <Color x:Key="InkSoftColor">#334155</Color>
+  <Color x:Key="InkMutedColor">#64748B</Color>
+  <Color x:Key="LineColor">#E2E8F0</Color>
+  <Color x:Key="SurfaceColor">#F8FAFC</Color>
+  <Color x:Key="AccentStart">#2563EB</Color>
+  <Color x:Key="AccentEnd">#1D4ED8</Color>
+
+  <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource WhitePure}" />
+  <SolidColorBrush x:Key="InkBrush" Color="{StaticResource InkColor}" />
+  <SolidColorBrush x:Key="InkSoftBrush" Color="{StaticResource InkSoftColor}" />
+  <SolidColorBrush x:Key="InkMutedBrush" Color="{StaticResource InkMutedColor}" />
+  <SolidColorBrush x:Key="LineBrush" Color="{StaticResource LineColor}" />
+  <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+
+  <Style x:Key="SatGridSayi" TargetType="TextBlock">
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="Padding" Value="0,0,8,0" />
+  </Style>
+  <Style x:Key="SatGridOrta" TargetType="TextBlock">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+
+  <LinearGradientBrush x:Key="AccentGradientBrush" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Color="{StaticResource AccentStart}" Offset="0" />
+    <GradientStop Color="{StaticResource AccentEnd}" Offset="1" />
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="AuraBrush" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Color="#2563EB" Offset="0" />
+    <GradientStop Color="#1D4ED8" Offset="1" />
+  </LinearGradientBrush>
+
+  <!-- İnce ızgara dokusu -->
+  <DrawingBrush x:Key="GridPatternBrush"
+                TileMode="Tile"
+                Viewport="0,0,48,48"
+                ViewportUnits="Absolute">
+    <DrawingBrush.Drawing>
+      <GeometryDrawing>
+        <GeometryDrawing.Geometry>
+          <RectangleGeometry Rect="0,0,48,48" />
+        </GeometryDrawing.Geometry>
+        <GeometryDrawing.Pen>
+          <Pen Brush="#08000000" Thickness="0.5" />
+        </GeometryDrawing.Pen>
+      </GeometryDrawing>
+    </DrawingBrush.Drawing>
+  </DrawingBrush>
+
+  <Style x:Key="LogoButtonStyle" TargetType="Button">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="B" Background="Transparent" CornerRadius="12" Padding="{TemplateBinding Padding}">
+            <ContentPresenter />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="B" Property="Background" Value="#08000000" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="NexusCardStyle" TargetType="Button">
+    <Setter Property="Margin" Value="8" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Card"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="16"
+                  Padding="20">
+            <Border.Effect>
+              <DropShadowEffect BlurRadius="24"
+                                ShadowDepth="0"
+                                Opacity="0.06"
+                                Color="#0F172A" />
+            </Border.Effect>
+            <ContentPresenter />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Card" Property="BorderBrush" Value="#2563EB" />
+              <Setter TargetName="Card" Property="Background" Value="#F8FAFC" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="Card" Property="Opacity" Value="0.96" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- Modül araç çubuğu -->
+  <Style x:Key="ToolbarButtonStyle" TargetType="Button">
+    <Setter Property="Height" Value="38" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="Margin" Value="0,0,8,0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{StaticResource InkSoftBrush}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="B"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="10"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="B" Property="Background" Value="#F8FAFC" />
+              <Setter TargetName="B" Property="BorderBrush" Value="#CBD5E1" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="PrimaryToolbarButtonStyle" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="B"
+                  CornerRadius="10"
+                  Padding="{TemplateBinding Padding}">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="{StaticResource AccentStart}" Offset="0" />
+                <GradientStop Color="{StaticResource AccentEnd}" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="B" Property="Opacity" Value="0.92" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="FilterBoxStyle" TargetType="TextBox">
+    <Setter Property="Height" Value="38" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style x:Key="FilterLabelStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{StaticResource InkMutedBrush}" />
+    <Setter Property="Margin" Value="0,0,0,4" />
+  </Style>
+
+  <Style x:Key="FilterComboStyle" TargetType="ComboBox">
+    <Setter Property="Height" Value="38" />
+    <Setter Property="MinWidth" Value="150" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="Padding" Value="12,0,8,0" />
+  </Style>
+
+  <!-- Kaydırma çubuğu içeriğin üzerine binmesin diye sağ boşluk -->
+  <Style x:Key="ModuleScrollViewerStyle" TargetType="ScrollViewer">
+    <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+    <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+    <Setter Property="CanContentScroll" Value="False" />
+    <Setter Property="Padding" Value="0,0,18,0" />
+  </Style>
+
+  <Style x:Key="ModuleHorizontalScrollViewerStyle" TargetType="ScrollViewer">
+    <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+    <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+    <Setter Property="CanContentScroll" Value="False" />
+    <Setter Property="Padding" Value="0,0,0,12" />
+  </Style>
+
+  <Style x:Key="ModuleDataGridStyle" TargetType="DataGrid">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="RowHeight" Value="44" />
+    <Setter Property="ColumnHeaderHeight" Value="42" />
+    <Setter Property="GridLinesVisibility" Value="Horizontal" />
+    <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="HeadersVisibility" Value="Column" />
+    <Setter Property="AutoGenerateColumns" Value="False" />
+    <Setter Property="CanUserAddRows" Value="False" />
+    <Setter Property="IsReadOnly" Value="True" />
+    <Setter Property="CanUserSortColumns" Value="False" />
+    <Setter Property="CanUserReorderColumns" Value="False" />
+    <Setter Property="SelectionMode" Value="Single" />
+    <Setter Property="EnableRowVirtualization" Value="True" />
+    <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+    <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+    <Setter Property="AlternatingRowBackground" Value="#FAFBFC" />
+    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+    <Setter Property="ScrollViewer.CanContentScroll" Value="False" />
+    <Setter Property="ScrollViewer.Padding" Value="0,0,18,0" />
+  </Style>
+
+  <Style x:Key="ModuleEditableDataGridStyle" TargetType="DataGrid" BasedOn="{StaticResource ModuleDataGridStyle}">
+    <Setter Property="IsReadOnly" Value="False" />
+    <Setter Property="SelectionUnit" Value="Cell" />
+    <Setter Property="CanUserSortColumns" Value="False" />
+  </Style>
+
+  <Style x:Key="StatChipStyle" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="16,12" />
+    <Setter Property="Margin" Value="0,0,12,0" />
+  </Style>
+
+  <!-- Satınalma modülü -->
+  <Style x:Key="SatinalmaNavPillStyle" TargetType="Button">
+    <Setter Property="Height" Value="36" />
+    <Setter Property="Padding" Value="18,0" />
+    <Setter Property="Margin" Value="0,0,6,0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource InkMutedBrush}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="B" Background="{TemplateBinding Background}" CornerRadius="10" Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="B" Property="Background" Value="#F8FAFC" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="SatinalmaNavPillActiveStyle" TargetType="Button" BasedOn="{StaticResource SatinalmaNavPillStyle}">
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="B" CornerRadius="10" Padding="{TemplateBinding Padding}">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#F43F5E" Offset="0" />
+                <GradientStop Color="#FB7185" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="SatinalmaStepButtonStyle" TargetType="Button">
+    <Setter Property="Height" Value="44" />
+    <Setter Property="MinWidth" Value="140" />
+    <Setter Property="Padding" Value="16,0" />
+    <Setter Property="Margin" Value="0,0,8,0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{StaticResource InkSoftBrush}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="B"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="12"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="B" Property="BorderBrush" Value="#FDA4AF" />
+              <Setter TargetName="B" Property="Background" Value="#FFF1F2" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="SatinalmaStepActiveStyle" TargetType="Button" BasedOn="{StaticResource SatinalmaStepButtonStyle}">
+    <Setter Property="BorderBrush" Value="#FDA4AF" />
+    <Setter Property="Background" Value="#FFF1F2" />
+    <Setter Property="Foreground" Value="#BE123C" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style x:Key="SatinalmaSectionTitleStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+  </Style>
+
+  <Style x:Key="SatinalmaCardStyle" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="20" />
+  </Style>
+
+  <Style x:Key="SatinalmaSidebarListStyle" TargetType="ListBox">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+    <Setter Property="ScrollViewer.CanContentScroll" Value="False" />
+  </Style>
+
+  <Style x:Key="SatinalmaSidebarItemStyle" TargetType="ListBoxItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ListBoxItem">
+          <Border x:Name="Kart"
+                  Background="White"
+                  BorderBrush="{StaticResource LineBrush}"
+                  BorderThickness="1"
+                  CornerRadius="12"
+                  Padding="14,12"
+                  Cursor="Hand">
+            <ContentPresenter />
+          </Border>
+          <ControlTemplate.Triggers>
+            <DataTrigger Binding="{Binding DurumEtiketi}" Value="Teklif Bekleniyor">
+              <Setter TargetName="Kart" Property="Background" Value="#FFFBEB" />
+              <Setter TargetName="Kart" Property="BorderBrush" Value="#FCD34D" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding DurumEtiketi}" Value="Onaylandı">
+              <Setter TargetName="Kart" Property="Background" Value="#F0FDF4" />
+              <Setter TargetName="Kart" Property="BorderBrush" Value="#86EFAC" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding DurumEtiketi}" Value="Teklif Onaylandı">
+              <Setter TargetName="Kart" Property="Background" Value="#F0FDF4" />
+              <Setter TargetName="Kart" Property="BorderBrush" Value="#86EFAC" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding DurumEtiketi}" Value="Siparişte">
+              <Setter TargetName="Kart" Property="Background" Value="#EFF6FF" />
+              <Setter TargetName="Kart" Property="BorderBrush" Value="#93C5FD" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding DurumEtiketi}" Value="Depo Teslim Oldu">
+              <Setter TargetName="Kart" Property="Background" Value="#F0FDF4" />
+              <Setter TargetName="Kart" Property="BorderBrush" Value="#22C55E" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding DurumEtiketi}" Value="Red Edildi">
+              <Setter TargetName="Kart" Property="Background" Value="#FEF2F2" />
+              <Setter TargetName="Kart" Property="BorderBrush" Value="#FCA5A5" />
+            </DataTrigger>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Kart" Property="BorderBrush" Value="#FECDD3" />
+              <Setter TargetName="Kart" Property="Background" Value="#FFFBFB" />
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter TargetName="Kart" Property="BorderBrush" Value="#F43F5E" />
+              <Setter TargetName="Kart" Property="Background" Value="#FFF1F2" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+</ResourceDictionary>

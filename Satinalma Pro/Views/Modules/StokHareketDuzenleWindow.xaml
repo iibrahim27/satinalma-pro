@@ -1,0 +1,58 @@
+<Window x:Class="SatinalmaPro.Views.Modules.StokHareketDuzenleWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Hareket Düzenle"
+        Width="520"
+        Height="560"
+        MinWidth="440"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="White">
+  <Grid Margin="28">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <StackPanel Grid.Row="0" Margin="0,0,0,20">
+      <TextBlock x:Name="TxtBaslik" Text="Hareket Düzenle" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" />
+      <TextBlock x:Name="TxtAltBaslik" FontSize="13" Foreground="{StaticResource InkMutedBrush}" Margin="0,4,0,0" />
+    </StackPanel>
+    <StackPanel Grid.Row="1">
+      <TextBlock Text="Tarih" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+      <TextBox x:Name="TxtTarih" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+      <TextBlock Text="Malzeme" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+      <TextBox x:Name="TxtMalzeme" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" Background="#F8FAFC" Margin="0,0,0,14" />
+      <TextBlock Text="Depo / Saha" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+      <TextBox x:Name="TxtDepo" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" Background="#F8FAFC" Margin="0,0,0,14" />
+      <Grid Margin="0,0,0,14">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="12" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0">
+          <TextBlock x:Name="LblMiktar" Text="Miktar" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+          <TextBox x:Name="TxtMiktar" Style="{StaticResource FilterBoxStyle}" />
+        </StackPanel>
+        <StackPanel Grid.Column="2">
+          <TextBlock Text="Birim" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+          <TextBox x:Name="TxtBirim" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" Background="#F8FAFC" />
+        </StackPanel>
+      </Grid>
+      <TextBlock Text="Belge No" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+      <TextBox x:Name="TxtBelge" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+      <TextBlock Text="İşlem Yapan" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+      <TextBox x:Name="TxtIslemYapan" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+      <TextBlock Text="Açıklama" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+      <TextBox x:Name="TxtAciklama" Style="{StaticResource FilterBoxStyle}" Height="72"
+               TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Padding="12,10" />
+    </StackPanel>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+      <Button Content="İptal" Style="{StaticResource ToolbarButtonStyle}" Width="100" Margin="0,0,8,0" Click="Iptal_Click" />
+      <Button Content="Kaydet" Style="{StaticResource PrimaryToolbarButtonStyle}" Width="120" Click="Kaydet_Click" />
+    </StackPanel>
+  </Grid>
+</Window>

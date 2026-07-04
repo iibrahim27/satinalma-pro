@@ -1,0 +1,168 @@
+rules_version = '2';
+
+// METRİK ERP — Firebase Storage Security Rules
+// Deploy: firebase deploy --only storage
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ─── Yardımcı ───────────────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid));
+    }
+
+    function userRole() {
+      return userDoc().data.rol;
+    }
+
+    function isActiveUser() {
+      return isAuthenticated()
+        && userDoc().data.aktif == true;
+    }
+
+    function isAdmin() {
+      return isActiveUser() && userRole() == 'Admin';
+    }
+
+    function isProcurement() {
+      return isActiveUser() && userRole() in ['Admin', 'Satınalma'];
+    }
+
+    function isManagement() {
+      return isActiveUser() && userRole() in ['Admin', 'Yönetim'];
+    }
+
+    function isWarehouse() {
+      return isActiveUser() && userRole() in ['Admin', 'Satınalma', 'Depo'];
+    }
+
+    function canReadProcurementFiles() {
+      return isActiveUser() && userRole() in [
+        'Admin', 'Yönetim', 'Satınalma', 'Şef', 'Saha', 'Atölye', 'Depo'
+      ];
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function validImageUpload() {
+      return request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    function validDocumentUpload() {
+      return request.resource.size < 25 * 1024 * 1024
+        && request.resource.contentType in [
+          'application/pdf',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-excel',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'image/jpeg',
+          'image/png',
+          'image/webp'
+        ];
+    }
+
+    function metadataUploadedByMatches() {
+      return request.resource.metadata.uploadedBy == request.auth.uid;
+    }
+
+    // ─── Satınalma: talep dosyaları (attachments, photos — teklif hariç) ─
+
+    match /procurement/{requestId}/attachments/{fileName} {
+      allow read: if canReadProcurementFiles();
+      allow create: if isActiveUser() && validDocumentUpload() && metadataUploadedByMatches()
+        && (isProcurement() || isAdmin() || userRole() in ['Şef', 'Saha', 'Atölye']);
+      allow update, delete: if isProcurement() || isAdmin();
+    }
+
+    match /procurement/{requestId}/photos/{fileName} {
+      allow read: if canReadProcurementFiles();
+      allow create: if isActiveUser() && validImageUpload() && metadataUploadedByMatches()
+        && (isProcurement() || isAdmin() || userRole() in ['Şef', 'Saha', 'Atölye']);
+      allow update, delete: if isProcurement() || isAdmin();
+    }
+
+    // Teklif dosyaları — fiyat gizliliği (Saha/Depo/Atölye erişemez)
+    match /procurement/{requestId}/quotes/{quoteId}/{fileName} {
+      allow read: if isProcurement() || isManagement() || isAdmin();
+      allow create, update: if isProcurement() || isAdmin();
+      allow delete: if isAdmin() || isProcurement();
+    }
+
+    // ─── Sipariş: PDF, irsaliye, fatura ─────────────────────────────────
+
+    match /orders/{orderId}/{allPaths=**} {
+      allow read: if isActiveUser()
+        && userRole() in ['Admin', 'Satınalma', 'Depo', 'Yönetim'];
+
+      allow create, update: if isWarehouse() && validDocumentUpload()
+        && metadataUploadedByMatches();
+
+      allow delete: if isAdmin() || isProcurement();
+    }
+
+    // ─── İade fotoğrafları ────────────────────────────────────────────────
+
+    match /returns/{returnId}/{allPaths=**} {
+      allow read: if isActiveUser()
+        && userRole() in ['Admin', 'Satınalma', 'Depo', 'Yönetim'];
+
+      allow create: if isWarehouse() && validImageUpload()
+        && metadataUploadedByMatches();
+
+      allow delete: if isAdmin() || isProcurement();
+    }
+
+    // ─── Stok: mal kabul belgeleri ──────────────────────────────────────
+
+    match /stock/receipts/{receiptId}/{allPaths=**} {
+      allow read: if isActiveUser()
+        && userRole() in ['Admin', 'Satınalma', 'Depo', 'Yönetim'];
+
+      allow create: if isWarehouse() && validDocumentUpload()
+        && metadataUploadedByMatches();
+
+      allow delete: if isAdmin();
+    }
+
+    // ─── Geçici yükleme (24 saat — Cloud Function temizler) ─────────────
+
+    match /temp/{uid}/{uploadId}/{fileName} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && validDocumentUpload()
+        && metadataUploadedByMatches();
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    // ─── Sistem: logo, imza, duyuru ekleri ──────────────────────────────
+
+    match /system/{allPaths=**} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+
+    // ─── Legacy medya (logolar) ───────────────────────────────────────────
+
+    match /legacy/{allPaths=**} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin() || isProcurement();
+    }
+
+    // ─── Kullanıcı profil fotoğrafı ───────────────────────────────────────
+
+    match /users/{uid}/avatar/{fileName} {
+      allow read: if isActiveUser();
+      allow create, update: if isOwner(uid) && validImageUpload();
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+  }
+}

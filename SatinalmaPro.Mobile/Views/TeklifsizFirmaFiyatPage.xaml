@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SatinalmaPro.Mobile.Views.TeklifsizFirmaFiyatPage"
+             Title="Firma/Fiyat Girişi">
+
+    <ScrollView Padding="12">
+        <VerticalStackLayout Spacing="12">
+            <Label Text="Yönetimce onaylanmış acil ve teklifsiz talepler için fatura geldikten sonra tedarikçi adı ve birim fiyat girin. Stok aktarımı onaylanan malzemeler ekranından yapılır."
+                   FontSize="13" Style="{StaticResource LblSecondary}" LineBreakMode="WordWrap" />
+
+            <Picker x:Name="PickerTalep" Title="Talep seçin" SelectedIndexChanged="PickerTalep_Changed" />
+
+            <VerticalStackLayout x:Name="FormPanel" IsVisible="False" Spacing="8">
+                <VerticalStackLayout x:Name="KalemPanel" Spacing="6" />
+                <Button Text="Kaydet" Clicked="Kaydet_Clicked" Style="{StaticResource BtnSuccess}" />
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

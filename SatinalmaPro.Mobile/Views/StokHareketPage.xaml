@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SatinalmaPro.Shared.Models;assembly=SatinalmaPro.Shared"
+             x:Class="SatinalmaPro.Mobile.Views.StokHareketPage"
+             Title="Stok Hareketleri">
+
+    <RefreshView x:Name="RefreshView" Padding="12">
+        <CollectionView x:Name="Liste">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:StokHareketKaydi">
+                    <Border Margin="0,4" Padding="12"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                            Stroke="{AppThemeBinding Light={StaticResource CardBorderLight}, Dark={StaticResource CardBorderDark}}"
+                            StrokeThickness="1" StrokeShape="RoundRectangle 8">
+                        <VerticalStackLayout Spacing="4">
+                            <HorizontalStackLayout>
+                                <Label Text="{Binding HareketTipi}" FontAttributes="Bold" Style="{StaticResource LblPrimary}" />
+                                <Label Text="{Binding Tarih}" Style="{StaticResource LblMuted}" HorizontalOptions="EndAndExpand" />
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding MalzemeAdi}" />
+                            <Label Text="{Binding Miktar, StringFormat='Miktar: {0:N2}'}" Style="{StaticResource LblSecondary}" />
+                            <Label Text="{Binding BelgeNo, StringFormat='Belge: {0}'}" Style="{StaticResource LblMuted}" FontSize="12" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+</ContentPage>
