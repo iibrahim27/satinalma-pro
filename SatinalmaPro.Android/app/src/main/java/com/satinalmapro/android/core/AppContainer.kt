@@ -398,6 +398,10 @@ class AppContainer(private val context: Context) {
                 if (index == urls.lastIndex) throw lastError!!
             }
         }
+        if (!validateDownloadedApk(target, manifest)) {
+            target.delete()
+            throw IllegalStateException("İndirilen APK geçersiz veya sürüm uyuşmuyor.")
+        }
         prefs.edit().putString(KEY_PENDING_APK, target.absolutePath).apply()
         onProgress("Kurulum başlatılıyor...", 95)
         return installPendingApk(target)
@@ -409,14 +413,43 @@ class AppContainer(private val context: Context) {
     }
 
     private fun installPendingApk(file: File): UpdateInstallResult {
-        if (!file.exists()) return UpdateInstallResult.FAILED
+        if (!file.exists()) {
+            clearPendingApk()
+            return UpdateInstallResult.FAILED
+        }
         if (!apkInstaller.ensureInstallPermission()) return UpdateInstallResult.NEEDS_PERMISSION
         return try {
             apkInstaller.install(file)
+            clearPendingApk()
             UpdateInstallResult.SUCCESS
         } catch (_: Exception) {
             UpdateInstallResult.FAILED
         }
+    }
+
+    fun clearPendingApk() {
+        prefs.edit().remove(KEY_PENDING_APK).apply()
+    }
+
+    fun markUpdateSkipped(manifest: UpdateManifest) {
+        prefs.edit().putInt(KEY_SKIPPED_UPDATE_BUILD, manifest.build).apply()
+    }
+
+    fun isUpdateSkipped(manifest: UpdateManifest): Boolean =
+        prefs.getInt(KEY_SKIPPED_UPDATE_BUILD, 0) >= manifest.build
+
+    private fun validateDownloadedApk(file: File, manifest: UpdateManifest): Boolean {
+        val info = context.packageManager.getPackageArchiveInfo(
+            file.absolutePath,
+            android.content.pm.PackageManager.GET_ACTIVITIES
+        ) ?: return true
+        val apkBuild = if (android.os.Build.VERSION.SDK_INT >= 28) {
+            info.longVersionCode
+        } else {
+            @Suppress("DEPRECATION")
+            info.versionCode.toLong()
+        }
+        return apkBuild >= manifest.build
     }
 
     suspend fun checkAndApplyUpdate(onProgress: (String, Int) -> Unit): Boolean {
@@ -604,6 +637,7 @@ class AppContainer(private val context: Context) {
         private const val KEY_SESSION = "session_json"
         private const val KEY_PROFILE = "profile_cache"
         private const val KEY_PENDING_APK = "pending_apk_path"
+        private const val KEY_SKIPPED_UPDATE_BUILD = "skipped_update_build"
 
         fun loadFirebaseConfig(context: Context): FirebaseConfig {
             return try {

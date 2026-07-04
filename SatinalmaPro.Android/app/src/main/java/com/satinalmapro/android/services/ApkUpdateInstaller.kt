@@ -30,6 +30,10 @@ class ApkUpdateInstaller(private val context: Context) {
             setDataAndType(uri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            intent.action = Intent.ACTION_INSTALL_PACKAGE
+            intent.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+        }
         context.startActivity(intent)
     }
 }

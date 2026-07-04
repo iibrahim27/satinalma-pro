@@ -19,7 +19,7 @@ public static class BildirimYoneticisi
     public static int OkunmamisSayisi =>
         OturumYoneticisi.AktifKullanici is { } k
             ? MasaustuBildirimFiltreleme.OkunmamisSayisi(
-                BildirimDeposu.Bildirimler, k, SatinalmaDepo.Talepler)
+                BildirimDeposu.AnlikListe(), k, SatinalmaDepo.Talepler)
             : 0;
 
     public static IEnumerable<BildirimKaydi> KullaniciBildirimleri()
@@ -28,7 +28,9 @@ public static class BildirimYoneticisi
         if (kullanici is null)
             return [];
 
-        return BildirimDeposu.Bildirimler.Where(b => KullaniciyaMi(b, kullanici));
+        return BildirimDeposu.AnlikListe()
+            .Where(b => KullaniciyaMi(b, kullanici))
+            .ToList();
     }
 
     public static void Baslat()
@@ -87,7 +89,7 @@ public static class BildirimYoneticisi
         await BildirimDeposu.YukleAsync(zorla: true, iptal: iptal);
 
         var degisti = false;
-        foreach (var b in BildirimDeposu.Bildirimler)
+        foreach (var b in BildirimDeposu.AnlikListe())
         {
             if (b.Okundu || MasaustuBildirimFiltreleme.GecerliMi(b, SatinalmaDepo.Talepler))
                 continue;
@@ -111,7 +113,7 @@ public static class BildirimYoneticisi
         if (kullanici is null)
             return;
 
-        BildirimDeposu.Bildirimler.RemoveAll(b => KullaniciyaMi(b, kullanici) && !Korunmali(b));
+        BildirimDeposu.Sil(b => KullaniciyaMi(b, kullanici) && !Korunmali(b));
         await BildirimDeposu.KaydetAsync(iptal);
         BildirimlerDegisti?.Invoke();
     }
@@ -199,7 +201,8 @@ public static class BildirimYoneticisi
             if (bildirimGoster)
             {
                 foreach (var bildirim in KullaniciBildirimleri()
-                             .Where(b => ToastGosterilmeli(b, kullanici)))
+                             .Where(b => ToastGosterilmeli(b, kullanici))
+                             .ToList())
                     ToastGoster(bildirim);
             }
 

@@ -125,7 +125,10 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             _isLoggedIn.value = restored
             if (restored) {
                 _currentRoute.value = RolNavigasyon.defaultRoute(container.user.value?.role)
-                if (_pendingUpdate.value != null) _showUpdateDialog.value = true
+                val pending = _pendingUpdate.value
+                if (pending != null && !container.isUpdateSkipped(pending)) {
+                    _showUpdateDialog.value = true
+                }
             }
             container.pendingRoute?.let { route ->
                 navigateFromNotification(route, container.pendingNotificationId)
@@ -147,7 +150,6 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 routeHistory.clear()
                 _currentRoute.value = RolNavigasyon.defaultRoute(container.user.value?.role)
                 consumePendingNotificationRoute()
-                checkForUpdates(userInitiated = false)
             }.onFailure {
                 _loginError.value = NetworkError.translate(it.message)
             }
@@ -248,16 +250,6 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     fun onAppResume() {
         viewModelScope.launch {
-            when (container.retryPendingInstall()) {
-                UpdateInstallResult.NEEDS_PERMISSION -> {
-                    _updateError.value = "Kurulum izni gerekli. Ayarlardan 'Bu kaynaktan yükle' iznini verin."
-                    _showUpdateDialog.value = true
-                }
-                UpdateInstallResult.SUCCESS -> {
-                    _updateMessage.value = "Kurulum ekranı açıldı."
-                }
-                else -> Unit
-            }
             if (_isLoggedIn.value) {
                 runCatching { container.refreshNotifications() }
                 runCatching { container.syncData() }
@@ -290,7 +282,9 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 }
                 result.available && result.manifest != null -> {
                     _pendingUpdate.value = result.manifest
-                    _showUpdateDialog.value = true
+                    if (userInitiated) {
+                        _showUpdateDialog.value = true
+                    }
                 }
                 userInitiated -> {
                     _updateMessage.value = "Uygulama güncel."
@@ -301,8 +295,10 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun dismissUpdateDialog() {
+        _pendingUpdate.value?.let { container.markUpdateSkipped(it) }
         _showUpdateDialog.value = false
         _updateError.value = null
+        _updateProgress.value = null
     }
 
     fun startUpdateDownload() {
@@ -325,12 +321,14 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             when (result) {
                 UpdateInstallResult.SUCCESS -> {
                     _updateMessage.value = "Kurulum ekranı açıldı. Yüklemeyi tamamlayın."
+                    _showUpdateDialog.value = false
                 }
                 UpdateInstallResult.NEEDS_PERMISSION -> {
-                    _updateError.value = "Kurulum izni gerekli. Ayarlardan izin verip tekrar 'Güncelle'ye basın."
+                    _updateError.value = "Kurulum izni gerekli. Ayarlardan 'Bu kaynaktan yükle' iznini verin, sonra tekrar Güncelle'ye basın."
                 }
                 UpdateInstallResult.FAILED -> {
-                    _updateError.value = "Güncelleme kurulamadı."
+                    container.clearPendingApk()
+                    _updateError.value = "Güncelleme kurulamadı. APK imzası uyuşmuyor olabilir; release dosyasını manuel yükleyin."
                 }
             }
         }

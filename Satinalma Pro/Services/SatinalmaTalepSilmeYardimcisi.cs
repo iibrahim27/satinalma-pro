@@ -10,7 +10,7 @@ public static class SatinalmaTalepSilmeYardimcisi
         var talepId = talep.Id;
         var belgeNolari = BelgeNumaralariniTopla(talep);
 
-        BildirimDeposu.Bildirimler.RemoveAll(b => b.TalepId == talepId);
+        BildirimDeposu.Sil(b => b.TalepId == talepId);
 
         var silinenMalzeme = 0;
         ModulVeriDeposu.BeginBatch();

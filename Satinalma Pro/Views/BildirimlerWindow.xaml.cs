@@ -23,16 +23,20 @@ public partial class BildirimlerWindow : Window
 
     private async void TumunuOkundu_Click(object sender, RoutedEventArgs e)
     {
+        BtnTumunuOkundu.IsEnabled = false;
         try
         {
             await BildirimYoneticisi.TumunuOkunduIsaretleAsync();
-            Yenile();
         }
         catch (Exception ex)
         {
             HataGunlugu.Kaydet(ex, "Bildirimler.TumunuOkundu");
             MessageBox.Show($"İşlem tamamlanamadı: {ex.Message}", "Bildirimler",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally
+        {
+            BtnTumunuOkundu.IsEnabled = true;
         }
     }
 
@@ -47,16 +51,20 @@ public partial class BildirimlerWindow : Window
         if (sonuc != MessageBoxResult.Yes)
             return;
 
+        BtnTemizle.IsEnabled = false;
         try
         {
             await BildirimYoneticisi.TemizleAsync();
-            Yenile();
         }
         catch (Exception ex)
         {
-            HataGunlugu.Kaydet(ex, "Bildirimler.TumunuOkundu");
+            HataGunlugu.Kaydet(ex, "Bildirimler.Temizle");
             MessageBox.Show($"Temizleme tamamlanamadı: {ex.Message}", "Bildirimler",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally
+        {
+            BtnTemizle.IsEnabled = true;
         }
     }
 
@@ -68,14 +76,13 @@ public partial class BildirimlerWindow : Window
         try
         {
             await BildirimYoneticisi.OkunduIsaretleAsync(bildirim);
-            Yenile();
             Liste.SelectedItem = null;
             MasaustuBildirimNavigasyon.BildirimdenGit(bildirim);
             Close();
         }
         catch (Exception ex)
         {
-            HataGunlugu.Kaydet(ex, "Bildirimler.TumunuOkundu");
+            HataGunlugu.Kaydet(ex, "Bildirimler.Ac");
             MessageBox.Show($"Bildirim açılamadı: {ex.Message}", "Bildirimler",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }

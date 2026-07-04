@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.14",
-    "build":  61,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.14/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.14/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.14/SatinalmaPro.apk",
-    "notes":  "Android bildirim yonlendirme duzeltmesi, Ayarlar (roller/terimler), bildirim senkron hizlandirildi.",
+    "version":  "2.1.15",
+    "build":  62,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.15/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.15/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.15/SatinalmaPro.apk",
+    "notes":  "Android OTA guncelleme dongusu duzeltildi. Masaustu bildirim listesi Collection was modified hatasi giderildi.",
     "zorunlu":  false
 }

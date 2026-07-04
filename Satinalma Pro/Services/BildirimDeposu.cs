@@ -26,6 +26,19 @@ public static class BildirimDeposu
 
     public static List<BildirimKaydi> Bildirimler { get; } = [];
 
+    /// <summary>Liste üzerinde güvenli okuma için anlık kopya.</summary>
+    public static List<BildirimKaydi> AnlikListe()
+    {
+        lock (Bildirimler)
+            return Bildirimler.ToList();
+    }
+
+    public static void Sil(Func<BildirimKaydi, bool> predicate)
+    {
+        lock (Bildirimler)
+            Bildirimler.RemoveAll(b => predicate(b));
+    }
+
     private static DateTime? _sonYukleme;
     private static readonly TimeSpan YuklemeBekleme = TimeSpan.FromSeconds(12);
 
@@ -45,12 +58,23 @@ public static class BildirimDeposu
         if (inbox.Count > 0)
             bulut = InboxIleBirlestir(bulut, inbox);
 
-        var yerel = Bildirimler.Select(ToShared).ToList();
+        var yerel = AnlikListe().Select(ToShared).ToList();
         var birlesik = BildirimBirlestirme.Birlestir(yerel, bulut);
 
-        Bildirimler.Clear();
-        Bildirimler.AddRange(birlesik.Select(FromShared));
-        _sonYukleme = DateTime.Now;
+        await BulutYazmaKilidi.WaitAsync(iptal);
+        try
+        {
+            lock (Bildirimler)
+            {
+                Bildirimler.Clear();
+                Bildirimler.AddRange(birlesik.Select(FromShared));
+            }
+            _sonYukleme = DateTime.Now;
+        }
+        finally
+        {
+            BulutYazmaKilidi.Release();
+        }
     }
 
     public static async Task KaydetAsync(CancellationToken iptal = default)
@@ -63,13 +87,16 @@ public static class BildirimDeposu
         {
             var bulutJson = await OturumYoneticisi.Firestore.BelgeJsonOkuAsync(FirestoreYol, iptal);
             var bulut = Deserialize(bulutJson);
-            var yerel = Bildirimler.Select(ToShared).ToList();
+            var yerel = AnlikListe().Select(ToShared).ToList();
             var birlesik = BildirimBirlestirme.Birlestir(yerel, bulut);
 
-            Bildirimler.Clear();
-            Bildirimler.AddRange(birlesik.Select(FromShared));
+            lock (Bildirimler)
+            {
+                Bildirimler.Clear();
+                Bildirimler.AddRange(birlesik.Select(FromShared));
+            }
 
-            var json = JsonSerializer.Serialize(Bildirimler, Json);
+            var json = JsonSerializer.Serialize(AnlikListe(), Json);
             await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
                 FirestoreYol, json, OturumYoneticisi.Auth?.Uid, iptal);
 
@@ -85,7 +112,8 @@ public static class BildirimDeposu
     {
         bildirim.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         await YukleAsync(zorla: true, iptal);
-        Bildirimler.Insert(0, bildirim);
+        lock (Bildirimler)
+            Bildirimler.Insert(0, bildirim);
         await KaydetAsync(iptal);
         await FcmPushGonderAsync(bildirim, iptal);
     }
@@ -99,8 +127,11 @@ public static class BildirimDeposu
             b.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         await YukleAsync(zorla: true, iptal);
-        foreach (var b in bildirimler)
-            Bildirimler.Insert(0, b);
+        lock (Bildirimler)
+        {
+            foreach (var b in bildirimler)
+                Bildirimler.Insert(0, b);
+        }
         await KaydetAsync(iptal);
 
         foreach (var b in bildirimler)
@@ -286,7 +317,7 @@ public static class BildirimDeposu
         if (string.IsNullOrWhiteSpace(uid) || OturumYoneticisi.Firestore is null)
             return;
 
-        foreach (var b in Bildirimler.Where(x => x.Okundu && !string.IsNullOrWhiteSpace(x.InboxDocId)))
+        foreach (var b in AnlikListe().Where(x => x.Okundu && !string.IsNullOrWhiteSpace(x.InboxDocId)))
         {
             try
             {
