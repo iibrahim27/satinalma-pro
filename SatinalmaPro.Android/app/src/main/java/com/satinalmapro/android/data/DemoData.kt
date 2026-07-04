@@ -61,7 +61,7 @@ object DemoData {
     const val COMPANY = "MV İnşaat A.Ş."
     const val PHONE = "+90 532 000 00 00"
     const val EMAIL = "ibrahim@mvinsaat.com.tr"
-    const val VERSION = "2.1.0"
+    const val VERSION = "2.1.1"
 
     val summaryStats = listOf(
         Triple("Bekleyen Talepler", "12", AppColors.IconBlue),

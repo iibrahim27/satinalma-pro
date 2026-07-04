@@ -9,11 +9,28 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.satinalmapro.android"
+        applicationId = "com.metrik.satinalmapro"
         minSdk = 31
         targetSdk = 35
-        versionCode = 46
-        versionName = "2.1.0"
+        versionCode = 47
+        versionName = "2.1.1"
+    }
+
+    signingConfigs {
+        create("release") {
+            val home = System.getProperty("user.home")
+            storeFile = file("$home/.android/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+        }
     }
 
     buildFeatures {

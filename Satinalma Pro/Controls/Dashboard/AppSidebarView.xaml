@@ -12,19 +12,7 @@
     </Grid.RowDefinitions>
 
     <Border Padding="24,28,24,20" BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="0,0,0,1">
-      <StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-          <Border Width="36" Height="36" CornerRadius="18" Background="{StaticResource DashNavActiveBrush}">
-            <TextBlock Text="MV" FontSize="13" FontWeight="Bold" Foreground="{StaticResource DashPrimaryBrush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
-            <TextBlock Text="MV İNŞAAT" FontSize="14" FontWeight="Bold" Foreground="{StaticResource DashPrimaryBrush}" />
-            <TextBlock Text="A.Ş." FontSize="12" Foreground="{StaticResource DashTextSecondaryBrush}" Margin="0,1,0,0" />
-          </StackPanel>
-        </StackPanel>
-        <Image x:Name="ImgLogo" MaxHeight="48" Stretch="Uniform" HorizontalAlignment="Left" Visibility="Collapsed" />
-      </StackPanel>
+      <Image x:Name="ImgLogo" MaxHeight="56" Stretch="Uniform" HorizontalAlignment="Left" />
     </Border>
 
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="12,16,12,12">

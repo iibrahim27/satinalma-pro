@@ -116,12 +116,8 @@ public partial class AppSidebarView : UserControl
     private void LogoGuncelle()
     {
         var yol = UygulamaAyarDeposu.Ayarlar.AnasayfaLogoDosyaYolu;
-        var bitmap = LogoGorselYardimcisi.Yukle(yol);
-        if (bitmap is null)
-            return;
-
+        var bitmap = LogoGorselYardimcisi.Yukle(yol) ?? LogoGorselYardimcisi.VarsayilanLogo();
         ImgLogo.Source = bitmap;
-        ImgLogo.Visibility = Visibility.Visible;
     }
 
     private void BtnProfil_Click(object sender, RoutedEventArgs e)

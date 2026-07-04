@@ -11,10 +11,10 @@
     <AssemblyTitle>Satınalma Pro</AssemblyTitle>
     <Company>Satınalma Pro</Company>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>2.1.0</Version>
-    <AssemblyVersion>2.1.0.0</AssemblyVersion>
-    <FileVersion>2.1.0.0</FileVersion>
-    <InformationalVersion>2.1.0</InformationalVersion>
+    <Version>2.1.1</Version>
+    <AssemblyVersion>2.1.1.0</AssemblyVersion>
+    <FileVersion>2.1.1.0</FileVersion>
+    <InformationalVersion>2.1.1</InformationalVersion>
     <RootNamespace>SatinalmaPro</RootNamespace>
   </PropertyGroup>
 
@@ -28,6 +28,7 @@
   <ItemGroup>
     <Resource Include="Assets\app.ico" />
     <Resource Include="Assets\acilisgif.gif" />
+    <Resource Include="Assets\mv-insaat-logo.png" />
   </ItemGroup>
 
   <ItemGroup>

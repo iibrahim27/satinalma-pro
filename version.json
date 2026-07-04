@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.0",
-    "build":  46,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.0/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.0/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.0/SatinalmaPro.apk",
-    "notes":  "Jetpack Compose Android uygulamasi, modern ana sayfa dashboard, Satinalma shell, Firebase deploy.",
+    "version":  "2.1.1",
+    "build":  47,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.1/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.1/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.1/SatinalmaPro.apk",
+    "notes":  "MV logo, imzali Android APK, sidebar sadece logo.",
     "zorunlu":  false
 }
