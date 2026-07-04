@@ -133,7 +133,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 routeHistory.clear()
                 _currentRoute.value = RolNavigasyon.defaultRoute(container.user.value?.role)
                 consumePendingNotificationRoute()
-                checkForUpdates(showDialog = true)
+                checkForUpdates(userInitiated = false)
             }.onFailure {
                 _loginError.value = NetworkError.translate(it.message)
             }
@@ -221,7 +221,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             while (true) {
                 kotlinx.coroutines.delay(6 * 60 * 60 * 1000L)
-                if (_isLoggedIn.value) checkForUpdates(showDialog = true)
+                if (_isLoggedIn.value) checkForUpdates(userInitiated = false)
             }
         }
     }
@@ -231,6 +231,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             when (container.retryPendingInstall()) {
                 UpdateInstallResult.NEEDS_PERMISSION -> {
                     _updateError.value = "Kurulum izni gerekli. Ayarlardan 'Bu kaynaktan yükle' iznini verin."
+                    _showUpdateDialog.value = true
                 }
                 UpdateInstallResult.SUCCESS -> {
                     _updateMessage.value = "Kurulum ekranı açıldı."
@@ -239,34 +240,40 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             }
             if (_isLoggedIn.value) {
                 runCatching { container.syncData() }
-                checkForUpdates(showDialog = true)
             }
         }
     }
 
-    fun checkForUpdates(showDialog: Boolean = false) {
+    /** userInitiated=true yalnizca Profil ekranindaki manuel kontrol icin; diger durumlarda sessiz calisir. */
+    fun checkForUpdates(userInitiated: Boolean = false) {
         viewModelScope.launch {
-            _updateError.value = null
-            _updateMessage.value = "Güncelleme kontrol ediliyor..."
+            if (userInitiated) {
+                _updateError.value = null
+                _updateMessage.value = "Güncelleme kontrol ediliyor..."
+            }
             val result = runCatching { container.checkForUpdate() }.getOrElse {
                 _updateMessage.value = null
-                _updateError.value = NetworkError.translate(it)
-                if (showDialog) _showUpdateDialog.value = true
+                if (userInitiated) {
+                    _updateError.value = NetworkError.translate(it)
+                    _showUpdateDialog.value = true
+                }
                 return@launch
             }
             _updateMessage.value = null
             when {
                 result.error != null -> {
-                    _updateError.value = result.error
-                    if (showDialog) _showUpdateDialog.value = true
+                    if (userInitiated) {
+                        _updateError.value = result.error
+                        _showUpdateDialog.value = true
+                    }
                 }
                 result.available && result.manifest != null -> {
                     _pendingUpdate.value = result.manifest
                     _showUpdateDialog.value = true
                 }
-                else -> {
+                userInitiated -> {
                     _updateMessage.value = "Uygulama güncel."
-                    if (showDialog) _showUpdateDialog.value = true
+                    _showUpdateDialog.value = true
                 }
             }
         }

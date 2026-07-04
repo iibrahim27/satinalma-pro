@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -23,33 +24,116 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppCard
-import com.satinalmapro.android.ui.components.DetailRow
-import com.satinalmapro.android.ui.components.StatusBadge
 import com.satinalmapro.android.ui.theme.AppColors
 import com.satinalmapro.android.ui.theme.AppShapes
 
 @Composable
 fun StokDurumScreen(viewModel: AppViewModel) {
     val stok by viewModel.stokList.collectAsState()
-    LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (stok.isEmpty()) item { Text("Stok kaydı yok.", color = AppColors.TextSecondary) }
-        itemsIndexed(stok, key = { index, kayit ->
-            "${kayit.malzemeAdi}-${kayit.depoSaha}-$index"
-        }) { _, kayit ->
-            AppCard {
-                Column(Modifier.padding(16.dp)) {
-                    DetailRow("Malzeme", kayit.malzemeAdi)
-                    DetailRow("Depo", kayit.depoSaha)
-                    DetailRow("Miktar", "${kayit.mevcutMiktar} ${kayit.birim}")
-                    StatusBadge(kayit.durumMetin, AppColors.PrimaryContainer, AppColors.Primary)
+    Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
+        if (stok.isEmpty()) {
+            Text("Stok kaydı yok.", color = AppColors.TextSecondary, modifier = Modifier.padding(8.dp))
+        } else {
+            StokTableHeader()
+            LazyColumn {
+                itemsIndexed(stok, key = { index, kayit ->
+                    "${kayit.malzemeAdi}-${kayit.depoSaha}-$index"
+                }) { index, kayit ->
+                    StokTableRow(
+                        malzeme = kayit.malzemeAdi,
+                        depo = kayit.depoSaha,
+                        miktar = formatStokMiktar(kayit.mevcutMiktar, kayit.birim)
+                    )
+                    if (index < stok.lastIndex) {
+                        HorizontalDivider(color = AppColors.Border)
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun StokTableHeader() {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            "Malzeme",
+            Modifier.weight(1.3f),
+            style = MaterialTheme.typography.labelMedium,
+            color = AppColors.TextSecondary
+        )
+        Text(
+            "Depo",
+            Modifier.weight(0.9f),
+            style = MaterialTheme.typography.labelMedium,
+            color = AppColors.TextSecondary
+        )
+        Text(
+            "Miktar",
+            Modifier.weight(0.6f),
+            style = MaterialTheme.typography.labelMedium,
+            color = AppColors.TextSecondary,
+            textAlign = TextAlign.End
+        )
+    }
+    HorizontalDivider(color = AppColors.Border)
+}
+
+@Composable
+private fun StokTableRow(malzeme: String, depo: String, miktar: String) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            malzeme,
+            Modifier.weight(1.3f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppColors.TextPrimary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            depo,
+            Modifier.weight(0.9f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppColors.TextPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            miktar,
+            Modifier.weight(0.6f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppColors.TextPrimary,
+            textAlign = TextAlign.End,
+            maxLines = 1
+        )
+    }
+}
+
+private fun formatStokMiktar(miktar: Double, birim: String): String {
+    val miktarMetin = if (miktar == miktar.toLong().toDouble()) {
+        miktar.toLong().toString()
+    } else {
+        miktar.toString()
+    }
+    return if (birim.isBlank()) miktarMetin else "$miktarMetin $birim"
 }
 
 @Composable

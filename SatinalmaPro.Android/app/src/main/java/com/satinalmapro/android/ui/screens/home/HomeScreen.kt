@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Description
@@ -92,15 +89,23 @@ fun HomeScreen(
         item {
             SectionTitle("Bugünkü Özet")
             Spacer(Modifier.height(12.dp))
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.height(((cards.size.coerceAtMost(4) + 1) / 2 * 110).dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                userScrollEnabled = false
-            ) {
-                items(cards.take(4)) { card ->
-                    SummaryCard(card) { viewModel.navigate(card.route) }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                cards.take(4).chunked(2).forEach { rowCards ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        rowCards.forEach { card ->
+                            SummaryCard(
+                                card = card,
+                                modifier = Modifier.weight(1f),
+                                onClick = { viewModel.navigate(card.route) }
+                            )
+                        }
+                        if (rowCards.size == 1) {
+                            Spacer(Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
@@ -160,8 +165,12 @@ fun HomeScreen(
 }
 
 @Composable
-private fun SummaryCard(card: DashboardCard, onClick: () -> Unit) {
-    AppCard(onClick = onClick) {
+private fun SummaryCard(
+    card: DashboardCard,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    AppCard(modifier = modifier, onClick = onClick) {
         Column(Modifier.padding(16.dp)) {
             IconBadge(AppColors.Primary) {
                 Icon(Icons.Rounded.Description, null, tint = AppColors.Primary, modifier = Modifier.size(22.dp))

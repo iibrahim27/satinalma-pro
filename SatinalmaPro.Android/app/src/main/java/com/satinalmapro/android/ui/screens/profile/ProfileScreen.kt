@@ -83,7 +83,7 @@ fun ProfileScreen(viewModel: AppViewModel, onLogout: () -> Unit) {
         }
 
         Spacer(Modifier.height(16.dp))
-        AppCard(onClick = { viewModel.checkForUpdates(showDialog = true) }) {
+        AppCard(onClick = { viewModel.checkForUpdates(userInitiated = true) }) {
             RowMenuItem(Icons.Rounded.SystemUpdate, "Güncelleme Kontrol Et", AppColors.Primary)
         }
         Spacer(Modifier.height(8.dp))

@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.12",
-    "build":  58,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.12/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.12/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.12/SatinalmaPro.apk",
-    "notes":  "OTA guncelleme duzeltmesi. Masaustu ve Android surum senkronu.",
+    "version":  "2.1.13",
+    "build":  60,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.13/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.13/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.13/SatinalmaPro.apk",
+    "notes":  "Android stok tablosu, dashboard duzeltmesi ve gereksiz guncelleme diyalogu kaldirildi.",
     "zorunlu":  false
 }
