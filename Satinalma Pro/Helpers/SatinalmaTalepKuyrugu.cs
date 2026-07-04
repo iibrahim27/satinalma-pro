@@ -141,8 +141,14 @@ public static class SatinalmaTalepKuyrugu
         t.HerhangiKalemOnayli;
 
     /// <summary>Taleplerim — tüm roller tüm kayıtlı talepleri görür (düzenleme ayrı yetki).</summary>
-    public static bool TaleplerimListesindeGoster(SatinalmaTalep t, string? uid, string? adSoyad, string? rol = null) =>
-        KayitliTalep(t) || KullanicininTalebi(t, uid, adSoyad);
+    public static bool TaleplerimListesindeGoster(
+        SatinalmaTalep t,
+        string? uid,
+        string? adSoyad,
+        string? rol = null,
+        Guid? korunanTaslakId = null) =>
+        KayitliTalep(t) || KullanicininTalebi(t, uid, adSoyad)
+        || (korunanTaslakId.HasValue && t.Id == korunanTaslakId.Value);
 
     public static bool KullanicininTalebi(SatinalmaTalep t, string? uid, string? adSoyad) =>
         SatinalmaTalepSahiplikYardimcisi.KullanicininTalebi(t, uid, adSoyad);

@@ -249,7 +249,8 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
     private void BtnYeniTalep_Click(object sender, RoutedEventArgs e)
     {
         NavigasyonSec("Taleplerim", null, 0);
-        _operasyon.YeniTalepBaslat();
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
+            _operasyon.YeniTalepBaslat());
     }
 
     private void Yenile_Click(object sender, RoutedEventArgs e) => KisayolYenile();

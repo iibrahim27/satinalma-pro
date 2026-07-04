@@ -86,6 +86,13 @@ public static class FirebaseAyarDeposu
 
         if (Directory.Exists(Path.GetDirectoryName(mobilHedef)))
             File.Copy(kaynakDosya, mobilHedef, overwrite: true);
+
+        var androidAssets = Path.GetFullPath(Path.Combine(
+            ProjeKlasoru() ?? AppContext.BaseDirectory,
+            "..", "SatinalmaPro.Android", "app", "src", "main", "assets", "google-services.json"));
+
+        if (Directory.Exists(Path.GetDirectoryName(androidAssets)))
+            File.Copy(kaynakDosya, androidAssets, overwrite: true);
     }
 
     public static void FcmServiceAccountKaydet(string kaynakDosya)
@@ -101,6 +108,13 @@ public static class FirebaseAyarDeposu
 
         if (Directory.Exists(Path.GetDirectoryName(mobilRaw)))
             File.Copy(kaynakDosya, mobilRaw, overwrite: true);
+
+        var androidAssets = Path.GetFullPath(Path.Combine(
+            ProjeKlasoru() ?? AppContext.BaseDirectory,
+            "..", "SatinalmaPro.Android", "app", "src", "main", "assets", FcmServiceAccountDosyaAdi));
+
+        if (Directory.Exists(Path.GetDirectoryName(androidAssets)))
+            File.Copy(kaynakDosya, androidAssets, overwrite: true);
 
         Ayarlar.FcmServiceAccountYolu = FcmServiceAccountCalismaYolu;
     }

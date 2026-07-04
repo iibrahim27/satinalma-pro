@@ -24,6 +24,7 @@ import com.satinalmapro.android.data.local.OfflineCache
 import com.satinalmapro.android.data.local.RequestDraft
 import com.satinalmapro.android.data.local.RequestDraftStore
 import com.satinalmapro.android.services.ApkUpdateInstaller
+import com.satinalmapro.android.services.LocalNotificationHelper
 import com.satinalmapro.android.services.FcmPushService
 import kotlin.coroutines.resume
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,6 +75,9 @@ class AppContainer(private val context: Context) {
     val notifications: StateFlow<List<AppNotification>> = _notifications.asStateFlow()
 
     var pendingRoute: String? = null
+
+    private var knownNotificationIds = emptySet<String>()
+    private var notificationsInitialized = false
 
     suspend fun restoreSession(): Boolean {
         val json = prefs.getString(KEY_SESSION, null) ?: return false
@@ -127,6 +131,8 @@ class AppContainer(private val context: Context) {
         _talepler.value = emptyList()
         _stok.value = emptyList()
         _stokHareketleri.value = emptyList()
+        knownNotificationIds = emptySet()
+        notificationsInitialized = false
         prefs.edit().remove(KEY_SESSION).apply()
     }
 
@@ -440,7 +446,17 @@ class AppContainer(private val context: Context) {
             val existing = merged[item.id]
             merged[item.id] = if (existing == null) item else item.copy(read = item.read || existing.read)
         }
-        _notifications.value = merged.values.sortedByDescending { it.time }
+        val sorted = merged.values.sortedByDescending { it.time }
+        if (notificationsInitialized) {
+            sorted.filter { !it.read && it.id !in knownNotificationIds }.forEach { item ->
+                val route = item.route ?: "bildirimler"
+                LocalNotificationHelper.show(context, item.title, item.message, route, item.id)
+            }
+        } else {
+            notificationsInitialized = true
+        }
+        knownNotificationIds = sorted.map { it.id }.toSet()
+        _notifications.value = sorted
     }
 
     private suspend fun registerFcmIfNeeded() {

@@ -21,8 +21,8 @@ android {
         applicationId = "com.metrik.satinalmapro"
         minSdk = 31
         targetSdk = 35
-        versionCode = 54
-        versionName = "2.1.8"
+        versionCode = 55
+        versionName = "2.1.9"
     }
 
     signingConfigs {
@@ -70,6 +70,27 @@ android {
             excludes += "META-INF/DEPENDENCIES"
         }
     }
+}
+
+val firebaseAssetsDir = file("src/main/assets")
+val satinalmaProDir = file("../../Satinalma Pro")
+
+tasks.register("copyFirebaseAssets") {
+    doLast {
+        firebaseAssetsDir.mkdirs()
+        val googleServices = file("${satinalmaProDir}/google-services.json")
+        if (googleServices.exists()) {
+            googleServices.copyTo(file("${firebaseAssetsDir}/google-services.json"), overwrite = true)
+        }
+        val fcm = file("${satinalmaProDir}/fcm-service-account.json")
+        if (fcm.exists()) {
+            fcm.copyTo(file("${firebaseAssetsDir}/fcm-service-account.json"), overwrite = true)
+        }
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn("copyFirebaseAssets")
 }
 
 dependencies {

@@ -5,7 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import com.google.firebase.FirebaseApp
-import com.google.firebase.FirebaseOptions
+import com.satinalmapro.android.core.GoogleServicesLoader
 import com.satinalmapro.android.core.AppContainer
 
 class SatinalmaProApp : Application() {
@@ -23,14 +23,8 @@ class SatinalmaProApp : Application() {
         if (FirebaseApp.getApps(this).isNotEmpty()) return
         val config = AppContainer.loadFirebaseConfig(this)
         if (!config.isConfigured) return
-        FirebaseApp.initializeApp(
-            this,
-            FirebaseOptions.Builder()
-                .setProjectId(config.projectId)
-                .setApplicationId("1:524965229207:android:metrik_satinalmapro")
-                .setApiKey(config.apiKey)
-                .build()
-        )
+        val options = GoogleServicesLoader.loadOptions(this, config.apiKey, config.projectId) ?: return
+        FirebaseApp.initializeApp(this, options)
     }
 
     private fun createNotificationChannel() {

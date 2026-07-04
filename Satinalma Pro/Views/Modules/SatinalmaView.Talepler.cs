@@ -16,6 +16,7 @@ public partial class SatinalmaView
     private SatinalmaTalepKalemi? _seciliKalem;
     private bool _talepFormModu;
     private bool _talepSerbestDuzenleme;
+    private bool _talepListesiSecimBastiriliyor;
     private SatinalmaTalepOnizlemeWindow? _acikOnizleme;
 
     private static readonly string[] TalepGirisDurumlari =
@@ -51,7 +52,8 @@ public partial class SatinalmaView
         var rol = OturumYoneticisi.AktifKullanici?.Rol;
 
         var liste = SatinalmaDepo.Talepler
-            .Where(t => SatinalmaTalepKuyrugu.TaleplerimListesindeGoster(t, uid, ad, rol))
+            .Where(t => SatinalmaTalepKuyrugu.TaleplerimListesindeGoster(
+                t, uid, ad, rol, SatinalmaDepo.KorunanBosTaslakId))
             .OrderByDescending(t => t.Tarih)
             .ThenByDescending(t => t.TalepNo)
             .Select(t => new TalepListeSatiri(t, uid, ad))
@@ -138,10 +140,19 @@ public partial class SatinalmaView
         _seciliTalep = talep;
         _talepFormModu = true;
         _talepSerbestDuzenleme = false;
-        TalepListesiniYenile();
+        _talepListesiSecimBastiriliyor = true;
+        try
+        {
+            TalepListesiniYenile();
+            var satir = TalepListesi.Items.Cast<TalepListeSatiri>().FirstOrDefault(s => s.Talep.Id == talep.Id);
+            if (satir is not null)
+                TalepListesi.SelectedItem = satir;
+        }
+        finally
+        {
+            _talepListesiSecimBastiriliyor = false;
+        }
 
-        var satir = TalepListesi.Items.Cast<TalepListeSatiri>().FirstOrDefault(s => s.Talep.Id == talep.Id);
-        TalepListesi.SelectedItem = satir;
         TalepOnizlemePenceresiniKapat();
         TalepFormuGoster(talep);
     }
@@ -161,10 +172,23 @@ public partial class SatinalmaView
 
     private void TalepListesi_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (_talepListesiSecimBastiriliyor)
+            return;
+
         if (TalepListesi.SelectedItem is not TalepListeSatiri satir)
         {
             if (e.RemovedItems.Count > 0 && _talepFormModu)
+            {
+                if (_seciliTalep is not null
+                    && SatinalmaDepo.Talepler.Any(t => t.Id == _seciliTalep.Id)
+                    && (SatinalmaDepo.KorunanBosTaslakId == _seciliTalep.Id
+                        || SatinalmaTalepYardimcisi.FormDuzenlenebilir(_seciliTalep)))
+                {
+                    return;
+                }
+
                 BosTaslakTaslagiBirak();
+            }
             return;
         }
 
