@@ -107,7 +107,31 @@ public partial class SatinalmaView
         if (_gelenTalepSecili is null)
             return;
 
-        var talep = _gelenTalepSecili;
+        await GelenTalepOnaylaIsleAsync(_gelenTalepSecili);
+    }
+
+    private async void GelenTalepTeklifIste_Click(object sender, RoutedEventArgs e)
+    {
+        if (_gelenTalepSecili is null)
+            return;
+
+        await GelenTalepTeklifIsteIsleAsync(_gelenTalepSecili);
+    }
+
+    private async void OnizlemedenOnaylaIstendi(SatinalmaTalep talep)
+    {
+        _gelenTalepSecili = talep;
+        await GelenTalepOnaylaIsleAsync(talep);
+    }
+
+    private async void OnizlemedenTeklifIsteIstendi(SatinalmaTalep talep)
+    {
+        _gelenTalepSecili = talep;
+        await GelenTalepTeklifIsteIsleAsync(talep);
+    }
+
+    private async Task GelenTalepOnaylaIsleAsync(SatinalmaTalep talep)
+    {
         var talepNo = talep.TalepNo;
 
         if (!KullaniciYetkileri.YonetimKararVerebilir())
@@ -146,15 +170,12 @@ public partial class SatinalmaView
         MessageBox.Show($"{talepNo} onaylandı.", UygulamaBilgisi.Ad,
             MessageBoxButton.OK, MessageBoxImage.Information);
         _gelenTalepSecili = null;
+        TalepOnizlemePenceresiniKapat();
         AkisSekmeleriniYenile();
     }
 
-    private async void GelenTalepTeklifIste_Click(object sender, RoutedEventArgs e)
+    private async Task GelenTalepTeklifIsteIsleAsync(SatinalmaTalep talep)
     {
-        if (_gelenTalepSecili is null)
-            return;
-
-        var talep = _gelenTalepSecili;
         var talepNo = talep.TalepNo;
 
         if (!KullaniciYetkileri.YonetimKararVerebilir())
@@ -192,6 +213,7 @@ public partial class SatinalmaView
         MessageBox.Show($"{talepNo} teklif girişine yönlendirildi.",
             UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
         _gelenTalepSecili = null;
+        TalepOnizlemePenceresiniKapat();
         AkisSekmeleriniYenile();
     }
 

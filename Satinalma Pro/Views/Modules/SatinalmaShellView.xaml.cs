@@ -47,6 +47,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
 
     public void BildirimdenAc(Guid? talepId, int adim = 0, string sekme = "talepler")
     {
+        sekme = MasaustuRolHaritasi.SatinalmaRouteSlug(sekme) ?? sekme;
         var hedef = sekme switch
         {
             "teklifler" or "teklif-bekleyen" => "Teklif Bekleyen",
@@ -204,7 +205,10 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
         {
             _operasyon.SekmeAc(id);
             if (talepId.HasValue)
-                _operasyon.BildirimdenAc(talepId, adim, id);
+            {
+                var slug = MasaustuRolHaritasi.SatinalmaRouteSlug(id) ?? "talepler";
+                _operasyon.BildirimdenAc(talepId, adim, slug);
+            }
         });
     }
 

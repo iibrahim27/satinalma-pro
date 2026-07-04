@@ -377,6 +377,8 @@ public partial class SatinalmaView
             Owner = Window.GetWindow(this)
         };
         _acikOnizleme.DuzenleIstendi += OnizlemedenDuzenleIstendi;
+        _acikOnizleme.OnaylaIstendi += OnizlemedenOnaylaIstendi;
+        _acikOnizleme.TeklifIsteIstendi += OnizlemedenTeklifIsteIstendi;
         _acikOnizleme.Closed += (_, _) => _acikOnizleme = null;
         _acikOnizleme.Show();
     }
@@ -395,6 +397,8 @@ public partial class SatinalmaView
             return;
 
         _acikOnizleme.DuzenleIstendi -= OnizlemedenDuzenleIstendi;
+        _acikOnizleme.OnaylaIstendi -= OnizlemedenOnaylaIstendi;
+        _acikOnizleme.TeklifIsteIstendi -= OnizlemedenTeklifIsteIstendi;
         _acikOnizleme.Close();
         _acikOnizleme = null;
     }

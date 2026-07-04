@@ -67,6 +67,7 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
 
     public void BildirimdenAc(Guid? talepId, int adim = 0, string sekme = "talepler")
     {
+        sekme = MasaustuRolHaritasi.SatinalmaRouteSlug(sekme) ?? sekme;
         var hedef = sekme switch
         {
             "teklifler" or "teklif-bekleyen" => "Teklif Bekleyen",
@@ -121,6 +122,12 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
                 _gelenTalepSecili = talep;
                 GelenTalepTablosu.SelectedItem = talep;
                 GelenTalepButonlariniGuncelle();
+                TalepOnizlemePenceresiniAc(talep);
+                break;
+            case "Geçmiş Talepler":
+            case "Onay Geçmişi":
+                OnayGecmisiTablosu.SelectedItem = talep;
+                TalepOnizlemePenceresiniAc(talep);
                 break;
             case "Onaylanan Talepler":
                 var onaySatir = OnaylananTalepListesi.Items.Cast<OnaylananTalepListeSatiri>()

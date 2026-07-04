@@ -12,6 +12,8 @@ public partial class SatinalmaTalepOnizlemeWindow : Window
     private SatinalmaTalep _talep;
 
     public event Action<SatinalmaTalep>? DuzenleIstendi;
+    public event Action<SatinalmaTalep>? OnaylaIstendi;
+    public event Action<SatinalmaTalep>? TeklifIsteIstendi;
 
     public SatinalmaTalepOnizlemeWindow(SatinalmaTalep talep)
     {
@@ -53,6 +55,24 @@ public partial class SatinalmaTalepOnizlemeWindow : Window
 
         var duzenlenebilir = KullaniciYetkileri.SatinalmaTalepDuzenleyebilir(talep);
         BtnDuzenle.Visibility = duzenlenebilir ? Visibility.Visible : Visibility.Collapsed;
+
+        YonetimButonlariniGuncelle(talep);
+    }
+
+    private void YonetimButonlariniGuncelle(SatinalmaTalep talep)
+    {
+        var yetki = KullaniciYetkileri.YonetimKararVerebilir();
+        var gelenTalep = SatinalmaTabFiltreleri.GelenTalepler(talep);
+        var teklifIstenebilir = SatinalmaPro.Shared.Helpers.SatinalmaIsAkisi.TeklifIstenebilir(
+            talep.TalepTuru,
+            talep.Durum,
+            SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep));
+
+        var goster = yetki && gelenTalep;
+        BtnOnayla.Visibility = goster ? Visibility.Visible : Visibility.Collapsed;
+        BtnOnayla.IsEnabled = goster;
+        BtnTeklifIste.Visibility = goster && teklifIstenebilir ? Visibility.Visible : Visibility.Collapsed;
+        BtnTeklifIste.IsEnabled = goster && teklifIstenebilir;
     }
 
     private static IEnumerable<TextBlock> EkSatirlariOlustur(SatinalmaTalep talep)
@@ -93,6 +113,18 @@ public partial class SatinalmaTalepOnizlemeWindow : Window
     private void Duzenle_Click(object sender, RoutedEventArgs e)
     {
         DuzenleIstendi?.Invoke(_talep);
+        Close();
+    }
+
+    private void Onayla_Click(object sender, RoutedEventArgs e)
+    {
+        OnaylaIstendi?.Invoke(_talep);
+        Close();
+    }
+
+    private void TeklifIste_Click(object sender, RoutedEventArgs e)
+    {
+        TeklifIsteIstendi?.Invoke(_talep);
         Close();
     }
 

@@ -58,6 +58,40 @@ class BildirimRepository(
         firestore.writeDocumentJson("veri/bildirimler", gson.toJson(list), uid)
     }
 
+    suspend fun tumunuOkunduIsaretle(user: UserProfile) {
+        val uid = auth.uid ?: return
+        val list = loadAll().toMutableList()
+        var changed = false
+        for (i in list.indices) {
+            val record = list[i]
+            if (kullaniciyaMi(record, user) && !record.okundu) {
+                list[i] = record.copy(okundu = true, guncellemeUtc = System.currentTimeMillis())
+                changed = true
+            }
+        }
+        if (changed) {
+            firestore.writeDocumentJson("veri/bildirimler", gson.toJson(list), uid)
+        }
+    }
+
+    suspend fun temizle(user: UserProfile, talepler: List<TalepItem>) {
+        val uid = auth.uid ?: return
+        val list = loadAll()
+        val filtered = list.filterNot { record ->
+            kullaniciyaMi(record, user) && !korunmali(record, talepler)
+        }
+        if (filtered.size != list.size) {
+            firestore.writeDocumentJson("veri/bildirimler", gson.toJson(filtered), uid)
+        }
+    }
+
+    private fun korunmali(record: BildirimRecord, talepler: List<TalepItem>): Boolean {
+        if (record.tip != BildirimTipleri.TEKLIF_ONAYDA) return false
+        val talepId = record.talepId ?: return false
+        val talep = talepler.firstOrNull { it.id.equals(talepId, true) } ?: return false
+        return talep.durum == com.satinalmapro.android.core.roles.TalepDurumlari.YONETIM_ONAY
+    }
+
     suspend fun talepBildirimleri(
         tip: String,
         talep: TalepItem,

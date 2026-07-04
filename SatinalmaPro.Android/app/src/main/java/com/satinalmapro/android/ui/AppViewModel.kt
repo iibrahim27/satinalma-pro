@@ -13,6 +13,7 @@ import com.satinalmapro.android.core.NetworkError
 import com.satinalmapro.android.core.model.ManagedUser
 import com.satinalmapro.android.core.model.UygulamaAyarlar
 import com.satinalmapro.android.core.roles.KullaniciRolleri
+import com.satinalmapro.android.data.repository.StokRepository
 import com.satinalmapro.android.core.roles.BildirimRota
 import com.satinalmapro.android.core.roles.RolNavigasyon
 import java.util.concurrent.ConcurrentHashMap
@@ -421,6 +422,59 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun stokSayim(malzeme: String, depo: String, sayimMiktari: String, onSuccess: () -> Unit) {
         val m = sayimMiktari.replace(',', '.').toDoubleOrNull() ?: run { _submitError.value = "Geçerli miktar girin"; return }
         runWorkflow(onSuccess) { container.stokSayim(malzeme, depo, m) }
+    }
+
+    fun stokMalzemeOnerileri(query: String, sadeceMevcut: Boolean = false): List<String> =
+        container.stokMalzemeOnerileri(query, sadeceMevcut)
+
+    fun sonrakiGirisBelgeNo(): String = container.sonrakiGirisBelgeNo()
+
+    fun sonrakiCikisBelgeNo(): String = container.sonrakiCikisBelgeNo()
+
+    fun stokGirisCoklu(
+        belgeNo: String,
+        teslimAlan: String,
+        satirlar: List<StokRepository.GirisSatir>,
+        onSuccess: () -> Unit
+    ) {
+        if (satirlar.isEmpty()) {
+            _submitError.value = "En az bir satır girin"
+            return
+        }
+        runWorkflow(onSuccess) { container.stokGirisCoklu(belgeNo, teslimAlan, satirlar) }
+    }
+
+    fun stokCikisCoklu(
+        belgeNo: String,
+        teslimAlan: String,
+        satirlar: List<StokRepository.CikisSatir>,
+        onSuccess: () -> Unit
+    ) {
+        if (satirlar.isEmpty()) {
+            _submitError.value = "En az bir satır girin"
+            return
+        }
+        if (teslimAlan.isBlank()) {
+            _submitError.value = "Teslim alan girin"
+            return
+        }
+        runWorkflow(onSuccess) { container.stokCikisCoklu(belgeNo, teslimAlan, satirlar) }
+    }
+
+    fun markAllNotificationsRead() {
+        viewModelScope.launch {
+            _loading.value = true
+            runCatching { container.markAllNotificationsRead() }
+            _loading.value = false
+        }
+    }
+
+    fun clearNotifications() {
+        viewModelScope.launch {
+            _loading.value = true
+            runCatching { container.clearNotifications() }
+            _loading.value = false
+        }
     }
 
     fun loadSettings() {

@@ -286,6 +286,51 @@ class AppContainer(private val context: Context) {
         loadStok()
     }
 
+    fun sonrakiGirisBelgeNo(): String =
+        StokBelgeNoUretici.sonrakiGirisBelgeNo(_stokHareketleri.value)
+
+    fun sonrakiCikisBelgeNo(): String =
+        StokBelgeNoUretici.sonrakiCikisBelgeNo(_stokHareketleri.value)
+
+    fun stokMalzemeOnerileri(query: String?, sadeceMevcut: Boolean = false): List<String> {
+        val source = if (sadeceMevcut) {
+            _stok.value.filter { it.mevcutMiktar > 0 }.map { it.malzemeAdi }
+        } else {
+            (_stok.value.map { it.malzemeAdi } + _materialNames.value).distinct()
+        }
+        return MalzemeOneri.filtrele(source, query, bosSorgudaGoster = sadeceMevcut)
+    }
+
+    suspend fun stokGirisCoklu(
+        belgeNo: String,
+        teslimAlan: String,
+        satirlar: List<StokRepository.GirisSatir>
+    ) {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        stokRepo.girisYapCoklu(user, belgeNo, user.site.orEmpty(), teslimAlan, satirlar)
+        loadStok()
+    }
+
+    suspend fun stokCikisCoklu(belgeNo: String, teslimAlan: String, satirlar: List<StokRepository.CikisSatir>) {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        stokRepo.cikisYapCoklu(user, belgeNo, teslimAlan, satirlar)
+        loadStok()
+    }
+
+    suspend fun markAllNotificationsRead() {
+        val user = _user.value ?: return
+        val uid = auth.uid ?: return
+        runCatching { bildirimler.tumunuOkunduIsaretle(user) }
+        loadNotifications(uid)
+    }
+
+    suspend fun clearNotifications() {
+        val user = _user.value ?: return
+        val uid = auth.uid ?: return
+        runCatching { bildirimler.temizle(user, _talepler.value) }
+        loadNotifications(uid)
+    }
+
     fun filteredTalepler(queue: TalepQueue): List<TalepItem> =
         talepler.filter(queue, _talepler.value, _user.value)
 

@@ -180,8 +180,17 @@ object BildirimRota {
 object MalzemeOneri {
     const val MAX = 12
 
-    fun filtrele(source: Collection<String>, query: String?): List<String> {
-        if (query.isNullOrBlank()) return emptyList()
+    fun filtrele(source: Collection<String>, query: String?, bosSorgudaGoster: Boolean = false): List<String> {
+        if (query.isNullOrBlank()) {
+            if (!bosSorgudaGoster) return emptyList()
+            return source.asSequence()
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinctBy { it.lowercase() }
+                .sortedBy { it.lowercase() }
+                .take(MAX)
+                .toList()
+        }
         val q = query.trim()
         return source.asSequence()
             .map { it.trim() }

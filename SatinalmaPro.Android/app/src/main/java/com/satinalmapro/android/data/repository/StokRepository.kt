@@ -49,6 +49,31 @@ class StokRepository(
             it.malzemeAdi.equals(malzeme.trim(), true) && it.depoSaha.equals(depo.trim(), true)
         }
 
+    private fun stokBulMalzeme(
+        list: List<StokKaydi>,
+        malzeme: String,
+        preferredDepo: String? = null
+    ): StokKaydi? {
+        val matches = list.filter {
+            it.malzemeAdi.equals(malzeme.trim(), true) && it.mevcutMiktar > 0
+        }
+        if (matches.isEmpty()) return null
+        preferredDepo?.trim()?.takeIf { it.isNotBlank() }?.let { depo ->
+            matches.firstOrNull { it.depoSaha.equals(depo, true) }?.let { return it }
+        }
+        return matches.maxByOrNull { it.mevcutMiktar }
+    }
+
+    data class GirisSatir(
+        val malzeme: String,
+        val miktar: Double,
+        val birim: String,
+        val kategori: String,
+        val birimMaliyet: Double
+    )
+
+    data class CikisSatir(val malzeme: String, val miktar: Double)
+
     suspend fun girisYap(
         user: UserProfile,
         malzeme: String,
@@ -176,6 +201,112 @@ class StokRepository(
                 teslimEdilen = "Sayım düzeltmesi"
             )
         )
+        saveStok(stokList)
+        saveHareketler(hareketList)
+    }
+
+    suspend fun girisYapCoklu(
+        user: UserProfile,
+        belgeNo: String,
+        depo: String,
+        teslimAlan: String,
+        satirlar: List<GirisSatir>
+    ) {
+        if (!KullaniciRolleri.canStockWrite(user.role)) throw IllegalStateException("Stok giriş yetkiniz yok")
+        if (satirlar.isEmpty()) throw IllegalArgumentException("En az bir satır girin")
+        val stokList = loadStok().toMutableList()
+        val hareketList = loadHareketler().toMutableList()
+        val tarih = bugun()
+        val belge = belgeNo.ifBlank { "STG-${System.currentTimeMillis()}" }
+        val depoAdi = depo.ifBlank { user.site.orEmpty() }.ifBlank { "Merkez Depo" }
+        satirlar.forEach { satir ->
+            if (satir.malzeme.isBlank() || satir.miktar <= 0) {
+                throw IllegalArgumentException("Geçerli malzeme ve miktar girin")
+            }
+            val stok = stokBul(stokList, satir.malzeme, depoAdi) ?: StokKaydi(
+                malzemeAdi = satir.malzeme.trim(),
+                kategori = satir.kategori.trim().ifBlank { "Genel" },
+                birim = satir.birim.trim().ifBlank { "Adet" },
+                depoSaha = depoAdi,
+                sonGuncelleme = tarih
+            ).also { stokList.add(it) }
+            val index = stokList.indexOf(stok)
+            val birimMaliyet = if (satir.birimMaliyet > 0) satir.birimMaliyet else stok.birimMaliyet
+            val guncel = stok.copy(
+                mevcutMiktar = stok.mevcutMiktar + satir.miktar,
+                birim = satir.birim.trim().ifBlank { stok.birim },
+                kategori = satir.kategori.trim().ifBlank { stok.kategori },
+                birimMaliyet = birimMaliyet,
+                sonGuncelleme = tarih,
+                toplamDeger = (stok.mevcutMiktar + satir.miktar) * birimMaliyet
+            )
+            stokList[index] = guncel
+            hareketList.add(
+                StokHareket(
+                    id = UUID.randomUUID().toString(),
+                    tarih = tarih,
+                    hareketTipi = StokHareketTipi.GIRIS,
+                    malzemeAdi = guncel.malzemeAdi,
+                    kategori = guncel.kategori,
+                    birim = guncel.birim,
+                    miktar = satir.miktar,
+                    depoSaha = guncel.depoSaha,
+                    birimMaliyet = guncel.birimMaliyet,
+                    belgeNo = belge,
+                    islemYapan = user.fullName,
+                    teslimEdilen = teslimAlan.ifBlank { user.fullName }
+                )
+            )
+        }
+        saveStok(stokList)
+        saveHareketler(hareketList)
+    }
+
+    suspend fun cikisYapCoklu(
+        user: UserProfile,
+        belgeNo: String,
+        teslimAlan: String,
+        satirlar: List<CikisSatir>
+    ) {
+        if (!KullaniciRolleri.canStockWrite(user.role)) throw IllegalStateException("Stok çıkış yetkiniz yok")
+        if (satirlar.isEmpty()) throw IllegalArgumentException("En az bir satır girin")
+        val stokList = loadStok().toMutableList()
+        val hareketList = loadHareketler().toMutableList()
+        val tarih = bugun()
+        val belge = belgeNo.ifBlank { "STC-${System.currentTimeMillis()}" }
+        satirlar.forEach { satir ->
+            if (satir.malzeme.isBlank() || satir.miktar <= 0) {
+                throw IllegalArgumentException("Geçerli malzeme ve miktar girin")
+            }
+            val stok = stokBulMalzeme(stokList, satir.malzeme, user.site)
+                ?: throw IllegalArgumentException("Stok bulunamadı: ${satir.malzeme}")
+            if (satir.miktar > stok.mevcutMiktar) {
+                throw IllegalArgumentException("Yetersiz stok: ${stok.malzemeAdi} (${stok.depoSaha})")
+            }
+            val index = stokList.indexOf(stok)
+            val guncel = stok.copy(
+                mevcutMiktar = stok.mevcutMiktar - satir.miktar,
+                sonGuncelleme = tarih,
+                toplamDeger = (stok.mevcutMiktar - satir.miktar) * stok.birimMaliyet
+            )
+            stokList[index] = guncel
+            hareketList.add(
+                StokHareket(
+                    id = UUID.randomUUID().toString(),
+                    tarih = tarih,
+                    hareketTipi = StokHareketTipi.CIKIS,
+                    malzemeAdi = guncel.malzemeAdi,
+                    kategori = guncel.kategori,
+                    birim = guncel.birim,
+                    miktar = satir.miktar,
+                    depoSaha = guncel.depoSaha,
+                    birimMaliyet = guncel.birimMaliyet,
+                    belgeNo = belge,
+                    islemYapan = user.fullName,
+                    teslimEdilen = teslimAlan
+                )
+            )
+        }
         saveStok(stokList)
         saveHareketler(hareketList)
     }

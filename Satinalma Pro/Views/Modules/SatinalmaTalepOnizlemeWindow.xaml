@@ -87,6 +87,10 @@
     </ScrollViewer>
 
     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+      <Button x:Name="BtnOnayla" Style="{StaticResource PrimaryToolbarButtonStyle}" Margin="0,0,8,0"
+              Click="Onayla_Click" Content="Onayla" Visibility="Collapsed" />
+      <Button x:Name="BtnTeklifIste" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
+              Click="TeklifIste_Click" Content="Teklif İste" Visibility="Collapsed" />
       <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
               Click="Kapat_Click" Content="Kapat" />
       <Button x:Name="BtnDuzenle" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"

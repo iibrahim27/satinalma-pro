@@ -90,6 +90,25 @@ public static class MasaustuRolHaritasi
     public static string? RouteToSatinalmaSekme(string? route) =>
         route is not null && SatinalmaRouteToSekme.TryGetValue(route, out var sekme) ? sekme : null;
 
+    /// <summary>Route slug veya görünen sekme adından bildirim navigasyonu için route slug üretir.</summary>
+    public static string? SatinalmaRouteSlug(string? sekmeOrRoute)
+    {
+        if (string.IsNullOrWhiteSpace(sekmeOrRoute))
+            return null;
+
+        if (SatinalmaRouteToSekme.ContainsKey(sekmeOrRoute))
+            return sekmeOrRoute;
+
+        var normalized = SatinalmaSekmeNormalize(sekmeOrRoute);
+        foreach (var (route, ad) in SatinalmaRouteToSekme)
+        {
+            if (ad.Equals(normalized, StringComparison.OrdinalIgnoreCase))
+                return route;
+        }
+
+        return sekmeOrRoute;
+    }
+
     public static string? RouteToStokSekme(string? route) =>
         route is not null && StokRouteToSekme.TryGetValue(route, out var sekme) ? sekme : null;
 
