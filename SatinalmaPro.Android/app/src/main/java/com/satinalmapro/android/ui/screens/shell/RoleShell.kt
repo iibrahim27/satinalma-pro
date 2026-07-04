@@ -1,5 +1,6 @@
 package com.satinalmapro.android.ui.screens.shell
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -7,12 +8,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -22,7 +21,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.ComponentActivity
 import com.satinalmapro.android.core.model.TalepQueue
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.screens.home.HomeScreen
@@ -48,36 +48,34 @@ fun RoleShell(viewModel: AppViewModel) {
     val user by viewModel.user.collectAsState()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val activity = context as? ComponentActivity
     val menus = viewModel.menus()
     val route = currentRoute ?: "dashboard"
     val base = route.substringBefore('?')
     val title = menus.firstOrNull { it.route == base }?.title ?: "Satınalma Pro"
 
+    BackHandler {
+        when {
+            drawerState.isOpen -> scope.launch { drawerState.close() }
+            viewModel.navigateBack() -> Unit
+            else -> activity?.moveTaskToBack(true)
+        }
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = drawerState.isOpen,
         drawerContent = {
-            ModalDrawerSheet {
-                Text(
-                    text = user?.fullName ?: "",
-                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 24.dp)
+            ModalDrawerSheet(drawerContainerColor = AppColors.Surface) {
+                AppNavigationDrawer(
+                    user = user,
+                    menus = menus,
+                    selectedRoute = base,
+                    onItemClick = { item ->
+                        viewModel.navigateFromMenu(item.route)
+                        scope.launch { drawerState.close() }
+                    }
                 )
-                Text(
-                    text = user?.role ?: "",
-                    modifier = Modifier.padding(horizontal = 28.dp)
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                menus.forEach { item ->
-                    NavigationDrawerItem(
-                        label = { Text(item.title) },
-                        selected = item.route == base,
-                        onClick = {
-                            viewModel.navigate(item.route)
-                            scope.launch { drawerState.close() }
-                        },
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
-                }
             }
         }
     ) {

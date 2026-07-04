@@ -35,6 +35,14 @@ import org.json.JSONObject
 import java.io.File
 
 class AppContainer(private val context: Context) {
+    enum class UpdateInstallResult { SUCCESS, NEEDS_PERMISSION, FAILED }
+
+    data class UpdateCheckResult(
+        val available: Boolean,
+        val manifest: UpdateManifest? = null,
+        val error: String? = null
+    )
+
     private val prefs = context.getSharedPreferences("satinalma_pro", Context.MODE_PRIVATE)
     val config: FirebaseConfig = loadFirebaseConfig(context)
     val auth = FirebaseAuthClient(config)
@@ -257,30 +265,61 @@ class AppContainer(private val context: Context) {
     fun materialSuggestions(query: String): List<String> =
         MalzemeOneri.filtrele(_materialNames.value, query)
 
-    suspend fun checkAndApplyUpdate(onProgress: (String, Int) -> Unit): Boolean {
-        if (config.updateManifestUrl.isBlank()) return false
-        val url = config.updateManifestUrl + "?_=${System.currentTimeMillis()}"
-        onProgress("Sürüm kontrol ediliyor...", 5)
-        val manifest = try {
-            val json = HttpClients.get(url)
-            parseManifest(json)
-        } catch (_: Exception) {
-            return false
+    suspend fun checkForUpdate(): UpdateCheckResult {
+        if (config.updateManifestUrl.isBlank()) {
+            return UpdateCheckResult(false, error = "Güncelleme adresi yapılandırılmamış")
         }
-        if (manifest.version.isBlank()) return false
-        val needsUpdate = manifest.build > BuildConfig.VERSION_CODE ||
-            versionGreater(manifest.version, BuildConfig.VERSION_NAME)
-        if (!needsUpdate) return false
+        return try {
+            val url = config.updateManifestUrl + "?_=${System.currentTimeMillis()}"
+            val json = HttpClients.get(url)
+            val manifest = parseManifest(json)
+            if (manifest.version.isBlank()) {
+                UpdateCheckResult(false)
+            } else {
+                val needsUpdate = manifest.build > BuildConfig.VERSION_CODE ||
+                    versionGreater(manifest.version, BuildConfig.VERSION_NAME)
+                UpdateCheckResult(needsUpdate, if (needsUpdate) manifest else null)
+            }
+        } catch (e: Exception) {
+            UpdateCheckResult(false, error = NetworkError.translate(e.message))
+        }
+    }
 
+    suspend fun downloadAndInstallUpdate(
+        manifest: UpdateManifest,
+        onProgress: (String, Int) -> Unit
+    ): UpdateInstallResult {
         val apkUrl = manifest.downloadUrlApk.ifBlank {
             "https://github.com/iibrahim27/satinalma-pro/releases/download/v${manifest.version}/SatinalmaPro.apk"
         }
-        onProgress("Güncelleme indiriliyor...", 20)
+        onProgress("Güncelleme indiriliyor...", 10)
         val target = File(context.cacheDir, "SatinalmaPro_${manifest.version}_b${manifest.build}.apk")
-        downloadFile(apkUrl, target) { p -> onProgress("İndiriliyor... %$p", 20 + (p * 0.65).toInt()) }
-        onProgress("Kurulum başlatılıyor...", 92)
-        apkInstaller.install(target)
-        return true
+        downloadFile(apkUrl, target) { p -> onProgress("İndiriliyor... %$p", 10 + (p * 0.8).toInt()) }
+        prefs.edit().putString(KEY_PENDING_APK, target.absolutePath).apply()
+        onProgress("Kurulum başlatılıyor...", 95)
+        return installPendingApk(target)
+    }
+
+    fun retryPendingInstall(): UpdateInstallResult {
+        val path = prefs.getString(KEY_PENDING_APK, null) ?: return UpdateInstallResult.FAILED
+        return installPendingApk(File(path))
+    }
+
+    private fun installPendingApk(file: File): UpdateInstallResult {
+        if (!file.exists()) return UpdateInstallResult.FAILED
+        if (!apkInstaller.ensureInstallPermission()) return UpdateInstallResult.NEEDS_PERMISSION
+        return try {
+            apkInstaller.install(file)
+            UpdateInstallResult.SUCCESS
+        } catch (_: Exception) {
+            UpdateInstallResult.FAILED
+        }
+    }
+
+    suspend fun checkAndApplyUpdate(onProgress: (String, Int) -> Unit): Boolean {
+        val check = checkForUpdate()
+        if (!check.available || check.manifest == null) return false
+        return downloadAndInstallUpdate(check.manifest, onProgress) == UpdateInstallResult.SUCCESS
     }
 
     fun parseUserFields(uid: String, fields: JSONObject): UserProfile {
@@ -435,7 +474,7 @@ class AppContainer(private val context: Context) {
     }
 
     private fun parseManifest(json: String): UpdateManifest {
-        val obj = JSONObject(json)
+        val obj = JSONObject(json.trim().removePrefix("\uFEFF"))
         return UpdateManifest(
             version = obj.optString("version"),
             build = obj.optInt("build"),
@@ -459,6 +498,7 @@ class AppContainer(private val context: Context) {
     companion object {
         private const val KEY_SESSION = "session_json"
         private const val KEY_PROFILE = "profile_cache"
+        private const val KEY_PENDING_APK = "pending_apk_path"
 
         fun loadFirebaseConfig(context: Context): FirebaseConfig {
             return try {

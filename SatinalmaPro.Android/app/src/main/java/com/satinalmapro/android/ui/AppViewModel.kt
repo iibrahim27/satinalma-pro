@@ -6,7 +6,9 @@ import com.satinalmapro.android.core.AppContainer
 import com.satinalmapro.android.core.model.MenuItem
 import com.satinalmapro.android.core.model.TalepItem
 import com.satinalmapro.android.core.model.TalepQueue
+import com.satinalmapro.android.core.model.UpdateManifest
 import com.satinalmapro.android.core.model.UserProfile
+import com.satinalmapro.android.core.AppContainer.UpdateInstallResult
 import com.satinalmapro.android.core.NetworkError
 import com.satinalmapro.android.core.roles.BildirimRota
 import com.satinalmapro.android.core.roles.RolNavigasyon
@@ -47,6 +49,23 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     private val _submitError = MutableStateFlow<String?>(null)
     val submitError: StateFlow<String?> = _submitError.asStateFlow()
 
+    private val routeHistory = ArrayDeque<String>()
+
+    private val _pendingUpdate = MutableStateFlow<UpdateManifest?>(null)
+    val pendingUpdate: StateFlow<UpdateManifest?> = _pendingUpdate.asStateFlow()
+
+    private val _updateProgress = MutableStateFlow<Int?>(null)
+    val updateProgress: StateFlow<Int?> = _updateProgress.asStateFlow()
+
+    private val _updateMessage = MutableStateFlow<String?>(null)
+    val updateMessage: StateFlow<String?> = _updateMessage.asStateFlow()
+
+    private val _updateError = MutableStateFlow<String?>(null)
+    val updateError: StateFlow<String?> = _updateError.asStateFlow()
+
+    private val _showUpdateDialog = MutableStateFlow(false)
+    val showUpdateDialog: StateFlow<Boolean> = _showUpdateDialog.asStateFlow()
+
     val dashboardCards = talepler.map { container.dashboardData().first }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -68,18 +87,17 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun startSplash() {
         viewModelScope.launch {
             _splashMessage.value = "Güncelleme kontrol ediliyor..."
-            val updating = runCatching {
-                container.checkAndApplyUpdate { msg, _ -> _splashMessage.value = msg }
-            }.getOrDefault(false)
-            if (updating) {
-                _splashMessage.value = "Kurulum ekranı açıldı. Yükleme tamamlanınca uygulamayı yeniden açın."
-                return@launch
+            runCatching { container.checkForUpdate() }.getOrNull()?.let { result ->
+                if (result.available && result.manifest != null) {
+                    _pendingUpdate.value = result.manifest
+                }
             }
             _splashMessage.value = "Oturum kontrol ediliyor..."
             val restored = runCatching { container.restoreSession() }.getOrDefault(false)
             _isLoggedIn.value = restored
             if (restored) {
                 _currentRoute.value = RolNavigasyon.defaultRoute(container.user.value?.role)
+                if (_pendingUpdate.value != null) _showUpdateDialog.value = true
             }
             container.pendingRoute?.let { route ->
                 navigateFromNotification(route)
@@ -97,7 +115,9 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 container.login(email, password, rememberMe)
             }.onSuccess {
                 _isLoggedIn.value = true
+                routeHistory.clear()
                 _currentRoute.value = RolNavigasyon.defaultRoute(container.user.value?.role)
+                checkForUpdates(showDialog = true)
             }.onFailure {
                 _loginError.value = NetworkError.translate(it.message)
             }
@@ -109,13 +129,36 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         container.logout()
         _isLoggedIn.value = false
         _currentRoute.value = null
+        routeHistory.clear()
     }
 
     fun menus(): List<MenuItem> = RolNavigasyon.menus(container.user.value?.role)
 
-    fun navigate(route: String) {
+    fun navigate(route: String, pushHistory: Boolean = true) {
         val safe = BildirimRota.safeRoute(route, container.user.value?.role)
+        val current = _currentRoute.value
+        if (pushHistory && current != null && current != safe) {
+            routeHistory.addLast(current)
+        }
         _currentRoute.value = safe
+    }
+
+    fun navigateFromMenu(route: String) {
+        routeHistory.clear()
+        navigate(route, pushHistory = false)
+    }
+
+    fun navigateBack(): Boolean {
+        if (routeHistory.isNotEmpty()) {
+            _currentRoute.value = routeHistory.removeLast()
+            return true
+        }
+        val current = _currentRoute.value?.substringBefore('?') ?: "dashboard"
+        if (current != "dashboard") {
+            _currentRoute.value = "dashboard"
+            return true
+        }
+        return false
     }
 
     fun navigateFromNotification(route: String) {
@@ -144,6 +187,73 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             while (true) {
                 kotlinx.coroutines.delay(30_000)
                 if (_isLoggedIn.value) runCatching { container.syncData() }
+            }
+        }
+        viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(6 * 60 * 60 * 1000L)
+                if (_isLoggedIn.value) checkForUpdates(showDialog = true)
+            }
+        }
+    }
+
+    fun onAppResume() {
+        viewModelScope.launch {
+            when (container.retryPendingInstall()) {
+                UpdateInstallResult.NEEDS_PERMISSION -> {
+                    _updateError.value = "Kurulum izni gerekli. Ayarlardan 'Bu kaynaktan yükle' iznini verin."
+                }
+                UpdateInstallResult.SUCCESS -> {
+                    _updateMessage.value = "Kurulum ekranı açıldı."
+                }
+                else -> Unit
+            }
+            if (_isLoggedIn.value) checkForUpdates(showDialog = true)
+        }
+    }
+
+    fun checkForUpdates(showDialog: Boolean = false) {
+        viewModelScope.launch {
+            val result = runCatching { container.checkForUpdate() }.getOrNull() ?: return@launch
+            if (result.available && result.manifest != null) {
+                _pendingUpdate.value = result.manifest
+                if (showDialog) _showUpdateDialog.value = true
+            }
+        }
+    }
+
+    fun dismissUpdateDialog() {
+        _showUpdateDialog.value = false
+        _updateError.value = null
+    }
+
+    fun startUpdateDownload() {
+        val manifest = _pendingUpdate.value ?: return
+        viewModelScope.launch {
+            _updateError.value = null
+            _updateProgress.value = 0
+            _updateMessage.value = "Güncelleme indiriliyor..."
+            val result = runCatching {
+                container.downloadAndInstallUpdate(manifest) { msg, progress ->
+                    _updateMessage.value = msg
+                    _updateProgress.value = progress
+                }
+            }.getOrElse {
+                _updateProgress.value = null
+                _updateError.value = NetworkError.translate(it.message)
+                return@launch
+            }
+            _updateProgress.value = null
+            when (result) {
+                UpdateInstallResult.SUCCESS -> {
+                    _updateMessage.value = "Kurulum ekranı açıldı. Yüklemeyi tamamlayın."
+                }
+                UpdateInstallResult.NEEDS_PERMISSION -> {
+                    _updateError.value = "Kurulum izni gerekli. Ayarlardan izin verip tekrar 'Güncelle'ye basın."
+                }
+                UpdateInstallResult.FAILED -> {
+                    _updateError.value = "Güncelleme kurulamadı."
+                }
             }
         }
     }

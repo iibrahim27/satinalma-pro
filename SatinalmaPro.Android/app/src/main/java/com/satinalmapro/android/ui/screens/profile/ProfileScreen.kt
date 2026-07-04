@@ -25,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.rounded.SystemUpdate
+import com.satinalmapro.android.BuildConfig
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppCard
 import com.satinalmapro.android.ui.components.DetailRow
@@ -78,6 +80,16 @@ fun ProfileScreen(viewModel: AppViewModel, onLogout: () -> Unit) {
             }
         }
 
+        Spacer(Modifier.height(16.dp))
+        AppCard(onClick = { viewModel.checkForUpdates(showDialog = true) }) {
+            RowMenuItem(Icons.Rounded.SystemUpdate, "Güncelleme Kontrol Et", AppColors.Primary)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Yüklü sürüm: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+            style = MaterialTheme.typography.labelMedium,
+            color = AppColors.TextSecondary
+        )
         Spacer(Modifier.height(16.dp))
         AppCard(onClick = { }) {
             RowMenuItem(Icons.Rounded.Lock, "Şifre Değiştir", AppColors.TextPrimary)

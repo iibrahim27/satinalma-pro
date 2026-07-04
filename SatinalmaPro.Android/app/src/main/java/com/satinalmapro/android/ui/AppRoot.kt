@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.satinalmapro.android.ui.components.UpdateDialog
 import com.satinalmapro.android.ui.screens.login.LoginScreen
 import com.satinalmapro.android.ui.screens.shell.RoleShell
 import com.satinalmapro.android.ui.theme.AppColors
@@ -24,16 +25,34 @@ fun AppRoot(viewModel: AppViewModel) {
     val splashDone by viewModel.splashDone.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
     val splashMessage by viewModel.splashMessage.collectAsState()
+    val showUpdateDialog by viewModel.showUpdateDialog.collectAsState()
+    val pendingUpdate by viewModel.pendingUpdate.collectAsState()
+    val updateProgress by viewModel.updateProgress.collectAsState()
+    val updateMessage by viewModel.updateMessage.collectAsState()
+    val updateError by viewModel.updateError.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.startSplash()
         viewModel.startBackgroundRefresh()
     }
 
-    when {
-        !splashDone -> SplashScreen(splashMessage)
-        !isLoggedIn -> LoginScreen(viewModel)
-        else -> RoleShell(viewModel)
+    Box(Modifier.fillMaxSize()) {
+        when {
+            !splashDone -> SplashScreen(splashMessage)
+            !isLoggedIn -> LoginScreen(viewModel)
+            else -> RoleShell(viewModel)
+        }
+
+        if (isLoggedIn && showUpdateDialog && pendingUpdate != null) {
+            UpdateDialog(
+                manifest = pendingUpdate!!,
+                progress = updateProgress,
+                message = updateMessage,
+                error = updateError,
+                onUpdate = { viewModel.startUpdateDownload() },
+                onDismiss = { viewModel.dismissUpdateDialog() }
+            )
+        }
     }
 }
 
