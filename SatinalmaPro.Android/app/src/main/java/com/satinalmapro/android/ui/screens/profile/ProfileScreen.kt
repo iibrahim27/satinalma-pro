@@ -13,7 +13,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,14 +43,19 @@ fun ProfileScreen(onLogout: () -> Unit) {
         Surface(
             modifier = Modifier.size(88.dp),
             shape = AppShapes.extraLarge,
-            color = AppColors.Primary
+            color = AppColors.PrimaryContainer
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Icon(Icons.Rounded.Person, null, tint = Color.White, modifier = Modifier.size(40.dp))
+                Text(
+                    text = DemoData.USER_NAME.split(' ').mapNotNull { it.firstOrNull()?.uppercaseChar() }.take(2).joinToString(""),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = AppColors.Primary,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -62,11 +66,13 @@ fun ProfileScreen(onLogout: () -> Unit) {
 
         AppCard {
             Column(Modifier.padding(20.dp)) {
-                DetailRow("Şirket", DemoData.COMPANY)
+                DetailRow("Kullanıcı Adı", DemoData.USER_USERNAME)
                 HorizontalDivider(color = AppColors.Border)
-                DetailRow("Telefon", DemoData.PHONE)
+                DetailRow("Telefon", DemoData.USER_PHONE)
                 HorizontalDivider(color = AppColors.Border)
-                DetailRow("E-posta", DemoData.EMAIL)
+                DetailRow("E-posta", DemoData.USER_EMAIL)
+                HorizontalDivider(color = AppColors.Border)
+                DetailRow("Departman", DemoData.USER_DEPARTMENT)
             }
         }
 

@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.1",
-    "build":  47,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.1/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.1/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.1/SatinalmaPro.apk",
-    "notes":  "MV logo, imzali Android APK, sidebar sadece logo.",
+    "version":  "2.1.2",
+    "build":  48,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.2/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.2/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.2/SatinalmaPro.apk",
+    "notes":  "Android app.ico ikonu, profil kullanici bilgileri.",
     "zorunlu":  false
 }

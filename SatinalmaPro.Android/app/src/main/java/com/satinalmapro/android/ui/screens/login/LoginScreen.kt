@@ -88,11 +88,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             verticalArrangement = Arrangement.Center
         ) {
             Image(
-                painter = painterResource(R.drawable.mv_insaat_logo),
-                contentDescription = "MV İnşaat",
-                modifier = Modifier
-                    .fillMaxWidth(0.72f)
-                    .height(96.dp),
+                painter = painterResource(R.drawable.app_icon),
+                contentDescription = "Satınalma Pro",
+                modifier = Modifier.size(96.dp),
                 contentScale = ContentScale.Fit
             )
 
