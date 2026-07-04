@@ -51,8 +51,13 @@ $notMetni = if ($Notes) { $Notes } else { "Surum $Version" }
 
 $repoKok = Split-Path $projeKok -Parent
 $mobilCsproj = Join-Path $repoKok "SatinalmaPro.Mobile\SatinalmaPro.Mobile.csproj"
+$androidCompose = Join-Path $repoKok "SatinalmaPro.Android\app\build.gradle.kts"
 $yeniBuild = 1
-if (Test-Path $mobilCsproj) {
+if (Test-Path $androidCompose) {
+    $g = Get-Content $androidCompose -Raw -Encoding UTF8
+    $eskiBuild = [regex]::Match($g, 'versionCode\s*=\s*(\d+)').Groups[1].Value
+    $yeniBuild = if ($eskiBuild) { [int]$eskiBuild + 1 } else { 1 }
+} elseif (Test-Path $mobilCsproj) {
     $mobilIcerik = Get-Content $mobilCsproj -Raw -Encoding UTF8
     $mobilIcerik = $mobilIcerik -replace '(<ApplicationDisplayVersion>)[^<]+(</ApplicationDisplayVersion>)', "`${1}$Version`${2}"
     $eskiBuild = [regex]::Match($mobilIcerik, '<ApplicationVersion>(\d+)</ApplicationVersion>').Groups[1].Value

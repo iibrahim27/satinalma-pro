@@ -30,6 +30,8 @@ object KullaniciRolleri {
         }
     }
 
+    val TUM = listOf(ADMIN, YONETIM, SATINALMA, SEF, SAHA, ATOLYE, DEPO)
+
     fun isAdmin(role: String?) = normalize(role) == ADMIN
     fun canCreateRequest(role: String?) = normalize(role) in setOf(ADMIN, YONETIM, SAHA, SEF, SATINALMA)
     fun canEnterQuotes(role: String?) = normalize(role) in setOf(ADMIN, SATINALMA, YONETIM)
@@ -64,6 +66,7 @@ object RolNavigasyon {
     private val gecmisTalepler = MenuItem("Geçmiş Talepler", "gecmis-talepler", "Talep")
     private val gecmisTeklifli = MenuItem("Geçmiş Teklifli Onaylar", "gecmis-teklifli-onaylar", "Talep")
     private val redTalepler = MenuItem("Red Talepler", "red-talepler", "Talep")
+    private val ayarlar = MenuItem("Ayarlar", "ayarlar", "Yönetim")
 
     fun menus(role: String?): List<MenuItem> {
         val normalized = KullaniciRolleri.normalize(role)
@@ -71,7 +74,8 @@ object RolNavigasyon {
             KullaniciRolleri.ADMIN -> listOf(
                 yeniTalep, taleplerim, onayBekleyen, onaylananTalepler, gelenTalepler, teklifBekleyen,
                 teklifGir, teklifKarsilastirma, teklifsizFirmaFiyat, teklifOnay, onaylananTeklifler, onayGecmisi,
-                redTalepler, onaylananMalzemeler, stokDurum, stokHareket, stokGiris, stokCikis, stokSayim, bildirimler
+                redTalepler, onaylananMalzemeler, stokDurum, stokHareket, stokGiris, stokCikis, stokSayim,
+                bildirimler, ayarlar
             )
             KullaniciRolleri.YONETIM -> listOf(
                 gelenTalepler, teklifOnay, gecmisTalepler, gecmisTeklifli, redTalepler, stokDurum, bildirimler
@@ -100,9 +104,21 @@ object RolNavigasyon {
 
     fun defaultRoute(role: String?): String = "dashboard"
 
+    private val talepDetayKaynakRotalar = setOf(
+        "yeni-talep", "taleplerim", "onay-bekleyen", "onaylanan-talepler", "gelen-talepler",
+        "teklif-bekleyen", "gecmis-talepler", "gecmis-teklifli-onaylar", "red-talepler",
+        "onaylanan-teklifler", "teklif-onay", "teklif-gir"
+    )
+
     fun canAccess(role: String?, route: String): Boolean {
         val base = route.substringBefore('?')
-        return accessibleRoutes(role).contains(base)
+        val menus = accessibleRoutes(role)
+        if (menus.contains(base)) return true
+        return when (base) {
+            "talep-detay" -> menus.any { it in talepDetayKaynakRotalar }
+            "teklif-onay-detay" -> menus.contains("teklif-onay")
+            else -> false
+        }
     }
 }
 
@@ -115,8 +131,12 @@ object BildirimRota {
         }
         return when (tip) {
             "YonetimeGonderildi" -> "gelen-talepler"
-            "TeklifIstendi" -> if (r == KullaniciRolleri.YONETIM) "gelen-talepler" else "teklif-gir"
-            "TeklifDuzeltmeIstendi" -> "teklif-gir"
+            "TeklifIstendi" -> when {
+                r == KullaniciRolleri.YONETIM -> "gelen-talepler"
+                requestId != null -> "teklif-gir?id=$requestId"
+                else -> "teklif-gir"
+            }
+            "TeklifDuzeltmeIstendi" -> if (requestId != null) "teklif-gir?id=$requestId" else "teklif-gir"
             "TeklifOnayda" -> if (requestId != null) "teklif-onay-detay?id=$requestId" else "teklif-onay"
             "Onaylandi" -> when {
                 requestId == null && r == KullaniciRolleri.YONETIM -> "gecmis-talepler"

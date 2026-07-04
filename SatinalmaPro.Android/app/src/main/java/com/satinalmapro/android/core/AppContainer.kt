@@ -3,18 +3,22 @@ package com.satinalmapro.android.core
 import android.content.Context
 import com.satinalmapro.android.BuildConfig
 import com.satinalmapro.android.core.model.AppNotification
-import com.satinalmapro.android.core.model.UpdateManifest
+import com.satinalmapro.android.core.model.UygulamaAyarlar
+import com.satinalmapro.android.core.model.ManagedUser
 import com.satinalmapro.android.core.model.UserProfile
 import com.satinalmapro.android.core.model.StokHareket
 import com.satinalmapro.android.core.model.StokKaydi
 import com.satinalmapro.android.core.model.TalepItem
 import com.satinalmapro.android.core.model.TalepQueue
+import com.satinalmapro.android.core.model.UpdateManifest
 import com.satinalmapro.android.core.NetworkError
 import com.satinalmapro.android.core.NetworkMonitor
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.core.roles.MalzemeOneri
+import com.satinalmapro.android.core.roles.BildirimRota
 import com.satinalmapro.android.data.repository.BildirimRepository
 import com.satinalmapro.android.data.repository.StokRepository
+import com.satinalmapro.android.data.repository.SettingsRepository
 import com.satinalmapro.android.data.repository.TalepRepository
 import com.satinalmapro.android.data.firebase.FirebaseAuthClient
 import com.satinalmapro.android.data.firebase.FirebaseConfig
@@ -55,6 +59,13 @@ class AppContainer(private val context: Context) {
     val bildirimler = BildirimRepository(firestore, auth, fcmPush)
     val talepler = TalepRepository(firestore, auth, bildirimler)
     val stokRepo = StokRepository(firestore, auth)
+    val settingsRepo = SettingsRepository(firestore, auth)
+
+    private val _uygulamaAyarlar = MutableStateFlow(UygulamaAyarlar())
+    val uygulamaAyarlar: StateFlow<UygulamaAyarlar> = _uygulamaAyarlar.asStateFlow()
+
+    private val _settingsUsers = MutableStateFlow<List<ManagedUser>>(emptyList())
+    val settingsUsers: StateFlow<List<ManagedUser>> = _settingsUsers.asStateFlow()
 
     private val _user = MutableStateFlow<UserProfile?>(null)
     val user: StateFlow<UserProfile?> = _user.asStateFlow()
@@ -132,6 +143,8 @@ class AppContainer(private val context: Context) {
         _talepler.value = emptyList()
         _stok.value = emptyList()
         _stokHareketleri.value = emptyList()
+        _uygulamaAyarlar.value = UygulamaAyarlar()
+        _settingsUsers.value = emptyList()
         knownNotificationIds = emptySet()
         notificationsInitialized = false
         prefs.edit().remove(KEY_SESSION).apply()
@@ -143,6 +156,37 @@ class AppContainer(private val context: Context) {
         loadTalepler()
         loadStok()
         loadNotifications(uid)
+        runCatching { loadUygulamaAyarlar() }
+    }
+
+    suspend fun loadUygulamaAyarlar() {
+        val ayarlar = settingsRepo.loadSettings()
+        _uygulamaAyarlar.value = ayarlar
+        if (KullaniciRolleri.isAdmin(_user.value?.role)) {
+            _settingsUsers.value = settingsRepo.loadUsers(::parseUserFields)
+        }
+    }
+
+    suspend fun saveUygulamaAyarlar(ayarlar: UygulamaAyarlar) {
+        settingsRepo.saveSettings(ayarlar)
+        _uygulamaAyarlar.value = ayarlar
+    }
+
+    suspend fun saveManagedUser(user: ManagedUser) {
+        settingsRepo.saveUser(user)
+        _settingsUsers.value = settingsRepo.loadUsers(::parseUserFields)
+    }
+
+    suspend fun createManagedUser(
+        email: String,
+        password: String,
+        fullName: String,
+        role: String,
+        site: String,
+        active: Boolean
+    ) {
+        settingsRepo.createUser(email, password, fullName, role, site, active)
+        _settingsUsers.value = settingsRepo.loadUsers(::parseUserFields)
     }
 
     private suspend fun reloadTalepler() {
@@ -255,6 +299,11 @@ class AppContainer(private val context: Context) {
     )
 
     fun approvedMaterials(): List<TalepItem> = talepler.approvedMaterials(_talepler.value)
+
+    suspend fun refreshNotifications() {
+        val uid = auth.uid ?: return
+        loadNotifications(uid)
+    }
 
     suspend fun markNotificationRead(id: String) {
         val uid = auth.uid ?: return
@@ -475,14 +524,19 @@ class AppContainer(private val context: Context) {
             firestore.readInbox(uid).mapNotNull { doc ->
                 val fields = doc.optJSONObject("fields") ?: return@mapNotNull null
                 fun s(key: String) = fields.optJSONObject(key)?.optString("stringValue").orEmpty()
+                val tip = s("tip").ifBlank { s("type") }
+                val talepId = s("talepId").ifBlank { null }
+                val route = s("route").ifBlank {
+                    BildirimRota.hedefRoute(BildirimRota.normalizeTip(tip), talepId, user?.role)
+                }
                 AppNotification(
                     id = doc.optString("name").substringAfterLast('/'),
                     title = s("baslik").ifBlank { s("title") },
                     message = s("mesaj").ifBlank { s("message") },
-                    type = s("tip").ifBlank { s("type") },
+                    type = tip,
                     time = s("zaman").ifBlank { s("time") },
-                    requestId = s("talepId").ifBlank { null },
-                    route = s("route").ifBlank { null },
+                    requestId = talepId,
+                    route = route,
                     read = fields.optJSONObject("isRead")?.optBoolean("booleanValue")
                         ?: fields.optJSONObject("okundu")?.optBoolean("booleanValue") ?: false
                 )
@@ -492,12 +546,21 @@ class AppContainer(private val context: Context) {
         cloudMapped.forEach { merged[it.id] = it }
         inbox.forEach { item ->
             val existing = merged[item.id]
-            merged[item.id] = if (existing == null) item else item.copy(read = item.read || existing.read)
+            merged[item.id] = if (existing == null) {
+                item
+            } else {
+                existing.copy(read = item.read || existing.read)
+            }
         }
         val sorted = merged.values.sortedByDescending { it.time }
         if (notificationsInitialized) {
             sorted.filter { !it.read && it.id !in knownNotificationIds }.forEach { item ->
-                val route = item.route ?: "bildirimler"
+                val route = item.route?.takeIf { it.isNotBlank() }
+                    ?: BildirimRota.hedefRoute(
+                        BildirimRota.normalizeTip(item.type),
+                        item.requestId,
+                        user?.role
+                    )
                 LocalNotificationHelper.show(context, item.title, item.message, route, item.id)
             }
         } else {

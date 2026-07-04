@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.13",
-    "build":  60,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.13/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.13/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.13/SatinalmaPro.apk",
-    "notes":  "Android stok tablosu, dashboard duzeltmesi ve gereksiz guncelleme diyalogu kaldirildi.",
+    "version":  "2.1.14",
+    "build":  61,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.14/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.14/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.14/SatinalmaPro.apk",
+    "notes":  "Android bildirim yonlendirme duzeltmesi, Ayarlar (roller/terimler), bildirim senkron hizlandirildi.",
     "zorunlu":  false
 }

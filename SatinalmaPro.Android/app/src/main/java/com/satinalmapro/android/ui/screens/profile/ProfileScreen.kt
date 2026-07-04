@@ -25,8 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SystemUpdate
 import com.satinalmapro.android.BuildConfig
+import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppCard
 import com.satinalmapro.android.ui.components.DetailRow
@@ -83,6 +85,12 @@ fun ProfileScreen(viewModel: AppViewModel, onLogout: () -> Unit) {
         }
 
         Spacer(Modifier.height(16.dp))
+        if (KullaniciRolleri.isAdmin(profile.role)) {
+            AppCard(onClick = { viewModel.navigateFromMenu("ayarlar") }) {
+                RowMenuItem(Icons.Rounded.Settings, "Ayarlar (Roller ve Terimler)", AppColors.Primary)
+            }
+            Spacer(Modifier.height(12.dp))
+        }
         AppCard(onClick = { viewModel.checkForUpdates(userInitiated = true) }) {
             RowMenuItem(Icons.Rounded.SystemUpdate, "Güncelleme Kontrol Et", AppColors.Primary)
         }

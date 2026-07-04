@@ -9,20 +9,30 @@ import com.satinalmapro.android.SatinalmaProApp
 import com.satinalmapro.android.core.roles.BildirimRota
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 class SatinalmaFcmService : FirebaseMessagingService() {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
     override fun onMessageReceived(message: RemoteMessage) {
         val data = message.data
         val title = message.notification?.title ?: data["title"] ?: "Satınalma Pro"
         val body = message.notification?.body ?: data["body"] ?: ""
-        var route = data["route"].orEmpty()
-        if (route.isBlank() && data["talepId"].orEmpty().isNotBlank()) {
-            val container = runCatching { SatinalmaProApp.get(this).container }.getOrNull()
-            val role = container?.user?.value?.role
-            route = BildirimRota.hedefRoute(data["tip"].orEmpty(), data["talepId"], role)
+        val container = runCatching { SatinalmaProApp.get(this).container }.getOrNull()
+        val role = container?.user?.value?.role
+        val talepId = data["talepId"]?.takeIf { it.isNotBlank() }
+        val tip = BildirimRota.normalizeTip(data["tip"].orEmpty())
+        val route = data["route"]?.takeIf { it.isNotBlank() }
+            ?: BildirimRota.hedefRoute(tip, talepId, role)
+        val notificationId = data["bildirimId"]?.takeIf { it.isNotBlank() }
+            ?: "${tip}_${talepId.orEmpty()}_${System.currentTimeMillis()}"
+
+        scope.launch {
+            runCatching { container?.refreshNotifications() }
+            runCatching { container?.syncData() }
         }
-        showNotification(title, body, route, data["bildirimId"])
+        showNotification(title, body, route, notificationId)
     }
 
     override fun onNewToken(token: String) {
@@ -33,15 +43,16 @@ class SatinalmaFcmService : FirebaseMessagingService() {
         }
     }
 
-    private fun showNotification(title: String, body: String, route: String, notificationId: String?) {
+    private fun showNotification(title: String, body: String, route: String, notificationId: String) {
+        val safeRoute = route.ifBlank { "bildirimler" }
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            putExtra("bildirim_route", route)
-            notificationId?.let { putExtra("bildirim_id", it) }
+            putExtra("bildirim_route", safeRoute)
+            putExtra("bildirim_id", notificationId)
         }
         val pending = PendingIntent.getActivity(
             this,
-            route.hashCode(),
+            notificationId.hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -49,10 +60,13 @@ class SatinalmaFcmService : FirebaseMessagingService() {
             .setSmallIcon(com.satinalmapro.android.R.drawable.app_icon)
             .setContentTitle(title)
             .setContentText(body)
+            .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(body))
             .setAutoCancel(true)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .setCategory(androidx.core.app.NotificationCompat.CATEGORY_MESSAGE)
             .setContentIntent(pending)
             .build()
         androidx.core.app.NotificationManagerCompat.from(this)
-            .notify(route.hashCode(), notification)
+            .notify(notificationId.hashCode(), notification)
     }
 }

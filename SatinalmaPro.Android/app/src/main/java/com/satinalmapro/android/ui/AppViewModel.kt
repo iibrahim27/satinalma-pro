@@ -10,6 +10,9 @@ import com.satinalmapro.android.core.model.UpdateManifest
 import com.satinalmapro.android.core.model.UserProfile
 import com.satinalmapro.android.core.AppContainer.UpdateInstallResult
 import com.satinalmapro.android.core.NetworkError
+import com.satinalmapro.android.core.model.ManagedUser
+import com.satinalmapro.android.core.model.UygulamaAyarlar
+import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.core.roles.BildirimRota
 import com.satinalmapro.android.core.roles.RolNavigasyon
 import java.util.concurrent.ConcurrentHashMap
@@ -28,6 +31,17 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     val talepler = container.talepList
     val stokList = container.stokList
     val stokHareketleri = container.stokHareketleri
+    val settingsUsers = container.settingsUsers
+    val malzemeBirimleri = container.uygulamaAyarlar.map { it.malzemeBirimleri }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UygulamaAyarlar.varsayilanBirimler)
+    val malzemeKategorileri = container.uygulamaAyarlar.map { it.malzemeKategorileri }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UygulamaAyarlar.varsayilanKategoriler)
+
+    private val _settingsMessage = MutableStateFlow<String?>(null)
+    val settingsMessage: StateFlow<String?> = _settingsMessage.asStateFlow()
+
+    private val _settingsError = MutableStateFlow<String?>(null)
+    val settingsError: StateFlow<String?> = _settingsError.asStateFlow()
 
     private val _splashDone = MutableStateFlow(false)
     val splashDone: StateFlow<Boolean> = _splashDone.asStateFlow()
@@ -178,15 +192,15 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun navigateFromNotification(route: String, notificationId: String? = null) {
-        if (container.user.value == null) {
+        if (container.user.value == null || !_splashDone.value || !_isLoggedIn.value) {
             container.pendingRoute = route
             container.pendingNotificationId = notificationId
             return
         }
+        navigate(route)
         viewModelScope.launch {
-            runCatching { container.syncData() }
             notificationId?.let { runCatching { container.markNotificationRead(it) } }
-            navigate(route)
+            runCatching { container.syncData() }
         }
     }
 
@@ -214,6 +228,12 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun startBackgroundRefresh() {
         viewModelScope.launch {
             while (true) {
+                kotlinx.coroutines.delay(12_000)
+                if (_isLoggedIn.value) runCatching { container.refreshNotifications() }
+            }
+        }
+        viewModelScope.launch {
+            while (true) {
                 kotlinx.coroutines.delay(30_000)
                 if (_isLoggedIn.value) runCatching { container.syncData() }
             }
@@ -239,6 +259,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 else -> Unit
             }
             if (_isLoggedIn.value) {
+                runCatching { container.refreshNotifications() }
                 runCatching { container.syncData() }
             }
         }
@@ -319,11 +340,6 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     fun handleNotificationRoute(route: String?, notificationId: String? = null) {
         if (route.isNullOrBlank()) return
-        if (!_splashDone.value || !_isLoggedIn.value) {
-            container.pendingRoute = route
-            container.pendingNotificationId = notificationId
-            return
-        }
         navigateFromNotification(route, notificationId)
     }
 
@@ -342,9 +358,9 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             }.onSuccess {
                 _loading.value = false
                 onSuccess()
-            }.onFailure {
+            }.onFailure { error ->
                 _loading.value = false
-                _submitError.value = it.message ?: "Talep gönderilemedi"
+                _submitError.value = NetworkError.translate(error.message ?: "Talep gönderilemedi")
             }
         }
     }
@@ -354,10 +370,9 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun saveDraft(draft: com.satinalmapro.android.data.local.RequestDraft) = container.saveDraft(draft)
 
     fun openNotification(notificationId: String, route: String) {
+        navigate(route)
         viewModelScope.launch {
             runCatching { container.markNotificationRead(notificationId) }
-            val safe = BildirimRota.safeRoute(route, container.user.value?.role)
-            navigate(safe)
         }
     }
 
@@ -408,5 +423,131 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun stokSayim(malzeme: String, depo: String, sayimMiktari: String, onSuccess: () -> Unit) {
         val m = sayimMiktari.replace(',', '.').toDoubleOrNull() ?: run { _submitError.value = "Geçerli miktar girin"; return }
         runWorkflow(onSuccess) { container.stokSayim(malzeme, depo, m) }
+    }
+
+    fun loadSettings() {
+        if (!KullaniciRolleri.isAdmin(container.user.value?.role)) return
+        viewModelScope.launch {
+            _settingsError.value = null
+            _loading.value = true
+            runCatching { container.loadUygulamaAyarlar() }
+                .onSuccess { _settingsMessage.value = null }
+                .onFailure { _settingsError.value = NetworkError.translate(it.message) }
+            _loading.value = false
+        }
+    }
+
+    fun saveUser(user: ManagedUser, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _settingsError.value = null
+            _settingsMessage.value = null
+            _loading.value = true
+            runCatching { container.saveManagedUser(user) }
+                .onSuccess {
+                    _settingsMessage.value = "Kullanıcı kaydedildi."
+                    onSuccess()
+                }
+                .onFailure { _settingsError.value = NetworkError.translate(it.message) }
+            _loading.value = false
+        }
+    }
+
+    fun createUser(
+        email: String,
+        password: String,
+        fullName: String,
+        role: String,
+        site: String,
+        active: Boolean,
+        onSuccess: () -> Unit = {}
+    ) {
+        if (email.isBlank() || password.length < 6 || fullName.isBlank()) {
+            _settingsError.value = "E-posta, ad soyad ve en az 6 karakterlik şifre girin."
+            return
+        }
+        viewModelScope.launch {
+            _settingsError.value = null
+            _settingsMessage.value = null
+            _loading.value = true
+            runCatching {
+                container.createManagedUser(email, password, fullName, role, site, active)
+            }.onSuccess {
+                _settingsMessage.value = "Kullanıcı oluşturuldu."
+                onSuccess()
+            }.onFailure { _settingsError.value = NetworkError.translate(it.message) }
+            _loading.value = false
+        }
+    }
+
+    fun addBirim(term: String, onSuccess: () -> Unit = {}) =
+        updateTermList(
+            current = container.uygulamaAyarlar.value.malzemeBirimleri,
+            term = term,
+            onSuccess = onSuccess
+        ) { list, ayarlar ->
+            container.saveUygulamaAyarlar(ayarlar.copy(malzemeBirimleri = list))
+        }
+
+    fun removeBirim(term: String) = updateTermList(
+        current = container.uygulamaAyarlar.value.malzemeBirimleri,
+        term = term,
+        remove = true
+    ) { list, ayarlar ->
+        container.saveUygulamaAyarlar(ayarlar.copy(malzemeBirimleri = list))
+    }
+
+    fun addKategori(term: String, onSuccess: () -> Unit = {}) =
+        updateTermList(
+            current = container.uygulamaAyarlar.value.malzemeKategorileri,
+            term = term,
+            onSuccess = onSuccess
+        ) { list, ayarlar ->
+            container.saveUygulamaAyarlar(ayarlar.copy(malzemeKategorileri = list))
+        }
+
+    fun removeKategori(term: String) = updateTermList(
+        current = container.uygulamaAyarlar.value.malzemeKategorileri,
+        term = term,
+        remove = true
+    ) { list, ayarlar ->
+        container.saveUygulamaAyarlar(ayarlar.copy(malzemeKategorileri = list))
+    }
+
+    private fun updateTermList(
+        current: List<String>,
+        term: String,
+        remove: Boolean = false,
+        onSuccess: () -> Unit = {},
+        save: suspend (List<String>, UygulamaAyarlar) -> Unit
+    ) {
+        val trimmed = term.trim()
+        if (trimmed.isBlank()) {
+            _settingsError.value = "Geçerli bir terim girin."
+            return
+        }
+        val next = if (remove) {
+            if (current.size <= 1) {
+                _settingsError.value = "En az bir terim kalmalıdır."
+                return
+            }
+            current.filterNot { it.equals(trimmed, ignoreCase = true) }
+        } else {
+            if (current.any { it.equals(trimmed, ignoreCase = true) }) {
+                _settingsError.value = "Bu terim zaten listede."
+                return
+            }
+            current + trimmed
+        }
+        viewModelScope.launch {
+            _settingsError.value = null
+            _loading.value = true
+            runCatching { save(next, container.uygulamaAyarlar.value) }
+                .onSuccess {
+                    _settingsMessage.value = if (remove) "Terim silindi." else "Terim eklendi."
+                    onSuccess()
+                }
+                .onFailure { _settingsError.value = NetworkError.translate(it.message) }
+            _loading.value = false
+        }
     }
 }

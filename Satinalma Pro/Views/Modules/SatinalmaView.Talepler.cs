@@ -294,6 +294,8 @@ public partial class SatinalmaView
         if (talep is null || TxtTalepTarih is null)
             return;
 
+        _seciliTalep = talep;
+
         if (_talepFormModu && talep.Durum == SatinalmaTalepDurumlari.Taslak)
             SatinalmaDepo.KorunanBosTaslakId = talep.Id;
 
@@ -509,15 +511,22 @@ public partial class SatinalmaView
         if (_seciliTalep is null)
             return;
 
+        KalemTablosu.CommitEdit(DataGridEditingUnit.Cell, true);
+        KalemTablosu.CommitEdit(DataGridEditingUnit.Row, true);
+
         var sira = (_seciliTalep.Kalemler.MaxBy(k => k.SiraNo)?.SiraNo ?? 0) + 1;
         _seciliTalep.Kalemler.Add(new SatinalmaTalepKalemi { SiraNo = sira, Birim = "Adet" });
-        KalemTablosu.Items.Refresh();
+        if (!ReferenceEquals(KalemTablosu.ItemsSource, _seciliTalep.Kalemler))
+            KalemTablosu.ItemsSource = _seciliTalep.Kalemler;
     }
 
     private void KalemSil_Click(object sender, RoutedEventArgs e)
     {
         if (_seciliTalep is null)
             return;
+
+        KalemTablosu.CommitEdit(DataGridEditingUnit.Cell, true);
+        KalemTablosu.CommitEdit(DataGridEditingUnit.Row, true);
 
         if (_seciliKalem is null)
         {
@@ -536,7 +545,8 @@ public partial class SatinalmaView
         _seciliTalep.Kalemler.Remove(_seciliKalem);
         _seciliKalem = null;
         KalemSiraNumaralariniGuncelle();
-        KalemTablosu.Items.Refresh();
+        if (!ReferenceEquals(KalemTablosu.ItemsSource, _seciliTalep.Kalemler))
+            KalemTablosu.ItemsSource = _seciliTalep.Kalemler;
     }
 
     private void KalemTablosu_SelectionChanged(object sender, SelectionChangedEventArgs e) =>

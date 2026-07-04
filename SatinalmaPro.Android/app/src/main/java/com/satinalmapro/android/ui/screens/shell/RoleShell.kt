@@ -30,6 +30,7 @@ import com.satinalmapro.android.ui.screens.materials.MaterialsScreen
 import com.satinalmapro.android.ui.screens.notifications.NotificationsScreen
 import com.satinalmapro.android.ui.screens.profile.ProfileScreen
 import com.satinalmapro.android.ui.screens.request.NewRequestScreen
+import com.satinalmapro.android.ui.screens.settings.SettingsScreen
 import com.satinalmapro.android.ui.screens.stok.StokCikisScreen
 import com.satinalmapro.android.ui.screens.stok.StokDurumScreen
 import com.satinalmapro.android.ui.screens.stok.StokGirisScreen
@@ -135,6 +136,7 @@ private fun RoleRouteContent(route: String, viewModel: AppViewModel, modifier: M
             "stok-cikis" -> StokCikisScreen(viewModel)
             "stok-hareket" -> StokHareketScreen(viewModel)
             "stok-sayim" -> StokSayimScreen(viewModel)
+            "ayarlar" -> SettingsScreen(viewModel)
             else -> HomeScreen(viewModel = viewModel, modifier = Modifier.fillMaxSize())
         }
     }

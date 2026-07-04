@@ -117,8 +117,10 @@ class TalepRepository(
         cloud.add(talep)
         saveTalepler(cloud)
         saveAyarlar(ayarlar)
-        bildirimler?.talepBildirimleri(BildirimTipleri.YONETIME_GONDERILDI, talep, user, hedefRol = KullaniciRolleri.YONETIM)
-        bildirimler?.talepBildirimleri(BildirimTipleri.YONETIME_GONDERILDI, talep, user, hedefRol = KullaniciRolleri.SATINALMA)
+        runCatching {
+            bildirimler?.talepBildirimleri(BildirimTipleri.YONETIME_GONDERILDI, talep, user, hedefRol = KullaniciRolleri.YONETIM)
+            bildirimler?.talepBildirimleri(BildirimTipleri.YONETIME_GONDERILDI, talep, user, hedefRol = KullaniciRolleri.SATINALMA)
+        }
         return talep
     }
 

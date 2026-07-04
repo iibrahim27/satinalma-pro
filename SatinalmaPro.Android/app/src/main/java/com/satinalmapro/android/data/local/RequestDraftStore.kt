@@ -7,7 +7,7 @@ import com.google.gson.reflect.TypeToken
 data class RequestDraftLine(
     val malzeme: String = "",
     val miktar: String = "",
-    val birim: String = "adet"
+    val birim: String = "Adet"
 )
 
 data class RequestDraft(

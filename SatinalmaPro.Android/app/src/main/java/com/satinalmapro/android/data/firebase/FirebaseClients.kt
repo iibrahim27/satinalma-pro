@@ -71,6 +71,32 @@ class FirebaseAuthClient(private val config: FirebaseConfig) {
         tokenExpiryMs = 0
     }
 
+    /** Yeni Firebase hesabı oluşturur; mevcut admin oturumunu korur. */
+    suspend fun createUserAccount(email: String, password: String): String {
+        val savedRefresh = refreshToken
+        val savedUid = uid
+        val savedEmail = email
+        val savedToken = idToken
+        val savedExpiry = tokenExpiryMs
+        return try {
+            val body = JSONObject()
+                .put("email", email.trim())
+                .put("password", password)
+                .put("returnSecureToken", false)
+            val response = HttpClients.postJson(
+                "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${config.apiKey}",
+                body.toString()
+            )
+            JSONObject(response).getString("localId")
+        } finally {
+            refreshToken = savedRefresh
+            uid = savedUid
+            this.email = savedEmail
+            idToken = savedToken
+            tokenExpiryMs = savedExpiry
+        }
+    }
+
     private suspend fun refreshIdToken() {
         val form = mapOf(
             "grant_type" to "refresh_token",
@@ -167,6 +193,26 @@ class FirestoreClient(
             "$root/users/$uid/notification_inbox/$docId?updateMask.fieldPaths=isRead&updateMask.fieldPaths=okundu&updateMask.fieldPaths=readAt",
             body.toString(),
             auth.validToken()
+        )
+    }
+
+    suspend fun saveUserProfile(user: com.satinalmapro.android.core.model.ManagedUser) {
+        if (user.uid.isBlank()) throw IllegalArgumentException("Kullanıcı kimliği boş")
+        val fields = JSONObject()
+            .put("eposta", JSONObject().put("stringValue", user.email))
+            .put("adSoyad", JSONObject().put("stringValue", user.fullName))
+            .put("rol", JSONObject().put("stringValue", user.role))
+            .put("aktif", JSONObject().put("booleanValue", user.active))
+            .put("saha", JSONObject().put("stringValue", user.site))
+        val body = JSONObject().put("fields", fields).toString()
+        val token = auth.validToken()
+        val patchUrl = "$root/users/${user.uid}?updateMask.fieldPaths=eposta&updateMask.fieldPaths=adSoyad&updateMask.fieldPaths=rol&updateMask.fieldPaths=aktif&updateMask.fieldPaths=saha"
+        val patchResult = runCatching { HttpClients.patch(patchUrl, body, token) }.getOrDefault("")
+        if (patchResult.isNotBlank()) return
+        HttpClients.postJsonAuthorized(
+            "$root/users?documentId=${user.uid}",
+            body,
+            token
         )
     }
 }
