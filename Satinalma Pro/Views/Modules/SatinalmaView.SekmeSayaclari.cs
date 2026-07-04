@@ -7,7 +7,7 @@ namespace SatinalmaPro.Views.Modules;
 
 public partial class SatinalmaView
 {
-    internal static readonly Dictionary<string, string> SekmeBasliklari = new(StringComparer.Ordinal)
+    public static readonly Dictionary<string, string> SekmeBasliklari = new(StringComparer.Ordinal)
     {
         ["Taleplerim"] = "Taleplerim",
         ["Gelen Talepler"] = "Gelen Talepler",

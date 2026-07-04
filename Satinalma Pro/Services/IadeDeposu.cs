@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SatinalmaPro.Helpers;
 using SatinalmaPro.Models.SatinalmaMerkezi;
 using SatinalmaPro.Shared;
 
@@ -52,8 +53,8 @@ public static class IadeDeposu
             Durum = k.Durum,
             Tarih = k.Tarih,
             DurumRenk = k.Durum.Contains("Onay", StringComparison.OrdinalIgnoreCase)
-                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(5, 150, 105))
-                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(245, 158, 11))
+                ? FircaOnbellegi.Al("#059669", System.Windows.Media.Color.FromRgb(5, 150, 105))
+                : FircaOnbellegi.Al("#F59E0B", System.Windows.Media.Color.FromRgb(245, 158, 11))
         }).ToList();
     }
 }

@@ -423,17 +423,8 @@ public partial class SatinalmaView
             MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
-    private static T? BulGorselUst<T>(DependencyObject? kok) where T : DependencyObject
-    {
-        while (kok is not null)
-        {
-            if (kok is T hedef)
-                return hedef;
-            kok = VisualTreeHelper.GetParent(kok);
-        }
-
-        return null;
-    }
+    private static T? BulGorselUst<T>(DependencyObject? kok) where T : DependencyObject =>
+        VisualTreeYardimcisi.FindAncestor<T>(kok);
 
     private void KalemEkle_Click(object sender, RoutedEventArgs e)
     {

@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using SatinalmaPro.Helpers;
 using SatinalmaPro.Services;
 
 namespace SatinalmaPro.Views.Controls;
@@ -185,7 +186,7 @@ public partial class MalzemeOneriGiris : UserControl
         {
             if (alt == ust)
                 return true;
-            alt = VisualTreeHelper.GetParent(alt);
+            alt = VisualTreeYardimcisi.GetParent(alt);
         }
 
         return false;

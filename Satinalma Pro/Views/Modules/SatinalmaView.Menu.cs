@@ -140,10 +140,27 @@ public partial class SatinalmaView
         _menuModunda = false;
         PanelSekmeMenu.Visibility = Visibility.Collapsed;
         PanelSekmeIcerik.Visibility = Visibility.Visible;
+
+        if (ShellModunda)
+        {
+            BtnMenuyeDon.Visibility = Visibility.Collapsed;
+            TxtAktifSekmeBaslik.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         BtnMenuyeDon.Visibility = Visibility.Visible;
 
         var baslik = SekmeBasliklari.TryGetValue(sekmeAdi, out var metin) ? metin : sekmeAdi;
         TxtAktifSekmeBaslik.Text = baslik;
         TxtAktifSekmeBaslik.Visibility = Visibility.Visible;
+    }
+
+    internal void ShellModunuBaslat()
+    {
+        PanelUstSerit.Visibility = Visibility.Collapsed;
+        PanelSekmeMenu.Visibility = Visibility.Collapsed;
+        Background = System.Windows.Media.Brushes.Transparent;
+        _menuModunda = false;
+        PanelSekmeIcerik.Visibility = Visibility.Visible;
     }
 }

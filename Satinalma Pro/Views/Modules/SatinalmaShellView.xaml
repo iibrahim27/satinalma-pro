@@ -1,0 +1,82 @@
+<UserControl x:Class="SatinalmaPro.Views.Modules.SatinalmaShellView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:dash="clr-namespace:SatinalmaPro.Controls.Dashboard"
+             xmlns:modules="clr-namespace:SatinalmaPro.Views.Modules"
+             xmlns:helpers="clr-namespace:SatinalmaPro.Helpers"
+             Background="{StaticResource DashBackgroundBrush}"
+             helpers:ScrollWheelHelper.IsEnabled="True">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="248" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+
+    <!-- Sol modül menüsü -->
+    <Border Grid.Column="0" Background="White"
+            BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="0,0,1,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="20,22,20,16"
+                BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="0,0,0,1">
+          <StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <Border Width="40" Height="40" CornerRadius="12" Background="{StaticResource DashNavActiveBrush}">
+                <dash:IconControl Kind="ShoppingCart" IconSize="20"
+                                  StrokeBrush="{StaticResource DashPrimaryBrush}"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="Satınalma" FontSize="16" FontWeight="SemiBold"
+                           Foreground="{StaticResource DashTextBrush}" />
+                <TextBlock Text="Talep · Teklif · Sipariş" FontSize="12"
+                           Foreground="{StaticResource DashTextSecondaryBrush}" Margin="0,2,0,0" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10,12,10,12">
+          <StackPanel x:Name="NavPanel" />
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <!-- Ana alan -->
+    <Grid Grid.Column="1" Margin="28,24,28,20">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <Grid Margin="0,0,0,20">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel>
+          <TextBlock x:Name="TxtBaslik" FontSize="24" FontWeight="SemiBold"
+                     Foreground="{StaticResource DashTextBrush}" />
+          <TextBlock x:Name="TxtAciklama" FontSize="14"
+                     Foreground="{StaticResource DashTextSecondaryBrush}" Margin="0,6,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+          <Button x:Name="BtnYeniTalep" Style="{StaticResource DashPrimaryButtonStyle}"
+                  Margin="0,0,10,0" Click="BtnYeniTalep_Click" Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="+" FontSize="16" FontWeight="Bold" Margin="0,0,8,0" />
+              <TextBlock Text="Yeni Talep" />
+            </StackPanel>
+          </Button>
+          <Button Style="{StaticResource DashGhostButtonStyle}" Click="Yenile_Click" ToolTip="Yenile (F5)">
+            <dash:IconControl Kind="TrendingUp" IconSize="16"
+                              StrokeBrush="{StaticResource DashTextBrush}" />
+          </Button>
+        </StackPanel>
+      </Grid>
+
+      <ContentControl x:Name="IcerikAlani" Grid.Row="1" />
+    </Grid>
+  </Grid>
+</UserControl>

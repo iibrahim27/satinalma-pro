@@ -1,0 +1,59 @@
+<UserControl x:Class="SatinalmaPro.Controls.Dashboard.ActivityPanelControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:dash="clr-namespace:SatinalmaPro.Controls.Dashboard">
+  <Border Style="{StaticResource DashCardBorderStyle}" Padding="24,22">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <Grid Margin="0,0,0,18">
+        <TextBlock Text="Son İşlemler" FontSize="18" FontWeight="SemiBold"
+                   Foreground="{StaticResource DashTextBrush}" />
+        <Button Content="Tümünü Gör" Style="{StaticResource DashSectionLinkStyle}"
+                HorizontalAlignment="Right" Click="TumunuGor_Click" />
+      </Grid>
+
+      <ItemsControl x:Name="Liste" Grid.Row="1">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Padding="0,12" BorderBrush="{StaticResource DashBorderBrush}"
+                    BorderThickness="0,0,0,1">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Border Width="36" Height="36" CornerRadius="18"
+                        Background="{StaticResource DashNavHoverBrush}"
+                        VerticalAlignment="Center">
+                  <dash:IconControl Kind="{Binding Icon}" IconSize="16"
+                                    StrokeBrush="{StaticResource DashPrimaryBrush}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+                <StackPanel Grid.Column="1" Margin="14,0,12,0" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Baslik}" FontSize="14" FontWeight="SemiBold"
+                             Foreground="{StaticResource DashTextBrush}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Zaman}" FontSize="12"
+                             Foreground="{StaticResource DashTextSecondaryBrush}" Margin="0,3,0,0" />
+                </StackPanel>
+
+                <Border Grid.Column="3" Style="{StaticResource DashBadgeStyle}"
+                        Background="{Binding DurumArkaplan}" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Durum}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="{Binding DurumOnplan}" />
+                </Border>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Grid>
+  </Border>
+</UserControl>

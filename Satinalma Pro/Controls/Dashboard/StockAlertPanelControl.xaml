@@ -1,0 +1,49 @@
+<UserControl x:Class="SatinalmaPro.Controls.Dashboard.StockAlertPanelControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Border Style="{StaticResource DashCardBorderStyle}" Padding="24,22">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <Grid Margin="0,0,0,18">
+        <TextBlock Text="Stok Uyarıları" FontSize="18" FontWeight="SemiBold"
+                   Foreground="{StaticResource DashTextBrush}" />
+        <Button Content="Tümünü Gör" Style="{StaticResource DashSectionLinkStyle}"
+                HorizontalAlignment="Right" Click="TumunuGor_Click" />
+      </Grid>
+
+      <ItemsControl x:Name="Liste" Grid.Row="1">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Padding="0,12" BorderBrush="{StaticResource DashBorderBrush}"
+                    BorderThickness="0,0,0,1">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Malzeme}" FontSize="14" FontWeight="SemiBold"
+                             Foreground="{StaticResource DashTextBrush}" />
+                  <TextBlock Text="{Binding MevcutMetin}" FontSize="12"
+                             Foreground="{StaticResource DashTextSecondaryBrush}" Margin="0,3,0,0" />
+                </StackPanel>
+
+                <Border Grid.Column="2" Style="{StaticResource DashBadgeStyle}"
+                        Background="{Binding DurumArkaplan}" VerticalAlignment="Center" Margin="12,0,0,0">
+                  <TextBlock Text="{Binding Durum}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="{Binding DurumOnplan}" />
+                </Border>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Grid>
+  </Border>
+</UserControl>

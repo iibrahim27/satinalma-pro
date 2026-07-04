@@ -1,4 +1,5 @@
 using System.Windows.Media;
+using SatinalmaPro.Helpers;
 using SatinalmaPro.Models.SatinalmaMerkezi;
 
 namespace SatinalmaPro.Services;
@@ -108,7 +109,11 @@ public static class SatinalmaMerkeziMockServisi
             OncelikRenk = Brush(oncelikRenk), DurumRenk = Brush(durumRenk)
         };
 
-    private static SolidColorBrush Brush(string hex) => new((Color)ColorConverter.ConvertFromString(hex)!);
+    private static Brush Brush(string hex)
+    {
+        var color = (Color)ColorConverter.ConvertFromString(hex)!;
+        return FircaOnbellegi.Al(hex, color);
+    }
 
     private static TalepDetayModel DetayT1() => new()
     {

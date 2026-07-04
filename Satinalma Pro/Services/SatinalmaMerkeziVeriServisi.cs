@@ -1,4 +1,5 @@
 using System.Windows.Media;
+using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Models.SatinalmaMerkezi;
 using SharedTalepDurumlari = SatinalmaPro.Shared.Models.SatinalmaTalepDurumlari;
@@ -237,8 +238,11 @@ public static class SatinalmaMerkeziVeriServisi
     private static KpiKartModel Kpi(string baslik, string deger, string renk, string anahtar) =>
         new() { Baslik = baslik, Deger = deger, Renk = Brush(renk), FiltreAnahtar = anahtar };
 
-    private static SolidColorBrush Brush(string hex) =>
-        (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
+    private static Brush Brush(string hex)
+    {
+        var color = (Color)ColorConverter.ConvertFromString(hex)!;
+        return FircaOnbellegi.Al(hex, color);
+    }
 
     private static string SantiyeMetni(SatinalmaTalep t) =>
         !string.IsNullOrWhiteSpace(t.SantiyeAdi) ? t.SantiyeAdi

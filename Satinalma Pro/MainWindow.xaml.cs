@@ -3,7 +3,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using SatinalmaPro.Controls.Dashboard;
 using SatinalmaPro.Helpers;
+using SatinalmaPro.Theme;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
 using SatinalmaPro.Shared.Services;
@@ -23,6 +25,10 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         KisayollariBagla();
+        Sidebar.NavigasyonSecildi += Sidebar_NavigasyonSecildi;
+        Sidebar.CikisTiklandi += (_, _) => Cikis_Click(this, new RoutedEventArgs());
+        Header.BildirimTiklandi += (_, _) => Bildirimler_Click(this, new RoutedEventArgs());
+        Header.HizliIslemSecildi += modul => OnModuleSelected(modul);
         AltBilgiyiGuncelle(modulde: false);
         Loaded += OnLoaded;
         Activated += OnActivated;
@@ -34,6 +40,14 @@ public partial class MainWindow : Window
             BildirimYoneticisi.BildirimlerDegisti += AnasayfaRozetiniGuncelle;
             BildirimRozetiniGuncelle();
         }
+    }
+
+    private void Sidebar_NavigasyonSecildi(string hedef)
+    {
+        if (hedef == "Ana Sayfa")
+            ShowHome();
+        else
+            OnModuleSelected(hedef);
     }
 
     private void Bildirimler_Click(object sender, RoutedEventArgs e)
@@ -51,6 +65,8 @@ public partial class MainWindow : Window
             OnModuleSelected("Satınalma");
             if (MainRegion.Content is SatinalmaMerkeziView merkez)
                 merkez.BildirimdenAc(null);
+            else if (MainRegion.Content is SatinalmaShellView shell)
+                shell.BildirimdenAc(null, 0, "teklif-onay");
             else if (MainRegion.Content is SatinalmaView satinalma)
                 satinalma.BildirimdenAc(null, 0, "teklif-onay");
             return;
@@ -175,6 +191,8 @@ public partial class MainWindow : Window
             BildirimYoneticisi.Baslat();
             _modulOnbellegi.Clear();
             ShowHome();
+            Sidebar.Yenile();
+            Header.KarsilamayiGuncelle();
             AltBilgiyiGuncelle(modulde: false);
         }
         catch (Exception ex)
@@ -196,12 +214,20 @@ public partial class MainWindow : Window
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        Sidebar.Yenile();
+        Header.KarsilamayiGuncelle();
+
         if (MainRegion.Content is HomeView home)
         {
             _homeView = home;
             home.ModuleSelected += OnModuleSelected;
         }
+        else
+        {
+            ShowHome();
+        }
 
+        AltBilgiyiGuncelle(modulde: false);
         Focus();
     }
 
@@ -242,8 +268,10 @@ public partial class MainWindow : Window
     private void ShowHome()
     {
         ModulBaslikPanel.Visibility = Visibility.Collapsed;
+        Header.Visibility = Visibility.Visible;
         Title = UygulamaBilgisi.Ad;
         AltBilgiyiGuncelle(modulde: false);
+        Sidebar.AktifOgeyiAyarla("Ana Sayfa");
 
         _homeView ??= new HomeView();
         _homeView.ModuleSelected -= OnModuleSelected;
@@ -251,8 +279,8 @@ public partial class MainWindow : Window
 
         MainRegion.Content = _homeView;
         _homeView.ModulleriYenile();
-        _homeView.AnasayfaLogosunuYenile();
         BildirimRozetiniGuncelle();
+        Header.KarsilamayiGuncelle();
         Focus();
     }
 
@@ -269,7 +297,10 @@ public partial class MainWindow : Window
             ? $"{temel}  ·  Esc / Ctrl+H: Ana Sayfa  ·  F5: Yenile"
             : temel;
 
-        BtnCikis.Visibility = OturumYoneticisi.BulutAktif && OturumYoneticisi.GirisYapildi
+        var rol = OturumYoneticisi.AktifKullanici?.Rol;
+        BtnYonetimTeklifOnay.Visibility = OturumYoneticisi.GirisYapildi && OturumYoneticisi.BulutAktif &&
+            (Models.KullaniciRolleri.AdminMi(rol)
+             || Models.KullaniciRolleri.Normalize(rol) is Models.KullaniciRolleri.Yonetim or Models.KullaniciRolleri.Satinalma)
             ? Visibility.Visible
             : Visibility.Collapsed;
 
@@ -299,15 +330,13 @@ public partial class MainWindow : Window
         }
 
         var sayi = BildirimYoneticisi.OkunmamisSayisi;
-        BtnBildirimler.Visibility = OturumYoneticisi.GirisYapildi ? Visibility.Visible : Visibility.Collapsed;
+        Header.BildirimRozetiniGuncelle(sayi);
         var rol = OturumYoneticisi.AktifKullanici?.Rol;
         BtnYonetimTeklifOnay.Visibility = OturumYoneticisi.GirisYapildi && OturumYoneticisi.BulutAktif &&
             (Models.KullaniciRolleri.AdminMi(rol)
              || Models.KullaniciRolleri.Normalize(rol) is Models.KullaniciRolleri.Yonetim or Models.KullaniciRolleri.Satinalma)
             ? Visibility.Visible
             : Visibility.Collapsed;
-        BadgeBildirim.Visibility = sayi > 0 ? Visibility.Visible : Visibility.Collapsed;
-        TxtBadgeSayi.Text = sayi > 99 ? "99+" : sayi.ToString();
     }
 
     private void ModulBasliginiGoster(string modulAdi)
@@ -318,13 +347,12 @@ public partial class MainWindow : Window
         TxtModulAltBaslik.Text = bilgi?.Subtitle ?? "Modül ekranı";
         TxtModulIkon.Text = bilgi?.IconGlyph ?? "\uE8A7";
 
-        var baslangic = bilgi?.GradientStart ?? Color.FromRgb(100, 116, 139);
-        var bitis = bilgi?.GradientEnd ?? Color.FromRgb(148, 163, 184);
+        var renk = bilgi?.GradientStart ?? Color.FromRgb(37, 99, 235);
+        ModulIkonZemin.Background = AppTheme.TintBrush(renk, 40);
 
-        ModulSolSerit.BorderBrush = new SolidColorBrush(baslangic);
-        ModulIkonZemin.Background = new LinearGradientBrush(baslangic, bitis, new Point(0, 0), new Point(1, 1));
-
-        ModulBaslikPanel.Visibility = Visibility.Visible;
+        ModulBaslikPanel.Visibility = modulAdi == "Satınalma" ? Visibility.Collapsed : Visibility.Visible;
+        Header.Visibility = Visibility.Collapsed;
+        Sidebar.AktifOgeyiAyarla(modulAdi);
         Title = $"{UygulamaBilgisi.Ad} — {modulAdi}";
         AltBilgiyiGuncelle(modulde: true);
     }
@@ -358,7 +386,7 @@ public partial class MainWindow : Window
                     "Çimento" => new CimentoView(),
                     "Akaryakıt Takip" => new AkaryakitView(),
                     "Araç Filo Takip" => new AracFiloView(),
-                    "Satınalma" => new SatinalmaMerkeziView(),
+                    "Satınalma" => new SatinalmaShellView(),
                     "Raporlamalar" => new RaporlamalarView(),
                     "Finansman Raporlama" => new FinansmanRaporlamaView(),
                     "Ayarlar" => new AyarlarView(),
@@ -388,6 +416,12 @@ public partial class MainWindow : Window
             return;
 
         OnModuleSelected(hedef.Modul);
+
+        if (MainRegion.Content is SatinalmaShellView shell)
+        {
+            shell.BildirimdenAc(hedef.TalepId, hedef.Adim, hedef.Sekme);
+            return;
+        }
 
         if (hedef.Modul == "Satınalma" && DeepLinkServisi.SatinalmaOperasyonGerektirir(hedef.Sekme))
         {
@@ -420,17 +454,9 @@ public partial class MainWindow : Window
 
         OnModuleSelected("Satınalma");
 
-        if (!_modulOnbellegi.TryGetValue("Satınalma-Operasyon", out var opView))
-        {
-            opView = new SatinalmaView();
-            _modulOnbellegi["Satınalma-Operasyon"] = opView;
-        }
-
-        MainRegion.Content = opView;
-        KullaniciYetkileri.ModulErisiminiUygula(opView, "Satınalma");
-        if (opView is IModulKlavyeKisayollari klavye)
-            klavye.KisayolYenile();
-        if (opView is SatinalmaView sv)
+        if (MainRegion.Content is SatinalmaShellView shell)
+            shell.BildirimdenAc(talepId, 0, sekme);
+        else if (MainRegion.Content is SatinalmaView sv)
             sv.BildirimdenAc(talepId, 0, sekme);
     }
 }

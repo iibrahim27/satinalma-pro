@@ -6,6 +6,7 @@
 # Android / Gradle
 **/.gradle/
 **/local.properties
+**/app/build/
 **/*.apk
 **/*.aab
 **/*.keystore

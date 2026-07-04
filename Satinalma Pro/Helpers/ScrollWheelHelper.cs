@@ -34,9 +34,9 @@ public static class ScrollWheelHelper
         if (e.Handled || e.OriginalSource is not DependencyObject source)
             return;
 
-        if (FindAncestor<DataGrid>(source) is not null ||
-            FindAncestor<TextBox>(source) is not null ||
-            FindAncestor<ComboBox>(source) is not null)
+        if (VisualTreeYardimcisi.FindAncestor<DataGrid>(source) is not null ||
+            VisualTreeYardimcisi.FindAncestor<TextBox>(source) is not null ||
+            VisualTreeYardimcisi.FindAncestor<ComboBox>(source) is not null)
             return;
 
         var scrollViewer = FindScrollableViewer(source);
@@ -45,19 +45,6 @@ public static class ScrollWheelHelper
 
         scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta / 3.0);
         e.Handled = true;
-    }
-
-    private static T? FindAncestor<T>(DependencyObject source) where T : DependencyObject
-    {
-        var current = source;
-        while (current != null)
-        {
-            if (current is T match)
-                return match;
-            current = VisualTreeHelper.GetParent(current);
-        }
-
-        return null;
     }
 
     private static ScrollViewer? FindScrollableViewer(DependencyObject source)
@@ -75,7 +62,7 @@ public static class ScrollWheelHelper
                     return inner;
             }
 
-            current = VisualTreeHelper.GetParent(current);
+            current = VisualTreeYardimcisi.GetParent(current);
         }
 
         return null;
@@ -83,6 +70,9 @@ public static class ScrollWheelHelper
 
     private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
     {
+        if (parent is not Visual and not System.Windows.Media.Media3D.Visual3D)
+            return null;
+
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
         {
             var child = VisualTreeHelper.GetChild(parent, i);

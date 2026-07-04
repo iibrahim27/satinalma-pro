@@ -7,8 +7,9 @@
   <Color x:Key="InkMutedColor">#64748B</Color>
   <Color x:Key="LineColor">#E2E8F0</Color>
   <Color x:Key="SurfaceColor">#F8FAFC</Color>
-  <Color x:Key="AccentStart">#2563EB</Color>
-  <Color x:Key="AccentEnd">#1D4ED8</Color>
+  <Color x:Key="SurfaceElevatedColor">#FFFFFF</Color>
+  <Color x:Key="AccentStart">#F97316</Color>
+  <Color x:Key="AccentEnd">#EA580C</Color>
 
   <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource WhitePure}" />
   <SolidColorBrush x:Key="InkBrush" Color="{StaticResource InkColor}" />
@@ -16,14 +17,7 @@
   <SolidColorBrush x:Key="InkMutedBrush" Color="{StaticResource InkMutedColor}" />
   <SolidColorBrush x:Key="LineBrush" Color="{StaticResource LineColor}" />
   <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
-
-  <Style x:Key="SatGridSayi" TargetType="TextBlock">
-    <Setter Property="HorizontalAlignment" Value="Right" />
-    <Setter Property="Padding" Value="0,0,8,0" />
-  </Style>
-  <Style x:Key="SatGridOrta" TargetType="TextBlock">
-    <Setter Property="HorizontalAlignment" Value="Center" />
-  </Style>
+  <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="{StaticResource SurfaceElevatedColor}" />
 
   <LinearGradientBrush x:Key="AccentGradientBrush" StartPoint="0,0" EndPoint="1,1">
     <GradientStop Color="{StaticResource AccentStart}" Offset="0" />
@@ -31,8 +25,8 @@
   </LinearGradientBrush>
 
   <LinearGradientBrush x:Key="AuraBrush" StartPoint="0,0" EndPoint="1,1">
-    <GradientStop Color="#2563EB" Offset="0" />
-    <GradientStop Color="#1D4ED8" Offset="1" />
+    <GradientStop Color="#F97316" Offset="0" />
+    <GradientStop Color="#EA580C" Offset="1" />
   </LinearGradientBrush>
 
   <!-- İnce ızgara dokusu -->
@@ -51,6 +45,14 @@
       </GeometryDrawing>
     </DrawingBrush.Drawing>
   </DrawingBrush>
+
+  <Style x:Key="SatGridSayi" TargetType="TextBlock">
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="Padding" Value="0,0,8,0" />
+  </Style>
+  <Style x:Key="SatGridOrta" TargetType="TextBlock">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
 
   <Style x:Key="LogoButtonStyle" TargetType="Button">
     <Setter Property="Background" Value="Transparent" />
@@ -102,8 +104,8 @@
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-              <Setter TargetName="Card" Property="BorderBrush" Value="#2563EB" />
-              <Setter TargetName="Card" Property="Background" Value="#F8FAFC" />
+              <Setter TargetName="Card" Property="BorderBrush" Value="#FDBA74" />
+              <Setter TargetName="Card" Property="Background" Value="#FFFBEB" />
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
               <Setter TargetName="Card" Property="Opacity" Value="0.96" />

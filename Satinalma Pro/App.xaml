@@ -8,6 +8,7 @@
                 <ui:ThemeResources RequestedTheme="Light" />
                 <ui:XamlControlsResources />
                 <ResourceDictionary Source="Resources/Theme.xaml" />
+                <ResourceDictionary Source="Resources/DashboardTheme.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

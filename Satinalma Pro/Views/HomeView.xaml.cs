@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
-using SatinalmaPro.Helpers;
+using SatinalmaPro.Controls.Dashboard;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
 
@@ -21,12 +21,14 @@ public partial class HomeView : UserControl
         DataContext = this;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
+
+        ActivityPanel.TumunuGorTiklandi += (_, _) => ModuleSelected?.Invoke("Satınalma");
+        StockPanel.TumunuGorTiklandi += (_, _) => ModuleSelected?.Invoke("Stok Yönetimi");
     }
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         ModulleriYenile();
-        AnasayfaLogosunuYenile();
         BildirimYoneticisi.BildirimlerDegisti += ModulleriYenile;
     }
 
@@ -60,15 +62,43 @@ public partial class HomeView : UserControl
                 || !KullaniciYetkileri.ModulGorebilir(Modules[i].Title))
                 Modules.RemoveAt(i);
         }
+
+        VeriyiYenile();
+        ModulKartlariniOlustur();
     }
 
-    public void AnasayfaLogosunuYenile() =>
-        LogoGorselYardimcisi.GorselAyarla(ImgAnasayfaLogo, UygulamaAyarDeposu.Ayarlar.AnasayfaLogoDosyaYolu);
-
-    private void ModuleCard_Click(object sender, RoutedEventArgs e)
+    public void AnasayfaLogosunuYenile()
     {
-        if (sender is Button { Tag: string title })
-            ModuleSelected?.Invoke(title);
+        // Logo sidebar'da yönetiliyor.
+    }
+
+    private void VeriyiYenile()
+    {
+        var veri = AnaSayfaVeriServisi.Yukle();
+
+        StatGrid.Children.Clear();
+        foreach (var stat in veri.Istatistikler)
+        {
+            var kart = new StatCardControl { Margin = new Thickness(0, 0, 16, 0) };
+            kart.Bagla(stat);
+            StatGrid.Children.Add(kart);
+        }
+
+        ActivityPanel.Bagla(veri.SonIslemler);
+        StockPanel.Bagla(veri.StokUyarilari);
+    }
+
+    private void ModulKartlariniOlustur()
+    {
+        ModulPanel.Children.Clear();
+
+        foreach (var modul in Modules)
+        {
+            var kart = new ModuleCardControl { Margin = new Thickness(0, 0, 20, 20) };
+            kart.Bagla(modul);
+            kart.ModulSecildi += (_, baslik) => ModuleSelected?.Invoke(baslik);
+            ModulPanel.Children.Add(kart);
+        }
     }
 }
 

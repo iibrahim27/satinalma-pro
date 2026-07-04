@@ -89,16 +89,19 @@ public partial class SatinalmaView
         if (_gelenTalepSecili is null)
             return;
 
+        var talep = _gelenTalepSecili;
+        var talepNo = talep.TalepNo;
+
         if (!KullaniciYetkileri.YonetimKararVerebilir())
         {
             MessageBox.Show("Talep onay yetkiniz yok.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        if (_gelenTalepSecili.TalepTuru == Models.TalepTurleri.Acil)
+        if (talep.TalepTuru == Models.TalepTurleri.Acil)
         {
             var onay = MessageBox.Show(
-                $"{_gelenTalepSecili.TalepNo} acil talep olarak onaylansın mı?",
+                $"{talepNo} acil talep olarak onaylansın mı?",
                 UygulamaBilgisi.Ad, MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (onay != MessageBoxResult.Yes)
                 return;
@@ -106,7 +109,7 @@ public partial class SatinalmaView
         else
         {
             var onay = MessageBox.Show(
-                $"{_gelenTalepSecili.TalepNo} teklifsiz onaylansın mı?",
+                $"{talepNo} teklifsiz onaylansın mı?",
                 UygulamaBilgisi.Ad, MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (onay != MessageBoxResult.Yes)
                 return;
@@ -114,7 +117,7 @@ public partial class SatinalmaView
 
         try
         {
-            await SatinalmaYonetimIslemleri.OnaylaAsync(_gelenTalepSecili, teklifIste: false);
+            await SatinalmaYonetimIslemleri.OnaylaAsync(talep, teklifIste: false);
         }
         catch (Exception ex)
         {
@@ -122,7 +125,7 @@ public partial class SatinalmaView
             return;
         }
 
-        MessageBox.Show($"{_gelenTalepSecili.TalepNo} onaylandı.", UygulamaBilgisi.Ad,
+        MessageBox.Show($"{talepNo} onaylandı.", UygulamaBilgisi.Ad,
             MessageBoxButton.OK, MessageBoxImage.Information);
         _gelenTalepSecili = null;
         AkisSekmeleriniYenile();
@@ -133,6 +136,9 @@ public partial class SatinalmaView
         if (_gelenTalepSecili is null)
             return;
 
+        var talep = _gelenTalepSecili;
+        var talepNo = talep.TalepNo;
+
         if (!KullaniciYetkileri.YonetimKararVerebilir())
         {
             MessageBox.Show("Teklif isteme yetkiniz yok.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -140,9 +146,9 @@ public partial class SatinalmaView
         }
 
         if (!SatinalmaPro.Shared.Helpers.SatinalmaIsAkisi.TeklifIstenebilir(
-                _gelenTalepSecili.TalepTuru,
-                _gelenTalepSecili.Durum,
-                SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(_gelenTalepSecili)))
+                talep.TalepTuru,
+                talep.Durum,
+                SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep)))
         {
             MessageBox.Show("Acil taleplerde teklif istenemez.", UygulamaBilgisi.Ad,
                 MessageBoxButton.OK, MessageBoxImage.Information);
@@ -150,14 +156,14 @@ public partial class SatinalmaView
         }
 
         var onay = MessageBox.Show(
-            $"{_gelenTalepSecili.TalepNo} için teklif girilmesi istensin mi?",
+            $"{talepNo} için teklif girilmesi istensin mi?",
             UygulamaBilgisi.Ad, MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (onay != MessageBoxResult.Yes)
             return;
 
         try
         {
-            await SatinalmaYonetimIslemleri.OnaylaAsync(_gelenTalepSecili, teklifIste: true);
+            await SatinalmaYonetimIslemleri.OnaylaAsync(talep, teklifIste: true);
         }
         catch (Exception ex)
         {
@@ -165,7 +171,7 @@ public partial class SatinalmaView
             return;
         }
 
-        MessageBox.Show($"{_gelenTalepSecili.TalepNo} teklif girişine yönlendirildi.",
+        MessageBox.Show($"{talepNo} teklif girişine yönlendirildi.",
             UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
         _gelenTalepSecili = null;
         AkisSekmeleriniYenile();
@@ -175,6 +181,9 @@ public partial class SatinalmaView
     {
         if (_gelenTalepSecili is null)
             return;
+
+        var talep = _gelenTalepSecili;
+        var talepNo = talep.TalepNo;
 
         if (!KullaniciYetkileri.YonetimKararVerebilir())
         {
@@ -188,7 +197,7 @@ public partial class SatinalmaView
 
         try
         {
-            await SatinalmaYonetimIslemleri.ReddetAsync(_gelenTalepSecili, gerekce);
+            await SatinalmaYonetimIslemleri.ReddetAsync(talep, gerekce);
         }
         catch (Exception ex)
         {
@@ -196,7 +205,7 @@ public partial class SatinalmaView
             return;
         }
 
-        MessageBox.Show($"{_gelenTalepSecili.TalepNo} reddedildi.", UygulamaBilgisi.Ad,
+        MessageBox.Show($"{talepNo} reddedildi.", UygulamaBilgisi.Ad,
             MessageBoxButton.OK, MessageBoxImage.Information);
         _gelenTalepSecili = null;
         AkisSekmeleriniYenile();

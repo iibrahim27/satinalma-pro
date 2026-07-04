@@ -1,0 +1,79 @@
+<UserControl x:Class="SatinalmaPro.Controls.Dashboard.ModuleCardControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:dash="clr-namespace:SatinalmaPro.Controls.Dashboard"
+             Width="260" Height="180">
+  <Border x:Name="Card" Style="{StaticResource DashCardBorderStyle}" Padding="22,20"
+          Cursor="Hand" MouseLeftButtonUp="Card_Click"
+          RenderTransformOrigin="0.5,0.5">
+    <Border.RenderTransform>
+      <TransformGroup>
+        <ScaleTransform x:Name="CardScale" ScaleX="1" ScaleY="1" />
+        <TranslateTransform x:Name="CardTransform" Y="0" />
+      </TransformGroup>
+    </Border.RenderTransform>
+    <Border.Triggers>
+      <EventTrigger RoutedEvent="MouseEnter">
+        <BeginStoryboard>
+          <Storyboard>
+            <DoubleAnimation Storyboard.TargetName="CardTransform" Storyboard.TargetProperty="Y"
+                             To="-5" Duration="0:0:0.2" />
+            <DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleX"
+                             To="1.02" Duration="0:0:0.2" />
+            <DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleY"
+                             To="1.02" Duration="0:0:0.2" />
+            <DoubleAnimation Storyboard.TargetName="ArrowTransform" Storyboard.TargetProperty="X"
+                             To="4" Duration="0:0:0.2" />
+          </Storyboard>
+        </BeginStoryboard>
+      </EventTrigger>
+      <EventTrigger RoutedEvent="MouseLeave">
+        <BeginStoryboard>
+          <Storyboard>
+            <DoubleAnimation Storyboard.TargetName="CardTransform" Storyboard.TargetProperty="Y"
+                             To="0" Duration="0:0:0.2" />
+            <DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleX"
+                             To="1" Duration="0:0:0.2" />
+            <DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleY"
+                             To="1" Duration="0:0:0.2" />
+            <DoubleAnimation Storyboard.TargetName="ArrowTransform" Storyboard.TargetProperty="X"
+                             To="0" Duration="0:0:0.2" />
+          </Storyboard>
+        </BeginStoryboard>
+      </EventTrigger>
+    </Border.Triggers>
+
+    <Grid>
+      <Border x:Name="IconKutu" Width="42" Height="42" CornerRadius="12"
+              HorizontalAlignment="Left" VerticalAlignment="Top">
+        <dash:IconControl x:Name="Icon" IconSize="20"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+      </Border>
+
+      <StackPanel VerticalAlignment="Center" Margin="0,8,0,0">
+        <TextBlock x:Name="TxtBaslik" FontSize="16" FontWeight="SemiBold"
+                   Foreground="{StaticResource DashTextBrush}" TextWrapping="Wrap" />
+        <TextBlock x:Name="TxtAciklama" FontSize="12" Foreground="{StaticResource DashTextSecondaryBrush}"
+                   TextWrapping="Wrap" LineHeight="17" Margin="0,8,0,0" MaxWidth="190" />
+      </StackPanel>
+
+      <Border Width="34" Height="34" CornerRadius="17"
+              Background="{StaticResource DashNavHoverBrush}"
+              HorizontalAlignment="Right" VerticalAlignment="Bottom">
+        <Border.RenderTransform>
+          <TranslateTransform x:Name="ArrowTransform" X="0" />
+        </Border.RenderTransform>
+        <dash:IconControl Kind="ArrowRight" IconSize="16"
+                          StrokeBrush="{StaticResource DashTextSecondaryBrush}"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+      </Border>
+
+      <Border x:Name="Badge" MinWidth="22" Height="22" Padding="6,0"
+              CornerRadius="11" Background="#EF4444"
+              HorizontalAlignment="Right" VerticalAlignment="Top" Visibility="Collapsed">
+        <TextBlock x:Name="TxtBadge" FontSize="11" FontWeight="Bold"
+                   Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+      </Border>
+    </Grid>
+  </Border>
+</UserControl>

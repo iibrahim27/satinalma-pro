@@ -1,116 +1,97 @@
-<Window x:Class="SatinalmaPro.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:ui="http://schemas.modernwpf.com/2019"
-        xmlns:views="clr-namespace:SatinalmaPro.Views"
-        xmlns:helpers="clr-namespace:SatinalmaPro.Helpers"
-        ui:WindowHelper.UseModernWindowStyle="True"
-        Title="Satınalma Pro"
-        Icon="Assets/app.ico"
-        Height="900"
-        Width="1400"
-        MinHeight="720"
-        MinWidth="1100"
-        WindowStartupLocation="CenterScreen"
-        Background="{StaticResource SurfaceColor}"
-        Focusable="True">
-
-  <Grid Background="{StaticResource SurfaceColor}">
-    <Grid.RowDefinitions>
-      <RowDefinition Height="*" />
-      <RowDefinition Height="Auto" />
-    </Grid.RowDefinitions>
-
-    <!-- Hafif arka plan -->
-    <Rectangle Grid.Row="0" Grid.RowSpan="2" Fill="{StaticResource GridPatternBrush}" Opacity="0.35" />
-
-    <Grid Grid.Row="0" Margin="48,36,48,8" helpers:ScrollWheelHelper.IsEnabled="True">
-      <Grid.RowDefinitions>
-        <RowDefinition Height="Auto" />
-        <RowDefinition Height="*" />
-      </Grid.RowDefinitions>
-
-      <!-- Modül başlığı (modüldeyken görünür) -->
-      <Border x:Name="ModulBaslikPanel" Grid.Row="0" Margin="0,0,0,16" Visibility="Collapsed"
-              Background="White" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-              CornerRadius="14" Padding="0">
-        <Border x:Name="ModulSolSerit" BorderThickness="4,0,0,0" CornerRadius="14,0,0,14" Padding="14,12">
-          <Grid>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="Auto" />
-              <ColumnDefinition Width="Auto" />
-              <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-
-            <Button Grid.Column="0" Style="{StaticResource ToolbarButtonStyle}" Margin="0"
-                    Padding="12,8" Click="Home_Click" ToolTip="Ana Sayfaya dön (Esc)">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                           Foreground="{StaticResource InkSoftBrush}" Margin="0,0,8,0" />
-                <TextBlock Text="Ana Sayfa" VerticalAlignment="Center" />
-              </StackPanel>
-            </Button>
-
-            <Rectangle Grid.Column="1" Width="1" Margin="14,6" Fill="{StaticResource LineBrush}" />
-
-            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-              <Border x:Name="ModulIkonZemin" Width="42" Height="42" CornerRadius="12">
-                <TextBlock x:Name="TxtModulIkon" FontFamily="Segoe MDL2 Assets" FontSize="18"
-                           Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
-              </Border>
-              <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
-                <TextBlock x:Name="TxtModulBaslik" FontSize="20" FontWeight="SemiBold"
-                           Foreground="{StaticResource InkBrush}" />
-                <TextBlock x:Name="TxtModulAltBaslik" FontSize="12"
-                           Foreground="{StaticResource InkMutedBrush}" Margin="0,2,0,0" />
-              </StackPanel>
-            </StackPanel>
-          </Grid>
-        </Border>
-      </Border>
-
-      <ContentControl x:Name="MainRegion" Grid.Row="1">
-        <views:HomeView />
-      </ContentControl>
-    </Grid>
-
-    <Grid Grid.Row="1" Margin="48,10,48,14">
-      <TextBlock x:Name="TxtAltBilgi"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Center"
-                 FontSize="11"
-                 Foreground="{StaticResource InkMutedBrush}"
-                 Opacity="0.85"
-                 TextAlignment="Center" />
-      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-        <Button x:Name="BtnYonetimTeklifOnay" Style="{StaticResource ToolbarButtonStyle}"
-                Visibility="Collapsed" Padding="10,6" Margin="0,0,8,0" Click="YonetimTeklifOnay_Click"
-                ToolTip="Mobil onay bekleyen teklifler (acil)">
-          <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                       VerticalAlignment="Center" Margin="0,0,6,0" />
-            <TextBlock Text="Teklif Onay" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-        <Button x:Name="BtnBildirimler" Style="{StaticResource ToolbarButtonStyle}"
-                Visibility="Collapsed" Padding="10,6" Click="Bildirimler_Click"
-                ToolTip="Bildirimler">
-          <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xEA8F;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                       VerticalAlignment="Center" Margin="0,0,6,0" />
-            <TextBlock Text="Bildirimler" VerticalAlignment="Center" />
-            <Border x:Name="BadgeBildirim" Background="#E74C3C" CornerRadius="8"
-                    MinWidth="18" Height="18" Margin="6,0,0,0" Padding="4,0"
-                    VerticalAlignment="Center" Visibility="Collapsed">
-              <TextBlock x:Name="TxtBadgeSayi" Foreground="White" FontSize="10"
-                         FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
-            </Border>
-          </StackPanel>
-        </Button>
-        <Button x:Name="BtnCikis" Style="{StaticResource ToolbarButtonStyle}"
-                Visibility="Collapsed" Padding="12,6" Margin="8,0,0,0" Click="Cikis_Click"
-                Content="Çıkış Yap" />
-      </StackPanel>
-    </Grid>
-  </Grid>
-</Window>
+<Window x:Class="SatinalmaPro.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        xmlns:dash="clr-namespace:SatinalmaPro.Controls.Dashboard"
+        xmlns:helpers="clr-namespace:SatinalmaPro.Helpers"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Satınalma Pro"
+        Icon="Assets/app.ico"
+        Height="900"
+        Width="1600"
+        MinHeight="720"
+        MinWidth="1280"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource DashBackgroundBrush}"
+        FontFamily="Segoe UI"
+        Focusable="True">
+
+  <Grid Background="{StaticResource DashBackgroundBrush}">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="280" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+
+    <Border Grid.Column="0"
+            BorderBrush="{StaticResource DashBorderBrush}"
+            BorderThickness="0,0,1,0">
+      <dash:AppSidebarView x:Name="Sidebar" />
+    </Border>
+
+    <Grid Grid.Column="1">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <Border Grid.Row="0" Background="{StaticResource DashBackgroundBrush}" Padding="32,28,32,0">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+
+          <dash:DashboardHeaderView x:Name="Header" />
+
+          <Border x:Name="ModulBaslikPanel" Grid.Row="1" Margin="0,0,0,16"
+                  Visibility="Collapsed" Style="{StaticResource DashCardBorderStyle}" Padding="16,14">
+            <StackPanel Orientation="Horizontal">
+              <Button Style="{StaticResource DashGhostButtonStyle}" Padding="10,8" Click="Home_Click"
+                      ToolTip="Ana Sayfaya dön (Esc)">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                             Foreground="{StaticResource DashTextSecondaryBrush}" Margin="0,0,8,0" />
+                  <TextBlock Text="Ana Sayfa" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Rectangle Width="1" Margin="14,4" Fill="{StaticResource DashBorderBrush}" />
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+                <Border x:Name="ModulIkonZemin" Width="40" Height="40" CornerRadius="12"
+                        Background="{StaticResource DashNavActiveBrush}">
+                  <TextBlock x:Name="TxtModulIkon" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                             Foreground="{StaticResource DashPrimaryBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                  <TextBlock x:Name="TxtModulBaslik" FontSize="18" FontWeight="SemiBold"
+                             Foreground="{StaticResource DashTextBrush}" />
+                  <TextBlock x:Name="TxtModulAltBaslik" FontSize="12"
+                             Foreground="{StaticResource DashTextSecondaryBrush}" Margin="0,2,0,0" />
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="1" Padding="32,0,32,0" Background="{StaticResource DashBackgroundBrush}">
+        <ContentControl x:Name="MainRegion" helpers:ScrollWheelHelper.IsEnabled="True" />
+      </Border>
+
+      <Border Grid.Row="2" Padding="32,8,32,14" Background="{StaticResource DashBackgroundBrush}">
+        <Grid>
+          <TextBlock x:Name="TxtAltBilgi" FontSize="11" Foreground="{StaticResource DashTextSecondaryBrush}"
+                     HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0.85" />
+          <Button x:Name="BtnYonetimTeklifOnay" Style="{StaticResource DashGhostButtonStyle}"
+                  Visibility="Collapsed" Padding="10,6" HorizontalAlignment="Right"
+                  Click="YonetimTeklifOnay_Click" ToolTip="Mobil onay bekleyen teklifler">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Teklif Onay" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

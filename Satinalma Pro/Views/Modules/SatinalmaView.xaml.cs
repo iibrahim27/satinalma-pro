@@ -13,6 +13,8 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
     private string _aktifSekme = MasaustuRolHaritasi.Taleplerim;
     private string? _sekmePanelOverride;
 
+    public bool ShellModunda { get; set; }
+
     public SatinalmaView()
     {
         InitializeComponent();
@@ -41,9 +43,16 @@ public partial class SatinalmaView : UserControl, IModulKlavyeKisayollari
             TalepSekmesiniHazirla();
             TeklifGirisSekmesiniHazirla();
             AkisSekmeleriniHazirla();
-            MenuGoster();
+            if (ShellModunda)
+                ShellModunuBaslat();
+            else
+                MenuGoster();
         };
     }
+
+    public void SekmeAc(string sekmeAdi) => SekmeyeGec(sekmeAdi);
+
+    public void YeniTalepBaslat() => YeniTalep_Click(this, new RoutedEventArgs());
 
     public void KisayolYenile()
     {

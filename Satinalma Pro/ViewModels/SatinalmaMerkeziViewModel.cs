@@ -61,7 +61,14 @@ public sealed class SatinalmaMerkeziViewModel : INotifyPropertyChanged
 
         BildirimYoneticisi.BildirimlerDegisti += () =>
         {
-            OkunmamisBildirim = BildirimYoneticisi.OkunmamisSayisi;
+            var ui = Application.Current?.Dispatcher;
+            if (ui is null)
+                return;
+
+            if (ui.CheckAccess())
+                OkunmamisBildirim = BildirimYoneticisi.OkunmamisSayisi;
+            else
+                ui.BeginInvoke(() => OkunmamisBildirim = BildirimYoneticisi.OkunmamisSayisi);
         };
     }
 
@@ -177,25 +184,25 @@ public sealed class SatinalmaMerkeziViewModel : INotifyPropertyChanged
             {
                 await SatinalmaMerkeziVeriServisi.VerileriHazirlaAsync().ConfigureAwait(false);
 
-                var kpi = SatinalmaMerkeziVeriServisi.KpiKartlari();
-                var yapilacak = SatinalmaMerkeziVeriServisi.YapilacakIsler();
-                var hareketler = SatinalmaMerkeziVeriServisi.SonHareketler();
-                var tumTalepler = SatinalmaMerkeziVeriServisi.Talepler();
-                var siparisler = SatinalmaMerkeziVeriServisi.Siparisler();
-                var beklenen = SatinalmaMerkeziVeriServisi.BeklenenSiparisler();
-                var depo = SatinalmaMerkeziVeriServisi.DepoTakip();
-                var performans = SatinalmaMerkeziVeriServisi.TedarikciPerformans();
-                var iadeler = SatinalmaMerkeziVeriServisi.Iadeler();
-                var tamamlanan = SatinalmaMerkeziVeriServisi.Tamamlananlar();
-                var bildirimler = SatinalmaMerkeziVeriServisi.Bildirimler();
-                var okunmamis = BildirimYoneticisi.OkunmamisSayisi;
-
                 var ui = Application.Current?.Dispatcher;
                 if (ui is null)
                     return;
 
                 await ui.InvokeAsync(() =>
                 {
+                    var kpi = SatinalmaMerkeziVeriServisi.KpiKartlari();
+                    var yapilacak = SatinalmaMerkeziVeriServisi.YapilacakIsler();
+                    var hareketler = SatinalmaMerkeziVeriServisi.SonHareketler();
+                    var tumTalepler = SatinalmaMerkeziVeriServisi.Talepler();
+                    var siparisler = SatinalmaMerkeziVeriServisi.Siparisler();
+                    var beklenen = SatinalmaMerkeziVeriServisi.BeklenenSiparisler();
+                    var depo = SatinalmaMerkeziVeriServisi.DepoTakip();
+                    var performans = SatinalmaMerkeziVeriServisi.TedarikciPerformans();
+                    var iadeler = SatinalmaMerkeziVeriServisi.Iadeler();
+                    var tamamlanan = SatinalmaMerkeziVeriServisi.Tamamlananlar();
+                    var bildirimler = SatinalmaMerkeziVeriServisi.Bildirimler();
+                    var okunmamis = BildirimYoneticisi.OkunmamisSayisi;
+
                     Doldur(KpiKartlar, kpi);
                     Doldur(YapilacakIsler, yapilacak);
                     Doldur(SonHareketler, hareketler);

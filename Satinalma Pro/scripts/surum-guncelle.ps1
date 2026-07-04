@@ -75,6 +75,21 @@ $manifestYol = Join-Path $projeKok "version.json"
 $manifest | ConvertTo-Json | Set-Content $manifestYol -Encoding UTF8
 Write-Host "  - version.json (build $yeniBuild)"
 
+# Repo kokunde de manifest (otomatik guncelleme URL'si icin)
+$kokManifest = Join-Path $repoKok "version.json"
+$manifest | ConvertTo-Json | Set-Content $kokManifest -Encoding UTF8
+Write-Host "  - ..\version.json (repo kok)"
+
+# Native Android Compose uygulamasi
+$androidCompose = Join-Path $repoKok "SatinalmaPro.Android\app\build.gradle.kts"
+if (Test-Path $androidCompose) {
+    $g = Get-Content $androidCompose -Raw -Encoding UTF8
+    $g = $g -replace '(versionCode\s*=\s*)\d+', "`${1}$yeniBuild"
+    $g = $g -replace '(versionName\s*=\s*")[^"]+(")', "`${1}$Version`${2}"
+    Set-Content $androidCompose -Value $g -Encoding UTF8 -NoNewline
+    Write-Host "  - SatinalmaPro.Android\app\build.gradle.kts (v$yeniBuild / $Version)"
+}
+
 # Native Android Compose uygulamalari (5 modul)
 $androidModuller = @(
     "SatinalmaPro.SatinAlma",

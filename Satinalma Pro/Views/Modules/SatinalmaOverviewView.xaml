@@ -1,0 +1,47 @@
+<UserControl x:Class="SatinalmaPro.Views.Modules.SatinalmaOverviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:dash="clr-namespace:SatinalmaPro.Controls.Dashboard">
+  <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,24">
+    <StackPanel x:Name="Root">
+      <UniformGrid x:Name="KpiGrid" Columns="4" Margin="0,0,0,24" />
+
+      <TextBlock Text="Hızlı Erişim" FontSize="16" FontWeight="SemiBold"
+                 Foreground="{StaticResource DashTextBrush}" Margin="0,0,0,14" />
+      <WrapPanel x:Name="HizliErisimPanel" />
+
+      <TextBlock Text="Bekleyen İşlemler" FontSize="16" FontWeight="SemiBold"
+                 Foreground="{StaticResource DashTextBrush}" Margin="0,28,0,14" />
+      <Border Style="{StaticResource DashCardBorderStyle}" Padding="20,16">
+        <ItemsControl x:Name="BekleyenListe">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Padding="0,10" BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="0,0,0,1">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel>
+                    <TextBlock Text="{Binding Baslik}" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{StaticResource DashTextBrush}" />
+                    <TextBlock Text="{Binding Alt}" FontSize="12"
+                               Foreground="{StaticResource DashTextSecondaryBrush}" Margin="0,3,0,0" />
+                  </StackPanel>
+                  <Border Grid.Column="1" Style="{StaticResource DashBadgeStyle}"
+                          Background="{StaticResource DashNavActiveBrush}" Margin="12,0">
+                    <TextBlock Text="{Binding Sekme}" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource DashPrimaryBrush}" />
+                  </Border>
+                  <Button Grid.Column="2" Content="Aç" Style="{StaticResource DashPrimaryButtonStyle}"
+                          Padding="12,6" Tag="{Binding SekmeAdi}" Click="HizliAc_Click" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
