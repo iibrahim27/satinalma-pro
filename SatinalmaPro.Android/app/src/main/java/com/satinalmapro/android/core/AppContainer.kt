@@ -277,47 +277,78 @@ class AppContainer(private val context: Context) {
         if (urls.isEmpty()) {
             return UpdateCheckResult(false, error = "Güncelleme adresi yapılandırılmamış")
         }
+        if (!NetworkMonitor.isOnline(context)) {
+            return UpdateCheckResult(false, error = NetworkError.translate("Unable to resolve host"))
+        }
         val errors = mutableListOf<String>()
+        var best: UpdateManifest? = null
         for (baseUrl in urls) {
             try {
-                val url = if (baseUrl.contains('?')) "$baseUrl&_=${System.currentTimeMillis()}"
-                else "$baseUrl?_=${System.currentTimeMillis()}"
-                val json = HttpClients.get(url)
+                val json = HttpClients.get(cacheBustUrl(baseUrl))
                 if (json.isBlank()) {
-                    errors.add("Sürüm bilgisi alınamadı")
+                    errors.add("Boş yanıt: $baseUrl")
                     continue
                 }
                 val manifest = parseManifest(json)
-                if (manifest.version.isBlank()) {
-                    errors.add("Sürüm bilgisi alınamadı")
+                if (manifest.version.isBlank() || manifest.build <= 0) {
+                    errors.add("Geçersiz manifest: $baseUrl")
                     continue
                 }
-                val needsUpdate = manifest.build > BuildConfig.VERSION_CODE ||
-                    versionGreater(manifest.version, BuildConfig.VERSION_NAME)
-                return UpdateCheckResult(needsUpdate, if (needsUpdate) manifest else null)
+                if (best == null || manifest.build > best!!.build ||
+                    (manifest.build == best!!.build && versionGreater(manifest.version, best!!.version))
+                ) {
+                    best = manifest
+                }
             } catch (e: Exception) {
-                errors.add(e.message ?: e.javaClass.simpleName)
+                errors.add("${baseUrl}: ${e.message ?: e.javaClass.simpleName}")
             }
         }
-        return UpdateCheckResult(false, error = NetworkError.translate(errors.lastOrNull()))
+        val manifest = best ?: return UpdateCheckResult(
+            false,
+            error = NetworkError.translate(errors.lastOrNull() ?: "Güncelleme sunucusuna ulaşılamadı")
+        )
+        val needsUpdate = manifest.build > BuildConfig.VERSION_CODE ||
+            versionGreater(manifest.version, BuildConfig.VERSION_NAME)
+        return UpdateCheckResult(needsUpdate, if (needsUpdate) manifest else null)
     }
 
+    private fun cacheBustUrl(baseUrl: String): String =
+        if (baseUrl.contains('?')) "$baseUrl&_=${System.currentTimeMillis()}"
+        else "$baseUrl?_=${System.currentTimeMillis()}"
+
     private fun manifestUrls(): List<String> = buildList {
+        add("https://raw.githubusercontent.com/iibrahim27/satinalma-pro/main/version.json")
+        add("https://github.com/iibrahim27/satinalma-pro/raw/main/version.json")
         if (config.updateManifestUrl.isNotBlank()) add(config.updateManifestUrl.trim())
         add("https://cdn.jsdelivr.net/gh/iibrahim27/satinalma-pro@main/version.json")
-        add("https://raw.githubusercontent.com/iibrahim27/satinalma-pro/main/version.json")
+    }.distinct()
+
+    private fun apkDownloadUrls(manifest: UpdateManifest): List<String> = buildList {
+        manifest.downloadUrlApk.takeIf { it.isNotBlank() }?.let(::add)
+        add("https://github.com/iibrahim27/satinalma-pro/releases/download/v${manifest.version}/SatinalmaPro.apk")
     }.distinct()
 
     suspend fun downloadAndInstallUpdate(
         manifest: UpdateManifest,
         onProgress: (String, Int) -> Unit
     ): UpdateInstallResult {
-        val apkUrl = manifest.downloadUrlApk.ifBlank {
-            "https://github.com/iibrahim27/satinalma-pro/releases/download/v${manifest.version}/SatinalmaPro.apk"
-        }
+        val urls = apkDownloadUrls(manifest)
+        if (urls.isEmpty()) throw IllegalStateException("Güncelleme indirme adresi bulunamadı")
         onProgress("Güncelleme indiriliyor...", 10)
         val target = File(context.cacheDir, "SatinalmaPro_${manifest.version}_b${manifest.build}.apk")
-        HttpClients.download(apkUrl, target) { p -> onProgress("İndiriliyor... %$p", 10 + (p * 0.8).toInt()) }
+        var lastError: Exception? = null
+        for ((index, apkUrl) in urls.withIndex()) {
+            try {
+                HttpClients.download(apkUrl, target) { p ->
+                    onProgress("İndiriliyor... %$p", 10 + (p * 0.8).toInt())
+                }
+                lastError = null
+                break
+            } catch (e: Exception) {
+                lastError = e as? Exception ?: Exception(e.message ?: "İndirme başarısız")
+                if (index == urls.lastIndex) throw lastError!!
+            }
+        }
         prefs.edit().putString(KEY_PENDING_APK, target.absolutePath).apply()
         onProgress("Kurulum başlatılıyor...", 95)
         return installPendingApk(target)

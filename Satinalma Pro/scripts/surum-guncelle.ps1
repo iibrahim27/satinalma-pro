@@ -80,6 +80,15 @@ $kokManifest = Join-Path $repoKok "version.json"
 $manifest | ConvertTo-Json | Set-Content $kokManifest -Encoding UTF8
 Write-Host "  - ..\version.json (repo kok)"
 
+# Android firebase manifest URL (OTA guncelleme)
+$androidFirebase = Join-Path $repoKok "SatinalmaPro.Android\app\src\main\assets\firebase_ayarlar.json"
+if (Test-Path $androidFirebase) {
+    $fb = Get-Content $androidFirebase -Raw -Encoding UTF8 | ConvertFrom-Json
+    $fb.guncellemeManifestUrl = "https://raw.githubusercontent.com/$GitHubKullanici/$RepoAdi/main/version.json"
+    $fb | ConvertTo-Json -Depth 5 | Set-Content $androidFirebase -Encoding UTF8
+    Write-Host "  - SatinalmaPro.Android firebase_ayarlar.json (manifest URL)"
+}
+
 # Native Android Compose uygulamasi
 $androidCompose = Join-Path $repoKok "SatinalmaPro.Android\app\build.gradle.kts"
 if (Test-Path $androidCompose) {

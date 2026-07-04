@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.11",
-    "build":  57,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.11/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.11/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.11/SatinalmaPro.apk",
-    "notes":  "Android veri yukleme, bildirim navigasyonu ve stok duzeltmeleri. Masaustu talep/taslak ve firma-fiyat duzeltmeleri.",
+    "version":  "2.1.12",
+    "build":  58,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.12/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.12/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.12/SatinalmaPro.apk",
+    "notes":  "OTA guncelleme duzeltmesi. Masaustu ve Android surum senkronu.",
     "zorunlu":  false
 }

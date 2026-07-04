@@ -90,16 +90,22 @@ if (-not (Test-Path $kurulumExe)) {
     throw "Kurulum exe olusturulamadi: $kurulumExe"
 }
 
-Write-Host "`n[6/6] Android APK derleniyor (3-8 dakika)..."
-$apkScript = Join-Path (Split-Path $projeKok -Parent) "SatinalmaPro.Mobile\scripts\apk-olustur.ps1"
-if (-not (Test-Path $apkScript)) {
-    throw "APK script bulunamadi: $apkScript"
+Write-Host "`n[6/6] Android APK derleniyor (Compose, 1-2 dakika)..."
+$androidKok = Join-Path (Split-Path $projeKok -Parent) "SatinalmaPro.Android"
+$gradlew = Join-Path $androidKok "gradlew.bat"
+if (-not (Test-Path $gradlew)) {
+    throw "Android Gradle bulunamadi: $gradlew"
 }
 
-& $apkScript
-if ($LASTEXITCODE -ne 0) { throw "APK derlemesi basarisiz (cikis: $LASTEXITCODE)" }
+Push-Location $androidKok
+try {
+    & $gradlew assembleRelease --no-daemon
+    if ($LASTEXITCODE -ne 0) { throw "Android APK derlemesi basarisiz (cikis: $LASTEXITCODE)" }
+} finally {
+    Pop-Location
+}
 
-$apkKaynak = Join-Path ([Environment]::GetFolderPath('Desktop')) "SatinalmaPro.apk"
+$apkKaynak = Join-Path $androidKok "app\build\outputs\apk\release\app-release.apk"
 $apkHedef = Join-Path $projeKok "SatinalmaPro.apk"
 if (-not (Test-Path $apkKaynak)) {
     throw "APK bulunamadi: $apkKaynak"
