@@ -36,6 +36,8 @@ import com.satinalmapro.android.ui.theme.AppShapes
 @Composable
 fun ProfileScreen(viewModel: AppViewModel, onLogout: () -> Unit) {
     val user by viewModel.user.collectAsState()
+    val updateMessage by viewModel.updateMessage.collectAsState()
+    val updateError by viewModel.updateError.collectAsState()
     val profile = user ?: return
 
     Column(
@@ -90,6 +92,14 @@ fun ProfileScreen(viewModel: AppViewModel, onLogout: () -> Unit) {
             style = MaterialTheme.typography.labelMedium,
             color = AppColors.TextSecondary
         )
+        updateMessage?.let {
+            Spacer(Modifier.height(6.dp))
+            Text(it, style = MaterialTheme.typography.bodySmall, color = AppColors.Primary)
+        }
+        updateError?.let {
+            Spacer(Modifier.height(6.dp))
+            Text(it, style = MaterialTheme.typography.bodySmall, color = AppColors.Danger)
+        }
         Spacer(Modifier.height(16.dp))
         AppCard(onClick = { }) {
             RowMenuItem(Icons.Rounded.Lock, "Şifre Değiştir", AppColors.TextPrimary)

@@ -1,6 +1,10 @@
 package com.satinalmapro.android.core
 
+import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import javax.net.ssl.SSLException
 
 object NetworkError {
     fun translate(message: String?): String {
@@ -30,8 +34,18 @@ object NetworkError {
             return "Kullanıcı profili bulunamadı. Masaüstünden kullanıcı oluşturulmalıdır."
         }
 
+        if (mesaj.contains("İndirme başarısız", true)) {
+            return "Güncelleme indirilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin."
+        }
+
+        if (mesaj.contains("Sürüm bilgisi alınamadı", true)) {
+            return "Güncelleme sunucusuna ulaşılamadı. Daha sonra tekrar deneyin."
+        }
+
         return mesaj
     }
+
+    fun translate(error: Throwable): String = translate(error.message ?: error.javaClass.simpleName)
 
     fun isNetworkRelated(message: String?): Boolean {
         val mesaj = message.orEmpty()
@@ -46,5 +60,10 @@ object NetworkError {
     }
 
     fun isNetworkRelated(error: Throwable): Boolean =
-        error is UnknownHostException || isNetworkRelated(error.message)
+        error is UnknownHostException
+            || error is ConnectException
+            || error is SocketTimeoutException
+            || error is SSLException
+            || error is IOException
+            || isNetworkRelated(error.message)
 }

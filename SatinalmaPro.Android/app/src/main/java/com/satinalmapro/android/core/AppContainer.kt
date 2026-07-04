@@ -272,24 +272,40 @@ class AppContainer(private val context: Context) {
         MalzemeOneri.filtrele(_materialNames.value, query)
 
     suspend fun checkForUpdate(): UpdateCheckResult {
-        if (config.updateManifestUrl.isBlank()) {
+        val urls = manifestUrls()
+        if (urls.isEmpty()) {
             return UpdateCheckResult(false, error = "Güncelleme adresi yapılandırılmamış")
         }
-        return try {
-            val url = config.updateManifestUrl + "?_=${System.currentTimeMillis()}"
-            val json = HttpClients.get(url)
-            val manifest = parseManifest(json)
-            if (manifest.version.isBlank()) {
-                UpdateCheckResult(false)
-            } else {
+        val errors = mutableListOf<String>()
+        for (baseUrl in urls) {
+            try {
+                val url = if (baseUrl.contains('?')) "$baseUrl&_=${System.currentTimeMillis()}"
+                else "$baseUrl?_=${System.currentTimeMillis()}"
+                val json = HttpClients.get(url)
+                if (json.isBlank()) {
+                    errors.add("Sürüm bilgisi alınamadı")
+                    continue
+                }
+                val manifest = parseManifest(json)
+                if (manifest.version.isBlank()) {
+                    errors.add("Sürüm bilgisi alınamadı")
+                    continue
+                }
                 val needsUpdate = manifest.build > BuildConfig.VERSION_CODE ||
                     versionGreater(manifest.version, BuildConfig.VERSION_NAME)
-                UpdateCheckResult(needsUpdate, if (needsUpdate) manifest else null)
+                return UpdateCheckResult(needsUpdate, if (needsUpdate) manifest else null)
+            } catch (e: Exception) {
+                errors.add(e.message ?: e.javaClass.simpleName)
             }
-        } catch (e: Exception) {
-            UpdateCheckResult(false, error = NetworkError.translate(e.message))
         }
+        return UpdateCheckResult(false, error = NetworkError.translate(errors.lastOrNull()))
     }
+
+    private fun manifestUrls(): List<String> = buildList {
+        if (config.updateManifestUrl.isNotBlank()) add(config.updateManifestUrl.trim())
+        add("https://cdn.jsdelivr.net/gh/iibrahim27/satinalma-pro@main/version.json")
+        add("https://raw.githubusercontent.com/iibrahim27/satinalma-pro/main/version.json")
+    }.distinct()
 
     suspend fun downloadAndInstallUpdate(
         manifest: UpdateManifest,
@@ -300,7 +316,7 @@ class AppContainer(private val context: Context) {
         }
         onProgress("Güncelleme indiriliyor...", 10)
         val target = File(context.cacheDir, "SatinalmaPro_${manifest.version}_b${manifest.build}.apk")
-        downloadFile(apkUrl, target) { p -> onProgress("İndiriliyor... %$p", 10 + (p * 0.8).toInt()) }
+        HttpClients.download(apkUrl, target) { p -> onProgress("İndiriliyor... %$p", 10 + (p * 0.8).toInt()) }
         prefs.edit().putString(KEY_PENDING_APK, target.absolutePath).apply()
         onProgress("Kurulum başlatılıyor...", 95)
         return installPendingApk(target)
@@ -467,35 +483,13 @@ class AppContainer(private val context: Context) {
         } catch (_: Exception) { }
     }
 
-    private suspend fun downloadFile(url: String, target: File, onProgress: (Int) -> Unit) {
-        val client = okhttp3.OkHttpClient()
-        val request = okhttp3.Request.Builder().url(url).build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IllegalStateException("İndirme başarısız: ${response.code}")
-            val body = response.body ?: throw IllegalStateException("Boş yanıt")
-            val total = body.contentLength()
-            target.outputStream().use { out ->
-                body.byteStream().use { input ->
-                    val buffer = ByteArray(8192)
-                    var read: Int
-                    var downloaded = 0L
-                    while (input.read(buffer).also { read = it } != -1) {
-                        out.write(buffer, 0, read)
-                        downloaded += read
-                        if (total > 0) onProgress(((downloaded * 100) / total).toInt())
-                    }
-                }
-            }
-        }
-    }
-
     private fun parseManifest(json: String): UpdateManifest {
         val obj = JSONObject(json.trim().removePrefix("\uFEFF"))
         return UpdateManifest(
-            version = obj.optString("version"),
+            version = obj.optString("version").trim().trim('"'),
             build = obj.optInt("build"),
-            downloadUrlApk = obj.optString("downloadUrlApk"),
-            notes = obj.optString("notes")
+            downloadUrlApk = obj.optString("downloadUrlApk").trim(),
+            notes = obj.optString("notes").trim()
         )
     }
 

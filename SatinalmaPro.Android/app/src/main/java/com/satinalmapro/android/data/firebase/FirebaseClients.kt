@@ -1,8 +1,13 @@
 package com.satinalmapro.android.data.firebase
 
+import com.satinalmapro.android.BuildConfig
 import com.satinalmapro.android.core.NetworkError
+import java.io.File
 import java.net.UnknownHostException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
@@ -167,78 +172,102 @@ class FirestoreClient(
 }
 
 object HttpClients {
-    private val client = okhttp3.OkHttpClient.Builder()
-        .connectTimeout(java.time.Duration.ofSeconds(45))
-        .readTimeout(java.time.Duration.ofSeconds(120))
+    private val userAgent = "SatinalmaPro-Android/${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})"
+
+    private val client: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(java.time.Duration.ofSeconds(30))
+        .readTimeout(java.time.Duration.ofSeconds(180))
+        .writeTimeout(java.time.Duration.ofSeconds(60))
+        .followRedirects(true)
+        .followSslRedirects(true)
         .build()
 
-    suspend fun get(url: String, token: String? = null): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        try {
-            val request = okhttp3.Request.Builder().url(url).apply {
+    private fun requestBuilder(url: String): okhttp3.Request.Builder =
+        okhttp3.Request.Builder()
+            .url(url)
+            .header("User-Agent", userAgent)
+            .header("Accept", "*/*")
+
+    suspend fun get(url: String, token: String? = null): String = withContext(Dispatchers.IO) {
+        executeRequest {
+            requestBuilder(url).apply {
                 token?.let { addHeader("Authorization", "Bearer $it") }
             }.build()
-            client.newCall(request).execute().use { response ->
-                if (response.code == 404) return@withContext ""
-                if (!response.isSuccessful) throw IllegalStateException(parseFirebaseError(response.body?.string() ?: "HTTP ${response.code}"))
-                response.body?.string() ?: ""
-            }
-        } catch (e: UnknownHostException) {
-            throw IllegalStateException(NetworkError.translate(e.message))
         }
     }
 
-    suspend fun postJson(url: String, json: String): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        try {
-            val body = json.toRequestBodyJson()
-            val request = okhttp3.Request.Builder().url(url).post(body).build()
-            client.newCall(request).execute().use { response ->
-                val text = response.body?.string() ?: ""
-                if (!response.isSuccessful) throw IllegalStateException(parseFirebaseError(text))
-                text
-            }
-        } catch (e: UnknownHostException) {
-            throw IllegalStateException(NetworkError.translate(e.message))
-        }
-    }
-
-    suspend fun postForm(url: String, fields: Map<String, String>): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        val form = okhttp3.FormBody.Builder().apply { fields.forEach { (k, v) -> add(k, v) } }.build()
-        val request = okhttp3.Request.Builder().url(url).post(form).build()
+    suspend fun download(url: String, target: File, onProgress: (Int) -> Unit) = withContext(Dispatchers.IO) {
+        val request = requestBuilder(url).build()
         client.newCall(request).execute().use { response ->
-            val text = response.body?.string() ?: ""
-            if (!response.isSuccessful) throw IllegalStateException(parseFirebaseError(text))
-            text
+            if (!response.isSuccessful) {
+                throw IllegalStateException("İndirme başarısız: HTTP ${response.code}")
+            }
+            val body = response.body ?: throw IllegalStateException("İndirme başarısız: Boş yanıt")
+            val total = body.contentLength()
+            target.outputStream().use { out ->
+                body.byteStream().use { input ->
+                    val buffer = ByteArray(8192)
+                    var read: Int
+                    var downloaded = 0L
+                    while (input.read(buffer).also { read = it } != -1) {
+                        out.write(buffer, 0, read)
+                        downloaded += read
+                        if (total > 0) onProgress(((downloaded * 100) / total).toInt())
+                    }
+                }
+            }
         }
     }
 
-    suspend fun patch(url: String, json: String, token: String): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    suspend fun postJson(url: String, json: String): String = withContext(Dispatchers.IO) {
         val body = json.toRequestBodyJson()
-        val request = okhttp3.Request.Builder()
-            .url(url)
-            .patch(body)
-            .addHeader("Authorization", "Bearer $token")
-            .build()
-        client.newCall(request).execute().use { response ->
-            val text = response.body?.string() ?: ""
-            if (!response.isSuccessful) throw IllegalStateException(parseFirebaseError(text))
-            text
+        executeRequest { requestBuilder(url).post(body).build() }
+    }
+
+    suspend fun postForm(url: String, fields: Map<String, String>): String = withContext(Dispatchers.IO) {
+        val form = okhttp3.FormBody.Builder().apply { fields.forEach { (k, v) -> add(k, v) } }.build()
+        executeRequest { requestBuilder(url).post(form).build() }
+    }
+
+    suspend fun patch(url: String, json: String, token: String): String = withContext(Dispatchers.IO) {
+        val body = json.toRequestBodyJson()
+        executeRequest {
+            requestBuilder(url)
+                .patch(body)
+                .addHeader("Authorization", "Bearer $token")
+                .build()
         }
     }
 
     suspend fun postJsonAuthorized(url: String, json: String, token: String): String =
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        withContext(Dispatchers.IO) {
             val body = json.toRequestBodyJson()
-            val request = okhttp3.Request.Builder()
-                .url(url)
-                .post(body)
-                .addHeader("Authorization", "Bearer $token")
-                .build()
-            client.newCall(request).execute().use { response ->
-                val text = response.body?.string() ?: ""
-                if (!response.isSuccessful) throw IllegalStateException(parseFirebaseError(text))
-                text
+            executeRequest {
+                requestBuilder(url)
+                    .post(body)
+                    .addHeader("Authorization", "Bearer $token")
+                    .build()
             }
         }
+
+    private inline fun executeRequest(build: () -> okhttp3.Request): String {
+        try {
+            client.newCall(build()).execute().use { response ->
+                if (response.code == 404) return ""
+                val text = response.body?.string() ?: ""
+                if (!response.isSuccessful) {
+                    throw IllegalStateException(parseFirebaseError(text.ifBlank { "HTTP ${response.code}" }))
+                }
+                return text
+            }
+        } catch (e: IllegalStateException) {
+            throw e
+        } catch (e: UnknownHostException) {
+            throw IllegalStateException(NetworkError.translate(e))
+        } catch (e: Exception) {
+            throw IllegalStateException(NetworkError.translate(e))
+        }
+    }
 
     private fun parseFirebaseError(body: String): String {
         val raw = try {

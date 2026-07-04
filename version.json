@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.9",
-    "build":  55,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.9/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.9/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.9/SatinalmaPro.apk",
-    "notes":  "Masaustu taslak duzeltmesi, Android bildirim senkronu ve FCM yapilandirma.",
+    "version":  "2.1.10",
+    "build":  56,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.10/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.10/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.10/SatinalmaPro.apk",
+    "notes":  "Android OTA guncelleme baglanti duzeltmesi, yedek manifest URL\u0027leri.",
     "zorunlu":  false
 }

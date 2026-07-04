@@ -214,10 +214,28 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     fun checkForUpdates(showDialog: Boolean = false) {
         viewModelScope.launch {
-            val result = runCatching { container.checkForUpdate() }.getOrNull() ?: return@launch
-            if (result.available && result.manifest != null) {
-                _pendingUpdate.value = result.manifest
+            _updateError.value = null
+            _updateMessage.value = "Güncelleme kontrol ediliyor..."
+            val result = runCatching { container.checkForUpdate() }.getOrElse {
+                _updateMessage.value = null
+                _updateError.value = NetworkError.translate(it)
                 if (showDialog) _showUpdateDialog.value = true
+                return@launch
+            }
+            _updateMessage.value = null
+            when {
+                result.error != null -> {
+                    _updateError.value = result.error
+                    if (showDialog) _showUpdateDialog.value = true
+                }
+                result.available && result.manifest != null -> {
+                    _pendingUpdate.value = result.manifest
+                    _showUpdateDialog.value = true
+                }
+                else -> {
+                    _updateMessage.value = "Uygulama güncel."
+                    if (showDialog) _showUpdateDialog.value = true
+                }
             }
         }
     }
@@ -240,7 +258,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 }
             }.getOrElse {
                 _updateProgress.value = null
-                _updateError.value = NetworkError.translate(it.message)
+                _updateError.value = NetworkError.translate(it)
                 return@launch
             }
             _updateProgress.value = null
