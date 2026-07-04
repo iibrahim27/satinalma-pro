@@ -18,7 +18,9 @@ class SatinalmaFcmService : FirebaseMessagingService() {
         val body = message.notification?.body ?: data["body"] ?: ""
         var route = data["route"].orEmpty()
         if (route.isBlank() && data["talepId"].orEmpty().isNotBlank()) {
-            route = BildirimRota.hedefRoute(data["tip"].orEmpty(), data["talepId"], null)
+            val container = runCatching { SatinalmaProApp.get(this).container }.getOrNull()
+            val role = container?.user?.value?.role
+            route = BildirimRota.hedefRoute(data["tip"].orEmpty(), data["talepId"], role)
         }
         showNotification(title, body, route, data["bildirimId"])
     }

@@ -40,9 +40,19 @@ fun NotificationsScreen(viewModel: AppViewModel) {
         modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        items(notifications) { item ->
+        if (notifications.isEmpty()) {
+            item {
+                Text("Bildirim yok.", color = AppColors.TextSecondary, modifier = Modifier.padding(vertical = 24.dp))
+            }
+        }
+        items(notifications, key = { it.id }) { item ->
             NotificationTimelineItem(item) {
-                val route = item.route ?: BildirimRota.hedefRoute(item.type, item.requestId, user?.role)
+                val route = item.route?.takeIf { it.isNotBlank() }
+                    ?: BildirimRota.hedefRoute(
+                        BildirimRota.normalizeTip(item.type),
+                        item.requestId,
+                        user?.role
+                    )
                 viewModel.openNotification(item.id, route)
             }
         }

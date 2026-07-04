@@ -1,6 +1,6 @@
 package com.satinalmapro.android.data.repository
 
-import com.google.gson.Gson
+import com.satinalmapro.android.core.JsonConfig
 import com.google.gson.reflect.TypeToken
 import com.satinalmapro.android.core.model.DashboardActivity
 import com.satinalmapro.android.core.model.DashboardCard
@@ -27,7 +27,7 @@ class TalepRepository(
     private val auth: FirebaseAuthClient,
     private val bildirimler: BildirimRepository? = null
 ) {
-    private val gson = Gson()
+    private val gson = JsonConfig.gson
     private val listType = object : TypeToken<List<TalepItem>>() {}.type
     private val ayarType = object : TypeToken<SatinalmaAyarlar>() {}.type
 

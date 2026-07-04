@@ -75,6 +75,7 @@ class AppContainer(private val context: Context) {
     val notifications: StateFlow<List<AppNotification>> = _notifications.asStateFlow()
 
     var pendingRoute: String? = null
+    var pendingNotificationId: String? = null
 
     private var knownNotificationIds = emptySet<String>()
     private var notificationsInitialized = false

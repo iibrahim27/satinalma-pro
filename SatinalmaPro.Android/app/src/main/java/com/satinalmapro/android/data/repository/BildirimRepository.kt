@@ -1,6 +1,6 @@
 package com.satinalmapro.android.data.repository
 
-import com.google.gson.Gson
+import com.satinalmapro.android.core.JsonConfig
 import com.google.gson.reflect.TypeToken
 import com.satinalmapro.android.core.model.AppNotification
 import com.satinalmapro.android.core.model.BildirimRecord
@@ -22,7 +22,7 @@ class BildirimRepository(
     private val auth: FirebaseAuthClient,
     private val fcmPush: FcmPushService? = null
 ) {
-    private val gson = Gson()
+    private val gson = JsonConfig.gson
     private val listType = object : TypeToken<List<BildirimRecord>>() {}.type
 
     suspend fun loadAll(): List<BildirimRecord> {
@@ -97,7 +97,7 @@ class BildirimRepository(
 
     fun gecerliMi(record: BildirimRecord, talepler: List<TalepItem>): Boolean {
         val talepId = record.talepId ?: return true
-        val talep = talepler.firstOrNull { it.id.equals(talepId, true) } ?: return false
+        val talep = talepler.firstOrNull { it.id.equals(talepId, true) } ?: return true
         return when (record.tip) {
             BildirimTipleri.YONETIME_GONDERILDI -> com.satinalmapro.android.core.roles.TalepKuyrugu.yonetimTalepler(talep)
             BildirimTipleri.TEKLIF_ISTENDI -> talep.durum == com.satinalmapro.android.core.roles.TalepDurumlari.TEKLIF_GIRISI &&
@@ -145,15 +145,5 @@ class BildirimRepository(
         return newer.copy(okundu = newer.okundu || older.okundu)
     }
 
-    private fun mapTip(tip: String): String = when (tip) {
-        BildirimTipleri.YONETIME_GONDERILDI -> "YonetimeGonderildi"
-        BildirimTipleri.TEKLIF_ISTENDI -> "TeklifIstendi"
-        BildirimTipleri.TEKLIF_ONAYDA -> "TeklifOnayda"
-        BildirimTipleri.TEKLIF_DUZELTME_ISTENDI -> "TeklifDuzeltmeIstendi"
-        BildirimTipleri.ONAYLANDI -> "Onaylandi"
-        BildirimTipleri.REDDEDILDI -> "Reddedildi"
-        BildirimTipleri.SIPARIS_OLUSTURULDU -> "SiparisOlusturuldu"
-        BildirimTipleri.MAL_KABUL_EDILDI -> "MalKabulEdildi"
-        else -> tip
-    }
+    private fun mapTip(tip: String): String = BildirimRota.normalizeTip(tip)
 }

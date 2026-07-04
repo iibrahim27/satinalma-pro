@@ -12,6 +12,7 @@ import com.satinalmapro.android.core.AppContainer.UpdateInstallResult
 import com.satinalmapro.android.core.NetworkError
 import com.satinalmapro.android.core.roles.BildirimRota
 import com.satinalmapro.android.core.roles.RolNavigasyon
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -72,17 +73,30 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     val dashboardActivities = talepler.map { container.dashboardData().second }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun filteredTalepler(queue: TalepQueue): StateFlow<List<TalepItem>> =
-        talepler.map { container.filteredTalepler(queue) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    fun talepById(id: String): StateFlow<TalepItem?> =
-        talepler.map { container.findTalep(id) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
-
-    fun approvedMaterials(): StateFlow<List<TalepItem>> =
+    private val filteredFlows = ConcurrentHashMap<TalepQueue, StateFlow<List<TalepItem>>>()
+    private val talepByIdFlows = ConcurrentHashMap<String, StateFlow<TalepItem?>>()
+    private val approvedMaterialsFlow by lazy {
         talepler.map { container.approvedMaterials() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
+
+    fun filteredTalepler(queue: TalepQueue): StateFlow<List<TalepItem>> =
+        filteredFlows.getOrPut(queue) {
+            talepler.map { container.filteredTalepler(queue) }
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    container.filteredTalepler(queue)
+                )
+        }
+
+    fun talepById(id: String): StateFlow<TalepItem?> =
+        talepByIdFlows.getOrPut(id) {
+            talepler.map { container.findTalep(id) }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), container.findTalep(id))
+        }
+
+    fun approvedMaterials(): StateFlow<List<TalepItem>> = approvedMaterialsFlow
 
     fun startSplash() {
         viewModelScope.launch {
@@ -100,8 +114,9 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 if (_pendingUpdate.value != null) _showUpdateDialog.value = true
             }
             container.pendingRoute?.let { route ->
-                navigateFromNotification(route)
+                navigateFromNotification(route, container.pendingNotificationId)
                 container.pendingRoute = null
+                container.pendingNotificationId = null
             }
             _splashDone.value = true
         }
@@ -117,6 +132,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 _isLoggedIn.value = true
                 routeHistory.clear()
                 _currentRoute.value = RolNavigasyon.defaultRoute(container.user.value?.role)
+                consumePendingNotificationRoute()
                 checkForUpdates(showDialog = true)
             }.onFailure {
                 _loginError.value = NetworkError.translate(it.message)
@@ -161,12 +177,25 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         return false
     }
 
-    fun navigateFromNotification(route: String) {
+    fun navigateFromNotification(route: String, notificationId: String? = null) {
         if (container.user.value == null) {
             container.pendingRoute = route
+            container.pendingNotificationId = notificationId
             return
         }
-        navigate(route)
+        viewModelScope.launch {
+            runCatching { container.syncData() }
+            notificationId?.let { runCatching { container.markNotificationRead(it) } }
+            navigate(route)
+        }
+    }
+
+    private fun consumePendingNotificationRoute() {
+        val route = container.pendingRoute ?: return
+        val notificationId = container.pendingNotificationId
+        container.pendingRoute = null
+        container.pendingNotificationId = null
+        navigateFromNotification(route, notificationId)
     }
 
     fun canAccess(route: String): Boolean =
@@ -208,7 +237,10 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 }
                 else -> Unit
             }
-            if (_isLoggedIn.value) checkForUpdates(showDialog = true)
+            if (_isLoggedIn.value) {
+                runCatching { container.syncData() }
+                checkForUpdates(showDialog = true)
+            }
         }
     }
 
@@ -278,8 +310,14 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     fun materialSuggestions(query: String): List<String> = container.materialSuggestions(query)
 
-    fun handleNotificationRoute(route: String?) {
-        if (!route.isNullOrBlank()) navigateFromNotification(route)
+    fun handleNotificationRoute(route: String?, notificationId: String? = null) {
+        if (route.isNullOrBlank()) return
+        if (!_splashDone.value || !_isLoggedIn.value) {
+            container.pendingRoute = route
+            container.pendingNotificationId = notificationId
+            return
+        }
+        navigateFromNotification(route, notificationId)
     }
 
     fun submitRequest(
@@ -311,7 +349,8 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun openNotification(notificationId: String, route: String) {
         viewModelScope.launch {
             runCatching { container.markNotificationRead(notificationId) }
-            navigate(route)
+            val safe = BildirimRota.safeRoute(route, container.user.value?.role)
+            navigate(safe)
         }
     }
 

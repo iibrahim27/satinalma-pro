@@ -20,9 +20,9 @@
               <StackPanel>
                 <TextBlock FontWeight="SemiBold" Text="{Binding Malzeme}" />
                 <TextBlock Foreground="#64748B" Margin="0,2,0,8">
-                  <Run Text="{Binding Miktar, StringFormat=N2}" />
+                  <Run Text="{Binding Miktar, StringFormat=N2, Mode=OneWay}" />
                   <Run Text=" " />
-                  <Run Text="{Binding Birim}" />
+                  <Run Text="{Binding Birim, Mode=OneWay}" />
                 </TextBlock>
                 <TextBox Margin="0,0,0,6" Tag="Firma" Text="{Binding FirmaAdi, UpdateSourceTrigger=PropertyChanged}" />
                 <TextBox Tag="Birim Fiyat" Text="{Binding BirimFiyatMetin, UpdateSourceTrigger=PropertyChanged}" />

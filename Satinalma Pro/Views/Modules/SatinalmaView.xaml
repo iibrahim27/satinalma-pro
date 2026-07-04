@@ -295,7 +295,7 @@
                       </DataGridTemplateColumn.CellTemplate>
                       <DataGridTemplateColumn.CellEditingTemplate>
                         <DataTemplate>
-                          <controls:MalzemeOneriGiris Metin="{Binding Malzeme, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                          <controls:MalzemeOneriGiris Metin="{Binding Malzeme, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
                         </DataTemplate>
                       </DataGridTemplateColumn.CellEditingTemplate>
                     </DataGridTemplateColumn>

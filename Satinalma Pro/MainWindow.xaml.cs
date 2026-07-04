@@ -88,8 +88,22 @@ public partial class MainWindow : Window
         if (AcikAltPencereyiKapat())
             return;
 
+        if (AktifSatinalmaEscapeIsle())
+            return;
+
         if (!AnasayfadaMi())
             ShowHome();
+    }
+
+    private bool AktifSatinalmaEscapeIsle()
+    {
+        if (MainRegion.Content is SatinalmaShellView shell)
+            return shell.EscapeTusunuIsle();
+
+        if (MainRegion.Content is SatinalmaView view)
+            return view.EscapeTusunuIsle();
+
+        return false;
     }
 
     public void AnaSayfayaDon()

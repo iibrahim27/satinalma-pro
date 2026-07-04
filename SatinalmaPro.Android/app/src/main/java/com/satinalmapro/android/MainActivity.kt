@@ -52,8 +52,10 @@ class MainActivity : ComponentActivity() {
 
     private fun consumeNotificationIntent(intent: Intent?) {
         val route = intent?.getStringExtra("bildirim_route") ?: return
+        val notificationId = intent.getStringExtra("bildirim_id")
         intent.removeExtra("bildirim_route")
-        viewModel.handleNotificationRoute(route)
+        intent.removeExtra("bildirim_id")
+        viewModel.handleNotificationRoute(route, notificationId)
     }
 
     private fun requestNotificationPermission() {

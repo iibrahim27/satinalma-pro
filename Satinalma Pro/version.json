@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.10",
-    "build":  56,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.10/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.10/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.10/SatinalmaPro.apk",
-    "notes":  "Android OTA guncelleme baglanti duzeltmesi, yedek manifest URL\u0027leri.",
+    "version":  "2.1.11",
+    "build":  57,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.11/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.11/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.11/SatinalmaPro.apk",
+    "notes":  "Android veri yukleme, bildirim navigasyonu ve stok duzeltmeleri. Masaustu talep/taslak ve firma-fiyat duzeltmeleri.",
     "zorunlu":  false
 }

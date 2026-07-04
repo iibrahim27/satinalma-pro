@@ -12,18 +12,33 @@ public static class SatinalmaTalepSilmeYardimcisi
 
         BildirimDeposu.Bildirimler.RemoveAll(b => b.TalepId == talepId);
 
-        var silinenMalzeme = ModulVeriDeposu.AlinanMalzemeler
-            .Where(k => MalzemeKaydiSilinmeli(k, talepId, belgeNolari))
-            .ToList();
+        var silinenMalzeme = 0;
+        ModulVeriDeposu.BeginBatch();
+        try
+        {
+            for (var i = ModulVeriDeposu.AlinanMalzemeler.Count - 1; i >= 0; i--)
+            {
+                if (!MalzemeKaydiSilinmeli(ModulVeriDeposu.AlinanMalzemeler[i], talepId, belgeNolari))
+                    continue;
 
-        foreach (var kayit in silinenMalzeme)
-            ModulVeriDeposu.AlinanMalzemeler.Remove(kayit);
+                ModulVeriDeposu.AlinanMalzemeler.RemoveAt(i);
+                silinenMalzeme++;
+            }
+        }
+        finally
+        {
+            ModulVeriDeposu.EndBatch();
+        }
 
-        SatinalmaDepo.Talepler.Remove(talep);
+        for (var i = SatinalmaDepo.Talepler.Count - 1; i >= 0; i--)
+        {
+            if (SatinalmaDepo.Talepler[i].Id == talepId)
+                SatinalmaDepo.Talepler.RemoveAt(i);
+        }
         SatinalmaTalepSenkronYardimcisi.SilindiIsaretle(talepId, SatinalmaDepo.Ayarlar);
         SatinalmaDepo.Kaydet();
 
-        if (silinenMalzeme.Count > 0)
+        if (silinenMalzeme > 0)
             ModulVeriDeposu.KaydetAlinanMalzemeler();
 
         if (OturumYoneticisi.BulutAktif && OturumYoneticisi.GirisYapildi)

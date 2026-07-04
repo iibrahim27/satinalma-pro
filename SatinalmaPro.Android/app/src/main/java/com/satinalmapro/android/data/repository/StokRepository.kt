@@ -1,6 +1,6 @@
 package com.satinalmapro.android.data.repository
 
-import com.google.gson.Gson
+import com.satinalmapro.android.core.JsonConfig
 import com.google.gson.reflect.TypeToken
 import com.satinalmapro.android.core.model.StokHareket
 import com.satinalmapro.android.core.model.StokHareketTipi
@@ -18,7 +18,7 @@ class StokRepository(
     private val firestore: FirestoreClient,
     private val auth: FirebaseAuthClient
 ) {
-    private val gson = Gson()
+    private val gson = JsonConfig.gson
     private val stokType = object : TypeToken<List<StokKaydi>>() {}.type
     private val hareketType = object : TypeToken<List<StokHareket>>() {}.type
 

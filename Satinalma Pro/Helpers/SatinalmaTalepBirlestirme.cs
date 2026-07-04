@@ -112,7 +112,10 @@ public static class SatinalmaTalepBirlestirme
             return;
 
         hedef.Teklifler ??= [];
-        foreach (var teklif in kaynak.Teklifler ?? [])
+        if (ReferenceEquals(hedef.Teklifler, kaynak.Teklifler))
+            return;
+
+        foreach (var teklif in (kaynak.Teklifler ?? []).ToList())
         {
             var mevcut = hedef.Teklifler.FirstOrDefault(t => t.Id == teklif.Id);
             if (mevcut is null)

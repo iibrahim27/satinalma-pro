@@ -108,11 +108,12 @@ object RolNavigasyon {
 
 object BildirimRota {
     fun hedefRoute(type: String, requestId: String?, role: String?): String {
+        val tip = normalizeTip(type)
         val r = KullaniciRolleri.normalize(role)
-        if (requestId != null && type == "Reddedildi") {
+        if (requestId != null && tip == "Reddedildi") {
             return if (r == KullaniciRolleri.YONETIM) "red-talepler" else "talep-detay?id=$requestId"
         }
-        return when (type) {
+        return when (tip) {
             "YonetimeGonderildi" -> "gelen-talepler"
             "TeklifIstendi" -> if (r == KullaniciRolleri.YONETIM) "gelen-talepler" else "teklif-gir"
             "TeklifDuzeltmeIstendi" -> "teklif-gir"
@@ -140,6 +141,19 @@ object BildirimRota {
         if (requestId != null && RolNavigasyon.canAccess(role, "teklif-onay"))
             return "teklif-onay-detay?id=$requestId"
         return RolNavigasyon.defaultRoute(role)
+    }
+
+    /** Firestore/FCM tip kodlarını rota anahtarına çevirir. */
+    fun normalizeTip(type: String): String = when (type.trim().lowercase()) {
+        "yonetime_gonderildi" -> "YonetimeGonderildi"
+        "teklif_istendi" -> "TeklifIstendi"
+        "teklif_duzeltme_istendi" -> "TeklifDuzeltmeIstendi"
+        "teklif_onayda" -> "TeklifOnayda"
+        "onaylandi" -> "Onaylandi"
+        "reddedildi" -> "Reddedildi"
+        "siparis_olusturuldu" -> "SiparisOlusturuldu"
+        "mal_kabul_edildi" -> "MalKabulEdildi"
+        else -> type.trim()
     }
 }
 

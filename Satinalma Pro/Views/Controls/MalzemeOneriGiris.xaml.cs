@@ -159,7 +159,11 @@ public partial class MalzemeOneriGiris : UserControl
     {
         if (e.Key == Key.Escape)
         {
-            OnerileriGizle();
+            if (OneriPopup.IsOpen)
+            {
+                OnerileriGizle();
+                e.Handled = true;
+            }
             return;
         }
 

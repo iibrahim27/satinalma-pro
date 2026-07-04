@@ -29,7 +29,10 @@ public static class SatinalmaTalepYardimcisi
 
     public static bool IcerikVar(SatinalmaTalep talep) =>
         !string.IsNullOrWhiteSpace(talep.TalepAciklamasi)
-        || talep.Kalemler?.Any(k => !string.IsNullOrWhiteSpace(k.Malzeme)) == true;
+        || MalzemeGirildi(talep);
+
+    public static bool MalzemeGirildi(SatinalmaTalep talep) =>
+        talep.Kalemler?.Any(k => !string.IsNullOrWhiteSpace(k.Malzeme)) == true;
 
     public static bool GonderimOncesiDuzenlenebilir(SatinalmaTalep talep) =>
         talep.Durum is SatinalmaTalepDurumlari.Hazirlaniyor or SatinalmaTalepDurumlari.Reddedildi;

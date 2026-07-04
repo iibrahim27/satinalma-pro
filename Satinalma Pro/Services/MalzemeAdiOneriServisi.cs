@@ -36,7 +36,7 @@ public static class MalzemeAdiOneriServisi
                     liste.Add(stok.MalzemeAdi.Trim());
             }
 
-            foreach (var talep in SatinalmaDepo.Talepler)
+            foreach (var talep in SatinalmaDepo.Talepler.ToList())
             {
                 foreach (var kalem in talep.Kalemler ?? [])
                 {

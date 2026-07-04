@@ -218,7 +218,7 @@ public static class BulutVeriSenkronu
                         SatinalmaDepo.Ayarlar.SilinenTalepIdleri,
                         bulutAyarlar?.SilinenTalepIdleri);
                     SatinalmaDepo.Ayarlar.SilinenTalepIdleri = silinen;
-                    var birlesik = SatinalmaTalepBirlestirme.Birlestir(SatinalmaDepo.Talepler, bulut, silinen);
+                    var birlesik = SatinalmaTalepBirlestirme.Birlestir(SatinalmaDepo.Talepler.ToList(), bulut, silinen);
                     talepBirlesikJson = JsonSerializer.Serialize(birlesik, JsonSecenekleri);
                     json = talepBirlesikJson;
                 }
@@ -466,7 +466,7 @@ public static class BulutVeriSenkronu
                         SatinalmaDepo.Ayarlar.SilinenTalepIdleri,
                         bulutAyarlar?.SilinenTalepIdleri);
                     SatinalmaDepo.Ayarlar.SilinenTalepIdleri = silinen;
-                    var birlesik = SatinalmaTalepBirlestirme.Birlestir(SatinalmaDepo.Talepler, bulut, silinen);
+                    var birlesik = SatinalmaTalepBirlestirme.Birlestir(SatinalmaDepo.Talepler.ToList(), bulut, silinen);
                     talepBirlesikJson = JsonSerializer.Serialize(birlesik, JsonSecenekleri);
                     json = talepBirlesikJson;
                 }

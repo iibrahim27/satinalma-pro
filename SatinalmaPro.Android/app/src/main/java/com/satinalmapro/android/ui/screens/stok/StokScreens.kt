@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -37,7 +37,9 @@ fun StokDurumScreen(viewModel: AppViewModel) {
     val stok by viewModel.stokList.collectAsState()
     LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (stok.isEmpty()) item { Text("Stok kaydı yok.", color = AppColors.TextSecondary) }
-        items(stok, key = { "${it.malzemeAdi}-${it.depoSaha}" }) { kayit ->
+        itemsIndexed(stok, key = { index, kayit ->
+            "${kayit.malzemeAdi}-${kayit.depoSaha}-$index"
+        }) { _, kayit ->
             AppCard {
                 Column(Modifier.padding(16.dp)) {
                     DetailRow("Malzeme", kayit.malzemeAdi)
@@ -54,7 +56,12 @@ fun StokDurumScreen(viewModel: AppViewModel) {
 fun StokHareketScreen(viewModel: AppViewModel) {
     val hareketler by viewModel.stokHareketleri.collectAsState()
     LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        items(hareketler.take(100), key = { it.id }) { h ->
+        if (hareketler.isEmpty()) {
+            item { Text("Stok hareketi yok.", color = AppColors.TextSecondary) }
+        }
+        itemsIndexed(hareketler.take(100), key = { index, h ->
+            h.id.ifBlank { "hareket-$index-${h.tarih}-${h.malzemeAdi}" }
+        }) { _, h ->
             AppCard {
                 Column(Modifier.padding(16.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

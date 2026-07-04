@@ -43,6 +43,8 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
         NavRozetleriniGuncelle();
     }
 
+    public bool EscapeTusunuIsle() => _operasyon.EscapeTusunuIsle();
+
     public void BildirimdenAc(Guid? talepId, int adim = 0, string sekme = "talepler")
     {
         var hedef = sekme switch
