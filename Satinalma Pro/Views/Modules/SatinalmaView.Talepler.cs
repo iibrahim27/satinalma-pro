@@ -648,7 +648,7 @@ public partial class SatinalmaView
 
         SatinalmaTalepYardimcisi.KayitOncesiHazirla(_seciliTalep!);
         TalepOlusturanBilgisiniTamamla(_seciliTalep!);
-        SatinalmaDepo.TalepNoAtaIfNeeded(_seciliTalep);
+        SatinalmaDepo.TalepNoAtaIfNeeded(_seciliTalep!);
         SatinalmaDepo.KorunanBosTaslakId = null;
         _seciliTalep!.Durum = SatinalmaTalepDurumlari.Hazirlaniyor;
         SatinalmaTalepYardimcisi.Dokun(_seciliTalep);
@@ -699,7 +699,7 @@ public partial class SatinalmaView
 
         SatinalmaTalepYardimcisi.KayitOncesiHazirla(_seciliTalep!);
         TalepOlusturanBilgisiniTamamla(_seciliTalep!);
-        SatinalmaDepo.TalepNoAtaIfNeeded(_seciliTalep);
+        SatinalmaDepo.TalepNoAtaIfNeeded(_seciliTalep!);
         SatinalmaDepo.KorunanBosTaslakId = null;
         _seciliTalep.Durum = SatinalmaTalepDurumlari.ImzaSurecinde;
         SatinalmaTalepYardimcisi.Dokun(_seciliTalep);

@@ -289,8 +289,11 @@ public static class BulutVeriSenkronu
                 if (json is null)
                     continue;
 
-                Uygula(anahtar, json);
-                YerelBirlesikDurumuKaydet(anahtar);
+                await UiThreaddeCalistirAsync(() =>
+                {
+                    Uygula(anahtar, json);
+                    YerelBirlesikDurumuKaydet(anahtar);
+                });
             }
 
             BuluttanYuklendi = true;

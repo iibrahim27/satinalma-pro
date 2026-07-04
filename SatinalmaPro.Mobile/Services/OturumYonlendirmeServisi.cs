@@ -48,12 +48,7 @@ public static class OturumYonlendirmeServisi
     public static void ShellAc(IServiceProvider services)
     {
         var oturum = services.GetRequiredService<OturumServisi>();
-        var rol = SatinalmaPro.Shared.Models.KullaniciRolleri.Normalize(oturum.Rol);
-
-        if (rol == SatinalmaPro.Shared.Models.KullaniciRolleri.Yonetim)
-            KokSayfaServisi.Ayarla(new YonetimShell(services));
-        else
-            KokSayfaServisi.Ayarla(new AppShell(oturum, services));
+        KokSayfaServisi.Ayarla(new AppShell(oturum, services));
     }
 
     public static void LoginSayfasinaGit(IServiceProvider services)

@@ -345,31 +345,40 @@ public partial class MainWindow : Window
         if (moduleTitle == "Satınalma")
             _modulOnbellegi.Remove("Satınalma");
 
-        if (!_modulOnbellegi.TryGetValue(moduleTitle, out var view))
+        Mouse.OverrideCursor = Cursors.Wait;
+        try
         {
-            view = moduleTitle switch
+            if (!_modulOnbellegi.TryGetValue(moduleTitle, out var view))
             {
-                "Alınan Malzemeler" => new AlinanMalzemelerView(),
-                "Stok Yönetimi" => new StokYonetimiView(),
-                "Agrega" => new AgregaView(),
-                "Çimento" => new CimentoView(),
-                "Akaryakıt Takip" => new AkaryakitView(),
-                "Araç Filo Takip" => new AracFiloView(),
-                "Satınalma" => new SatinalmaMerkeziView(),
-                "Raporlamalar" => new RaporlamalarView(),
-                "Finansman Raporlama" => new FinansmanRaporlamaView(),
-                "Ayarlar" => new AyarlarView(),
-                _ => new ModulePlaceholderView(moduleTitle)
-            };
-            _modulOnbellegi[moduleTitle] = view;
+                view = moduleTitle switch
+                {
+                    "Alınan Malzemeler" => new AlinanMalzemelerView(),
+                    "Stok Yönetimi" => new StokYonetimiView(),
+                    "Agrega" => new AgregaView(),
+                    "Çimento" => new CimentoView(),
+                    "Akaryakıt Takip" => new AkaryakitView(),
+                    "Araç Filo Takip" => new AracFiloView(),
+                    "Satınalma" => new SatinalmaMerkeziView(),
+                    "Raporlamalar" => new RaporlamalarView(),
+                    "Finansman Raporlama" => new FinansmanRaporlamaView(),
+                    "Ayarlar" => new AyarlarView(),
+                    _ => new ModulePlaceholderView(moduleTitle)
+                };
+                _modulOnbellegi[moduleTitle] = view;
+            }
+
+            MainRegion.Content = view;
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded,
+                () => KullaniciYetkileri.ModulErisiminiUygula(view, moduleTitle));
+            if (view is IModulKlavyeKisayollari modul)
+                Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background,
+                    () => modul.KisayolYenile());
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
         }
 
-        MainRegion.Content = view;
-        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded,
-            () => KullaniciYetkileri.ModulErisiminiUygula(view, moduleTitle));
-        if (view is IModulKlavyeKisayollari modul)
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background,
-                () => modul.KisayolYenile());
         Focus();
     }
 

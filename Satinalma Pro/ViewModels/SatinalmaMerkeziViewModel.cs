@@ -190,7 +190,11 @@ public sealed class SatinalmaMerkeziViewModel : INotifyPropertyChanged
                 var bildirimler = SatinalmaMerkeziVeriServisi.Bildirimler();
                 var okunmamis = BildirimYoneticisi.OkunmamisSayisi;
 
-                await Application.Current.Dispatcher.InvokeAsync(() =>
+                var ui = Application.Current?.Dispatcher;
+                if (ui is null)
+                    return;
+
+                await ui.InvokeAsync(() =>
                 {
                     Doldur(KpiKartlar, kpi);
                     Doldur(YapilacakIsler, yapilacak);
@@ -213,7 +217,9 @@ public sealed class SatinalmaMerkeziViewModel : INotifyPropertyChanged
             catch (Exception ex)
             {
                 HataGunlugu.Kaydet(ex, "SatinalmaMerkeziViewModel.Yukle");
-                await Application.Current.Dispatcher.InvokeAsync(() => Yukleniyor = false);
+                var ui = Application.Current?.Dispatcher;
+                if (ui is not null)
+                    await ui.InvokeAsync(() => Yukleniyor = false);
             }
             finally
             {
