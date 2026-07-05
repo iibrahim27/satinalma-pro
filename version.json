@@ -1,9 +1,9 @@
 {
-    "version":  "2.1.21",
-    "build":  69,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.21/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.21/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.21/SatinalmaPro.apk",
-    "notes":  "Android: Atolye tek ekran stok, rol bazli son islemler, stok cikis fisi, sifremi unuttum, stok giris UI, biyometrik/profil duzeltmeleri.",
+    "version":  "2.1.22",
+    "build":  70,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.22/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.22/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.22/SatinalmaPro.apk",
+    "notes":  "Android hotfix: guncelleme sonrasi acilis cokmesi duzeltildi (AppCompat tema uyumu).",
     "zorunlu":  false
 }
