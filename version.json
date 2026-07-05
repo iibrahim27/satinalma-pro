@@ -1,9 +1,9 @@
-﻿{
-    "version":  "2.1.17",
-    "build":  64,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.17/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.17/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.17/SatinalmaPro.apk",
-    "notes":  "Android: cok satirli stok giris/cikis, malzeme filtresi, stok hareketleri tablo, bildirim okundu/temizle. Masaustu: yonetici bildirimden dogru ekrana gitme, talep onizlemede Onayla ve Teklif Iste.",
+{
+    "version":  "2.1.18",
+    "build":  65,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.18/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.18/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.18/SatinalmaPro.apk",
+    "notes":  "Android: Siparis Ver, kalem bazli teklif onayi, teklif geri gonder, mal kabul akisi, bildirim tekillestirme/saatlik hatirlatma. Masaustu: salt okunur yetkiler, bildirim spam duzeltmesi, Satinalma Part1 akisi.",
     "zorunlu":  false
 }
