@@ -1,9 +1,9 @@
 {
-    "version":  "2.1.19",
-    "build":  66,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.19/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.19/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.19/SatinalmaPro.apk",
-    "notes":  "Android: Depo ana sayfa stok islemleri, menu altinda cikis, biyometrik kilit, kalici oturum, bildirim arka plan. Onceki: siparis ver, teklif onay, bildirim tekillestirme.",
+    "version":  "2.1.20",
+    "build":  68,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.20/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.20/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.20/SatinalmaPro.apk",
+    "notes":  "Android: Biyometrik kilit duzeltmesi (parmak izi + ekran kilidi), varsayilan kapali, profilden acilir.",
     "zorunlu":  false
 }
