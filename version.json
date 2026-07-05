@@ -1,9 +1,9 @@
 {
-    "version":  "2.1.22",
-    "build":  70,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.22/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.22/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.22/SatinalmaPro.apk",
-    "notes":  "Android hotfix: guncelleme sonrasi acilis cokmesi duzeltildi (AppCompat tema uyumu).",
+    "version":  "2.1.23",
+    "build":  71,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.23/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.23/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.23/SatinalmaPro.apk",
+    "notes":  "Atolye alt menu profil/cikis, stok hareket duzenle-sil (Depo+Satinalma), masaustu stok cikis fis onizle, Depo stok yazma yetkisi.",
     "zorunlu":  false
 }
