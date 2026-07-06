@@ -1,9 +1,9 @@
-﻿{
-    "version":  "2.1.30",
-    "build":  81,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.30/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.30/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.30/SatinalmaPro.apk",
-    "notes":  "Tek teklif ile yonetime gonderim (masaustu). Sidebar yalnizca firma logosu. Android giris: biyometrik bos oturum duzeltmesi; sirket ve dil secimi kaldirildi. Biyometrik yalnizca profil ayarindan acilir.",
+{
+    "version":  "2.1.31",
+    "build":  82,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.31/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.31/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.31/SatinalmaPro.apk",
+    "notes":  "Giriş: tek pencere (açılış + giriş), sürüklenebilir pencere, şifreyi hatırla, 7 sn açılış animasyonu.\nSidebar ve logo görünüm düzeltmeleri. İmza ayarları sıfırlama düzeltmesi.\nAdmin: depo toplu stok girişi. Admin: akaryakıt geçmiş veri Excel yükleme (Tarih, Plaka, Km, Saat, Verilen Yakıt Miktarı).",
     "zorunlu":  false
 }
