@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.34",
-    "build":  85,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.34/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.34/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.34/SatinalmaPro.apk",
-    "notes":  "Masaüstü: Ayarlar modülünde imza (ünvan/ad soyad) düzenlerken uygulamanın kapanması düzeltildi.\nAndroid: Yeni talep ekranına Talebi Sil butonu eklendi (yönetime gönderilmeden önce onaylı silme).",
+    "version":  "2.1.35",
+    "build":  86,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.35/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.35/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.35/SatinalmaPro.apk",
+    "notes":  "Bildirimler (Android): Okundu isaretle ve temizle duzeltildi; silinmis veya gecersiz taleplere ait hayalet bildirimler otomatik temizlenir.\nTalep: Sahibi kendi talebini yonetime gonderdikten sonra da duzenleyip silebilir (teklif onayi ve siparis sonrasi kilitli). Satinalma ve admin tum taleplerde tam yetki.\nGorunurluk: Herkes tum talepleri ve sureci gorebilir; duzenleme/silme yalnizca sahip veya satinalma/admin icin.",
     "zorunlu":  false
 }
