@@ -1,9 +1,9 @@
-{
-    "version":  "2.1.32",
-    "build":  83,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.32/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.32/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.32/SatinalmaPro.apk",
-    "notes":  "Agrega \u0026 Çimento: fatura durumu sütunu, filtreleri, KPI kartları ve toplu fatura kaldırıldı.\nPDF: toplam satırı ve cins bazlı özet tablosu.\nFiltreler modül değişiminde korunur (Agrega/Çimento).\nAkaryakıt: admin geçmiş veri Excel yükleme.",
+﻿{
+    "version":  "2.1.33",
+    "build":  84,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.33/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.33/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.33/SatinalmaPro.apk",
+    "notes":  "Masaüstü: X ile kapatınca uygulama sistem tepsisinde arka planda çalışır; bildirimler aktif kalır. Masaüstü kısayolu mevcut pencereyi açar (yeni örnek açılmaz).\nAndroid: Oturum kapatınca FCM token temizlenir; uygulama silinmeden bildirimler arka planda çalışır.",
     "zorunlu":  false
 }
