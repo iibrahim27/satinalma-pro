@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.37",
-    "build":  88,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.37/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.37/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.37/SatinalmaPro.apk",
-    "notes":  "- Yönetim rolü artık teklif giremez (yalnızca Satınalma/Admin)\n- Satınalma panosundan tahmini tutar sütunu ve sahte tutar hesapları kaldırıldı\n- Android bildirim performansı ve kendi işlemine bildirim filtresi\n- Sıfırlama sonrası hayalet bildirim temizliği",
+    "version":  "2.1.38",
+    "build":  89,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.38/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.38/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.38/SatinalmaPro.apk",
+    "notes":  "- Yönetim teklif inceleme: birim fiyat karşılaştırma tablosu, öneri yeşil vurgu, hücreye tıklayarak kalem seçimi\n- Satınalmaya geri gönder düzeltmesi: bulut senkron hatası giderildi, Düzeltme Bekleyen sekmesi eklendi\n- Bildirimler anlık: Android 2 sn kontrol, FCM data-only push, Firestore inbox\n- Android talep/karşılaştırma PDF masaüstü ile uyumlu",
     "zorunlu":  false
 }
