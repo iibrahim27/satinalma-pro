@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.36",
-    "build":  87,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.36/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.36/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.36/SatinalmaPro.apk",
-    "notes":  "Bildirimler: Veri sifirlamadan sonra kalan hayalet bildirimler otomatik temizlenir; silinmis taleplere ait kayitlar listeden kaldirilir.\nTemizle: Gecersiz ve inbox artigi bildirimler duzgun silinir (masaustu + Android).\nSifirlama: Tum veriler veya talep modulu sifirlaninca bildirim temizligi otomatik calisir.",
+    "version":  "2.1.37",
+    "build":  88,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.37/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.37/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.37/SatinalmaPro.apk",
+    "notes":  "- Yönetim rolü artık teklif giremez (yalnızca Satınalma/Admin)\n- Satınalma panosundan tahmini tutar sütunu ve sahte tutar hesapları kaldırıldı\n- Android bildirim performansı ve kendi işlemine bildirim filtresi\n- Sıfırlama sonrası hayalet bildirim temizliği",
     "zorunlu":  false
 }
