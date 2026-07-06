@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.35",
-    "build":  86,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.35/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.35/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.35/SatinalmaPro.apk",
-    "notes":  "Bildirimler (Android): Okundu isaretle ve temizle duzeltildi; silinmis veya gecersiz taleplere ait hayalet bildirimler otomatik temizlenir.\nTalep: Sahibi kendi talebini yonetime gonderdikten sonra da duzenleyip silebilir (teklif onayi ve siparis sonrasi kilitli). Satinalma ve admin tum taleplerde tam yetki.\nGorunurluk: Herkes tum talepleri ve sureci gorebilir; duzenleme/silme yalnizca sahip veya satinalma/admin icin.",
+    "version":  "2.1.36",
+    "build":  87,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.36/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.36/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.36/SatinalmaPro.apk",
+    "notes":  "Bildirimler: Veri sifirlamadan sonra kalan hayalet bildirimler otomatik temizlenir; silinmis taleplere ait kayitlar listeden kaldirilir.\nTemizle: Gecersiz ve inbox artigi bildirimler duzgun silinir (masaustu + Android).\nSifirlama: Tum veriler veya talep modulu sifirlaninca bildirim temizligi otomatik calisir.",
     "zorunlu":  false
 }
