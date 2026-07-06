@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.33",
-    "build":  84,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.33/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.33/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.33/SatinalmaPro.apk",
-    "notes":  "Masaüstü: X ile kapatınca uygulama sistem tepsisinde arka planda çalışır; bildirimler aktif kalır. Masaüstü kısayolu mevcut pencereyi açar (yeni örnek açılmaz).\nAndroid: Oturum kapatınca FCM token temizlenir; uygulama silinmeden bildirimler arka planda çalışır.",
+    "version":  "2.1.34",
+    "build":  85,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.34/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.34/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.34/SatinalmaPro.apk",
+    "notes":  "Masaüstü: Ayarlar modülünde imza (ünvan/ad soyad) düzenlerken uygulamanın kapanması düzeltildi.\nAndroid: Yeni talep ekranına Talebi Sil butonu eklendi (yönetime gönderilmeden önce onaylı silme).",
     "zorunlu":  false
 }
