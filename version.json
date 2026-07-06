@@ -1,9 +1,9 @@
 {
-    "version":  "2.1.23",
-    "build":  71,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.23/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.23/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.23/SatinalmaPro.apk",
-    "notes":  "Atolye alt menu profil/cikis, stok hareket duzenle-sil (Depo+Satinalma), masaustu stok cikis fis onizle, Depo stok yazma yetkisi.",
+    "version":  "2.1.28",
+    "build":  78,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.28/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.28/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.28/SatinalmaPro.apk",
+    "notes":  "Alinan Malzemeler modulune Excel Sablon indirme butonu eklendi. Excel yukleme olan tum modullerde sablon butonu mevcut.",
     "zorunlu":  false
 }
