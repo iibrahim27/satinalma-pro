@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.38",
-    "build":  89,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.38/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.38/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.38/SatinalmaPro.apk",
-    "notes":  "- Yönetim teklif inceleme: birim fiyat karşılaştırma tablosu, öneri yeşil vurgu, hücreye tıklayarak kalem seçimi\n- Satınalmaya geri gönder düzeltmesi: bulut senkron hatası giderildi, Düzeltme Bekleyen sekmesi eklendi\n- Bildirimler anlık: Android 2 sn kontrol, FCM data-only push, Firestore inbox\n- Android talep/karşılaştırma PDF masaüstü ile uyumlu",
+    "version":  "2.1.39",
+    "build":  90,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.39/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.39/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.39/SatinalmaPro.apk",
+    "notes":  "- Masaüstü Satınalma: Onaylanan Teklifler sekmesi eklendi (liste, detay, PDF)\n- Masaüstü Yönetim: Onaylanan Teklifler sekmesi — onayladığınız teklifleri görüntüleme\n- PDF: onaylayan ad-soyad, e-posta, onay tarihi/saati ve yönetim imza alanı\n- Android: işlem sonrası yanlış yönlendirme düzeltildi (yönetim/satınalma rotaları)\n- Android: geçmiş sekmesi ve liste özetleri (onay, geri gönder, onaylayan)\n- Android: yinelenen bildirim (10x) düzeltmesi — tepsi yalnızca FCM ile",
     "zorunlu":  false
 }
