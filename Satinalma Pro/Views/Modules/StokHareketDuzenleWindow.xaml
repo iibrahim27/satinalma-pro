@@ -9,24 +9,24 @@
         MinWidth="440"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
-        Background="White">
-  <Grid Margin="28">
+        Background="{StaticResource DashBackgroundBrush}">
+  <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
-    <StackPanel Grid.Row="0" Margin="0,0,0,20">
-      <TextBlock x:Name="TxtBaslik" Text="Hareket Düzenle" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" />
-      <TextBlock x:Name="TxtAltBaslik" FontSize="13" Foreground="{StaticResource InkMutedBrush}" Margin="0,4,0,0" />
+    <StackPanel Grid.Row="0" Margin="0,0,0,16">
+      <TextBlock x:Name="TxtBaslik" Text="Hareket Düzenle" Style="{StaticResource ModuleDialogTitleStyle}" />
+      <TextBlock x:Name="TxtAltBaslik" Style="{StaticResource ModuleDialogSubtitleStyle}" />
     </StackPanel>
     <StackPanel Grid.Row="1">
-      <TextBlock Text="Tarih" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+      <TextBlock Text="Tarih" Style="{StaticResource ModuleFormLabelStyle}" />
       <TextBox x:Name="TxtTarih" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
-      <TextBlock Text="Malzeme" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-      <TextBox x:Name="TxtMalzeme" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" Background="#F8FAFC" Margin="0,0,0,14" />
-      <TextBlock Text="Depo / Saha" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-      <TextBox x:Name="TxtDepo" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" Background="#F8FAFC" Margin="0,0,0,14" />
+      <TextBlock Text="Malzeme" Style="{StaticResource ModuleFormLabelStyle}" />
+      <TextBox x:Name="TxtMalzeme" Style="{StaticResource ModuleReadOnlyFieldStyle}" Margin="0,0,0,14" />
+      <TextBlock Text="Depo / Saha" Style="{StaticResource ModuleFormLabelStyle}" />
+      <TextBox x:Name="TxtDepo" Style="{StaticResource ModuleReadOnlyFieldStyle}" Margin="0,0,0,14" />
       <Grid Margin="0,0,0,14">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*" />
@@ -34,19 +34,19 @@
           <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <StackPanel Grid.Column="0">
-          <TextBlock x:Name="LblMiktar" Text="Miktar" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+          <TextBlock x:Name="LblMiktar" Text="Miktar" Style="{StaticResource ModuleFormLabelStyle}" />
           <TextBox x:Name="TxtMiktar" Style="{StaticResource FilterBoxStyle}" />
         </StackPanel>
         <StackPanel Grid.Column="2">
-          <TextBlock Text="Birim" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-          <TextBox x:Name="TxtBirim" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" Background="#F8FAFC" />
+          <TextBlock Text="Birim" Style="{StaticResource ModuleFormLabelStyle}" />
+          <TextBox x:Name="TxtBirim" Style="{StaticResource ModuleReadOnlyFieldStyle}" />
         </StackPanel>
       </Grid>
-      <TextBlock Text="Belge No" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+      <TextBlock Text="Belge No" Style="{StaticResource ModuleFormLabelStyle}" />
       <TextBox x:Name="TxtBelge" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
-      <TextBlock Text="İşlem Yapan" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+      <TextBlock Text="İşlem Yapan" Style="{StaticResource ModuleFormLabelStyle}" />
       <TextBox x:Name="TxtIslemYapan" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
-      <TextBlock Text="Açıklama" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+      <TextBlock Text="Açıklama" Style="{StaticResource ModuleFormLabelStyle}" />
       <TextBox x:Name="TxtAciklama" Style="{StaticResource FilterBoxStyle}" Height="72"
                TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Padding="12,10" />
     </StackPanel>

@@ -6,7 +6,7 @@ namespace SatinalmaPro.Helpers;
 
 public static class LogoGorselYardimcisi
 {
-    private const string VarsayilanLogoUri = "pack://application:,,,/Assets/mv-insaat-logo.png";
+    private const string VarsayilanLogoUri = "pack://application:,,,/Assets/app.ico";
 
     public static BitmapImage? VarsayilanLogo() => UriDenYukle(new Uri(VarsayilanLogoUri));
 

@@ -35,6 +35,11 @@ public static class SatinalmaTalepKuyrugu
         t.Durum is SatinalmaTalepDurumlari.Onaylandi or SatinalmaTalepDurumlari.SiparisOlusturuldu
         && (t.HerhangiKalemOnayli || t.TeklifsizYonetimOnayi || t.YonetimOnayKilitli);
 
+    /// <summary>Tüm yönetim onayları — teklifsiz/teklifli, sipariş ve mal kabul sonrası dahil.</summary>
+    public static bool YonetimOnayGecmisinde(SatinalmaTalep t) =>
+        !Reddedildi(t)
+        && (Onaylanmis(t) || OnaylananTalep(t) || YonetimGecmisTalep(t) || YonetimGecmisTeklifli(t));
+
     /// <summary>Yönetim Talepler — yalnızca teklifsiz karar (imza veya direkt yönetim onayı).</summary>
     public static bool YonetimTalepler(SatinalmaTalep t) =>
         TeklifsizYonetimTalebi(t)
@@ -54,7 +59,7 @@ public static class SatinalmaTalepKuyrugu
     /// <summary>Yönetim Teklif Bekleyen — teklif istendi, satınalma henüz teklif girmedi.</summary>
     public static bool YonetimTeklifBekleyen(SatinalmaTalep t) =>
         t.Durum == SatinalmaTalepDurumlari.TeklifGirisi
-        && (t.Teklifler?.Count ?? 0) == 0;
+        && !SatinalmaTalepYardimcisi.GercekTeklifVar(t);
 
     /// <summary>Yönetim Teklifler — teklif girilmiş, yönetim firma/onay kararı bekliyor.</summary>
     public static bool YonetimTeklifler(SatinalmaTalep t) =>
@@ -113,7 +118,7 @@ public static class SatinalmaTalepKuyrugu
         SatinalmaTeklifGirisi(
             t.Durum,
             t.OlusturanRol,
-            t.Teklifler?.Count ?? 0,
+            SatinalmaTalepYardimcisi.GercekTeklifSayisi(t),
             t.YonetimOnayKilitli,
             t.TalepTuru);
 
@@ -124,8 +129,9 @@ public static class SatinalmaTalepKuyrugu
         bool yonetimOnayKilitli,
         string talepTuru) =>
         (durum == SatinalmaTalepDurumlari.TeklifGirisi
-         && teklifSayisi == 0
-         && !yonetimOnayKilitli)
+         && !yonetimOnayKilitli
+         && talepTuru != TalepTurleri.Acil)
+        || (durum == SatinalmaTalepDurumlari.Karsilastirma && !yonetimOnayKilitli)
         || (durum == SatinalmaTalepDurumlari.ImzaSurecinde
             && teklifSayisi == 0
             && !yonetimOnayKilitli
@@ -133,12 +139,15 @@ public static class SatinalmaTalepKuyrugu
         || SatinalmaTalepYardimcisi.SatinalmaIcTeklifGirisi(
             durum, olusturanRol, teklifSayisi, yonetimOnayKilitli, talepTuru);
 
+    /// <summary>Satınalma — yönetim teklif istedi, henüz yönetime gönderilmedi (tek teklif yeterli).</summary>
+    public static bool SatinalmaTeklifIstenen(SatinalmaTalep t) =>
+        SatinalmaTeklifGirisi(t) && !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(t);
+
     /// <summary>Satınalma Karşılaştırma — teklifler girildi, yönetime gönderilecek.</summary>
     public static bool SatinalmaKarsilastirma(SatinalmaTalep t) =>
         ((t.Durum == SatinalmaTalepDurumlari.Karsilastirma
           || (t.Durum == SatinalmaTalepDurumlari.TeklifGirisi && (t.Teklifler?.Count ?? 0) > 0))
-         && !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(t)
-         && !t.YonetimOnayKilitli)
+         && !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(t))
         || ((t.Teklifler?.Count ?? 0) > 0
             && !t.YonetimOnayKilitli
             && t.TalepTuru != TalepTurleri.Acil
@@ -155,9 +164,13 @@ public static class SatinalmaTalepKuyrugu
     public static bool OnaylananMalzeme(SatinalmaTalep t) =>
         t.HerhangiKalemOnayli;
 
-    /// <summary>Taleplerim — tüm roller tüm kayıtlı talepleri görür (düzenleme ayrı yetki).</summary>
+    /// <summary>Tüm kullanıcılar kayıtlı talepleri görür.</summary>
     public static bool TaleplerimListesindeGoster(SatinalmaTalep t, string? uid, string? adSoyad, string? rol = null) =>
-        KayitliTalep(t) || KullanicininTalebi(t, uid, adSoyad);
+        KayitliTalep(t);
+
+    public static bool SahaModu(string? rol) =>
+        !KullaniciRolleri.AdminMi(rol)
+        && KullaniciRolleri.Normalize(rol) is not (KullaniciRolleri.Satinalma or KullaniciRolleri.Yonetim);
 
     public static bool KullanicininTalebi(SatinalmaTalep t, string? uid, string? adSoyad) =>
         SatinalmaTalepSahiplikYardimcisi.KullanicininTalebi(t, uid, adSoyad);

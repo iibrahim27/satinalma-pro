@@ -1,12 +1,12 @@
 package com.satinalmapro.android.data
 
 import androidx.compose.ui.graphics.Color
-import com.satinalmapro.android.ui.theme.AppColors
+import com.satinalmapro.android.ui.theme.LightAppColors
 
 enum class DeliveryStatus(val label: String, val bg: Color, val fg: Color) {
-    Delivered("Teslim Edildi", AppColors.SuccessContainer, AppColors.Success),
-    Waiting("Teslim Bekliyor", AppColors.WarningContainer, AppColors.Warning),
-    Partial("Kısmi Teslim", AppColors.PrimaryContainer, AppColors.Primary)
+    Delivered("Teslim Edildi", LightAppColors.SuccessContainer, LightAppColors.Success),
+    Waiting("Teslim Bekliyor", LightAppColors.WarningContainer, LightAppColors.Warning),
+    Partial("Kısmi Teslim", LightAppColors.PrimaryContainer, LightAppColors.Primary)
 }
 
 data class MaterialItem(
@@ -65,10 +65,10 @@ object DemoData {
     const val VERSION = "2.1.2"
 
     val summaryStats = listOf(
-        Triple("Bekleyen Talepler", "12", AppColors.IconBlue),
-        Triple("Bekleyen Siparişler", "8", AppColors.IconGreen),
-        Triple("Bugünkü Teslimatlar", "5", AppColors.IconOrange),
-        Triple("Kritik Stoklar", "7", AppColors.IconRed)
+        Triple("Bekleyen Talepler", "12", LightAppColors.IconBlue),
+        Triple("Bekleyen Siparişler", "8", LightAppColors.IconGreen),
+        Triple("Bekleyen Teslimatlar", "5", LightAppColors.IconOrange),
+        Triple("Kritik Stoklar", "7", LightAppColors.IconRed)
     )
 
     val materials = listOf(
@@ -100,10 +100,10 @@ object DemoData {
     )
 
     val notifications = listOf(
-        NotificationItem("10:24", "Talep Onaylandı", "1005 nolu satınalma onaylandı", AppColors.Success),
-        NotificationItem("09:15", "Teklif Bekleniyor", "Demir Ø12 için teklif girin", AppColors.Primary),
-        NotificationItem("Dün", "Mal Kabul", "ABC Beton teslimatı tamamlandı", AppColors.IconGreen),
-        NotificationItem("Dün", "Kritik Stok", "Demir Ø12 minimum seviyede", AppColors.Danger)
+        NotificationItem("10:24", "Talep Onaylandı", "1005 nolu satınalma onaylandı", LightAppColors.Success),
+        NotificationItem("09:15", "Teklif Bekleniyor", "Demir Ø12 için teklif girin", LightAppColors.Primary),
+        NotificationItem("Dün", "Mal Kabul", "ABC Beton teslimatı tamamlandı", LightAppColors.IconGreen),
+        NotificationItem("Dün", "Kritik Stok", "Demir Ø12 minimum seviyede", LightAppColors.Danger)
     )
 
     val recentActivities = listOf(

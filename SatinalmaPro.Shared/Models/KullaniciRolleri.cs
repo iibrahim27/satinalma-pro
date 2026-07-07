@@ -108,7 +108,7 @@ public static class KullaniciRolleri
 
     public static bool TalepOlusturabilir(string? rol) =>
 
-        Normalize(rol) is Admin or Yonetim or Saha or Sef or Satinalma;
+        Normalize(rol) is Admin or Saha or Sef or Satinalma;
 
 
 
@@ -155,6 +155,15 @@ public static class KullaniciRolleri
     public static bool SatinalmaSekmesiGorebilir(string? rol, string sekmeAdi) =>
 
         SatinalmaPro.Shared.Services.MasaustuRolHaritasi.SatinalmaSekmesiGorebilir(rol, sekmeAdi);
+
+
+
+    /// <summary>Teklif ekleme/düzenleme — yalnızca satınalma ve admin.</summary>
+    public static bool SatinalmaTeklifGirebilir(string? rol)
+    {
+        var n = Normalize(rol);
+        return AdminMi(rol) || n == Satinalma;
+    }
 
 }
 

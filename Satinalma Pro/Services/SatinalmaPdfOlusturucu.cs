@@ -171,7 +171,7 @@ public static class SatinalmaPdfOlusturucu
                 t.FiyatlariHesapla(talep.Kalemler);
             }
 
-            onerilenTeklif ??= talep.OnerilenTeklif() ?? talep.Teklifler.OrderBy(t => t.GenelToplam).FirstOrDefault();
+            onerilenTeklif ??= talep.OnerilenTeklifFirma() ?? talep.Teklifler.OrderBy(t => t.GenelToplam).FirstOrDefault();
 
             UygulamaAyarDeposu.Yukle();
 
@@ -187,6 +187,7 @@ public static class SatinalmaPdfOlusturucu
             var kalemler = talep.Kalemler.OrderBy(k => k.SiraNo).ToList();
             var teklifler = talep.Teklifler.ToList();
             var markaGoster = KarsilastirmaMarkaSutunuGoster(teklifler);
+            var onayKaydiVar = yonetimFormu && YonetimOnayKaydiVar(talep);
             var pdfBaslik = yonetimFormu
                 ? "FİYAT KARŞILAŞTIRMA — YÖNETİM ONAYI"
                 : "FİYAT KARŞILAŞTIRMA TABLOSU";
@@ -216,7 +217,18 @@ public static class SatinalmaPdfOlusturucu
                     if (!string.IsNullOrWhiteSpace(talep.TalepEden))
                         col.Item().Text($"Talep Eden: {talep.TalepEden}");
 
-                    if (onerilenTeklif != null)
+                    if (talep.SatinalmaKalemOnerisiElleSecildi && SatinalmaOneriYardimcisi.HerhangiKalemOnerili(talep))
+                    {
+                        var (_, _, genel) = SatinalmaOneriYardimcisi.OnerilenToplamlar(talep);
+                        col.Item().Border(1).BorderColor(Colors.Blue.Lighten3)
+                            .Background(Colors.Blue.Lighten5).Padding(4).Text(text =>
+                            {
+                                text.Span("Satınalma Önerisi (kalem bazlı): ").SemiBold();
+                                text.Span(SatinalmaOneriYardimcisi.OneriMetni(talep).Replace("Satınalma önerisi (kalem bazlı): ", ""))
+                                    .FontColor(Colors.Blue.Darken2);
+                            });
+                    }
+                    else if (onerilenTeklif != null)
                     {
                         col.Item().Border(1).BorderColor(Colors.Blue.Lighten3)
                             .Background(Colors.Blue.Lighten5).Padding(4).Text(text =>
@@ -261,7 +273,10 @@ public static class SatinalmaPdfOlusturucu
                                 var fiyat = fiyatlar[i];
                                 var onerilen = onerilenTeklif != null && teklif.Id == onerilenTeklif.Id;
                                 var dusuk = fiyat != null && fiyat.ToplamTutar > 0 && fiyat.ToplamTutar == enDusuk;
-                                var vurgula = dusuk || onerilen;
+                                var onayli = kalem.OnaylananTeklifId == teklif.Id;
+                                var vurgula = onayKaydiVar
+                                    ? onayli
+                                    : SatinalmaOneriYardimcisi.HucreOneriVurgula(talep, kalem, teklif, onerilenTeklif, dusuk);
                                 table.Cell().Element(c => HucreVeri(c, vurgula, yonetimFormu)).AlignRight()
                                     .Text(fiyat?.BirimFiyatGosterim(teklif.UsdKuru, teklif.EurKuru) ?? "—");
                                 if (markaGoster)
@@ -277,24 +292,44 @@ public static class SatinalmaPdfOlusturucu
                         KarsilastirmaToplamSatirleriEkle(table, teklifler, onerilenTeklif, yonetimFormu, markaGoster);
                     });
 
-                    if (yonetimFormu)
-                        col.Item().PaddingTop(4).Text("YÖNETİM ONAY BÖLÜMÜ").SemiBold().FontSize(8.5f);
-                    col.Item().PaddingTop(yonetimFormu ? 2 : 4)
-                        .Text("Onaylanacak firmayı işaretleyiniz:").FontSize(yonetimFormu ? 7.5f : 9);
-                    col.Item().Element(c =>
-                        KarsilastirmaFirmaOnayTablosuEkle(c, teklifler, onerilenTeklif, yonetimFormu));
-
-                    col.Item().ShowEntire().PaddingTop(yonetimFormu ? 6 : 12).Row(row =>
+                    if (onayKaydiVar)
                     {
-                        row.RelativeItem().Column(c =>
+                        var onayliTeklifler = teklifler.Where(t => TeklifOnayliMi(talep, t)).ToList();
+                        if (onayliTeklifler.Count > 0)
                         {
-                            c.Item().Text("Onaylanan Firma:").SemiBold().FontSize(yonetimFormu ? 7.5f : 9);
-                            c.Item().PaddingTop(yonetimFormu ? 8 : 12).LineHorizontal(0.5f).LineColor(Colors.Grey.Medium);
+                            col.Item().Border(1).BorderColor(Colors.Green.Medium).Background(Colors.Green.Lighten5)
+                                .Padding(6).Text(text =>
+                                {
+                                    text.Span("Onaylanan Firma(lar): ").SemiBold();
+                                    text.Span(string.Join(" · ", onayliTeklifler.Select(t => t.FirmaAdi))).SemiBold()
+                                        .FontColor(Colors.Green.Darken2);
+                                });
+                        }
+
+                        col.Item().PaddingTop(6).Element(c => YonetimOnayBilgiKutusuOlustur(c, talep, kompakt: true));
+                        col.Item().PaddingTop(4).Element(c => YonetimImzaAlaniOlustur(c, ayarlar, kompakt: true, talep));
+                    }
+                    else
+                    {
+                        if (yonetimFormu)
+                            col.Item().PaddingTop(4).Text("YÖNETİM ONAY BÖLÜMÜ").SemiBold().FontSize(8.5f);
+                        col.Item().PaddingTop(yonetimFormu ? 2 : 4)
+                            .Text("Onaylanacak firmayı işaretleyiniz:").FontSize(yonetimFormu ? 7.5f : 9);
+                        col.Item().Element(c =>
+                            KarsilastirmaFirmaOnayTablosuEkle(c, teklifler, onerilenTeklif, yonetimFormu));
+
+                        col.Item().ShowEntire().PaddingTop(yonetimFormu ? 6 : 12).Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text("Onaylanan Firma:").SemiBold().FontSize(yonetimFormu ? 7.5f : 9);
+                                c.Item().PaddingTop(yonetimFormu ? 8 : 12).LineHorizontal(0.5f).LineColor(Colors.Grey.Medium);
+                            });
+                            row.ConstantItem(yonetimFormu ? 12 : 24);
+                            row.RelativeItem().AlignCenter().Element(c =>
+                                YonetimImzaAlaniOlustur(c, ayarlar, kompakt: yonetimFormu, talep));
                         });
-                        row.ConstantItem(yonetimFormu ? 12 : 24);
-                        row.RelativeItem().AlignCenter().Element(c =>
-                            YonetimImzaAlaniOlustur(c, ayarlar, kompakt: yonetimFormu));
-                    });
+                    }
                 });
             });
         }).GeneratePdf(dosya);
@@ -429,24 +464,13 @@ public static class SatinalmaPdfOlusturucu
                             teklifler.FirstOrDefault(t => t.Id == talep.OnaylananTeklifId), true, markaGoster);
                     });
 
-                    col.Item().PaddingTop(6).Border(1).BorderColor(Colors.Grey.Lighten1).Padding(8).Column(onay =>
-                    {
-                        onay.Item().Text("YÖNETİM ONAY BİLGİSİ").SemiBold().FontSize(9);
-                        onay.Item().PaddingTop(4).Text(text =>
-                        {
-                            text.Span("Onaylayan: ").SemiBold();
-                            text.Span(onaylayanAd);
-                            text.Span("   E-posta: ").SemiBold();
-                            text.Span(onaylayanEposta);
-                            text.Span("   Onay Tarihi: ").SemiBold();
-                            text.Span(onayTarihi);
-                        });
-                        if (talep.YonetimOnayKilitli)
-                            onay.Item().PaddingTop(4).Text("Bu onay yönetim tarafından verilmiştir ve geri alınamaz.")
-                                .FontSize(7.5f).Italic().FontColor(Colors.Red.Medium);
-                    });
+                    col.Item().PaddingTop(6).Border(1).BorderColor(Colors.Grey.Lighten1).Padding(8)
+                        .Element(c => YonetimOnayBilgiKutusuOlustur(c, talep, kompakt: true));
+                    if (talep.YonetimOnayKilitli)
+                        col.Item().PaddingTop(4).Text("Bu onay yönetim tarafından verilmiştir ve geri alınamaz.")
+                            .FontSize(7.5f).Italic().FontColor(Colors.Red.Medium);
 
-                    col.Item().PaddingTop(4).Element(c => YonetimImzaAlaniOlustur(c, ayarlar, kompakt: true));
+                    col.Item().PaddingTop(4).Element(c => YonetimImzaAlaniOlustur(c, ayarlar, kompakt: true, talep));
                 });
             });
         }).GeneratePdf(dosya);
@@ -529,7 +553,8 @@ public static class SatinalmaPdfOlusturucu
                         onay.Item().PaddingTop(4).Text("Firma ve birim fiyat bilgisi satınalma birimi tarafından sonradan girilecektir.")
                             .FontSize(9).Italic().FontColor(Colors.Grey.Darken1);
                     });
-                    col.Item().Element(c => YonetimImzaAlaniOlustur(c, ayarlar));
+                    col.Item().Element(c => YonetimOnayBilgiKutusuOlustur(c, talep));
+                    col.Item().Element(c => YonetimImzaAlaniOlustur(c, ayarlar, talep: talep));
                 });
             });
         }).GeneratePdf(dosya);
@@ -1191,14 +1216,14 @@ public static class SatinalmaPdfOlusturucu
 
         container.Column(col =>
         {
-            col.Spacing(14);
+            col.Spacing(10);
 
             if (sefler.Count > 0)
                 col.Item().Element(c => ImzaSatirOlustur(c, sefler));
 
             if (yonetim.Count > 0)
             {
-                col.Item().Row(row =>
+                col.Item().PaddingTop(36).Row(row =>
                 {
                     row.RelativeItem();
                     row.AutoItem().MinWidth(130).MaxWidth(200)
@@ -1218,26 +1243,56 @@ public static class SatinalmaPdfOlusturucu
         });
     }
 
-    private static void YonetimImzaAlaniOlustur(IContainer container, SatinalmaAyarlar? ayarlar, bool kompakt = false)
-    {
-        if (ayarlar is null)
-        {
-            container.Column(col =>
-            {
-                col.Item().AlignCenter().Text("Yönetim İmzası").SemiBold().FontSize(kompakt ? 7.5f : 9);
-                col.Item().PaddingTop(kompakt ? 8 : 12).LineHorizontal(0.5f).LineColor(Colors.Grey.Medium);
-            });
-            return;
-        }
+    private static bool YonetimOnayKaydiVar(SatinalmaTalep talep) =>
+        talep.HerhangiKalemOnayli
+        || talep.YonetimOnayKilitli
+        || talep.OnaylananTeklifId != null
+        || !string.IsNullOrWhiteSpace(talep.YonetimOnaylayanAd)
+        || !string.IsNullOrWhiteSpace(talep.YonetimOnayTarihi);
 
-        ayarlar.YonetimImzalari ??= [];
-        var yonetim = ayarlar.YonetimImzalari.Where(i => i is not null && i.Aktif).ToList();
+    private static void YonetimOnayBilgiKutusuOlustur(IContainer container, SatinalmaTalep talep, bool kompakt = false)
+    {
+        var onaylayanAd = string.IsNullOrWhiteSpace(talep.YonetimOnaylayanAd) ? "—" : talep.YonetimOnaylayanAd;
+        var onaylayanEposta = string.IsNullOrWhiteSpace(talep.YonetimOnaylayanEposta) ? "—" : talep.YonetimOnaylayanEposta;
+        var onayTarihi = string.IsNullOrWhiteSpace(talep.YonetimOnayTarihi)
+            ? DateTime.Now.ToString("dd.MM.yyyy HH:mm")
+            : talep.YonetimOnayTarihi;
+
+        container.Column(onay =>
+        {
+            onay.Item().Text("YÖNETİM ONAY BİLGİSİ").SemiBold().FontSize(kompakt ? 8.5f : 9);
+            onay.Item().PaddingTop(4).Text(text =>
+            {
+                text.Span("Onaylayan: ").SemiBold();
+                text.Span(onaylayanAd);
+                text.Span("   E-posta: ").SemiBold();
+                text.Span(onaylayanEposta);
+                text.Span("   Onay Tarihi: ").SemiBold();
+                text.Span(onayTarihi);
+            });
+        });
+    }
+
+    private static void YonetimImzaAlaniOlustur(IContainer container, SatinalmaAyarlar? ayarlar, bool kompakt = false, SatinalmaTalep? talep = null)
+    {
+        var onayAd = talep?.YonetimOnaylayanAd?.Trim();
+        var onayTarih = string.IsNullOrWhiteSpace(talep?.YonetimOnayTarihi)
+            ? null
+            : talep!.YonetimOnayTarihi.Trim();
+        if (ayarlar is not null)
+            ayarlar.YonetimImzalari ??= [];
+        var yonetim = ayarlar?.YonetimImzalari.Where(i => i is not null && i.Aktif).ToList() ?? [];
+
         if (yonetim.Count == 0)
         {
             container.Column(col =>
             {
-                col.Item().AlignCenter().Text("Yönetim İmzası").SemiBold().FontSize(kompakt ? 7.5f : 9);
-                col.Item().PaddingTop(kompakt ? 8 : 12).LineHorizontal(0.5f).LineColor(Colors.Grey.Medium);
+                col.Item().Element(c => ImzaHucreOlustur(
+                    c,
+                    new ImzaAyari { Aktif = true, Unvan = "Yönetim" },
+                    kompakt,
+                    onayAd,
+                    onayTarih));
             });
             return;
         }
@@ -1245,16 +1300,25 @@ public static class SatinalmaPdfOlusturucu
         container.Column(col =>
         {
             foreach (var imza in yonetim)
-                col.Item().Element(c => ImzaHucreOlustur(c, imza, kompakt));
+                col.Item().Element(c => ImzaHucreOlustur(c, imza, kompakt, onayAd, onayTarih));
         });
     }
 
-    private static void ImzaHucreOlustur(IContainer container, ImzaAyari? imza, bool kompakt = false)
+    private static void ImzaHucreOlustur(
+        IContainer container,
+        ImzaAyari? imza,
+        bool kompakt = false,
+        string? onayAd = null,
+        string? onayTarih = null)
     {
         if (imza is null || !imza.Aktif)
             return;
 
-        var unvan = imza.Unvan ?? "";
+        var unvan = string.IsNullOrWhiteSpace(imza.Unvan) ? "Yönetim" : imza.Unvan;
+        var gosterilecekAd = !string.IsNullOrWhiteSpace(onayAd) ? onayAd : imza.AdSoyad;
+        var gosterilecekTarih = !string.IsNullOrWhiteSpace(onayTarih)
+            ? onayTarih
+            : "....../....../202.....";
 
         var unvanBoyut = kompakt ? 7.5f : 9f;
         var adBoyut = kompakt ? 7.5f : 9f;
@@ -1268,13 +1332,17 @@ public static class SatinalmaPdfOlusturucu
 
             col.Item().PaddingHorizontal(4).LineHorizontal(0.5f).LineColor(Colors.Black);
 
-            if (!string.IsNullOrWhiteSpace(imza.AdSoyad))
-                col.Item().AlignCenter().Text(imza.AdSoyad).FontSize(adBoyut);
+            if (!string.IsNullOrWhiteSpace(gosterilecekAd))
+            {
+                col.Item().AlignCenter().Text(gosterilecekAd).SemiBold().FontSize(adBoyut);
+            }
             else
+            {
                 col.Item().Height(kompakt ? 10 : 14);
+            }
 
             col.Item().AlignCenter().PaddingTop(2)
-                .Text("....../....../202.....").FontSize(tarihBoyut).FontColor(Colors.Grey.Darken2);
+                .Text(gosterilecekTarih).FontSize(tarihBoyut).FontColor(Colors.Grey.Darken2);
         });
     }
 

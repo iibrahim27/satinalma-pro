@@ -5,7 +5,7 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Araç Zimmet"
         Width="460" Height="280" MinWidth="400"
-        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" Background="White">
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" Background="{StaticResource DashBackgroundBrush}">
   <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />

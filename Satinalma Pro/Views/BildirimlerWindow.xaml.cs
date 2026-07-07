@@ -37,6 +37,7 @@ public partial class BildirimlerWindow : Window
         finally
         {
             BtnTumunuOkundu.IsEnabled = true;
+            Yenile();
         }
     }
 
@@ -65,6 +66,7 @@ public partial class BildirimlerWindow : Window
         finally
         {
             BtnTemizle.IsEnabled = true;
+            Yenile();
         }
     }
 

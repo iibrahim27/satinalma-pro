@@ -17,16 +17,16 @@ public static class RolNavigasyonu
         rol = KullaniciRolleri.Normalize(rol);
 
         var liste = KullaniciRolleri.AdminMi(rol)
-            ? AdminMenuleri
+            ? AdminMenuleriTam
             : rol switch
             {
-                KullaniciRolleri.Yonetim => YonetimMenuleri,
+                KullaniciRolleri.Yonetim => YonetimMenuleri.Concat(ModulKayitMenuleri).ToList(),
                 KullaniciRolleri.Satinalma => SatinalmaMenuleri,
-                KullaniciRolleri.Sef => SefMenuleri,
+                KullaniciRolleri.Sef => SefMenuleri.Concat(ModulKayitMenuleri).ToList(),
                 KullaniciRolleri.Atolye => AtolyeMenuleri,
-                KullaniciRolleri.Saha => SahaMenuleri,
+                KullaniciRolleri.Saha => SahaMenuleri.Concat(ModulKayitMenuleri).ToList(),
                 KullaniciRolleri.Depo => DepoMenuleri,
-                _ => SahaMenuleri
+                _ => SahaMenuleri.Concat(ModulKayitMenuleri).ToList()
             };
 
         return liste.Concat([Profil]).ToList();
@@ -47,19 +47,27 @@ public static class RolNavigasyonu
     private static readonly MenuOgesi TeklifBekleyen = new() { Baslik = "Teklif Bekleyen", Route = "teklif-bekleyen", Ikon = "⏳", Grup = "Talep" };
     private static readonly MenuOgesi TeklifGir = new() { Baslik = "Teklif Girişi", Route = "teklif-gir", Ikon = "💰", Grup = "Teklif" };
     private static readonly MenuOgesi TeklifKarsilastirma = new() { Baslik = "Karşılaştırma", Route = "teklif-karsilastirma", Ikon = "📊", Grup = "Teklif" };
-    private static readonly MenuOgesi TeklifsizFirmaFiyat = new() { Baslik = "Firma/Fiyat Girişi", Route = "teklifsiz-firma-fiyat", Ikon = "🏷️", Grup = "Teklif" };
     private static readonly MenuOgesi TeklifOnay = new() { Baslik = "Teklif Onay", Route = "teklif-onay", Ikon = "✅", Grup = "Teklif" };
-    private static readonly MenuOgesi OnaylananMalzemeler = new() { Baslik = "Alınan Malzemeler", Route = "onaylanan-malzemeler", Ikon = "📦", Grup = "Malzeme" };
+    private static readonly MenuOgesi OnaylananMalzemeler = new() { Baslik = "Sipariş & Mal Kabul", Route = "onaylanan-malzemeler", Ikon = "📦", Grup = "Malzeme" };
+    private static readonly MenuOgesi AlinanMalzemeModul = new() { Baslik = "Alınan Malzemeler", Route = "alinan-malzemeler", Ikon = "📋", Grup = "Malzeme" };
+    private static readonly MenuOgesi AgregaModul = new() { Baslik = "Agrega", Route = "agrega", Ikon = "🏗", Grup = "Malzeme" };
+    private static readonly MenuOgesi CimentoModul = new() { Baslik = "Çimento", Route = "cimento", Ikon = "🧱", Grup = "Malzeme" };
     private static readonly MenuOgesi OnaylananTeklifler = new() { Baslik = "Onaylanan Teklifler", Route = "onaylanan-teklifler", Ikon = "📋", Grup = "Teklif" };
     private static readonly MenuOgesi OnayGecmisi = new() { Baslik = "Onay Geçmişi", Route = "onay-gecmisi", Ikon = "📜", Grup = "Teklif" };
     private static readonly MenuOgesi RedTalepler = new() { Baslik = "Red Talepler", Route = "red-talepler", Ikon = "🚫", Grup = "Talep" };
 
+    private static readonly IReadOnlyList<MenuOgesi> ModulKayitMenuleri =
+        [AgregaModul, CimentoModul, AlinanMalzemeModul];
+
     private static readonly IReadOnlyList<MenuOgesi> AdminMenuleri =
     [
         YeniTalep, Taleplerim, OnayBekleyenTalepler, OnaylananTalepler, GelenTalepler, TeklifBekleyen, TeklifGir, TeklifKarsilastirma,
-        TeklifsizFirmaFiyat, TeklifOnay, OnaylananTeklifler, OnayGecmisi, RedTalepler,
+        TeklifOnay, OnaylananTeklifler, OnayGecmisi, RedTalepler,
         OnaylananMalzemeler, StokDurum, StokHareket, StokGiris, StokCikis, StokSayim, Bildirimler
     ];
+
+    private static readonly IReadOnlyList<MenuOgesi> AdminMenuleriTam =
+        AdminMenuleri.Concat(ModulKayitMenuleri).ToList();
 
     private static readonly MenuOgesi GecmisTalepler = new() { Baslik = "Geçmiş Talepler", Route = "gecmis-talepler", Ikon = "📜", Grup = "Talep" };
     private static readonly MenuOgesi GecmisTeklifliOnaylar = new() { Baslik = "Geçmiş Teklifli Onaylar", Route = "gecmis-teklifli-onaylar", Ikon = "📋", Grup = "Talep" };
@@ -71,12 +79,13 @@ public static class RolNavigasyonu
     ];
 
     private static readonly IReadOnlyList<MenuOgesi> SatinalmaMenuleri =
-    [
-        YeniTalep, Taleplerim, GelenTalepler, OnayBekleyenTalepler, OnaylananTalepler, RedTalepler,
-        TeklifBekleyen, TeklifGir, TeklifKarsilastirma, TeklifsizFirmaFiyat, TeklifOnay,
-        OnaylananTeklifler, OnayGecmisi, OnaylananMalzemeler,
-        StokDurum, StokHareket, StokGiris, StokCikis, StokSayim, Bildirimler
-    ];
+        new List<MenuOgesi>
+        {
+            YeniTalep, Taleplerim, GelenTalepler, OnayBekleyenTalepler, OnaylananTalepler, RedTalepler,
+            TeklifBekleyen, TeklifGir, TeklifKarsilastirma, TeklifOnay,
+            OnaylananTeklifler, OnayGecmisi, OnaylananMalzemeler,
+            StokDurum, StokHareket, StokGiris, StokCikis, StokSayim, Bildirimler
+        }.Concat(ModulKayitMenuleri).ToList();
 
     private static readonly IReadOnlyList<MenuOgesi> SahaMenuleri =
         [YeniTalep, Taleplerim, OnayBekleyenTalepler, OnaylananTalepler, StokDurum, StokHareket, Bildirimler];

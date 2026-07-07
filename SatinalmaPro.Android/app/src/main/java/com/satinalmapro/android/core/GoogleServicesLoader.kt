@@ -49,4 +49,27 @@ object GoogleServicesLoader {
             .setApiKey(apiKey)
             .build()
     }
+
+    /** google-services.json içinden projectId ve apiKey okur (firebase_ayarlar.json yoksa). */
+    fun readProjectFromAssets(context: Context): Pair<String, String>? {
+        val json = runCatching {
+            context.assets.open("google-services.json").bufferedReader().use { it.readText() }
+        }.getOrNull() ?: return null
+        return try {
+            val root = JSONObject(json.trim().removePrefix("\uFEFF"))
+            val projectId = root.optJSONObject("project_info")?.optString("project_id").orEmpty()
+            val clients = root.optJSONArray("client") ?: return null
+            for (i in 0 until clients.length()) {
+                val client = clients.optJSONObject(i) ?: continue
+                val packageName = client.optJSONObject("client_info")
+                    ?.optJSONObject("android_client_info")?.optString("package_name").orEmpty()
+                if (packageName != "com.metrik.satinalmapro") continue
+                val apiKey = client.optJSONArray("api_key")?.optJSONObject(0)?.optString("current_key").orEmpty()
+                if (projectId.isNotBlank() && apiKey.isNotBlank()) return projectId to apiKey
+            }
+            null
+        } catch (_: Exception) {
+            null
+        }
+    }
 }

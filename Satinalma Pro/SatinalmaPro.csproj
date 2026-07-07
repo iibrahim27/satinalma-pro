@@ -6,17 +6,23 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>SatinalmaPro</AssemblyName>
     <Product>Satınalma Pro</Product>
     <AssemblyTitle>Satınalma Pro</AssemblyTitle>
     <Company>Satınalma Pro</Company>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>2.1.29</Version>
-    <AssemblyVersion>2.1.29.0</AssemblyVersion>
-    <FileVersion>2.1.29.0</FileVersion>
-    <InformationalVersion>2.1.29</InformationalVersion>
+    <Version>2.1.44</Version>
+    <AssemblyVersion>2.1.44.0</AssemblyVersion>
+    <FileVersion>2.1.44.0</FileVersion>
+    <InformationalVersion>2.1.44</InformationalVersion>
     <RootNamespace>SatinalmaPro</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="tools/**" />
@@ -27,8 +33,6 @@
 
   <ItemGroup>
     <Resource Include="Assets\app.ico" />
-    <Resource Include="Assets\acilisgif.gif" />
-    <Resource Include="Assets\mv-insaat-logo.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,7 +43,6 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
-    <PackageReference Include="WpfAnimatedGif" Version="2.0.2" />
   </ItemGroup>
 
   <ItemGroup>

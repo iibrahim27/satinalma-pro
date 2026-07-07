@@ -1,7 +1,0 @@
-<Window x:Class="SatinalmaPro.Views.YonetimTeklifOnayWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Yönetim Onay" Width="480" Height="240"
-        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
-  <TextBlock Text="Yeniden tasarlanacak." Margin="24" VerticalAlignment="Center" />
-</Window>

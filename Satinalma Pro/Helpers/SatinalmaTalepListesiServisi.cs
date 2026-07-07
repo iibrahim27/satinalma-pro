@@ -35,15 +35,7 @@ public static class SatinalmaTalepListesiServisi
     /// <summary>Depodaki her talep listede görünür (boş taslak dahil).</summary>
     public static bool ListedeGoster(SatinalmaTalep talep) => true;
 
-    public static bool SahipFiltresineUygun(SatinalmaTalep talep, bool sadeceTalepModu)
-    {
-        if (!sadeceTalepModu)
-            return true;
-
-        var uid = OturumYoneticisi.AktifKullanici?.Uid;
-        var ad = KullaniciYetkileri.AktifKullaniciAdi();
-        return SatinalmaTalepKuyrugu.KullanicininTalebi(talep, uid, ad);
-    }
+    public static bool SahipFiltresineUygun(SatinalmaTalep talep, bool sadeceTalepModu) => true;
 
     public static bool DurumFiltresineUygun(SatinalmaTalep talep, string filtreId) => filtreId switch
     {

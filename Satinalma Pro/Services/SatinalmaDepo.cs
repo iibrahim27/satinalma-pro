@@ -44,13 +44,13 @@ public static class SatinalmaDepo
         Talepler.Clear();
         Ayarlar.SonTalepSira = 0;
         Ayarlar.SonSiparisSira = 0;
+        Ayarlar.SonIadeSira = 0;
         Kaydet();
     }
 
     public static void AyarlariSifirla()
     {
-        Ayarlar = SatinalmaAyarlar.VarsayilanOlustur();
-        ImzalariHazirla(Ayarlar);
+        Ayarlar = SatinalmaAyarlar.SifirlanmisOlustur();
         Kaydet();
     }
 
@@ -93,6 +93,8 @@ public static class SatinalmaDepo
                 }
 
                 if (SatinalmaTalepYardimcisi.TaslaklariNormalizeEt(Talepler))
+                    Kaydet();
+                else if (SatinalmaTalepYardimcisi.TeklifGirisAsamalariniNormalizeEt(Talepler))
                     Kaydet();
                 else if (SatinalmaTalepYardimcisi.YonetimOnayMiraslariniGuncelle(Talepler))
                     Kaydet();
@@ -172,7 +174,11 @@ public static class SatinalmaDepo
         }
 
         var kaydet = talepNoAtandi;
-        if (SatinalmaTalepYardimcisi.TaslaklariNormalizeEt(Talepler, silBosTaslaklari: false))
+        if (SatinalmaTalepYardimcisi.DurumlariniNormalizeEt(Talepler))
+            kaydet = true;
+        else if (SatinalmaTalepYardimcisi.TaslaklariNormalizeEt(Talepler, silBosTaslaklari: false))
+            kaydet = true;
+        else if (SatinalmaTalepYardimcisi.TeklifGirisAsamalariniNormalizeEt(Talepler))
             kaydet = true;
         else if (SatinalmaTalepYardimcisi.YonetimOnayMiraslariniGuncelle(Talepler))
             kaydet = true;
@@ -249,6 +255,7 @@ public static class SatinalmaDepo
                 Ayarlar.SilinenTalepIdleri, gelen.SilinenTalepIdleri);
             Ayarlar.SonTalepSira = Math.Max(Ayarlar.SonTalepSira, gelen.SonTalepSira);
             Ayarlar.SonSiparisSira = Math.Max(Ayarlar.SonSiparisSira, gelen.SonSiparisSira);
+            Ayarlar.SonIadeSira = Math.Max(Ayarlar.SonIadeSira, gelen.SonIadeSira);
             if (Ayarlar.VarsayilanUsdKuru <= 0 && gelen.VarsayilanUsdKuru > 0)
                 Ayarlar.VarsayilanUsdKuru = gelen.VarsayilanUsdKuru;
             if (Ayarlar.VarsayilanEurKuru <= 0 && gelen.VarsayilanEurKuru > 0)
@@ -256,8 +263,7 @@ public static class SatinalmaDepo
             if (string.IsNullOrWhiteSpace(Ayarlar.FirmaAdi) && !string.IsNullOrWhiteSpace(gelen.FirmaAdi))
                 Ayarlar.FirmaAdi = gelen.FirmaAdi;
 
-            ImzaListeleriniBirlestir(Ayarlar.SefImzalari, gelen.SefImzalari);
-            ImzaListeleriniBirlestir(Ayarlar.YonetimImzalari, gelen.YonetimImzalari);
+            ImzaAyarlariSenkronla(gelen);
 
             if (string.IsNullOrWhiteSpace(Ayarlar.SartnameMetni) && !string.IsNullOrWhiteSpace(gelen.SartnameMetni))
                 Ayarlar.SartnameMetni = gelen.SartnameMetni;
@@ -270,6 +276,34 @@ public static class SatinalmaDepo
 
         AyarlariHazirla(Ayarlar);
         SilinenTalepleriTemizle();
+    }
+
+    private static void ImzaAyarlariSenkronla(SatinalmaAyarlar gelen)
+    {
+        if (gelen.ImzaAyarleriTemiz)
+        {
+            Ayarlar.SefImzalari ??= [];
+            Ayarlar.YonetimImzalari ??= [];
+            Ayarlar.SefImzalari.Clear();
+            Ayarlar.YonetimImzalari.Clear();
+            Ayarlar.ImzaAyarleriTemiz = true;
+            return;
+        }
+
+        if (Ayarlar.ImzaAyarleriTemiz)
+            return;
+
+        ImzaListeleriniBirlestir(Ayarlar.SefImzalari, gelen.SefImzalari);
+        ImzaListeleriniBirlestir(Ayarlar.YonetimImzalari, gelen.YonetimImzalari);
+    }
+
+    public static void ImzaAyarlariniOzellestir()
+    {
+        if (!Ayarlar.ImzaAyarleriTemiz)
+            return;
+
+        Ayarlar.ImzaAyarleriTemiz = false;
+        KaydetAyarlar();
     }
 
     private static void ImzaListeleriniBirlestir(
@@ -434,53 +468,84 @@ public static class SatinalmaDepo
     {
         var liste = new List<OnaylananMalzemeSatiri>();
 
-        foreach (var talep in Talepler.Where(t => t.HerhangiKalemOnayli))
+        foreach (var talep in Talepler.Where(MalKabulTalep))
         {
             TalebiHazirla(talep);
             talep.FirmaSiparisNolari ??= [];
+            var teklifsiz = talep.TeklifsizYonetimOnayi && !talep.HerhangiKalemOnayli;
 
-            foreach (var kalem in talep.Kalemler.Where(k => k.OnaylananTeklifId != null).OrderBy(k => k.SiraNo))
+            foreach (var kalem in talep.Kalemler
+                         .Where(k => !string.IsNullOrWhiteSpace(k.Malzeme))
+                         .Where(k => teklifsiz || k.OnaylananTeklifId != null)
+                         .OrderBy(k => k.SiraNo))
             {
-                var teklif = talep.KalemOnayTeklifi(kalem);
-                if (teklif == null)
-                    continue;
-
-                teklif.FiyatlariHesapla(talep.Kalemler);
-                teklif.Fiyatlar ??= [];
-                var fiyat = teklif.Fiyatlar.FirstOrDefault(f => f.KalemId == kalem.Id);
-                if (fiyat == null)
-                    continue;
-
-                var siparisNo = talep.FirmaSiparisNolari.TryGetValue(teklif.Id, out var no) && !string.IsNullOrWhiteSpace(no)
-                    ? no
-                    : talep.SiparisNo;
-
-                liste.Add(new OnaylananMalzemeSatiri
+                if (kalem.OnaylananTeklifId != null)
                 {
-                    TalepId = talep.Id,
-                    KalemId = kalem.Id,
-                    TeklifId = teklif.Id,
-                    TalepNo = talep.TalepNo,
-                    SiparisNo = siparisNo,
-                    Tarih = talep.Tarih,
-                    Durum = talep.Durum,
-                    Firma = teklif.FirmaAdi,
-                    Marka = string.IsNullOrWhiteSpace(fiyat.Marka) ? teklif.MarkaOzeti : fiyat.Marka,
-                    Malzeme = kalem.Malzeme,
-                    SiparisMiktari = kalem.Miktar,
-                    KabulEdilenMiktar = kalem.KabulEdilenMiktar,
-                    SiparisTamamlandi = kalem.SiparisTamamlandi,
-                    Birim = kalem.Birim,
-                    BirimFiyati = fiyat.TlBirimFiyat(teklif.UsdKuru, teklif.EurKuru),
-                    ToplamTutar = fiyat.ToplamTutar,
-                    VadeGunu = teklif.VadeGunu,
-                    KalemAciklamasi = kalem.Aciklama
-                });
+                    var teklif = talep.KalemOnayTeklifi(kalem);
+                    if (teklif == null)
+                        continue;
+
+                    teklif.FiyatlariHesapla(talep.Kalemler);
+                    teklif.Fiyatlar ??= [];
+                    var fiyat = teklif.Fiyatlar.FirstOrDefault(f => f.KalemId == kalem.Id);
+                    if (fiyat == null)
+                        continue;
+
+                    var siparisNo = talep.FirmaSiparisNolari.TryGetValue(teklif.Id, out var no)
+                                    && !string.IsNullOrWhiteSpace(no)
+                        ? no
+                        : talep.SiparisNo;
+
+                    liste.Add(MalzemeSatiri(talep, kalem, teklif.Id, teklif.FirmaAdi,
+                        string.IsNullOrWhiteSpace(fiyat.Marka) ? teklif.MarkaOzeti : fiyat.Marka,
+                        fiyat.TlBirimFiyat(teklif.UsdKuru, teklif.EurKuru), fiyat.ToplamTutar,
+                        teklif.VadeGunu, siparisNo));
+                }
+                else
+                {
+                    var siparisNo = string.IsNullOrWhiteSpace(talep.SiparisNo) ? talep.TalepNo : talep.SiparisNo;
+                    liste.Add(MalzemeSatiri(talep, kalem, Guid.Empty, "", "", 0, 0, 0, siparisNo));
+                }
             }
         }
 
         return liste;
     }
+
+    private static bool MalKabulTalep(SatinalmaTalep talep) =>
+        talep.Durum is SatinalmaTalepDurumlari.Onaylandi or SatinalmaTalepDurumlari.SiparisOlusturuldu
+        && (talep.HerhangiKalemOnayli || talep.TeklifsizYonetimOnayi);
+
+    private static OnaylananMalzemeSatiri MalzemeSatiri(
+        SatinalmaTalep talep,
+        SatinalmaTalepKalemi kalem,
+        Guid teklifId,
+        string firma,
+        string marka,
+        decimal birimFiyat,
+        decimal toplamTutar,
+        int vadeGunu,
+        string siparisNo) => new()
+    {
+        TalepId = talep.Id,
+        KalemId = kalem.Id,
+        TeklifId = teklifId,
+        TalepNo = talep.TalepNo,
+        SiparisNo = siparisNo,
+        Tarih = talep.Tarih,
+        Durum = talep.Durum,
+        Firma = firma,
+        Marka = marka,
+        Malzeme = kalem.Malzeme,
+        SiparisMiktari = kalem.Miktar,
+        KabulEdilenMiktar = kalem.KabulEdilenMiktar,
+        SiparisTamamlandi = kalem.SiparisTamamlandi,
+        Birim = kalem.Birim,
+        BirimFiyati = birimFiyat,
+        ToplamTutar = toplamTutar,
+        VadeGunu = vadeGunu,
+        KalemAciklamasi = kalem.Aciklama
+    };
 
     public static SatinalmaTalepKalemi? KalemBul(Guid talepId, Guid kalemId) =>
         Talepler.FirstOrDefault(t => t.Id == talepId)?.Kalemler.FirstOrDefault(k => k.Id == kalemId);
@@ -627,6 +692,14 @@ public static class SatinalmaDepo
         if (ayarlar is null)
             return;
 
+        if (ayarlar.ImzaAyarleriTemiz)
+        {
+            ayarlar.SefImzalari ??= [];
+            ayarlar.YonetimImzalari ??= [];
+            ayarlar.Imzalar = null;
+            return;
+        }
+
         ayarlar.SefImzalari ??= [];
         ayarlar.YonetimImzalari ??= [];
 
@@ -644,8 +717,25 @@ public static class SatinalmaDepo
         if (ayarlar.SefImzalari.Count == 0 && ayarlar.YonetimImzalari.Count == 0)
         {
             var varsayilan = SatinalmaAyarlar.VarsayilanOlustur();
-            ayarlar.SefImzalari = varsayilan.SefImzalari;
-            ayarlar.YonetimImzalari = varsayilan.YonetimImzalari;
+            foreach (var imza in varsayilan.SefImzalari)
+            {
+                ayarlar.SefImzalari.Add(new ImzaAyari
+                {
+                    Unvan = imza.Unvan,
+                    AdSoyad = imza.AdSoyad,
+                    Aktif = imza.Aktif
+                });
+            }
+
+            foreach (var imza in varsayilan.YonetimImzalari)
+            {
+                ayarlar.YonetimImzalari.Add(new ImzaAyari
+                {
+                    Unvan = imza.Unvan,
+                    AdSoyad = imza.AdSoyad,
+                    Aktif = imza.Aktif
+                });
+            }
         }
 
         ImzaVarsayilanlariniKontrolEt(ayarlar);

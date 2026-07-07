@@ -52,16 +52,40 @@ public static class OturumYoneticisi
         }
     }
 
-    public static void TercihleriKaydet(string eposta, bool beniHatirla)
+    public static void TercihKutulariniKaydet(string eposta, bool beniHatirla, bool sifremiHatirla)
     {
         SatinalmaProKlasor.Olustur();
-        var tercih = beniHatirla
-            ? new GirisTercihleri(eposta.Trim(), true)
-            : new GirisTercihleri("", false);
+        var tercih = new GirisTercihleri(
+            beniHatirla ? eposta.Trim() : "",
+            beniHatirla,
+            sifremiHatirla);
         File.WriteAllText(TercihDosyasi, JsonSerializer.Serialize(tercih, JsonSecenekleri));
+
+        if (!sifremiHatirla)
+            GirisSifreDeposu.Sil();
     }
 
-    public static async Task GirisYapAsync(string eposta, string sifre, bool beniHatirla, CancellationToken iptal = default)
+    public static void TercihleriKaydet(string eposta, bool beniHatirla, bool sifremiHatirla, string? sifre)
+    {
+        SatinalmaProKlasor.Olustur();
+        var tercih = new GirisTercihleri(
+            beniHatirla ? eposta.Trim() : "",
+            beniHatirla,
+            sifremiHatirla);
+        File.WriteAllText(TercihDosyasi, JsonSerializer.Serialize(tercih, JsonSecenekleri));
+
+        if (sifremiHatirla && !string.IsNullOrEmpty(sifre))
+            GirisSifreDeposu.Kaydet(sifre);
+        else
+            GirisSifreDeposu.Sil();
+    }
+
+    public static async Task GirisYapAsync(
+        string eposta,
+        string sifre,
+        bool beniHatirla,
+        bool sifremiHatirla = false,
+        CancellationToken iptal = default)
     {
         if (Auth is null || Firestore is null)
             throw new InvalidOperationException("Firebase yapılandırılmamış.");
@@ -70,7 +94,7 @@ public static class OturumYoneticisi
         if (!await ProfiliYukleAsync(iptal))
             throw new InvalidOperationException("Kullanıcı profili bulunamadı. Yöneticinize başvurun.");
 
-        TercihleriKaydet(eposta, beniHatirla);
+        TercihleriKaydet(eposta, beniHatirla, sifremiHatirla, sifre);
         OturumDosyasiniSil();
     }
 
@@ -156,6 +180,18 @@ public static class OturumYoneticisi
         OturumDegisti?.Invoke();
     }
 
+    /// <summary>Kayıtlı e-posta / şifre hatırlatma dosyalarını siler.</summary>
+    public static void GirisHatirlatmasiniTemizle()
+    {
+        OturumDosyasiniSil();
+        GirisSifreDeposu.Sil();
+
+        if (!File.Exists(TercihDosyasi))
+            return;
+
+        try { File.Delete(TercihDosyasi); } catch { /* yoksay */ }
+    }
+
     public static void UygulamaKapanirken()
     {
         BildirimYoneticisi.Durdur();
@@ -178,12 +214,14 @@ public sealed class GirisTercihleri
 {
     public string Eposta { get; set; } = "";
     public bool BeniHatirla { get; set; }
+    public bool SifremiHatirla { get; set; }
 
     public GirisTercihleri() { }
 
-    public GirisTercihleri(string eposta, bool beniHatirla)
+    public GirisTercihleri(string eposta, bool beniHatirla, bool sifremiHatirla = false)
     {
         Eposta = eposta;
         BeniHatirla = beniHatirla;
+        SifremiHatirla = sifremiHatirla;
     }
 }

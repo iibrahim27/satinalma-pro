@@ -25,6 +25,9 @@ public static class KullaniciRolleri
     public static bool YazabilirMi(string? rol) =>
         SatinalmaPro.Shared.Models.KullaniciRolleri.YazabilirMi(rol);
 
+    public static bool SatinalmaTeklifGirebilir(string? rol) =>
+        SatinalmaPro.Shared.Models.KullaniciRolleri.SatinalmaTeklifGirebilir(rol);
+
     public static IReadOnlyList<string> VarsayilanModuller(string? rol)
     {
         rol = Normalize(rol);

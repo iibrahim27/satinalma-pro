@@ -4,8 +4,8 @@
              xmlns:ui="http://schemas.modernwpf.com/2019"
              xmlns:helpers="clr-namespace:SatinalmaPro.Helpers"
              xmlns:controls="clr-namespace:SatinalmaPro.Views.Controls"
-             Loaded="AracFiloView_Loaded">
-  <Grid>
+             Loaded="AracFiloView_Loaded" Background="{StaticResource DashBackgroundBrush}">
+  <Grid x:Name="AnaIcerikGrid">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
@@ -14,8 +14,7 @@
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
 
-    <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-            CornerRadius="14" Padding="14,12" Margin="0,0,0,12">
+    <Border Grid.Row="0" Style="{StaticResource ModulePageCardStyle}" Padding="14,12" Margin="0,0,0,12">
       <Grid>
         <StackPanel Orientation="Horizontal">
           <Button Style="{StaticResource PrimaryToolbarButtonStyle}" Click="YeniArac_Click">
@@ -60,8 +59,7 @@
       </Grid>
     </Border>
 
-    <Border Grid.Row="1" Background="White" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-            CornerRadius="14" Padding="14,12,30,12" Margin="0,0,0,12">
+    <Border Grid.Row="1" x:Name="FiltreKart" Style="{StaticResource ModulePageCardStyle}" Padding="14,12,30,12" Margin="0,0,0,12">
       <Grid>
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*" MinWidth="220" />
@@ -133,8 +131,7 @@
       </Border>
     </StackPanel>
 
-    <Border Grid.Row="3" Background="White" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-            CornerRadius="14" Padding="14,12,30,12" Margin="0,0,0,12">
+    <Border Grid.Row="3" Style="{StaticResource ModulePageCardStyle}" Padding="14,12,30,12" Margin="0,0,0,12">
       <StackPanel Orientation="Horizontal">
         <Button x:Name="BtnAracDetay" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
                 IsEnabled="False" Click="AracDetay_Click" Content="Araç Detayları" />
@@ -155,14 +152,25 @@
       </StackPanel>
     </Border>
 
-    <Border Grid.Row="4" Background="White" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-            CornerRadius="14" Padding="1">
+    <Border x:Name="TabloKart" Grid.Row="4" Style="{StaticResource ModuleGridContainerStyle}">
       <Grid>
         <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
           <RowDefinition Height="*" />
           <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-      <DataGrid x:Name="FiloGrid" Grid.Row="0" Style="{StaticResource ModuleDataGridStyle}"
+        <Border Grid.Row="0" Style="{StaticResource ErpTableToolbar}">
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Style="{StaticResource ErpTableToolbarBtn}" Content="Kolonlar" Click="Kolonlar_Click" />
+            <Button Style="{StaticResource ErpTableToolbarBtn}" Content="Grupla" Click="Grupla_Click" />
+            <Button Style="{StaticResource ErpTableToolbarBtn}" Content="Filtre" Click="FiltreOdak_Click" />
+            <Button Style="{StaticResource ErpTableToolbarBtn}" Content="Yoğun" Click="YogunGorunum_Click" />
+            <Button x:Name="BtnTamEkran" Style="{StaticResource ErpTableToolbarBtn}" Content="Tam Ekran" Click="TamEkran_Click" />
+          </StackPanel>
+        </Border>
+      <DataGrid x:Name="FiloGrid" Grid.Row="1" Style="{StaticResource ModuleDataGridStyle}"
+                CanUserReorderColumns="True"
                 AlternatingRowBackground="Transparent" LoadingRow="FiloGrid_LoadingRow"
                 SelectionChanged="FiloGrid_SelectionChanged"
                 MouseDoubleClick="FiloGrid_MouseDoubleClick"
@@ -190,7 +198,21 @@
           <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*" MinWidth="120" />
         </DataGrid.Columns>
       </DataGrid>
-      <controls:SayfalamaCubugu x:Name="SayfalamaBar" Grid.Row="1" />
+        <Border Grid.Row="2" Style="{StaticResource ErpFooterBar}">
+          <Grid>
+            <TextBlock x:Name="TxtGrupBilgi" Style="{StaticResource ErpFooterText}" Visibility="Collapsed" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+              <TextBlock Text="Sayfa boyutu:" Style="{StaticResource ErpFooterText}" Margin="0,0,8,0" />
+              <ComboBox x:Name="CmbSayfaBoyutu" Width="72" Height="28" VerticalContentAlignment="Center"
+                        SelectionChanged="SayfaBoyutuDegisti">
+                <ComboBoxItem Content="25" Tag="25" />
+                <ComboBoxItem Content="50" Tag="50" IsSelected="True" />
+                <ComboBoxItem Content="100" Tag="100" />
+              </ComboBox>
+            </StackPanel>
+          </Grid>
+        </Border>
+      <controls:SayfalamaCubugu x:Name="SayfalamaBar" Grid.Row="3" />
       </Grid>
     </Border>
   </Grid>

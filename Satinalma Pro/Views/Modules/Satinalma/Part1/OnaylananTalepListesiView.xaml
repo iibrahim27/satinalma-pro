@@ -1,0 +1,60 @@
+<UserControl x:Class="SatinalmaPro.Views.Modules.Satinalma.Part1.OnaylananTalepListesiView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.modernwpf.com/2019"
+             Background="{StaticResource DashBackgroundBrush}">
+  <Border Style="{StaticResource SatModCard}">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <TextBlock x:Name="TxtYardim" Style="{StaticResource SatModHint}" Margin="0,0,0,10" />
+
+      <Grid Grid.Row="1" Margin="0,0,0,12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid Width="280" HorizontalAlignment="Left">
+          <TextBox x:Name="TxtArama" Style="{StaticResource FilterBoxStyle}" Height="36"
+                   TextChanged="AramaDegisti"
+                   ui:ControlHelper.PlaceholderText="Talep no, onaylayan, firma..." />
+          <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                     Foreground="{StaticResource InkMutedBrush}" HorizontalAlignment="Right"
+                     VerticalAlignment="Center" Margin="0,0,12,0" IsHitTestVisible="False" />
+        </Grid>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+          <Button Content="Onay Belgesi PDF" Style="{StaticResource ToolbarButtonStyle}"
+                  Click="OnayPdf_Click" Padding="12,8" Margin="0,0,8,0" />
+          <Button Content="Karşılaştırma PDF" Style="{StaticResource ToolbarButtonStyle}"
+                  Click="KarsilastirmaPdf_Click" Padding="12,8" />
+        </StackPanel>
+      </Grid>
+
+      <DataGrid x:Name="Tablo" Grid.Row="2" Style="{StaticResource SatModDataGrid}"
+                MouseDoubleClick="Tablo_MouseDoubleClick">
+        <DataGrid.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="Onay Belgesi PDF" Click="OnayPdf_Click" />
+            <MenuItem Header="Karşılaştırma PDF" Click="KarsilastirmaPdf_Click" />
+            <Separator />
+            <MenuItem x:Name="BtnSiparis" Header="Siparişlendir" Click="Siparislendir_Click" />
+          </ContextMenu>
+        </DataGrid.ContextMenu>
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="100" />
+          <DataGridTextColumn Header="Onay Türü" Binding="{Binding OnayTuruMetni}" Width="90" />
+          <DataGridTextColumn Header="Onay Tarihi" Binding="{Binding OnayTarihi}" Width="120" />
+          <DataGridTextColumn Header="Talep Tarihi" Binding="{Binding Tarih}" Width="95" />
+          <DataGridTextColumn Header="Talep Eden" Binding="{Binding TalepEden}" Width="115" />
+          <DataGridTextColumn Header="Onaylayan" Binding="{Binding OnaylayanOzet}" Width="150" />
+          <DataGridTextColumn Header="Onaylı Firma" Binding="{Binding OnayliFirmaOzet}" Width="*" MinWidth="120" />
+          <DataGridTextColumn Header="Durum" Binding="{Binding DurumEtiketi}" Width="140" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </Grid>
+  </Border>
+</UserControl>

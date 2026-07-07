@@ -9,36 +9,46 @@ public static class BildirimRotaServisi
     public static string HedefRoute(BildirimKaydi bildirim, string? kullaniciRol = null)
     {
         var rol = KullaniciRolleri.Normalize(kullaniciRol);
+        var tid = bildirim.TalepId;
 
-        if (bildirim.TalepId is { } id && bildirim.Tip is BildirimTipleri.Reddedildi)
-            return rol == KullaniciRolleri.Yonetim ? "red-talepler" : $"talep-detay?id={id}";
+        if (tid is { } redId && bildirim.Tip is BildirimTipleri.Reddedildi)
+            return rol == KullaniciRolleri.Yonetim ? "red-talepler" : $"talep-detay?id={redId}";
 
         return bildirim.Tip switch
         {
             BildirimTipleri.YonetimeGonderildi => "gelen-talepler",
             BildirimTipleri.TeklifIstendi => rol == KullaniciRolleri.Yonetim
                 ? "gelen-talepler"
-                : "teklif-gir",
-            BildirimTipleri.TeklifDuzeltmeIstendi => "teklif-gir",
-            BildirimTipleri.TeklifOnayda when bildirim.TalepId is { } tid => $"teklif-onay-detay?id={tid}",
-            BildirimTipleri.TeklifOnayda => "teklif-onay",
-            BildirimTipleri.Onaylandi when bildirim.TalepId is { } tid =>
-                rol switch
-                {
-                    KullaniciRolleri.Satinalma => "onaylanan-malzemeler",
-                    KullaniciRolleri.Yonetim => "gecmis-talepler",
-                    _ => $"talep-detay?id={tid}"
-                },
-            BildirimTipleri.Onaylandi => rol == KullaniciRolleri.Yonetim
-                ? "gecmis-talepler"
-                : "bildirimler",
-            BildirimTipleri.SiparisOlusturuldu => "onaylanan-malzemeler",
-            BildirimTipleri.MalKabulEdildi => rol switch
-            {
-                KullaniciRolleri.Depo => "stok-durum",
-                _ => "onaylanan-malzemeler"
-            },
-            _ => bildirim.TalepId is { } t ? $"talep-detay?id={t}" : "bildirimler"
+                : tid is { } teklifTid ? $"teklif-gir?id={teklifTid}" : "satinalma-teklif-istenen",
+            BildirimTipleri.TeklifDuzeltmeIstendi => tid is { } duzTid
+                ? $"satinalma-teklif-duzeltme?id={duzTid}"
+                : "satinalma-teklif-duzeltme",
+            BildirimTipleri.TeklifOnayda when tid is { } onayTid => $"teklif-onay-detay?id={onayTid}",
+            BildirimTipleri.TeklifOnayda => rol == KullaniciRolleri.Yonetim
+                ? "yonetim-teklif-girilen"
+                : "satinalma-teklif-girilen",
+            BildirimTipleri.Onaylandi when tid is null && rol == KullaniciRolleri.Yonetim => "gecmis-talepler",
+            BildirimTipleri.Onaylandi when tid is null && rol == KullaniciRolleri.Satinalma => "satinalma-onaylanan",
+            BildirimTipleri.Onaylandi when tid is null => "bildirimler",
+            BildirimTipleri.Onaylandi when rol == KullaniciRolleri.Satinalma => $"talep-detay?id={tid}&view=onaylanan",
+            BildirimTipleri.Onaylandi when rol == KullaniciRolleri.Yonetim => $"talep-detay?id={tid}",
+            BildirimTipleri.Onaylandi when tid is { } onayTid => $"talep-detay?id={onayTid}",
+            BildirimTipleri.SiparisOlusturuldu when tid is not null && rol is KullaniciRolleri.Satinalma or KullaniciRolleri.Admin
+                => $"talep-detay?id={tid}&view=siparis",
+            BildirimTipleri.SiparisOlusturuldu when tid is not null
+                => $"talep-detay?id={tid}&view=siparis",
+            BildirimTipleri.SiparisOlusturuldu when rol is KullaniciRolleri.Satinalma or KullaniciRolleri.Admin
+                => "satinalma-siparis",
+            BildirimTipleri.SiparisOlusturuldu => "onaylanan-malzemeler?section=siparis",
+            BildirimTipleri.MalKabulEdildi when rol == KullaniciRolleri.Depo => "stok-durum",
+            BildirimTipleri.MalKabulEdildi when tid is not null && rol is KullaniciRolleri.Satinalma or KullaniciRolleri.Admin
+                => $"talep-detay?id={tid}&view=malkabul",
+            BildirimTipleri.MalKabulEdildi when tid is not null
+                => $"talep-detay?id={tid}&view=malkabul",
+            BildirimTipleri.MalKabulEdildi when rol is KullaniciRolleri.Satinalma or KullaniciRolleri.Admin
+                => "satinalma-mal-kabul",
+            BildirimTipleri.MalKabulEdildi => "onaylanan-malzemeler?section=malkabul",
+            _ => tid is { } t ? $"talep-detay?id={t}" : "bildirimler"
         };
     }
 
@@ -53,21 +63,25 @@ public static class BildirimRotaServisi
 
         return bildirim.Tip switch
         {
-            BildirimTipleri.TeklifOnayda => new("Satınalma", "teklif-onay", 0, bildirim.TalepId),
-            BildirimTipleri.TeklifIstendi => new("Satınalma", "teklif-giris", 0, bildirim.TalepId),
-            BildirimTipleri.TeklifDuzeltmeIstendi => new("Satınalma", "teklif-giris", 0, bildirim.TalepId),
+            BildirimTipleri.TeklifOnayda => new("Satınalma", "teklif-onay-pencere", 0, bildirim.TalepId),
+            BildirimTipleri.TeklifIstendi => rol switch
+            {
+                KullaniciRolleri.Yonetim => new("Satınalma", "gelen-talepler", 0, bildirim.TalepId),
+                _ => new("Satınalma", "satinalma-teklif-istenen", 0, bildirim.TalepId)
+            },
+            BildirimTipleri.TeklifDuzeltmeIstendi => new("Satınalma", "satinalma-teklif-duzeltme", 0, bildirim.TalepId),
             BildirimTipleri.Onaylandi => rol switch
             {
-                KullaniciRolleri.Satinalma => new("Satınalma", "alinan-malzemeler", 0, bildirim.TalepId),
-                KullaniciRolleri.Yonetim => new("Satınalma", "gecmis-talepler", 0, bildirim.TalepId),
+                KullaniciRolleri.Satinalma => new("Satınalma", "satinalma-onaylanan", 0, bildirim.TalepId),
+                KullaniciRolleri.Yonetim => new("Satınalma", "yonetim-gecmis", 0, bildirim.TalepId),
                 _ => new("Satınalma", "talepler", 0, bildirim.TalepId)
             },
             BildirimTipleri.YonetimeGonderildi => new("Satınalma", "gelen-talepler", 0, bildirim.TalepId),
             BildirimTipleri.Reddedildi => new("Satınalma", "red-talepler", 0, bildirim.TalepId),
-            BildirimTipleri.SiparisOlusturuldu => new("Satınalma", "alinan-malzemeler", 0, bildirim.TalepId),
+            BildirimTipleri.SiparisOlusturuldu => new("Satınalma", "satinalma-siparis", 0, bildirim.TalepId),
             BildirimTipleri.MalKabulEdildi => rol == KullaniciRolleri.Depo
-                ? new("Stok", "stok", 0, bildirim.TalepId)
-                : new("Satınalma", "alinan-malzemeler", 0, bildirim.TalepId),
+                ? new("Stok Yönetimi", "stok-durum", 0, bildirim.TalepId)
+                : new("Satınalma", "satinalma-mal-kabul", 0, bildirim.TalepId),
             _ => new("Satınalma", "talepler", 0, bildirim.TalepId)
         };
     }
@@ -79,8 +93,13 @@ public static class BildirimRotaServisi
         var deepLink = bildirim.DeepLink;
         if (string.IsNullOrWhiteSpace(deepLink) && bildirim.TalepId is { } tid)
         {
+            var ekran = route.Split('?')[0];
+            var view = route.Split('&')
+                .Select(p => p.Split('='))
+                .FirstOrDefault(p => p.Length == 2 && p[0] == "view")?[1];
             deepLink = DeepLinkServisi.Olustur(new DeepLinkParametreleri(
-                "satinalma", route.Split('?')[0], "view", "procurement_request", tid.ToString(),
+                "satinalma", ekran, "view", "procurement_request", tid.ToString(),
+                Tab: view,
                 EventCode: bildirim.EventCode));
         }
 

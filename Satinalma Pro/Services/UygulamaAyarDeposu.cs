@@ -109,15 +109,18 @@ public static class UygulamaAyarDeposu
 
     private static void SatinalmaFirmaBilgileriniGocEt()
     {
-        if (!string.IsNullOrWhiteSpace(Ayarlar.FirmaAdi) &&
-            !string.IsNullOrWhiteSpace(Ayarlar.LogoDosyaYolu))
+        if (!string.IsNullOrWhiteSpace(Ayarlar.FirmaAdi)
+            && !string.IsNullOrWhiteSpace(Ayarlar.LogoDosyaYolu))
             return;
 
         SatinalmaDepo.Yukle();
         var satinalma = SatinalmaDepo.Ayarlar;
         if (string.IsNullOrWhiteSpace(Ayarlar.FirmaAdi) && !string.IsNullOrWhiteSpace(satinalma.FirmaAdi))
             Ayarlar.FirmaAdi = satinalma.FirmaAdi;
-        if (string.IsNullOrWhiteSpace(Ayarlar.LogoDosyaYolu) && !string.IsNullOrWhiteSpace(satinalma.LogoDosyaYolu))
+
+        if (string.IsNullOrWhiteSpace(Ayarlar.LogoDosyaYolu)
+            && !string.IsNullOrWhiteSpace(satinalma.LogoDosyaYolu)
+            && File.Exists(SatinalmaProLogoDeposu.TamYol(satinalma.LogoDosyaYolu)))
             Ayarlar.LogoDosyaYolu = satinalma.LogoDosyaYolu;
 
         if (!string.IsNullOrWhiteSpace(Ayarlar.FirmaAdi) || !string.IsNullOrWhiteSpace(Ayarlar.LogoDosyaYolu))
@@ -126,6 +129,17 @@ public static class UygulamaAyarDeposu
 
     public static void VarsayilanaSifirla()
     {
+        var eskiYollar = new[]
+        {
+            UygulamaAyarDeposu.Ayarlar.LogoDosyaYolu,
+            UygulamaAyarDeposu.Ayarlar.AnasayfaLogoDosyaYolu
+        };
+        foreach (var yol in eskiYollar.Select(SatinalmaProLogoDeposu.TamYol).Where(File.Exists))
+        {
+            try { File.Delete(yol); } catch { /* dosya kilitli olabilir */ }
+        }
+
+        SatinalmaProLogoDeposu.TumDosyalariSil();
         Ayarlar = new UygulamaAyarlar();
         Kaydet();
     }

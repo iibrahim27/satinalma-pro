@@ -5,6 +5,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using SatinalmaPro.Models;
 using SatinalmaPro.Shared.Helpers;
+using SatinalmaPro.Shared.Procurement;
+using SatinalmaPro.Shared.Procurement.Detail;
 using NotificationInboxEntry = SatinalmaPro.Shared.Models.NotificationInboxEntry;
 
 namespace SatinalmaPro.Services.Firebase;
@@ -210,13 +212,19 @@ public sealed class FirestoreVeriServisi
     public async Task<List<KullaniciProfili>> TumKullanicilariOkuAsync(CancellationToken iptal = default)
     {
         var token = await _auth.GecerliTokenAlAsync(iptal);
+        return await TumKullanicilariBearerIleOkuAsync(token, iptal);
+    }
+
+    /// <summary>Service account token ile tüm kullanıcıları okur (FCM fan-out).</summary>
+    public async Task<List<KullaniciProfili>> TumKullanicilariBearerIleOkuAsync(string bearerToken, CancellationToken iptal = default)
+    {
         using var istek = new HttpRequestMessage(HttpMethod.Get, $"{Kok}/users");
-        istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
 
         var yanit = await Http.SendAsync(istek, iptal);
         var govde = await yanit.Content.ReadAsStringAsync(iptal);
         if (!yanit.IsSuccessStatusCode)
-            throw new InvalidOperationException(FirestoreHataMesaji(govde));
+            return [];
 
         using var belge = JsonDocument.Parse(govde);
         var liste = new List<KullaniciProfili>();
@@ -285,6 +293,139 @@ public sealed class FirestoreVeriServisi
         await Http.SendAsync(patch, iptal);
     }
 
+    public async Task InboxArsivleAsync(string uid, string inboxDocId, CancellationToken iptal = default)
+    {
+        var token = await _auth.GecerliTokenAlAsync(iptal);
+        var now = DateTime.UtcNow.ToString("o");
+        var govde = new
+        {
+            fields = new Dictionary<string, object>
+            {
+                ["isRead"] = new { booleanValue = true },
+                ["isArchived"] = new { booleanValue = true },
+                ["dismissedAt"] = new { timestampValue = now },
+                ["archivedAt"] = new { timestampValue = now }
+            }
+        };
+
+        using var patch = new HttpRequestMessage(HttpMethod.Patch,
+            $"{Kok}/users/{uid}/notification_inbox/{inboxDocId}" +
+            "?updateMask.fieldPaths=isRead&updateMask.fieldPaths=isArchived" +
+            "&updateMask.fieldPaths=dismissedAt&updateMask.fieldPaths=archivedAt")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(govde), Encoding.UTF8, "application/json")
+        };
+        patch.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        await Http.SendAsync(patch, iptal);
+    }
+
+    public async Task InboxTumunuOkunduIsaretleAsync(string uid, CancellationToken iptal = default)
+    {
+        var inbox = await InboxOkuAsync(uid, 200, iptal);
+        foreach (var kayit in inbox.Where(k => !k.IsRead))
+        {
+            try
+            {
+                await InboxOkunduIsaretleAsync(uid, kayit.DocId, iptal);
+            }
+            catch
+            {
+                // tek kayıt hatası diğerlerini engellemesin
+            }
+        }
+    }
+
+    public async Task InboxEkleAsync(string uid, string docId, BildirimKaydi bildirim, CancellationToken iptal = default)
+    {
+        if (string.IsNullOrWhiteSpace(uid) || string.IsNullOrWhiteSpace(docId))
+            return;
+
+        var token = await _auth.GecerliTokenAlAsync(iptal);
+        await InboxEkleBearerIleAsync(token, uid, docId, bildirim, iptal);
+    }
+
+    public async Task InboxEkleBearerIleAsync(
+        string bearerToken,
+        string uid,
+        string docId,
+        BildirimKaydi bildirim,
+        CancellationToken iptal = default)
+    {
+        if (string.IsNullOrWhiteSpace(uid) || string.IsNullOrWhiteSpace(docId))
+            return;
+
+        var now = DateTime.UtcNow.ToString("o");
+        var talepId = bildirim.TalepId?.ToString() ?? "";
+        var govde = new
+        {
+            fields = new Dictionary<string, object>
+            {
+                ["title"] = new { stringValue = bildirim.Baslik },
+                ["baslik"] = new { stringValue = bildirim.Baslik },
+                ["message"] = new { stringValue = bildirim.Mesaj },
+                ["mesaj"] = new { stringValue = bildirim.Mesaj },
+                ["tip"] = new { stringValue = bildirim.Tip },
+                ["type"] = new { stringValue = bildirim.Tip },
+                ["talepId"] = new { stringValue = talepId },
+                ["entityId"] = new { stringValue = talepId },
+                ["entityType"] = new { stringValue = "talep" },
+                ["eventCode"] = new { stringValue = bildirim.EventCode ?? bildirim.Tip },
+                ["hedefRol"] = new { stringValue = bildirim.HedefRol ?? "" },
+                ["targetRole"] = new { stringValue = bildirim.HedefRol ?? "" },
+                ["hedefUid"] = new { stringValue = bildirim.HedefUid ?? "" },
+                ["targetUid"] = new { stringValue = bildirim.HedefUid ?? "" },
+                ["olusturanUid"] = new { stringValue = bildirim.OlusturanUid ?? "" },
+                ["createdBy"] = new { stringValue = bildirim.OlusturanUid ?? "" },
+                ["isRead"] = new { booleanValue = false },
+                ["okundu"] = new { booleanValue = false },
+                ["createdAt"] = new { timestampValue = now },
+                ["guncellemeUtc"] = new { integerValue = bildirim.GuncellemeUtc.ToString() }
+            }
+        };
+
+        using var istek = new HttpRequestMessage(HttpMethod.Post,
+            $"{Kok}/users/{uid}/notification_inbox?documentId={Uri.EscapeDataString(docId)}")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(govde), Encoding.UTF8, "application/json")
+        };
+        istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+        await Http.SendAsync(istek, iptal);
+    }
+
+    public async Task InboxSilAsync(string uid, string inboxDocId, CancellationToken iptal = default)
+    {
+        var token = await _auth.GecerliTokenAlAsync(iptal);
+        using var istek = new HttpRequestMessage(HttpMethod.Delete, $"{Kok}/users/{uid}/notification_inbox/{inboxDocId}");
+        istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        await Http.SendAsync(istek, iptal);
+    }
+
+    public async Task InboxTemizleAsync(string uid, CancellationToken iptal = default)
+    {
+        for (var guard = 0; guard < 20; guard++)
+        {
+            var inbox = await InboxOkuAsync(uid, 200, iptal);
+            var arsivlenecek = inbox.Where(k => !k.IsDismissed).ToList();
+            if (arsivlenecek.Count == 0)
+                break;
+
+            foreach (var kayit in arsivlenecek)
+            {
+                try
+                {
+                    await InboxArsivleAsync(uid, kayit.DocId, iptal);
+                }
+                catch
+                {
+                    // tek kayıt hatası diğerlerini engellemesin
+                }
+            }
+
+            if (inbox.Count < 200)
+                break;
+        }
+    }
+
     private static NotificationInboxEntry InboxParseEt(string docId, JsonElement alanlar) => new()
     {
         DocId = docId,
@@ -302,6 +443,8 @@ public sealed class FirestoreVeriServisi
         Screen = AlanOku(alanlar, "screen") ?? "",
         Action = AlanOku(alanlar, "action") ?? "",
         IsRead = alanlar.TryGetProperty("isRead", out var r) && r.TryGetProperty("booleanValue", out var rb) && rb.GetBoolean(),
+        IsArchived = alanlar.TryGetProperty("isArchived", out var a) && a.TryGetProperty("booleanValue", out var ab) && ab.GetBoolean(),
+        DismissedAt = TimestampOku(alanlar, "dismissedAt"),
         CreatedAt = TimestampOku(alanlar, "createdAt")
     };
 
@@ -394,5 +537,109 @@ public sealed class FirestoreVeriServisi
         }
 
         return "Firestore bağlantı hatası.";
+    }
+
+    /// <summary>
+    /// Enterprise <c>procurement_requests</c> koleksiyonunda structured query çalıştırır.
+    /// Belge kimliklerini (GUID string) döner.
+    /// </summary>
+    public async Task<List<string>> ProcurementRequestIdleriSorgulaAsync(
+        FirestoreFilterSpec spec,
+        CancellationToken iptal = default)
+    {
+        if (!string.Equals(spec.Collection, "procurement_requests", StringComparison.Ordinal))
+            return [];
+
+        var token = await _auth.GecerliTokenAlAsync(iptal);
+        var govde = FirestoreStructuredQueryOlusturucu.Olustur(spec);
+
+        using var istek = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"{Kok}:runQuery")
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(govde),
+                Encoding.UTF8,
+                "application/json")
+        };
+        istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var yanit = await Http.SendAsync(istek, iptal);
+        var metin = await yanit.Content.ReadAsStringAsync(iptal);
+        if (!yanit.IsSuccessStatusCode)
+            throw new InvalidOperationException(FirestoreHataMesaji(metin));
+
+        using var belge = JsonDocument.Parse(metin);
+        var idler = new List<string>();
+
+        foreach (var satir in belge.RootElement.EnumerateArray())
+        {
+            if (!satir.TryGetProperty("document", out var doc))
+                continue;
+
+            var ad = doc.GetProperty("name").GetString() ?? "";
+            var docId = ad.Split('/').LastOrDefault();
+            if (!string.IsNullOrWhiteSpace(docId))
+                idler.Add(docId);
+        }
+
+        return idler;
+    }
+
+    /// <summary>
+    /// Enterprise <c>procurement_requests/{id}</c> belgesinde workflow alanlarını günceller.
+    /// </summary>
+    public async Task ProcurementRequestAlanlariGuncelleAsync(
+        string requestId,
+        PurchaseRequestFirestorePatch patch,
+        CancellationToken iptal = default)
+    {
+        if (string.IsNullOrWhiteSpace(requestId))
+            return;
+
+        var token = await _auth.GecerliTokenAlAsync(iptal);
+        var fields = new Dictionary<string, object>();
+
+        if (!string.IsNullOrWhiteSpace(patch.Status))
+            fields["status"] = new { stringValue = patch.Status };
+
+        if (!string.IsNullOrWhiteSpace(patch.Priority))
+            fields["priority"] = new { stringValue = patch.Priority };
+
+        if (patch.ApprovedQuoteId is not null)
+            fields["approvedQuoteId"] = new { stringValue = patch.ApprovedQuoteId };
+
+        if (patch.QuoteRevisionNote is not null)
+            fields["quoteRevisionNote"] = new { stringValue = patch.QuoteRevisionNote };
+
+        if (patch.RejectionReason is not null)
+            fields["rejectionReason"] = new { stringValue = patch.RejectionReason };
+
+        fields["updatedAtUtc"] = new { integerValue = patch.UpdatedAtUtcMs.ToString() };
+        fields["updatedAt"] = new { timestampValue = DateTime.UtcNow.ToString("o") };
+
+        var mask = string.Join("&", fields.Keys.Select(k => $"updateMask.fieldPaths={k}"));
+        var govde = new { fields };
+
+        using var istek = new HttpRequestMessage(
+            HttpMethod.Patch,
+            $"{Kok}/procurement_requests/{requestId}?{mask}")
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(govde),
+                Encoding.UTF8,
+                "application/json")
+        };
+        istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var yanit = await Http.SendAsync(istek, iptal);
+        if (yanit.IsSuccessStatusCode)
+            return;
+
+        var metin = await yanit.Content.ReadAsStringAsync(iptal);
+        if (yanit.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return;
+
+        throw new InvalidOperationException(FirestoreHataMesaji(metin));
     }
 }

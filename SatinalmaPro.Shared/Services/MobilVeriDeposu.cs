@@ -153,6 +153,8 @@ public sealed class MobilVeriDeposu
 
         if (SatinalmaTalepYardimcisi.TaslaklariNormalizeEt(Talepler, silBosTaslaklari: false))
             await TalepleriKaydetAsync(iptal);
+        else if (SatinalmaTalepYardimcisi.TeklifGirisAsamalariniNormalizeEt(Talepler))
+            await TalepleriKaydetAsync(iptal);
         else if (SatinalmaTalepYardimcisi.YonetimOnayMiraslariniGuncelle(Talepler))
             await TalepleriKaydetAsync(iptal);
     }

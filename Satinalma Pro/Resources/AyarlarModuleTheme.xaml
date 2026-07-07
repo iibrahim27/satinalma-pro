@@ -1,0 +1,140 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Color x:Key="AyarBg">#F4F7FC</Color>
+  <Color x:Key="AyarBorder">#E8EDF5</Color>
+  <Color x:Key="AyarPrimary">#2563EB</Color>
+
+  <SolidColorBrush x:Key="AyarBgBrush" Color="{StaticResource AyarBg}" />
+  <SolidColorBrush x:Key="AyarBorderBrush" Color="{StaticResource AyarBorder}" />
+  <SolidColorBrush x:Key="AyarPrimaryBrush" Color="{StaticResource AyarPrimary}" />
+
+  <DropShadowEffect x:Key="AyarCardShadow" BlurRadius="30" ShadowDepth="0" Opacity="0.05" Color="#000000" />
+
+  <Style x:Key="AyarCard" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource AyarBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="24,22" />
+    <Setter Property="Effect" Value="{StaticResource AyarCardShadow}" />
+    <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+    <Setter Property="RenderTransform">
+      <Setter.Value>
+        <ScaleTransform ScaleX="1" ScaleY="1" />
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Trigger.EnterActions>
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                               To="1.01" Duration="0:0:0.2" />
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                               To="1.01" Duration="0:0:0.2" />
+            </Storyboard>
+          </BeginStoryboard>
+        </Trigger.EnterActions>
+        <Trigger.ExitActions>
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                               To="1" Duration="0:0:0.2" />
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                               To="1" Duration="0:0:0.2" />
+            </Storyboard>
+          </BeginStoryboard>
+        </Trigger.ExitActions>
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style x:Key="AyarKpiCard" TargetType="Border" BasedOn="{StaticResource AyarCard}">
+    <Setter Property="Padding" Value="18,16" />
+  </Style>
+
+  <Style x:Key="AyarSectionTitle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+  </Style>
+
+  <Style x:Key="AyarSectionDesc" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{StaticResource InkMutedBrush}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Margin" Value="0,4,0,0" />
+  </Style>
+
+  <Style x:Key="AyarFormLabel" TargetType="TextBlock" BasedOn="{StaticResource ModuleFormLabelStyle}">
+    <Setter Property="Margin" Value="0,0,0,8" />
+  </Style>
+
+  <Style x:Key="AyarFormBox" TargetType="TextBox" BasedOn="{StaticResource FilterBoxStyle}">
+    <Setter Property="Height" Value="48" />
+    <Setter Property="Padding" Value="14,12" />
+    <Setter Property="BorderBrush" Value="#E5E7EB" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style x:Key="AyarNavItem" TargetType="Button">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,2" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Shell" Background="Transparent" CornerRadius="10" Padding="12,10" Margin="4,0">
+            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" RecognizesAccessKey="True" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Shell" Property="Background" Value="#F8FAFC" />
+            </Trigger>
+            <Trigger Property="Tag" Value="Active">
+              <Setter TargetName="Shell" Property="Background" Value="#EFF6FF" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="AyarGhostButton" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="14,8" />
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource AyarBorderBrush}" />
+  </Style>
+
+  <Style x:Key="AyarSaveButton" TargetType="Button" BasedOn="{StaticResource PrimaryToolbarButtonStyle}">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="18,8" />
+  </Style>
+
+  <Style x:Key="AyarUploadBox" TargetType="Border">
+    <Setter Property="Background" Value="#FAFBFD" />
+    <Setter Property="BorderBrush" Value="{StaticResource AyarBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="16" />
+    <Setter Property="MinHeight" Value="140" />
+  </Style>
+
+  <Style x:Key="AyarStatusOk" TargetType="Border">
+    <Setter Property="Background" Value="#DCFCE7" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10,5" />
+  </Style>
+
+  <Style x:Key="AyarStatusWarn" TargetType="Border">
+    <Setter Property="Background" Value="#FEF3C7" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10,5" />
+  </Style>
+
+</ResourceDictionary>

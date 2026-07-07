@@ -56,10 +56,11 @@ public static class BildirimDeposu
         var bulut = Deserialize(json);
         var inbox = await InboxYukleAsync(iptal);
         if (inbox.Count > 0)
-            bulut = InboxIleBirlestir(bulut, inbox);
+            bulut = InboxIleBirlestir(bulut, inbox, OturumYoneticisi.AktifKullanici);
 
         var yerel = AnlikListe().Select(ToShared).ToList();
-        var birlesik = BildirimBirlestirme.Birlestir(yerel, bulut);
+        var birlesik = BildirimTekillestirme.Tekille(
+            BildirimBirlestirme.Birlestir(yerel, bulut));
 
         await BulutYazmaKilidi.WaitAsync(iptal);
         try
@@ -88,7 +89,8 @@ public static class BildirimDeposu
             var bulutJson = await OturumYoneticisi.Firestore.BelgeJsonOkuAsync(FirestoreYol, iptal);
             var bulut = Deserialize(bulutJson);
             var yerel = AnlikListe().Select(ToShared).ToList();
-            var birlesik = BildirimBirlestirme.Birlestir(yerel, bulut);
+            var birlesik = BildirimTekillestirme.Tekille(
+                BildirimBirlestirme.Birlestir(yerel, bulut));
 
             lock (Bildirimler)
             {
@@ -96,11 +98,7 @@ public static class BildirimDeposu
                 Bildirimler.AddRange(birlesik.Select(FromShared));
             }
 
-            var json = JsonSerializer.Serialize(AnlikListe(), Json);
-            await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
-                FirestoreYol, json, OturumYoneticisi.Auth?.Uid, iptal);
-
-            await InboxOkunduSenkronizeEtAsync(iptal);
+            await YerelListeyiBulutaYazAsync(iptal);
         }
         finally
         {
@@ -108,14 +106,173 @@ public static class BildirimDeposu
         }
     }
 
-    public static async Task EkleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
+    /// <summary>Silme / toplu okundu sonrası yerel listeyi buluta yazar; silinen kayıtları buluttan geri yüklemez.</summary>
+    public static async Task KaydetYerelAsync(CancellationToken iptal = default)
+    {
+        if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
+            return;
+
+        await BulutYazmaKilidi.WaitAsync(iptal);
+        try
+        {
+            await YerelListeyiBulutaYazAsync(iptal);
+            _sonYukleme = DateTime.Now;
+        }
+        finally
+        {
+            BulutYazmaKilidi.Release();
+        }
+    }
+
+    public static async Task GecersizleriSilAsync(CancellationToken iptal = default)
+    {
+        if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
+            return;
+
+        SatinalmaDepo.Yukle();
+        await YukleAsync(zorla: true, iptal);
+
+        var degisti = false;
+        lock (Bildirimler)
+        {
+            var kalacak = Bildirimler
+                .Where(b => MasaustuBildirimFiltreleme.GecerliMi(b, SatinalmaDepo.Talepler))
+                .ToList();
+            degisti = kalacak.Count != Bildirimler.Count;
+            if (degisti)
+            {
+                Bildirimler.Clear();
+                Bildirimler.AddRange(kalacak);
+            }
+        }
+
+        if (degisti)
+            await KaydetYerelAsync(iptal);
+
+        await InboxGecersizleriSilAsync(iptal);
+    }
+
+    private static async Task InboxGecersizleriSilAsync(CancellationToken iptal)
+    {
+        var uid = OturumYoneticisi.Auth?.Uid;
+        if (string.IsNullOrWhiteSpace(uid) || OturumYoneticisi.Firestore is null)
+            return;
+
+        for (var guard = 0; guard < 20; guard++)
+        {
+            var inbox = await OturumYoneticisi.Firestore.InboxOkuAsync(uid, 200, iptal);
+            if (inbox.Count == 0)
+                break;
+
+            foreach (var kayit in inbox)
+            {
+                var bildirim = BildirimInboxServisi.InboxtenBildirimeDonustur(kayit);
+                if (MasaustuBildirimFiltreleme.GecerliMi(FromShared(bildirim), SatinalmaDepo.Talepler))
+                    continue;
+
+                try
+                {
+                    await OturumYoneticisi.Firestore.InboxArsivleAsync(uid, kayit.DocId, iptal);
+                }
+                catch
+                {
+                    // tek kayıt hatası diğerlerini engellemesin
+                }
+            }
+
+            if (inbox.Count < 200)
+                break;
+        }
+    }
+
+    public static async Task InboxTumunuOkunduAsync(CancellationToken iptal = default)
+    {
+        var uid = OturumYoneticisi.Auth?.Uid;
+        if (string.IsNullOrWhiteSpace(uid) || OturumYoneticisi.Firestore is null)
+            return;
+
+        await OturumYoneticisi.Firestore.InboxTumunuOkunduIsaretleAsync(uid, iptal);
+    }
+
+    public static async Task InboxTemizleAsync(CancellationToken iptal = default)
+    {
+        var uid = OturumYoneticisi.Auth?.Uid;
+        if (string.IsNullOrWhiteSpace(uid) || OturumYoneticisi.Firestore is null)
+            return;
+
+        SatinalmaDepo.Yukle();
+        var kullanici = OturumYoneticisi.AktifKullanici;
+
+        for (var guard = 0; guard < 20; guard++)
+        {
+            var inbox = await OturumYoneticisi.Firestore.InboxOkuAsync(uid, 200, iptal);
+            var arsivlenecek = inbox.Where(k => !k.IsDismissed).ToList();
+            if (kullanici is not null)
+            {
+                arsivlenecek = arsivlenecek.Where(k =>
+                {
+                    var bildirim = FromShared(BildirimInboxServisi.InboxtenBildirimeDonustur(k));
+                    return MasaustuBildirimFiltreleme.KullaniciyaMi(bildirim, kullanici)
+                        && !MasaustuBildirimFiltreleme.Temizlenmemeli(bildirim, SatinalmaDepo.Talepler);
+                }).ToList();
+            }
+
+            if (arsivlenecek.Count == 0)
+                break;
+
+            foreach (var kayit in arsivlenecek)
+            {
+                try
+                {
+                    await OturumYoneticisi.Firestore.InboxArsivleAsync(uid, kayit.DocId, iptal);
+                }
+                catch
+                {
+                    // tek kayıt hatası diğerlerini engellemesin
+                }
+            }
+
+            if (inbox.Count < 200)
+                break;
+        }
+    }
+
+    private static async Task YerelListeyiBulutaYazAsync(CancellationToken iptal)
+    {
+        if (OturumYoneticisi.Firestore is null)
+            return;
+
+        var json = JsonSerializer.Serialize(AnlikListe(), Json);
+        await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
+            FirestoreYol, json, OturumYoneticisi.Auth?.Uid, iptal);
+
+        await InboxOkunduSenkronizeEtAsync(iptal);
+    }
+
+    public static async Task<bool> EkleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
     {
         bildirim.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         await YukleAsync(zorla: true, iptal);
+
+        var mevcut = MevcutOkunmamis(bildirim);
+        if (mevcut is not null)
+        {
+            var yenidenAktif = mevcut.Okundu;
+            mevcut.Baslik = bildirim.Baslik;
+            mevcut.Mesaj = bildirim.Mesaj;
+            mevcut.Okundu = false;
+            mevcut.GuncellemeUtc = bildirim.GuncellemeUtc;
+            await KaydetAsync(iptal);
+            if (yenidenAktif)
+                await FcmPushGonderAsync(mevcut, iptal);
+            return false;
+        }
+
         lock (Bildirimler)
             Bildirimler.Insert(0, bildirim);
         await KaydetAsync(iptal);
         await FcmPushGonderAsync(bildirim, iptal);
+        return true;
     }
 
     public static async Task CokluEkleAsync(IReadOnlyList<BildirimKaydi> bildirimler, CancellationToken iptal = default)
@@ -127,15 +284,41 @@ public static class BildirimDeposu
             b.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         await YukleAsync(zorla: true, iptal);
+
+        var yeniKayitlar = new List<BildirimKaydi>();
         lock (Bildirimler)
         {
             foreach (var b in bildirimler)
+            {
+                var mevcut = MevcutOkunmamis(b);
+                if (mevcut is not null)
+                {
+                    var yenidenAktif = mevcut.Okundu;
+                    mevcut.Baslik = b.Baslik;
+                    mevcut.Mesaj = b.Mesaj;
+                    mevcut.Okundu = false;
+                    mevcut.GuncellemeUtc = b.GuncellemeUtc;
+                    if (yenidenAktif)
+                        yeniKayitlar.Add(mevcut);
+                    continue;
+                }
+
                 Bildirimler.Insert(0, b);
+                yeniKayitlar.Add(b);
+            }
         }
+
         await KaydetAsync(iptal);
 
-        foreach (var b in bildirimler)
+        foreach (var b in yeniKayitlar)
             await FcmPushGonderAsync(b, iptal);
+    }
+
+    private static BildirimKaydi? MevcutOkunmamis(BildirimKaydi bildirim)
+    {
+        var anahtar = BildirimMantikAnahtari.Olustur(ToShared(bildirim));
+        return AnlikListe()
+            .FirstOrDefault(b => BildirimMantikAnahtari.Olustur(ToShared(b)) == anahtar);
     }
 
     private static async Task FcmPushGonderAsync(BildirimKaydi bildirim, CancellationToken iptal)
@@ -154,13 +337,48 @@ public static class BildirimDeposu
 
         try
         {
-            var hedefler = await HedefleriAlAsync(bildirim, iptal);
+            var adminToken = v1
+                ? await FcmV1Api.ServiceAccountErisimTokeniAlAsync(saYolu!, iptal)
+                : null;
+
+            var hedefler = await HedefleriAlAsync(bildirim, adminToken, iptal);
+            if (hedefler.Count == 0)
+            {
+                HataGunlugu.Kaydet(
+                    new InvalidOperationException(
+                        $"FCM hedef bulunamadı tip={bildirim.Tip} rol={bildirim.HedefRol} uid={bildirim.HedefUid}"),
+                    "FCM.HedefYok");
+                return;
+            }
+
             var projectId = FirebaseAyarDeposu.Ayarlar.ProjectId;
             var mobil = ToShared(bildirim);
+            var inboxDocId = BildirimMantikAnahtari.Olustur(mobil);
 
             foreach (var hedef in hedefler)
             {
                 var veri = BildirimRotaServisi.FcmVeri(mobil, hedef.Rol);
+                if (!string.IsNullOrWhiteSpace(hedef.Uid))
+                {
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(adminToken))
+                        {
+                            await OturumYoneticisi.Firestore.InboxEkleBearerIleAsync(
+                                adminToken, hedef.Uid, inboxDocId, bildirim, iptal);
+                        }
+                        else
+                        {
+                            await OturumYoneticisi.Firestore.InboxEkleAsync(
+                                hedef.Uid, inboxDocId, bildirim, iptal);
+                        }
+                    }
+                    catch
+                    {
+                        // inbox isteğe bağlı
+                    }
+                }
+
                 if (v1)
                 {
                     await FcmV1Api.TokenaGonderAsync(
@@ -196,38 +414,54 @@ public static class BildirimDeposu
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // push isteğe bağlı
+            HataGunlugu.Kaydet(ex, $"FCM push başarısız tip={bildirim.Tip} hedefRol={bildirim.HedefRol}");
         }
     }
 
-    private sealed record FcmHedef(string Token, string Rol);
+    private sealed record FcmHedef(string Token, string Rol, string Uid);
 
-    private static async Task<List<FcmHedef>> HedefleriAlAsync(BildirimKaydi bildirim, CancellationToken iptal)
+    private static async Task<List<FcmHedef>> HedefleriAlAsync(
+        BildirimKaydi bildirim,
+        string? adminToken,
+        CancellationToken iptal)
     {
         if (OturumYoneticisi.Firestore is null)
             return [];
 
         if (!string.IsNullOrWhiteSpace(bildirim.HedefUid))
         {
-            var profil = await OturumYoneticisi.Firestore.KullaniciOkuAsync(bildirim.HedefUid, iptal);
+            KullaniciProfili? profil;
+            if (!string.IsNullOrWhiteSpace(adminToken))
+            {
+                var kullanicilar = await OturumYoneticisi.Firestore.TumKullanicilariBearerIleOkuAsync(adminToken, iptal);
+                profil = kullanicilar.FirstOrDefault(k => k.Uid == bildirim.HedefUid);
+            }
+            else
+                profil = await OturumYoneticisi.Firestore.KullaniciOkuAsync(bildirim.HedefUid, iptal);
+
             if (string.IsNullOrWhiteSpace(profil?.FcmToken))
                 return [];
 
-            return [new FcmHedef(profil.FcmToken, profil.Rol ?? "")];
+            return [new FcmHedef(profil.FcmToken, profil.Rol ?? "", profil.Uid)];
         }
 
         if (string.IsNullOrWhiteSpace(bildirim.HedefRol))
             return [];
 
-        var tum = await OturumYoneticisi.Firestore.TumKullanicilariOkuAsync(iptal);
+        List<KullaniciProfili> tum;
+        if (!string.IsNullOrWhiteSpace(adminToken))
+            tum = await OturumYoneticisi.Firestore.TumKullanicilariBearerIleOkuAsync(adminToken, iptal);
+        else
+            tum = await OturumYoneticisi.Firestore.TumKullanicilariOkuAsync(iptal);
+
         var rol = KullaniciRolleri.Normalize(bildirim.HedefRol);
         return tum
             .Where(k => k.Aktif && k.Uid != bildirim.OlusturanUid &&
                         KullaniciRolleri.Normalize(k.Rol) == rol &&
                         !string.IsNullOrWhiteSpace(k.FcmToken))
-            .Select(k => new FcmHedef(k.FcmToken!, k.Rol ?? ""))
+            .Select(k => new FcmHedef(k.FcmToken!, k.Rol ?? "", k.Uid))
             .GroupBy(h => h.Token)
             .Select(g => g.First())
             .ToList();
@@ -290,7 +524,10 @@ public static class BildirimDeposu
         try
         {
             var inbox = await OturumYoneticisi.Firestore.InboxOkuAsync(uid, 50, iptal);
-            return inbox.Select(BildirimInboxServisi.InboxtenBildirimeDonustur).ToList();
+            return inbox
+                .Where(e => !e.IsDismissed)
+                .Select(BildirimInboxServisi.InboxtenBildirimeDonustur)
+                .ToList();
         }
         catch
         {
@@ -298,17 +535,31 @@ public static class BildirimDeposu
         }
     }
 
-    private static List<SharedBildirim> InboxIleBirlestir(List<SharedBildirim> legacy, List<SharedBildirim> inbox)
+    private static List<SharedBildirim> InboxIleBirlestir(
+        List<SharedBildirim> legacy,
+        List<SharedBildirim> inbox,
+        KullaniciProfili? kullanici)
     {
+        var sharedKullanici = kullanici is null
+            ? null
+            : new SatinalmaPro.Shared.Models.KullaniciProfili
+            {
+                Uid = kullanici.Uid,
+                Rol = kullanici.Rol,
+                Aktif = kullanici.Aktif
+            };
+
         var sonuc = new List<SharedBildirim>(inbox);
         foreach (var l in legacy)
         {
-            if (inbox.Any(i => i.TalepId == l.TalepId && i.Tip == l.Tip))
+            if (inbox.Any(i => BildirimMantikAnahtari.Olustur(i) == BildirimMantikAnahtari.Olustur(l)))
+                continue;
+            if (sharedKullanici is not null && !BildirimFiltreleme.KullaniciyaMi(l, sharedKullanici))
                 continue;
             sonuc.Add(l);
         }
 
-        return sonuc.OrderByDescending(b => b.GuncellemeUtc).ToList();
+        return BildirimTekillestirme.Tekille(sonuc);
     }
 
     private static async Task InboxOkunduSenkronizeEtAsync(CancellationToken iptal)

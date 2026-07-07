@@ -10,21 +10,53 @@ public partial class GirisView : UserControl
 {
     public event Action? GirisBasarili;
 
+    private bool _tercihYukleniyor;
+
     public GirisView()
     {
         InitializeComponent();
-        Loaded += OnLoaded;
+        Loaded += (_, _) => TercihleriYukle();
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    public void TercihleriYukle()
     {
-        var tercih = OturumYoneticisi.TercihleriOku();
-        ChkBeniHatirla.IsChecked = tercih.BeniHatirla;
+        _tercihYukleniyor = true;
+        try
+        {
+            var tercih = OturumYoneticisi.TercihleriOku();
+            ChkBeniHatirla.IsChecked = tercih.BeniHatirla;
+            ChkSifremiHatirla.IsChecked = tercih.SifremiHatirla;
 
-        if (tercih.BeniHatirla && !string.IsNullOrWhiteSpace(tercih.Eposta))
-            TxtEposta.Text = tercih.Eposta;
+            if (tercih.BeniHatirla && !string.IsNullOrWhiteSpace(tercih.Eposta))
+                TxtEposta.Text = tercih.Eposta;
+
+            if (tercih.SifremiHatirla)
+            {
+                var kayitliSifre = GirisSifreDeposu.Oku();
+                TxtSifre.Password = kayitliSifre ?? "";
+            }
+            else
+            {
+                TxtSifre.Password = "";
+            }
+        }
+        finally
+        {
+            _tercihYukleniyor = false;
+        }
 
         TxtSifre.Focus();
+    }
+
+    private void TercihKutusu_Degisti(object sender, RoutedEventArgs e)
+    {
+        if (_tercihYukleniyor)
+            return;
+
+        OturumYoneticisi.TercihKutulariniKaydet(
+            TxtEposta.Text,
+            ChkBeniHatirla.IsChecked == true,
+            ChkSifremiHatirla.IsChecked == true);
     }
 
     private async void Giris_Click(object sender, RoutedEventArgs e)
@@ -46,7 +78,9 @@ public partial class GirisView : UserControl
         try
         {
             var beniHatirla = ChkBeniHatirla.IsChecked == true;
-            await OturumYoneticisi.GirisYapAsync(TxtEposta.Text, TxtSifre.Password, beniHatirla);
+            var sifremiHatirla = ChkSifremiHatirla.IsChecked == true;
+            await OturumYoneticisi.GirisYapAsync(
+                TxtEposta.Text, TxtSifre.Password, beniHatirla, sifremiHatirla);
             GirisBasarili?.Invoke();
         }
         catch (Exception ex)

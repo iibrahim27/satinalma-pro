@@ -96,7 +96,6 @@ public static class DashboardServisi
                 Kart("Yönetim Onayı", satinalma.YonetimTalepleri().Count().ToString(), "Onay bekleyen talep", "#E67E22", "gelen-talepler"),
                 Kart("Teklif Onayı", satinalma.YonetimTeklifOnayiBekleyenleri().Count().ToString(), "Karşılaştırma aşaması", "#8E44AD", "teklif-onay"),
                 Kart("Teklif Girişi", satinalma.TeklifGirisiBekleyenleri().Count().ToString(), "Teklif bekleyen", "#2980B9", "teklif-gir"),
-                Kart("Teklifsiz F/F", satinalma.TeklifsizFirmaFiyatBekleyenleri().Count().ToString(), "Firma/fiyat bekleyen", "#E67E22", "teklifsiz-firma-fiyat"),
                 Kart("Mal Kabul", satinalma.MalKabulBekleyenSayisi().ToString(), "Bekleyen malzeme", "#16A085", "onaylanan-malzemeler"),
                 Kart("Stok Kritik", StokKritik(kaynak).ToString(), "Kritik / tükenen", "#C0392B", "stok-durum"),
                 Kart("Bildirimler", bildirim.ToString(), "Okunmamış", "#1B3A5C", "bildirimler"),
@@ -135,7 +134,6 @@ public static class DashboardServisi
             [
                 Kart("Teklif Girişi", satinalma.TeklifGirisiBekleyenleri().Count().ToString(), "Bekleyen talep", "#2980B9", "teklif-gir"),
                 Kart("Karşılaştırma", satinalma.KarsilastirmaBekleyenleri().Count().ToString(), "Yönetime gönder", "#8E44AD", "teklif-karsilastirma"),
-                Kart("Teklifsiz F/F", satinalma.TeklifsizFirmaFiyatBekleyenleri().Count().ToString(), "Firma/fiyat gir", "#E67E22", "teklifsiz-firma-fiyat"),
                 Kart("Onay Bekleyen", satinalma.OnayBekleyenTalepler().Count().ToString(), "İşlemde", "#E67E22", "onay-bekleyen"),
                 Kart("Yön. Onaylı", (satinalma.YonetimOnaylananTeklifleri().Count() + satinalma.YonetimOnaylananTalepleri().Count()).ToString(), "Onay belgesi / PDF", "#27AE60", "onaylanan-teklifler"),
                 Kart("Mal Kabul", satinalma.MalKabulBekleyenSayisi().ToString(), "Bekleyen malzeme", "#16A085", "onaylanan-malzemeler"),

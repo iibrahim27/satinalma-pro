@@ -15,7 +15,19 @@ public class StokKaydi
 
     public string DurumMetin => MevcutMiktar <= 0 ? "Tükendi"
         : MinimumStok > 0 && MevcutMiktar <= MinimumStok ? "Kritik"
+        : MinimumStok > 0 && MevcutMiktar <= MinimumStok * 1.25 ? "Düşük"
         : "Normal";
+
+    public string DurumRozetMetin => DurumMetin switch
+    {
+        "Tükendi" => "Pasif",
+        _ => DurumMetin
+    };
+
+    public string StokKoduGoster =>
+        string.IsNullOrWhiteSpace(MalzemeAdi) ? "—"
+        : MalzemeAdi.Length <= 10 ? MalzemeAdi.ToUpperInvariant()
+        : MalzemeAdi[..10].ToUpperInvariant();
 
     public void ToplamDegerHesapla() =>
         ToplamDeger = Math.Round((decimal)MevcutMiktar * BirimMaliyet, 2);

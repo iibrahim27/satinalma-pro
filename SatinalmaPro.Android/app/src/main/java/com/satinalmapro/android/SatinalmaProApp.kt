@@ -22,20 +22,35 @@ class SatinalmaProApp : Application() {
     private fun initFirebase() {
         if (FirebaseApp.getApps(this).isNotEmpty()) return
         val config = AppContainer.loadFirebaseConfig(this)
-        if (!config.isConfigured) return
         val options = GoogleServicesLoader.loadOptions(this, config.apiKey, config.projectId) ?: return
         FirebaseApp.initializeApp(this, options)
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val channel = NotificationChannel(
+        val manager = getSystemService(NotificationManager::class.java) ?: return
+
+        val legacyChannel = NotificationChannel(
             "satinalma_pro",
             "Satınalma Pro",
             NotificationManager.IMPORTANCE_HIGH
-        ).apply { description = "Satınalma bildirimleri" }
-        val nm = getSystemService(NotificationManager::class.java)
-        nm?.createNotificationChannel(channel)
+        ).apply {
+            description = "Satınalma bildirimleri"
+            enableVibration(true)
+            enableLights(true)
+        }
+        manager.createNotificationChannel(legacyChannel)
+
+        val talepChannel = NotificationChannel(
+            com.satinalmapro.android.services.MyFirebaseMessagingService.CHANNEL_ID,
+            "Talep ve Sipariş Bildirimleri",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Talep durumu ve sipariş akışı bildirimleri"
+            enableVibration(true)
+            enableLights(true)
+        }
+        manager.createNotificationChannel(talepChannel)
     }
 
     companion object {

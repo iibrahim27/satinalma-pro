@@ -1,0 +1,48 @@
+<UserControl x:Class="SatinalmaPro.Views.Modules.Satinalma.Part1.SiparisVerilenTalepListesiView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Background="{StaticResource DashBackgroundBrush}">
+  <Border Style="{StaticResource SatModCard}">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <TextBlock x:Name="TxtYardim" Style="{StaticResource SatModHint}" Margin="0,0,0,12" />
+
+      <DataGrid x:Name="Tablo" Grid.Row="1" Style="{StaticResource SatModDataGrid}"
+                MouseDoubleClick="Tablo_MouseDoubleClick">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="100" />
+          <DataGridTextColumn Header="Sipariş No" Binding="{Binding SiparisNo}" Width="110" />
+          <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="90" />
+          <DataGridTextColumn Header="Talep Eden" Binding="{Binding TalepEden}" Width="130" />
+          <DataGridTextColumn Header="Firma" Binding="{Binding FirmaOzet}" Width="*" />
+          <DataGridTextColumn Header="Mal Kabul" Binding="{Binding MalKabulOzeti}" Width="110" />
+          <DataGridTextColumn Header="Durum" Binding="{Binding DurumEtiketi}" Width="120" />
+        </DataGrid.Columns>
+      </DataGrid>
+
+      <Border x:Name="BosPanel" Grid.Row="1" Background="White" CornerRadius="12"
+              BorderBrush="#E5E7EB" BorderThickness="1" Padding="32,28" Visibility="Collapsed">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="500">
+          <TextBlock x:Name="TxtBosBaslik" Text="Mal kabul bekleyen sipariş yok"
+                     FontSize="16" FontWeight="SemiBold"
+                     Foreground="{StaticResource SatModInkBrush}"
+                     TextAlignment="Center" />
+          <TextBlock x:Name="TxtBosAciklama"
+                     FontSize="13" Foreground="{StaticResource InkMutedBrush}"
+                     TextWrapping="Wrap" TextAlignment="Center" Margin="0,10,0,0" />
+          <StackPanel x:Name="BosButonlar" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
+            <Button x:Name="BtnOnaylananlaraGit" Content="Onaylanan Teklifler"
+                    Style="{StaticResource ToolbarButtonStyle}" Padding="16,10" Margin="0,0,8,0"
+                    Click="OnaylananlaraGit_Click" Visibility="Collapsed" />
+            <Button x:Name="BtnMalKabuleGit" Content="Mal Kabul Arşivi"
+                    Style="{StaticResource PrimaryToolbarButtonStyle}" Padding="16,10"
+                    Click="MalKabuleGit_Click" Visibility="Collapsed" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Border>
+</UserControl>

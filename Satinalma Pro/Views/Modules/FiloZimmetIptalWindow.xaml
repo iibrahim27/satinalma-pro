@@ -5,7 +5,7 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Zimmet İptal"
         Width="500" Height="360" MinWidth="440"
-        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" Background="White">
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" Background="{StaticResource DashBackgroundBrush}">
   <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />

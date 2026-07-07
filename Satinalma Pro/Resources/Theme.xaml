@@ -8,8 +8,8 @@
   <Color x:Key="LineColor">#E2E8F0</Color>
   <Color x:Key="SurfaceColor">#F8FAFC</Color>
   <Color x:Key="SurfaceElevatedColor">#FFFFFF</Color>
-  <Color x:Key="AccentStart">#F97316</Color>
-  <Color x:Key="AccentEnd">#EA580C</Color>
+  <Color x:Key="AccentStart">#2563EB</Color>
+  <Color x:Key="AccentEnd">#1D4ED8</Color>
 
   <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource WhitePure}" />
   <SolidColorBrush x:Key="InkBrush" Color="{StaticResource InkColor}" />
@@ -25,9 +25,11 @@
   </LinearGradientBrush>
 
   <LinearGradientBrush x:Key="AuraBrush" StartPoint="0,0" EndPoint="1,1">
-    <GradientStop Color="#F97316" Offset="0" />
-    <GradientStop Color="#EA580C" Offset="1" />
+    <GradientStop Color="#2563EB" Offset="0" />
+    <GradientStop Color="#1D4ED8" Offset="1" />
   </LinearGradientBrush>
+
+  <DropShadowEffect x:Key="ModuleCardShadow" BlurRadius="16" ShadowDepth="0" Opacity="0.08" Color="#0F172A" />
 
   <!-- İnce ızgara dokusu -->
   <DrawingBrush x:Key="GridPatternBrush"
@@ -104,8 +106,8 @@
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-              <Setter TargetName="Card" Property="BorderBrush" Value="#FDBA74" />
-              <Setter TargetName="Card" Property="Background" Value="#FFFBEB" />
+              <Setter TargetName="Card" Property="BorderBrush" Value="#93C5FD" />
+              <Setter TargetName="Card" Property="Background" Value="#EFF6FF" />
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
               <Setter TargetName="Card" Property="Opacity" Value="0.96" />
@@ -152,23 +154,22 @@
   <Style x:Key="PrimaryToolbarButtonStyle" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
     <Setter Property="Foreground" Value="White" />
     <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="Button">
           <Border x:Name="B"
+                  Background="{StaticResource AccentGradientBrush}"
                   CornerRadius="10"
                   Padding="{TemplateBinding Padding}">
-            <Border.Background>
-              <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="{StaticResource AccentStart}" Offset="0" />
-                <GradientStop Color="{StaticResource AccentEnd}" Offset="1" />
-              </LinearGradientBrush>
-            </Border.Background>
             <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-              <Setter TargetName="B" Property="Opacity" Value="0.92" />
+              <Setter TargetName="B" Property="Effect" Value="{StaticResource ModuleCardShadow}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter TargetName="B" Property="Opacity" Value="0.5" />
             </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
@@ -216,10 +217,35 @@
     <Setter Property="Padding" Value="0,0,0,12" />
   </Style>
 
+  <Style x:Key="ModuleDataGridColumnHeaderStyle" TargetType="DataGridColumnHeader">
+    <Setter Property="Background" Value="#F8FAFC" />
+    <Setter Property="Foreground" Value="{StaticResource InkMutedBrush}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Padding" Value="14,12" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style x:Key="ModuleDataGridRowStyle" TargetType="DataGridRow">
+    <Setter Property="Background" Value="White" />
+    <Style.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Setter Property="Background" Value="#F8FAFC" />
+      </Trigger>
+      <Trigger Property="IsSelected" Value="True">
+        <Setter Property="Background" Value="#EFF6FF" />
+        <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
   <Style x:Key="ModuleDataGridStyle" TargetType="DataGrid">
     <Setter Property="Background" Value="White" />
     <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderThickness" Value="0" />
     <Setter Property="RowHeight" Value="44" />
     <Setter Property="ColumnHeaderHeight" Value="42" />
     <Setter Property="GridLinesVisibility" Value="Horizontal" />
@@ -235,6 +261,8 @@
     <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
     <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
     <Setter Property="AlternatingRowBackground" Value="#FAFBFC" />
+    <Setter Property="ColumnHeaderStyle" Value="{StaticResource ModuleDataGridColumnHeaderStyle}" />
+    <Setter Property="RowStyle" Value="{StaticResource ModuleDataGridRowStyle}" />
     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
     <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
     <Setter Property="ScrollViewer.CanContentScroll" Value="False" />
@@ -254,6 +282,64 @@
     <Setter Property="CornerRadius" Value="12" />
     <Setter Property="Padding" Value="16,12" />
     <Setter Property="Margin" Value="0,0,12,0" />
+    <Setter Property="Effect" Value="{StaticResource ModuleCardShadow}" />
+  </Style>
+
+  <Style x:Key="ModulePageCardStyle" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Effect" Value="{StaticResource ModuleCardShadow}" />
+  </Style>
+
+  <Style x:Key="ModuleGridContainerStyle" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="1" />
+    <Setter Property="Effect" Value="{StaticResource ModuleCardShadow}" />
+  </Style>
+
+  <Style x:Key="ModuleKpiCardStyle" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="18,16" />
+    <Setter Property="Effect" Value="{StaticResource ModuleCardShadow}" />
+  </Style>
+
+  <Style x:Key="ModuleDialogTitleStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+  </Style>
+
+  <Style x:Key="ModuleDialogSubtitleStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource InkMutedBrush}" />
+    <Setter Property="Margin" Value="0,4,0,0" />
+  </Style>
+
+  <Style x:Key="ModuleFormLabelStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{StaticResource InkMutedBrush}" />
+    <Setter Property="Margin" Value="0,0,0,6" />
+  </Style>
+
+  <Style x:Key="ModuleFormSectionStyle" TargetType="Border">
+    <Setter Property="Background" Value="#F8FAFC" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="14" />
+  </Style>
+
+  <Style x:Key="ModuleReadOnlyFieldStyle" TargetType="TextBox" BasedOn="{StaticResource FilterBoxStyle}">
+    <Setter Property="Background" Value="#F8FAFC" />
+    <Setter Property="IsReadOnly" Value="True" />
   </Style>
 
   <!-- Satınalma modülü -->
@@ -288,13 +374,7 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="Button">
-          <Border x:Name="B" CornerRadius="10" Padding="{TemplateBinding Padding}">
-            <Border.Background>
-              <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#F43F5E" Offset="0" />
-                <GradientStop Color="#FB7185" Offset="1" />
-              </LinearGradientBrush>
-            </Border.Background>
+          <Border x:Name="B" Background="{StaticResource AccentGradientBrush}" CornerRadius="10" Padding="{TemplateBinding Padding}">
             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
         </ControlTemplate>
@@ -326,8 +406,8 @@
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-              <Setter TargetName="B" Property="BorderBrush" Value="#FDA4AF" />
-              <Setter TargetName="B" Property="Background" Value="#FFF1F2" />
+              <Setter TargetName="B" Property="BorderBrush" Value="#93C5FD" />
+              <Setter TargetName="B" Property="Background" Value="#EFF6FF" />
             </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
@@ -336,9 +416,9 @@
   </Style>
 
   <Style x:Key="SatinalmaStepActiveStyle" TargetType="Button" BasedOn="{StaticResource SatinalmaStepButtonStyle}">
-    <Setter Property="BorderBrush" Value="#FDA4AF" />
-    <Setter Property="Background" Value="#FFF1F2" />
-    <Setter Property="Foreground" Value="#BE123C" />
+    <Setter Property="BorderBrush" Value="#93C5FD" />
+    <Setter Property="Background" Value="#EFF6FF" />
+    <Setter Property="Foreground" Value="#1D4ED8" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
 
@@ -352,8 +432,9 @@
     <Setter Property="Background" Value="White" />
     <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="CornerRadius" Value="12" />
     <Setter Property="Padding" Value="20" />
+    <Setter Property="Effect" Value="{StaticResource ModuleCardShadow}" />
   </Style>
 
   <Style x:Key="SatinalmaSidebarListStyle" TargetType="ListBox">
@@ -407,12 +488,12 @@
               <Setter TargetName="Kart" Property="BorderBrush" Value="#FCA5A5" />
             </DataTrigger>
             <Trigger Property="IsMouseOver" Value="True">
-              <Setter TargetName="Kart" Property="BorderBrush" Value="#FECDD3" />
-              <Setter TargetName="Kart" Property="Background" Value="#FFFBFB" />
+              <Setter TargetName="Kart" Property="BorderBrush" Value="#93C5FD" />
+              <Setter TargetName="Kart" Property="Background" Value="#F8FAFC" />
             </Trigger>
             <Trigger Property="IsSelected" Value="True">
-              <Setter TargetName="Kart" Property="BorderBrush" Value="#F43F5E" />
-              <Setter TargetName="Kart" Property="Background" Value="#FFF1F2" />
+              <Setter TargetName="Kart" Property="BorderBrush" Value="#2563EB" />
+              <Setter TargetName="Kart" Property="Background" Value="#EFF6FF" />
             </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>

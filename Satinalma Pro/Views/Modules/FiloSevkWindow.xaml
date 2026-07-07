@@ -5,7 +5,7 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Araç Sevk"
         Width="480" Height="380" MinWidth="420"
-        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" Background="White">
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" Background="{StaticResource DashBackgroundBrush}">
   <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />

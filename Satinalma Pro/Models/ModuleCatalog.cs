@@ -38,7 +38,7 @@ public static class ModuleCatalog
         {
             Number = "03",
             Title = "Agrega",
-            Subtitle = "Agrega stok ve hareketleri",
+            Subtitle = "Agrega alımları ve sevkiyat kayıtları",
             IconGlyph = "\uE7C1",
             GradientStart = Color.FromRgb(16, 185, 129),
             GradientEnd = Color.FromRgb(52, 211, 153)
@@ -47,7 +47,7 @@ public static class ModuleCatalog
         {
             Number = "04",
             Title = "Çimento",
-            Subtitle = "Çimento giriş ve kullanım takibi",
+            Subtitle = "Çimento alımları ve sevkiyat kayıtları",
             IconGlyph = "\uE7F4",
             GradientStart = Color.FromRgb(100, 116, 139),
             GradientEnd = Color.FromRgb(148, 163, 184)

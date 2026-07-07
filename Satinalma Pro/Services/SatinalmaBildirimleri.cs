@@ -1,5 +1,6 @@
 using SatinalmaPro.Models;
 
+using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Services;
 
 using SharedBildirimTipleri = SatinalmaPro.Shared.Models.BildirimTipleri;
@@ -24,16 +25,17 @@ public static class SatinalmaBildirimleri
 
 
 
-    private static (string Baslik, string Mesaj) Metin(string tip, SatinalmaTalep talep, string? firmaAdi = null, string? ek = null)
-
+    private static (string Baslik, string Mesaj) Metin(
+        string tip,
+        SatinalmaTalep talep,
+        string? firmaAdi = null,
+        string? ek = null,
+        string? onaylayanRol = null)
     {
-
         var malzemeler = talep.Kalemler?.OrderBy(k => k.SiraNo).Select(k => k.Malzeme);
-
-        return BildirimMetniOlusturucu.Olustur(tip, talep.TalepNo, talep.TalepEden, talep.TalepAciklamasi, malzemeler, firmaAdi, ek);
-
+        return BildirimMetniOlusturucu.Olustur(
+            tip, talep.TalepNo, talep.TalepEden, talep.TalepAciklamasi, malzemeler, firmaAdi, ek, onaylayanRol);
     }
-
 
 
     private static BildirimKaydi Kayit(
@@ -99,15 +101,21 @@ public static class SatinalmaBildirimleri
 
 
     public static Task TeklifIstendiAsync(SatinalmaTalep talep)
-
     {
-
         var (baslik, mesaj) = Metin(SharedBildirimTipleri.TeklifIstendi, talep);
-
         return BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.TeklifIstendi, baslik, mesaj, hedefRol: KullaniciRolleri.Satinalma));
-
     }
 
+    public static Task TeklifIstendiOlusturucuyaAsync(SatinalmaTalep talep)
+    {
+        var onaylayanRol = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol);
+        var (baslik, mesaj) = Metin(
+            SharedBildirimTipleri.TeklifIstendi,
+            talep,
+            ek: OnayBildirimYardimcisi.TeklifIstemeBildirimEk(onaylayanRol));
+        return BildirimYoneticisi.EkleAsync(
+            Kayit(talep, SharedBildirimTipleri.TeklifIstendi, baslik, mesaj, hedefUid: talep.OlusturanUid));
+    }
 
 
     public static Task TeklifOnaydaAsync(SatinalmaTalep talep)
@@ -134,16 +142,34 @@ public static class SatinalmaBildirimleri
 
 
 
-    public static Task OnaylandiAsync(SatinalmaTalep talep, string? firmaAdi = null, string? hedefRol = null, string? hedefUid = null)
-
+    public static Task OnaylandiAsync(
+        SatinalmaTalep talep,
+        string? firmaAdi = null,
+        string? hedefRol = null,
+        string? hedefUid = null,
+        string? onaylayanRol = null)
     {
-
-        var (baslik, mesaj) = Metin(SharedBildirimTipleri.Onaylandi, talep, firmaAdi);
-
-        return BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.Onaylandi, baslik, mesaj, hedefRol, hedefUid));
-
+        onaylayanRol ??= KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol);
+        var (baslik, mesaj) = Metin(SharedBildirimTipleri.Onaylandi, talep, firmaAdi, onaylayanRol: onaylayanRol);
+        return BildirimYoneticisi.EkleAsync(
+            Kayit(talep, SharedBildirimTipleri.Onaylandi, baslik, mesaj, hedefRol, hedefUid));
     }
 
+    public static async Task OnaylandiBildirimleriGonderAsync(SatinalmaTalep talep, string? firmaAdi = null)
+    {
+        var onaylayanRol = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol);
+        foreach (var (hedefRol, hedefUid) in OnayBildirimYardimcisi.OnaylandiHedefleri(talep.OlusturanUid, onaylayanRol))
+        {
+            try
+            {
+                await OnaylandiAsync(talep, firmaAdi, hedefRol, hedefUid, onaylayanRol);
+            }
+            catch (Exception ex)
+            {
+                HataGunlugu.Kaydet(ex, "SatinalmaBildirimleri.Onaylandi");
+            }
+        }
+    }
 
 
     public static Task ReddedildiAsync(SatinalmaTalep talep, string gerekce)
@@ -213,31 +239,4 @@ public static class SatinalmaBildirimleri
     }
 
 }
-
-
-
-public static class TalepTurleri
-
-{
-
-    public const string Acil = "Acil";
-
-    public const string Normal = "Normal";
-
-
-
-    public static string GorunenAd(string tur) => tur switch
-
-    {
-
-        Acil => "Acil",
-
-        Normal => "Normal",
-
-        _ => string.IsNullOrWhiteSpace(tur) ? Normal : tur
-
-    };
-
-}
-
 

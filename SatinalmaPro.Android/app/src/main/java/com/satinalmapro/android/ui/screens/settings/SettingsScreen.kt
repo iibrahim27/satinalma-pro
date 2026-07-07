@@ -48,8 +48,10 @@ import com.satinalmapro.android.core.model.ManagedUser
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppCard
+import com.satinalmapro.android.ui.components.AppDetailTabRow
 import com.satinalmapro.android.ui.theme.AppColors
 import com.satinalmapro.android.ui.theme.AppShapes
+import com.satinalmapro.android.ui.theme.AppSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,16 +67,16 @@ fun SettingsScreen(viewModel: AppViewModel) {
     LaunchedEffect(Unit) { viewModel.loadSettings() }
 
     Column(Modifier.fillMaxSize()) {
-        ScrollableTabRow(selectedTabIndex = tab, edgePadding = 16.dp) {
-            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Kullanıcılar") })
-            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Birim Terimleri") })
-            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Kategoriler") })
-        }
+        AppDetailTabRow(
+            tabs = listOf("Kullanıcılar", "Birim Terimleri", "Kategoriler"),
+            selectedIndex = tab,
+            onTabSelected = { tab = it }
+        )
 
         settingsMessage?.let {
             Text(
                 it,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = AppSpacing.screenHorizontal, vertical = 8.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = AppColors.Primary
             )
@@ -161,7 +163,7 @@ private fun UsersTab(users: List<ManagedUser>, loading: Boolean, viewModel: AppV
         }
 
         LazyColumn(
-            modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+            modifier = Modifier.weight(1f).padding(horizontal = AppSpacing.screenHorizontal),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(users, key = { it.uid }) { user ->
@@ -194,7 +196,7 @@ private fun UsersTab(users: List<ManagedUser>, loading: Boolean, viewModel: AppV
             Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(AppSpacing.screenHorizontal)
         ) {
             Text(
                 if (creatingNew) "Yeni kullanıcı" else "Kullanıcı düzenle",

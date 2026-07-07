@@ -54,4 +54,29 @@ public static class MalzemeAdiOneriServisi
 
     public static IEnumerable<string> Ara(string? arama) =>
         MalzemeAdiOneriYardimcisi.Filtrele(TumAdlar(), arama);
+
+    /// <summary>Alınan Malzemeler modülündeki malzeme/hizmet adlarına göre filtreler.</summary>
+    public static IEnumerable<string> AlinanMalzemelerdenAra(string? arama)
+    {
+        ModulVeriDeposu.Yukle();
+        var adlar = ModulVeriDeposu.AlinanMalzemeler
+            .Select(k => k.MalzemeHizmet?.Trim())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s!)
+            .Distinct(StringComparer.CurrentCultureIgnoreCase);
+        return MalzemeAdiOneriYardimcisi.Filtrele(adlar, arama);
+    }
+
+    /// <summary>F2 malzeme seçici — Alınan Malzemeler modülündeki tüm benzersiz adlar.</summary>
+    public static IReadOnlyList<string> TumAlinanMalzemeAdlari()
+    {
+        ModulVeriDeposu.Yukle();
+        return ModulVeriDeposu.AlinanMalzemeler
+            .Select(k => k.MalzemeHizmet?.Trim())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s!)
+            .Distinct(StringComparer.CurrentCultureIgnoreCase)
+            .OrderBy(s => s, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+    }
 }

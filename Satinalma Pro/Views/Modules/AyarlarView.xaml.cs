@@ -4,9 +4,11 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
+using MainWindow = SatinalmaPro.MainWindow;
 using SatinalmaPro.Views;
 using Microsoft.Win32;
 
@@ -17,15 +19,42 @@ public partial class AyarlarView : UserControl
     private readonly ObservableCollection<VeriKaydiDurumu> _veriDurumlari = [];
     private readonly ObservableCollection<string> _malzemeKategorileri = [];
     private readonly ObservableCollection<string> _malzemeBirimleri = [];
+    private readonly Dictionary<string, Button> _navButtons = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, UIElement> _paneller = new(StringComparer.Ordinal);
+
     private bool _sartnameYukleniyor;
     private bool _teklifSartnameYukleniyor;
     private bool _genelYukleniyor;
     private bool _filoZimmetYukleniyor;
     private bool _dovizYukleniyor;
+    private string _aktifNav = "genel";
+
+    private sealed record NavOge(string Id, string Baslik, string Ikon, string? IzinSekmesi);
+
+    private static readonly NavOge[] NavOgeleri =
+    [
+        new("genel", "Genel", "\uE713", "Genel"),
+        new("firma", "Firma Bilgileri", "\uE821", "Genel"),
+        new("kullanicilar", "Kullanıcılar", "\uE77B", "Genel"),
+        new("yetkilendirme", "Yetkilendirme", "\uE72E", "Genel"),
+        new("satinalma", "Satınalma", "\uE719", "Satınalma"),
+        new("stok", "Stok", "\uE7B8", "Malzeme Kategorileri"),
+        new("filo", "Araç Filo", "\uE804", "Araç Filo"),
+        new("akaryakit", "Akaryakıt", "\uE909", "Genel"),
+        new("raporlar", "Raporlar", "\uE9F9", "Genel"),
+        new("bildirimler", "Bildirimler", "\uE7ED", "Genel"),
+        new("bulut", "Bulut", "\uE753", "Genel"),
+        new("veritabani", "Veritabanı", "\uE968", "Veri Dosyaları"),
+        new("yedekleme", "Yedekleme", "\uE8B7", "Yedekleme"),
+        new("loglar", "Loglar", "\uE8A1", "Genel"),
+        new("guncelleme", "Güncelleme", "\uE898", "Genel")
+    ];
 
     public AyarlarView()
     {
         InitializeComponent();
+        PanelleriKaydet();
+        NavigasyonuOlustur();
         VeriDurumGrid.ItemsSource = _veriDurumlari;
         KategoriListesi.ItemsSource = _malzemeKategorileri;
         BirimListesi.ItemsSource = _malzemeBirimleri;
@@ -33,11 +62,192 @@ public partial class AyarlarView : UserControl
         BulutPaneliniGuncelle();
         AyarlariYukle();
         VeriDurumlariniYenile();
+        KpiKartlariniGuncelle();
+        NavigasyonAc("genel");
+
         Loaded += (_, _) =>
         {
-            KullaniciYetkileri.SekmeleriUygula(AyarTab, "Ayarlar");
+            MenuleriUygula();
             KullaniciYetkileri.ModulErisiminiUygula(this, "Ayarlar");
         };
+    }
+
+    private void PanelleriKaydet()
+    {
+        _paneller["genel"] = PanelGenel;
+        _paneller["firma"] = PanelFirma;
+        _paneller["kullanicilar"] = PanelKullanicilar;
+        _paneller["yetkilendirme"] = PanelYetkilendirme;
+        _paneller["satinalma"] = PanelSatinalma;
+        _paneller["stok"] = PanelStok;
+        _paneller["filo"] = PanelFilo;
+        _paneller["akaryakit"] = PanelAkaryakit;
+        _paneller["raporlar"] = PanelRaporlar;
+        _paneller["bildirimler"] = PanelBildirimler;
+        _paneller["bulut"] = PanelBulut;
+        _paneller["veritabani"] = PanelVeritabani;
+        _paneller["yedekleme"] = PanelYedekleme;
+        _paneller["loglar"] = PanelLoglar;
+        _paneller["guncelleme"] = PanelGuncelleme;
+    }
+
+    private void NavigasyonuOlustur()
+    {
+        NavPanel.Children.Clear();
+        _navButtons.Clear();
+
+        foreach (var oge in NavOgeleri)
+        {
+            var btn = new Button
+            {
+                Style = (Style)FindResource("AyarNavItem"),
+                Tag = oge.Id,
+                ToolTip = oge.Baslik
+            };
+            btn.Click += (_, _) => NavigasyonAc(oge.Id);
+
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(4) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var accent = new Border { CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 2, 0, 2) };
+            Grid.SetColumn(accent, 0);
+            var ikonBlok = new TextBlock
+            {
+                Text = oge.Ikon,
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                FontSize = 15,
+                Margin = new Thickness(0, 0, 10, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = (Brush)FindResource("InkMutedBrush")
+            };
+            Grid.SetColumn(ikonBlok, 1);
+            var metin = new TextBlock
+            {
+                Text = oge.Baslik,
+                FontSize = 13,
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = (Brush)FindResource("InkSoftBrush"),
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            Grid.SetColumn(metin, 2);
+            grid.Children.Add(accent);
+            grid.Children.Add(ikonBlok);
+            grid.Children.Add(metin);
+            btn.Content = grid;
+
+            _navButtons[oge.Id] = btn;
+            NavPanel.Children.Add(btn);
+        }
+    }
+
+    private void MenuleriUygula()
+    {
+        foreach (var oge in NavOgeleri)
+        {
+            if (!_navButtons.TryGetValue(oge.Id, out var btn))
+                continue;
+
+            var gorunur = oge.IzinSekmesi is null
+                || KullaniciYetkileri.SekmeGorebilir("Ayarlar", oge.IzinSekmesi)
+                || (oge.Id == "stok" && KullaniciYetkileri.SekmeGorebilir("Ayarlar", "Birim Terimleri"));
+
+            btn.Visibility = gorunur ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        if (_navButtons.TryGetValue(_aktifNav, out var aktif) && aktif.Visibility != Visibility.Visible)
+        {
+            var ilk = NavOgeleri.FirstOrDefault(o =>
+                _navButtons.TryGetValue(o.Id, out var b) && b.Visibility == Visibility.Visible);
+            if (ilk is not null)
+                NavigasyonAc(ilk.Id);
+        }
+    }
+
+    private void NavigasyonAc(string id)
+    {
+        _aktifNav = id;
+        foreach (var (key, panel) in _paneller)
+            panel.Visibility = key == id ? Visibility.Visible : Visibility.Collapsed;
+
+        foreach (var (navId, btn) in _navButtons)
+        {
+            btn.Tag = navId == id ? "Active" : navId;
+            if (btn.Content is Grid grid && grid.Children.Count >= 3)
+            {
+                var aktif = navId == id;
+                if (grid.Children[0] is Border accent)
+                    accent.Background = aktif
+                        ? (Brush)FindResource("AyarPrimaryBrush")
+                        : Brushes.Transparent;
+                if (grid.Children[1] is TextBlock ikon)
+                    ikon.Foreground = aktif
+                        ? (Brush)FindResource("AyarPrimaryBrush")
+                        : (Brush)FindResource("InkMutedBrush");
+                if (grid.Children[2] is TextBlock metin)
+                {
+                    metin.FontWeight = aktif ? FontWeights.SemiBold : FontWeights.Normal;
+                    metin.Foreground = aktif
+                        ? (Brush)FindResource("AyarPrimaryBrush")
+                        : (Brush)FindResource("InkSoftBrush");
+                }
+            }
+        }
+
+        IcerikScroll.ScrollToVerticalOffset(0);
+    }
+
+    private void KpiKartlariniGuncelle()
+    {
+        TxtKpiSurum.Text = $"v{UygulamaBilgisi.Versiyon}";
+        TxtSistemSurum.Text = UygulamaBilgisi.Versiyon;
+        TxtKpiVeritabani.Text = "Yerel JSON · Bağlı";
+        TxtKpiFirebase.Text = FirebaseAyarDeposu.Ayarlar.Yapilandirildi
+            ? "Connected"
+            : "Yapılandırılmadı";
+        TxtKpiYedek.Text = SonYedekTarihiBul();
+    }
+
+    private static string SonYedekTarihiBul()
+    {
+        try
+        {
+            var klasor = SatinalmaProKlasor.Yol;
+            if (!Directory.Exists(klasor))
+                return "—";
+
+            var son = Directory.EnumerateFiles(klasor, "*.zip", SearchOption.TopDirectoryOnly)
+                .Select(f => new FileInfo(f))
+                .OrderByDescending(f => f.LastWriteTime)
+                .FirstOrDefault();
+
+            return son is null ? "Henüz yok" : son.LastWriteTime.ToString("dd.MM.yyyy HH:mm");
+        }
+        catch
+        {
+            return "—";
+        }
+    }
+
+    private void DegisiklikIsaretle()
+    {
+        if (_genelYukleniyor || _sartnameYukleniyor || _teklifSartnameYukleniyor
+            || _filoZimmetYukleniyor || _dovizYukleniyor)
+            return;
+
+        DegisiklikBanner.Visibility = Visibility.Visible;
+    }
+
+    private void DegisiklikTemizle() =>
+        DegisiklikBanner.Visibility = Visibility.Collapsed;
+
+    private void LogKlasoruAc_Click(object sender, RoutedEventArgs e)
+    {
+        var klasor = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SatinalmaPro");
+        Directory.CreateDirectory(klasor);
+        Process.Start(new ProcessStartInfo { FileName = klasor, UseShellExecute = true });
     }
 
     private void AyarlariYukle()
@@ -84,6 +294,7 @@ public partial class AyarlarView : UserControl
     private void FiloZimmetMaddeleriDegisti(object sender, TextChangedEventArgs e)
     {
         if (_filoZimmetYukleniyor) return;
+        DegisiklikIsaretle();
         FiloZimmetMaddeleriniKaydet(sessiz: true);
     }
 
@@ -113,6 +324,8 @@ public partial class AyarlarView : UserControl
         UygulamaAyarDeposu.Kaydet();
         SatinalmaDepo.Kaydet();
 
+        DegisiklikTemizle();
+        KpiKartlariniGuncelle();
         MessageBox.Show("Tüm ayarlar kaydedildi.", UygulamaBilgisi.Ad,
             MessageBoxButton.OK, MessageBoxImage.Information);
     }
@@ -235,6 +448,7 @@ public partial class AyarlarView : UserControl
         if (_genelYukleniyor) return;
         UygulamaAyarDeposu.Ayarlar.FirmaAdi = TxtFirmaAdi.Text.Trim();
         UygulamaAyarDeposu.Kaydet();
+        DegisiklikIsaretle();
     }
 
     private void LogoSec_Click(object sender, RoutedEventArgs e)
@@ -288,11 +502,17 @@ public partial class AyarlarView : UserControl
         YonetimImzaGrid.ItemsSource = SatinalmaDepo.Ayarlar.YonetimImzalari;
     }
 
+    private void ImzaDuzenlemesiniBaslat()
+    {
+        SatinalmaDepo.ImzaAyarlariniOzellestir();
+    }
+
     private void SartnameMetniDegisti(object sender, TextChangedEventArgs e)
     {
         if (_sartnameYukleniyor) return;
         SatinalmaDepo.Ayarlar.SartnameMetni = TxtSartnameMetni.Text;
         SatinalmaDepo.Kaydet();
+        DegisiklikIsaretle();
     }
 
     private void TeklifIstemeSartnameleriDegisti(object sender, TextChangedEventArgs e)
@@ -300,12 +520,14 @@ public partial class AyarlarView : UserControl
         if (_teklifSartnameYukleniyor) return;
         SatinalmaDepo.Ayarlar.TeklifIstemeSartnameleri = TxtTeklifIstemeSartnameleri.Text;
         SatinalmaDepo.Kaydet();
+        DegisiklikIsaretle();
     }
 
     private void DovizKuruDegisti(object sender, TextChangedEventArgs e)
     {
         if (_dovizYukleniyor) return;
         DovizKurlariniKaydet(sessiz: true);
+        DegisiklikIsaretle();
     }
 
     private void DovizKurlariniKaydet(bool sessiz)
@@ -331,6 +553,7 @@ public partial class AyarlarView : UserControl
 
     private void SefImzaEkle_Click(object sender, RoutedEventArgs e)
     {
+        ImzaDuzenlemesiniBaslat();
         SatinalmaDepo.Ayarlar.SefImzalari.Add(new ImzaAyari { Unvan = "Yeni Şef", Aktif = true });
         ImzaGridleriYenile();
         SatinalmaDepo.Kaydet();
@@ -339,7 +562,7 @@ public partial class AyarlarView : UserControl
     private void SefImzaSil_Click(object sender, RoutedEventArgs e)
     {
         if (SefImzaGrid.SelectedItem is not ImzaAyari imza) return;
-        if (SatinalmaDepo.Ayarlar.SefImzalari.Count <= 1)
+        if (!SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz && SatinalmaDepo.Ayarlar.SefImzalari.Count <= 1)
         {
             MessageBox.Show("En az bir şef imza alanı bulunmalıdır.", UygulamaBilgisi.Ad,
                 MessageBoxButton.OK, MessageBoxImage.Information);
@@ -353,6 +576,7 @@ public partial class AyarlarView : UserControl
 
     private void YonetimImzaEkle_Click(object sender, RoutedEventArgs e)
     {
+        ImzaDuzenlemesiniBaslat();
         SatinalmaDepo.Ayarlar.YonetimImzalari.Add(new ImzaAyari
         {
             Unvan = "Yönetim / Proje Müdürü",
@@ -365,7 +589,7 @@ public partial class AyarlarView : UserControl
     private void YonetimImzaSil_Click(object sender, RoutedEventArgs e)
     {
         if (YonetimImzaGrid.SelectedItem is not ImzaAyari imza) return;
-        if (SatinalmaDepo.Ayarlar.YonetimImzalari.Count <= 1)
+        if (!SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz && SatinalmaDepo.Ayarlar.YonetimImzalari.Count <= 1)
         {
             MessageBox.Show("En az bir yönetim imza alanı bulunmalıdır.", UygulamaBilgisi.Ad,
                 MessageBoxButton.OK, MessageBoxImage.Information);
@@ -382,8 +606,7 @@ public partial class AyarlarView : UserControl
         if (e.EditAction == DataGridEditAction.Cancel)
             return;
 
-        if (sender is DataGrid grid)
-            grid.CommitEdit(DataGridEditingUnit.Row, true);
+        ImzaDuzenlemesiniBaslat();
 
         if (e.EditingElement is TextBox textBox)
         {
@@ -391,8 +614,19 @@ public partial class AyarlarView : UserControl
             binding?.UpdateSource();
         }
 
-        SatinalmaDepo.KaydetAyarlar();
-        _ = BulutVeriSenkronu.AyarlariHemenGonderAsync();
+        // CommitEdit burada çağrılmaz — CellEditEnding sırasında WPF çöker.
+        Dispatcher.BeginInvoke(() =>
+        {
+            try
+            {
+                SatinalmaDepo.KaydetAyarlar();
+                _ = BulutVeriSenkronu.AyarlariHemenGonderAsync();
+            }
+            catch (Exception ex)
+            {
+                HataGunlugu.Kaydet(ex, "Ayarlar.ImzaKaydet");
+            }
+        }, System.Windows.Threading.DispatcherPriority.Background);
     }
 
     #endregion
@@ -441,6 +675,18 @@ public partial class AyarlarView : UserControl
         AyarlariYukle();
         VeriDurumlariniYenile();
 
+        if (string.Equals(dosyaAdi, "satinalma_talepler.json", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                await BildirimYoneticisi.GecersizleriSilAsync();
+            }
+            catch (Exception ex)
+            {
+                HataGunlugu.Kaydet(ex, "Ayarlar.ModulSifirla.BildirimTemizligi");
+            }
+        }
+
         if (OturumYoneticisi.GirisYapildi && OturumYoneticisi.Firestore is not null)
         {
             var anahtar = BulutVeriSenkronu.DosyaAdindanAnahtar(dosyaAdi);
@@ -478,7 +724,9 @@ public partial class AyarlarView : UserControl
         try
         {
         var sonuc = MessageBox.Show(
-            "TÜM modül verileri ve ayarlar sıfırlanacak.\nÖnce yedek almanız önerilir.\n\nDevam etmek istiyor musunuz?",
+            "Firma bilgileri, logolar, imzalar ve tüm modül verileri sıfırlanacak.\n" +
+            "Firebase ve Android ayarları korunur.\n" +
+            "Önce yedek almanız önerilir.\n\nDevam etmek istiyor musunuz?",
             "Tüm Verileri Sıfırla",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
@@ -486,7 +734,8 @@ public partial class AyarlarView : UserControl
         if (sonuc != MessageBoxResult.Yes) return;
 
         var onay = MessageBox.Show(
-            "Son onay: Tüm Satınalma Pro verileri kalıcı olarak silinecek ve varsayılanlara dönecek.",
+            "Son onay: Firma bilgileri, logolar, imzalar ve modül kayıtları kalıcı olarak silinip varsayılanlara dönecek.\n" +
+            "Firebase yapılandırması, FCM anahtarı, google-services.json ve oturum bilgileri etkilenmeyecek.",
             "Emin misiniz?",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
@@ -496,27 +745,50 @@ public partial class AyarlarView : UserControl
         SatinalmaProYedeklemeServisi.TumVerileriSifirla();
         AyarlariYukle();
         VeriDurumlariniYenile();
+        if (Application.Current.MainWindow is MainWindow mw)
+            mw.Sidebar.Yenile();
 
         if (OturumYoneticisi.GirisYapildi && OturumYoneticisi.Firestore is not null)
         {
             try
             {
                 await BulutVeriSenkronu.TumVerileriBulutaGonderAsync();
+                try
+                {
+                    await BildirimYoneticisi.SifirlamaSonrasiTemizleAsync();
+                }
+                catch (Exception ex)
+                {
+                    HataGunlugu.Kaydet(ex, "Ayarlar.TumVerileriSifirla.BildirimTemizligi");
+                }
                 MessageBox.Show(
-                    "Tüm veriler sıfırlandı ve buluta kaydedildi.\nDiğer bilgisayarlar giriş yaptığında güncellenecek.",
+                    "Firma ve modül verileri sıfırlandı ve buluta kaydedildi.\n" +
+                    "Firebase ve Android ayarları korundu.\n" +
+                    "Diğer bilgisayarlar giriş yaptığında güncellenecek.",
                     UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"Veriler yerelde sıfırlandı ancak buluta yazılamadı:\n{ex.Message}",
+                    $"Veriler yerelde sıfırlandı ancak buluta yazılamadı:\n{ex.Message}\n\nFirebase ayarları korundu.",
                     UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
         }
 
-        MessageBox.Show("Tüm veriler sıfırlandı.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(
+            "Firma ve modül verileri sıfırlandı.\nFirebase ve Android ayarları korundu.",
+            UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+
+        try
+        {
+            await BildirimYoneticisi.SifirlamaSonrasiTemizleAsync();
+        }
+        catch (Exception ex)
+        {
+            HataGunlugu.Kaydet(ex, "Ayarlar.TumVerileriSifirla.BildirimTemizligi");
+        }
         }
         catch (Exception ex)
         {
@@ -604,9 +876,11 @@ public partial class AyarlarView : UserControl
             TxtFirebaseUyari.Visibility = Visibility.Collapsed;
 
         var manifest = FirebaseAyarDeposu.Ayarlar.GuncellemeManifestUrl;
-        TxtGuncellemeDurum.Text = string.IsNullOrWhiteSpace(manifest)
+        var guncellemeMetni = string.IsNullOrWhiteSpace(manifest)
             ? $"Otomatik güncelleme: yapılandırılmamış · Mevcut sürüm: {UygulamaBilgisi.Versiyon}"
             : $"Otomatik güncelleme: aktif · Sürüm: {UygulamaBilgisi.Versiyon} · Manifest: {manifest}";
+        TxtGuncellemeDurum.Text = guncellemeMetni;
+        TxtGuncellemeDurum2.Text = guncellemeMetni;
 
         BtnKullaniciYonetimi.Visibility = KullaniciYetkileri.AdminMi && OturumYoneticisi.BulutAktif
             ? Visibility.Visible

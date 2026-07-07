@@ -1,10 +1,10 @@
 package com.satinalmapro.android.ui.screens.login
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,20 +12,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -34,93 +32,127 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.satinalmapro.android.BuildConfig
-import com.satinalmapro.android.R
 import com.satinalmapro.android.ui.AppViewModel
+import com.satinalmapro.android.ui.components.AnimatedAppIcon
+import com.satinalmapro.android.ui.components.AppPrimaryButton
+import com.satinalmapro.android.ui.components.BottomWaveDecoration
 import com.satinalmapro.android.ui.theme.AppColors
 import com.satinalmapro.android.ui.theme.AppShapes
+import com.satinalmapro.android.ui.theme.AppSpacing
+import com.satinalmapro.android.ui.theme.appFieldColors
 
 @Composable
 fun LoginScreen(viewModel: AppViewModel) {
-    var email by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var rememberMe by remember { mutableStateOf(true) }
     var showPassword by remember { mutableStateOf(false) }
+    var rememberMe by remember { mutableStateOf(true) }
+
     val error by viewModel.loginError.collectAsState()
+    val loginMessage by viewModel.loginMessage.collectAsState()
+    val loading by viewModel.loading.collectAsState()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(AppColors.Background, Color(0xFFEAF2FF), AppColors.Background)))
+            .background(AppColors.Background)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 28.dp, vertical = 48.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(horizontal = AppSpacing.screenHorizontal, vertical = 40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(R.drawable.app_icon),
-                contentDescription = "Satınalma Pro",
-                modifier = Modifier.size(96.dp),
-                contentScale = ContentScale.Fit
+            AnimatedAppIcon(size = 88.dp)
+            Spacer(Modifier.height(20.dp))
+            Text(
+                "Satınalma Pro",
+                style = MaterialTheme.typography.headlineMedium,
+                color = AppColors.TextPrimary
             )
-            Spacer(Modifier.height(24.dp))
-            Text("Satınalma Pro", style = MaterialTheme.typography.headlineMedium, color = AppColors.TextPrimary)
-            Text("Hoş Geldiniz", style = MaterialTheme.typography.bodyLarge, color = AppColors.TextSecondary)
+            Text(
+                "Kurumsal Satınalma Yönetim Sistemi",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.TextSecondary,
+                textAlign = TextAlign.Center
+            )
 
-            Spacer(Modifier.height(36.dp))
+            Spacer(Modifier.height(28.dp))
+
             OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = username,
+                onValueChange = {
+                    username = it
+                    viewModel.clearLoginFeedback()
+                },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("E-posta") },
+                label = { Text("Kullanıcı Adı") },
                 singleLine = true,
-                shape = AppShapes.medium,
-                colors = fieldColors()
+                shape = AppShapes.small,
+                colors = appFieldColors()
             )
             Spacer(Modifier.height(14.dp))
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = {
+                    password = it
+                    viewModel.clearLoginFeedback()
+                },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Şifre") },
                 singleLine = true,
-                shape = AppShapes.medium,
+                shape = AppShapes.small,
                 visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { showPassword = !showPassword }) {
-                        Icon(if (showPassword) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, null)
+                        Icon(
+                            if (showPassword) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                            contentDescription = if (showPassword) "Gizle" else "Göster"
+                        )
                     }
                 },
-                colors = fieldColors()
+                colors = appFieldColors()
             )
-            RowRememberMe(rememberMe) { rememberMe = it }
-            val loading by viewModel.loading.collectAsState()
-            error?.let {
-                Text(it, color = AppColors.Danger, modifier = Modifier.padding(top = 8.dp))
-            }
-            Spacer(Modifier.height(24.dp))
-            Button(
-                onClick = { viewModel.login(email, password, rememberMe) },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = AppShapes.medium,
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary),
-                enabled = !loading
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(if (loading) "Giriş yapılıyor..." else "Giriş Yap", style = MaterialTheme.typography.labelLarge)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = rememberMe,
+                        onCheckedChange = { rememberMe = it },
+                        colors = CheckboxDefaults.colors(checkedColor = AppColors.Primary)
+                    )
+                    Text("Beni Hatırla", style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
+                }
+                TextButton(onClick = { viewModel.forgotPassword(username) }, enabled = !loading) {
+                    Text("Şifremi Unuttum", color = AppColors.Primary)
+                }
             }
+
+            error?.let {
+                Text(it, color = AppColors.Danger, modifier = Modifier.padding(top = 4.dp), textAlign = TextAlign.Center)
+            }
+            loginMessage?.let {
+                Text(it, color = AppColors.Success, modifier = Modifier.padding(top = 4.dp), textAlign = TextAlign.Center)
+            }
+
+            Spacer(Modifier.height(20.dp))
+            AppPrimaryButton(
+                text = "GİRİŞ YAP",
+                onClick = { viewModel.login(username, password, rememberMe = rememberMe) },
+                enabled = username.isNotBlank() && password.isNotBlank(),
+                loading = loading
+            )
+
             Spacer(Modifier.height(32.dp))
             Text(
                 "Versiyon ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
@@ -129,25 +161,8 @@ fun LoginScreen(viewModel: AppViewModel) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
+            Spacer(Modifier.height(100.dp))
         }
+        BottomWaveDecoration(modifier = Modifier.align(Alignment.BottomCenter))
     }
 }
-
-@Composable
-private fun RowRememberMe(checked: Boolean, onChecked: (Boolean) -> Unit) {
-    androidx.compose.foundation.layout.Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Checkbox(checked = checked, onCheckedChange = onChecked)
-        Text("Beni Hatırla", style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
-    }
-}
-
-@Composable
-private fun fieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AppColors.Primary,
-    unfocusedBorderColor = AppColors.Border,
-    focusedContainerColor = AppColors.Surface,
-    unfocusedContainerColor = AppColors.Surface
-)

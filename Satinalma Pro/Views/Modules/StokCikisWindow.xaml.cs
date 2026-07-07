@@ -22,7 +22,7 @@ public partial class StokCikisWindow : Window
 
         TxtTarih.Text = DateTime.Now.ToString("dd.MM.yyyy");
         TxtBelge.Text = StokBelgeNoUretici.SonrakiCikisBelgeNo();
-        TxtTeslimEden.Text = KullaniciYetkileri.AktifKullaniciAdi() ?? "";
+        TxtTeslimEden.Text = StokCikisPdfOlusturucu.TeslimEdenMetni();
 
         MalzemeKategoriDeposu.ComboDoldur(CmbKategori);
         MalzemeKaynaginiGuncelle();
@@ -185,6 +185,43 @@ public partial class StokCikisWindow : Window
         return true;
     }
 
+    private void FisOnizle_Click(object sender, RoutedEventArgs e)
+    {
+        var teslimEdilen = TxtTeslimEdilen.Text.Trim();
+        if (string.IsNullOrWhiteSpace(teslimEdilen))
+        {
+            MessageBox.Show("Teslim edilen kişiyi girin.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var satirlar = _satirlar.ToList();
+        if (satirlar.Count == 0)
+        {
+            if (!SatirFormuDogrula(out var satir, out _))
+                return;
+            satirlar.Add(satir);
+        }
+
+        if (satirlar.Count == 0)
+        {
+            MessageBox.Show("En az bir malzeme satırı ekleyin.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var fisVerisi = new StokCikisFisVerisi(
+            TxtBelge.Text.Trim(),
+            TxtTarih.Text.Trim(),
+            TxtTeslimEden.Text.Trim(),
+            teslimEdilen,
+            satirlar.Select(s => new StokCikisFisSatir(
+                s.Malzeme,
+                s.MiktarGosterim,
+                s.Birim,
+                s.DepoSaha)).ToList());
+
+        StokCikisPdfOlusturucu.OnizleVeYazdir(fisVerisi);
+    }
+
     private void Kaydet_Click(object sender, RoutedEventArgs e)
     {
         var teslimEdilen = TxtTeslimEdilen.Text.Trim();
@@ -231,8 +268,20 @@ public partial class StokCikisWindow : Window
             }
             ModulVeriDeposu.EndBatch();
 
+            var fisVerisi = new StokCikisFisVerisi(
+                belgeNo,
+                tarih,
+                teslimEden,
+                teslimEdilen,
+                _satirlar.Select(s => new StokCikisFisSatir(
+                    s.Malzeme,
+                    s.MiktarGosterim,
+                    s.Birim,
+                    s.DepoSaha)).ToList());
+
             DialogResult = true;
             Close();
+            StokCikisPdfOlusturucu.OnizleVeYazdir(fisVerisi);
         }
         catch (Exception ex)
         {

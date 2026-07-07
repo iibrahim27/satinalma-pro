@@ -63,6 +63,22 @@ public sealed class BildirimServisi
         await _depo.BildirimleriKaydetAsync(iptal);
     }
 
+    public async Task GecersizleriSilAsync(CancellationToken iptal = default)
+    {
+        await _depo.BildirimleriYukleAsync(iptal);
+        await _depo.TalepleriYukleAsync(iptal);
+
+        var kalacak = _depo.Bildirimler
+            .Where(b => BildirimFiltreleme.GecerliMi(b, _depo.Talepler))
+            .ToList();
+        if (kalacak.Count != _depo.Bildirimler.Count)
+        {
+            _depo.Bildirimler.Clear();
+            _depo.Bildirimler.AddRange(kalacak);
+            await _depo.BildirimleriKaydetAsync(iptal);
+        }
+    }
+
     public async Task GecersizleriOkunduYapAsync(CancellationToken iptal = default)
     {
         await _depo.BildirimleriYukleAsync(iptal);

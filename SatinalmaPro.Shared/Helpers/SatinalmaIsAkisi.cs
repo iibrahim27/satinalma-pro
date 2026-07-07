@@ -11,14 +11,32 @@ public static class SatinalmaIsAkisi
         SatinalmaTalepYardimcisi.GonderimOncesiDuzenlenebilir(talep)
         && talep.Kalemler?.Any(k => !string.IsNullOrWhiteSpace(k.Malzeme)) == true;
 
-    public static bool TeklifEklenebilir(SatinalmaTalep talep, KullaniciProfili? kullanici = null) =>
-        TeklifEklenebilir(
+    public static bool TeklifEklenebilir(SatinalmaTalep talep, KullaniciProfili? kullanici = null)
+    {
+        if (talep.TalepTuru == TalepTurleri.Acil)
+            return false;
+
+        if (!(kullanici?.Aktif ?? false))
+            return false;
+
+        SatinalmaTalepYardimcisi.TeklifGirisAsamasiniNormalizeEt(talep);
+
+        if (SatinalmaTalepKuyrugu.YonetimTeklifBekleyen(talep)
+            && SatinalmaRoluMu(kullanici?.Rol))
+            return true;
+
+        if (SatinalmaTalepKuyrugu.SatinalmaTeklifGirisiAktif(talep)
+            && SatinalmaRoluMu(kullanici?.Rol))
+            return true;
+
+        return TeklifEklenebilir(
             talep.Durum,
             talep.TalepTuru,
             talep.YonetimOnayKilitli,
             talep.OlusturanRol,
             kullanici?.Rol,
-            kullanici?.Aktif ?? false);
+            true);
+    }
 
     public static bool TeklifEklenebilir(
         string durum,
@@ -28,11 +46,18 @@ public static class SatinalmaIsAkisi
         string? kullaniciRol,
         bool kullaniciAktif)
     {
-        if (talepTuru == TalepTurleri.Acil || yonetimOnayKilitli)
+        if (talepTuru == TalepTurleri.Acil)
             return false;
 
+        if (!kullaniciAktif)
+            return false;
+
+        // Yönetim «Teklif İste» dediyse — kilit bayrağı eski kayıtlarda kalmış olsa bile teklif girilebilir
         if (durum is SatinalmaTalepDurumlari.TeklifGirisi or SatinalmaTalepDurumlari.Karsilastirma)
-            return true;
+            return SatinalmaRoluMu(kullaniciRol);
+
+        if (yonetimOnayKilitli)
+            return false;
 
         // Yönetime gönderilmiş ama onaylanmamış — satınalma düzeltebilir
         if (durum == SatinalmaTalepDurumlari.YonetimOnayinda
@@ -82,7 +107,40 @@ public static class SatinalmaIsAkisi
 
     public static bool YonetimeTeklifGonderilebilir(SatinalmaTalep talep) =>
         SatinalmaTalepKuyrugu.SatinalmaKarsilastirma(talep)
-        && (talep.Teklifler?.Count ?? 0) > 0;
+        && SatinalmaTalepYardimcisi.GercekTeklifVar(talep)
+        && !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep);
+
+    /// <summary>Tek teklif yeterli — fiyatları doğrula ve öneriyi döndür (durum değişmez).</summary>
+    public static SatinalmaTeklif YonetimeTeklifGonderiminiDogrula(SatinalmaTalep talep)
+    {
+        talep.Teklifler ??= [];
+        talep.Kalemler ??= [];
+        foreach (var teklif in talep.Teklifler)
+            teklif.FiyatlariHesapla(talep.Kalemler);
+
+        if (talep.Teklifler.Count == 0)
+            throw new InvalidOperationException("Yönetime göndermek için en az bir teklif girilmelidir.");
+
+        foreach (var teklif in talep.Teklifler)
+        {
+            if (teklif.GenelToplam <= 0)
+                throw new InvalidOperationException($"'{teklif.FirmaAdi}' teklifinde geçerli fiyat bulunamadı.");
+        }
+
+        return talep.OnerilenTeklif()
+            ?? throw new InvalidOperationException("Geçerli bir satınalma önerisi oluşturulamadı. Teklif fiyatlarını kontrol edin.");
+    }
+
+    /// <summary>Doğrulama sonrası öneriyi ata ve durumu yönetim onayına al.</summary>
+    public static void YonetimeTeklifGonderiminiHazirla(SatinalmaTalep talep, SatinalmaTeklif oneri)
+    {
+        if (!talep.SatinalmaOnerisiElleSecildi)
+            talep.YonetimOnerilenTeklifId = oneri.Id;
+
+        talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
+        talep.TeklifDuzeltmeNotu = "";
+        SatinalmaTalepSenkronYardimcisi.Dokun(talep);
+    }
 
     /// <summary>Yönetime daha önce iletilmiş talep/teklif için yeniden bildirim gönderilebilir.</summary>
     public static bool YonetimeYenidenGonderebilir(SatinalmaTalep talep)

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using SatinalmaPro.Controls.Dashboard;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
@@ -11,6 +12,8 @@ namespace SatinalmaPro.Views;
 
 public partial class HomeView : UserControl
 {
+    private readonly DispatcherTimer _saatTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+
     public ObservableCollection<ModulKarti> Modules { get; } = [];
 
     public event Action<string>? ModuleSelected;
@@ -23,17 +26,41 @@ public partial class HomeView : UserControl
         Unloaded += OnUnloaded;
 
         ActivityPanel.TumunuGorTiklandi += (_, _) => ModuleSelected?.Invoke("Satınalma");
-        StockPanel.TumunuGorTiklandi += (_, _) => ModuleSelected?.Invoke("Stok Yönetimi");
+        QuickActions.ModulSecildi += modul => ModuleSelected?.Invoke(modul);
+
+        _saatTimer.Tick += (_, _) => TarihSaatiGuncelle();
     }
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
+        KarsilamayiGuncelle();
+        TarihSaatiGuncelle();
+        _saatTimer.Start();
         ModulleriYenile();
         BildirimYoneticisi.BildirimlerDegisti += ModulleriYenile;
     }
 
-    private void OnUnloaded(object? sender, RoutedEventArgs e) =>
+    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        _saatTimer.Stop();
         BildirimYoneticisi.BildirimlerDegisti -= ModulleriYenile;
+    }
+
+    public void KarsilamayiGuncelle()
+    {
+        var ad = OturumYoneticisi.AktifKullanici?.AdSoyad ?? "Kullanıcı";
+        var hitap = ad.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? ad;
+        TxtKarsilama.Text = $"Hoş geldiniz, {hitap} 👋";
+    }
+
+    private void TarihSaatiGuncelle()
+    {
+        var simdi = DateTime.Now;
+        TxtTarihSaat.Text = $"{simdi:dd MMMM yyyy dddd} | {simdi:HH:mm:ss}";
+    }
+
+    private void BtnRaporOlustur_Click(object sender, RoutedEventArgs e) =>
+        ModuleSelected?.Invoke("Raporlamalar");
 
     public void ModulleriYenile()
     {
@@ -64,13 +91,9 @@ public partial class HomeView : UserControl
         }
 
         VeriyiYenile();
-        ModulKartlariniOlustur();
     }
 
-    public void AnasayfaLogosunuYenile()
-    {
-        // Logo sidebar'da yönetiliyor.
-    }
+    public void AnasayfaLogosunuYenile() { }
 
     private void VeriyiYenile()
     {
@@ -79,26 +102,16 @@ public partial class HomeView : UserControl
         StatGrid.Children.Clear();
         foreach (var stat in veri.Istatistikler)
         {
-            var kart = new StatCardControl { Margin = new Thickness(0, 0, 16, 0) };
+            var kart = new StatCardControl { Margin = new Thickness(0, 0, 12, 0) };
             kart.Bagla(stat);
             StatGrid.Children.Add(kart);
         }
 
+        LineChart.Bagla(veri.AylikHarcama);
+        DonutChart.Bagla(veri.HarcamaDagilimi);
+        OpenRecords.Bagla(veri.AcikKayitlar);
+        RightWidgets.Bagla(veri.Hatirlatmalar, veri.FinansOzet, veri.TopUrunler);
         ActivityPanel.Bagla(veri.SonIslemler);
-        StockPanel.Bagla(veri.StokUyarilari);
-    }
-
-    private void ModulKartlariniOlustur()
-    {
-        ModulPanel.Children.Clear();
-
-        foreach (var modul in Modules)
-        {
-            var kart = new ModuleCardControl { Margin = new Thickness(0, 0, 20, 20) };
-            kart.Bagla(modul);
-            kart.ModulSecildi += (_, baslik) => ModuleSelected?.Invoke(baslik);
-            ModulPanel.Children.Add(kart);
-        }
     }
 }
 

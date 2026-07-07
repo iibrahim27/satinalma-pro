@@ -159,9 +159,30 @@ public static class ModulVeriDeposu
 
     private static void OtomatikKaydet(string anahtar, Action kaydet)
     {
-        if (_yukleniyor) return;
+        if (_yukleniyor || !ModulAnahtariYazabilir(anahtar))
+            return;
+
         ErtelenmisKayit.Planla(anahtar, kaydet);
         BulutVeriSenkronu.Planla(anahtar);
+    }
+
+    private static bool ModulAnahtariYazabilir(string anahtar)
+    {
+        if (!OturumYoneticisi.BulutAktif)
+            return true;
+
+        var modul = anahtar switch
+        {
+            "malzeme" => "Alınan Malzemeler",
+            "stok" or "stok_hareket" => "Stok Yönetimi",
+            "agrega" => "Agrega",
+            "cimento" => "Çimento",
+            "akaryakit" => "Akaryakıt Takip",
+            "filo" => "Araç Filo Takip",
+            _ => null
+        };
+
+        return modul is null || KullaniciYetkileri.ModulYazabilir(modul);
     }
 
     private static void JsonOku<T>(ObservableCollection<T> koleksiyon, string dosyaAdi, Action ornekVeri)
@@ -436,10 +457,14 @@ public static class ModulVeriDeposu
         KoleksiyonuYenile(StokHareketleri, JsonSerializer.Deserialize<List<StokHareketKaydi>>(json, JsonSecenekleri));
 
     public static void AgregaYukle(string json) =>
-        KoleksiyonuYenile(Agrega, JsonSerializer.Deserialize<List<AgregaKaydi>>(json, JsonSecenekleri));
+        KoleksiyonuYenile(Agrega, JsonSerializer.Deserialize<List<AgregaKaydi>>(FaturaNoAnahtariniNormalizeEt(json), JsonSecenekleri));
 
     public static void CimentoYukle(string json) =>
-        KoleksiyonuYenile(Cimento, JsonSerializer.Deserialize<List<CimentoKaydi>>(json, JsonSecenekleri));
+        KoleksiyonuYenile(Cimento, JsonSerializer.Deserialize<List<CimentoKaydi>>(FaturaNoAnahtariniNormalizeEt(json), JsonSecenekleri));
+
+    /// <summary>Eski bulut kayıtları "FaturaNo" anahtarıyla gelir; camelCase ile hizala.</summary>
+    private static string FaturaNoAnahtariniNormalizeEt(string json) =>
+        json.Replace("\"FaturaNo\":", "\"faturaNo\":", StringComparison.Ordinal);
 
     public static void AkaryakitYukle(string json) =>
         KoleksiyonuYenile(Akaryakit, JsonSerializer.Deserialize<List<AkaryakitKaydi>>(json, JsonSecenekleri));

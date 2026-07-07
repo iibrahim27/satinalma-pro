@@ -6,8 +6,10 @@ public class CimentoKaydi
 {
     public string Tarih { get; set; } = "";
 
-    [JsonPropertyName("FaturaNo")]
+    [JsonPropertyName("faturaNo")]
     public string IrsaliyeNo { get; set; } = "";
+
+    public string SiparisNo { get; set; } = "";
 
     public string CimentoSinifi { get; set; } = "";
     public string CimentoCinsi { get; set; } = "";
@@ -29,7 +31,7 @@ public class CimentoKaydi
         _ => $"{ArtisYuzdesi.Value:N1}%"
     };
 
-    public string FaturaDurumuMetin => FaturasiKesildi ? "Kesildi" : "Kesilmedi";
+    public string FaturaDurumuMetin => FaturasiKesildi ? "Kesildi" : "Bekliyor";
 
     public void ToplamTutariHesapla() =>
         ToplamTutar = Math.Round((decimal)Miktar * BirimFiyati, 2);

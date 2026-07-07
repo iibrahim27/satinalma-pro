@@ -2,409 +2,682 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.modernwpf.com/2019"
-             xmlns:helpers="clr-namespace:SatinalmaPro.Helpers">
-  <Grid>
+             Background="{StaticResource AyarBgBrush}">
+  <Grid Margin="24,20,24,24">
     <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
 
-    <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-            CornerRadius="14" Padding="14,12" Margin="0,0,0,12">
-      <Grid>
-        <StackPanel Orientation="Horizontal">
-          <Border Width="36" Height="36" CornerRadius="10" Margin="0,0,14,0">
-            <Border.Background>
-              <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#64748B" Offset="0" />
-                <GradientStop Color="#94A3B8" Offset="1" />
-              </LinearGradientBrush>
-            </Border.Background>
-            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="White"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <StackPanel VerticalAlignment="Center">
-            <TextBlock Text="Ayarlar" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" />
-            <TextBlock Text="Tüm modül ayarları, veri yönetimi ve yedekleme" FontSize="11"
-                       Foreground="{StaticResource InkMutedBrush}" Margin="0,2,0,0" />
-          </StackPanel>
-        </StackPanel>
-        <Button Style="{StaticResource PrimaryToolbarButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Center"
-                Click="AyarlarKaydet_Click">
-          <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,8,0" />
-            <TextBlock Text="Ayarları Kaydet" />
-          </StackPanel>
-        </Button>
-      </Grid>
+    <!-- Unsaved changes banner -->
+    <Border x:Name="DegisiklikBanner" Grid.Row="0" Visibility="Collapsed"
+            Background="#FEF3C7" BorderBrush="#FCD34D" BorderThickness="1"
+            CornerRadius="10" Padding="14,10" Margin="0,0,0,16">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                   Foreground="#B45309" VerticalAlignment="Center" Margin="0,0,10,0" />
+        <TextBlock Text="Sistemde kaydedilmemiş değişiklikler var"
+                   FontSize="13" FontWeight="SemiBold" Foreground="#92400E"
+                   VerticalAlignment="Center" />
+      </StackPanel>
     </Border>
 
-    <TabControl x:Name="AyarTab" Grid.Row="1" Padding="0">
-      <!-- GENEL -->
-      <TabItem Header="Genel">
-        <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0,12,18,0">
-          <StackPanel>
-            <Border x:Name="BulutYonetimPanel" Style="{StaticResource SatinalmaCardStyle}" Margin="0,0,0,12">
+    <!-- Header -->
+    <Grid Grid.Row="1" Margin="0,0,0,20">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <Border Width="48" Height="48" CornerRadius="14" Margin="0,0,16,0">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+              <GradientStop Color="#3B82F6" Offset="0" />
+              <GradientStop Color="#1D4ED8" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                     Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="Ayarlar" FontSize="24" FontWeight="SemiBold"
+                     Foreground="{StaticResource InkBrush}" />
+          <TextBlock Text="Sistem yapılandırması, kullanıcı yönetimi ve uygulama tercihleri"
+                     Style="{StaticResource AyarSectionDesc}" Margin="0,2,0,0" />
+        </StackPanel>
+      </StackPanel>
+
+      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+        <Button x:Name="BtnKaydet" Style="{StaticResource AyarSaveButton}"
+                Click="AyarlarKaydet_Click" Margin="0,0,8,0">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                       Margin="0,0,8,0" VerticalAlignment="Center" />
+            <TextBlock Text="Ayarları Kaydet" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Style="{StaticResource AyarGhostButton}" Click="YedekAl_Click" Margin="0,0,8,0">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                       Margin="0,0,8,0" VerticalAlignment="Center" />
+            <TextBlock Text="Yedek Al" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Style="{StaticResource AyarGhostButton}" Click="GeriYukle_Click" Margin="0,0,8,0">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                       Margin="0,0,8,0" VerticalAlignment="Center" />
+            <TextBlock Text="İçe Aktar" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Style="{StaticResource AyarGhostButton}" Click="YedekAl_Click" Margin="0,0,8,0">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                       Margin="0,0,8,0" VerticalAlignment="Center" />
+            <TextBlock Text="Dışa Aktar" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Style="{StaticResource AyarGhostButton}" Click="TumVerileriSifirla_Click">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="&#xE777;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                       Margin="0,0,8,0" VerticalAlignment="Center" />
+            <TextBlock Text="Varsayılana Döndür" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <!-- KPI row -->
+    <UniformGrid Grid.Row="2" Columns="4" Margin="0,0,0,20">
+      <Border Style="{StaticResource AyarKpiCard}" Margin="0,0,10,0">
+        <StackPanel>
+          <TextBlock Text="Uygulama Sürümü" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
+          <TextBlock x:Name="TxtKpiSurum" Text="—" FontSize="18" FontWeight="SemiBold"
+                     Foreground="{StaticResource InkBrush}" Margin="0,6,0,0" />
+        </StackPanel>
+      </Border>
+      <Border Style="{StaticResource AyarKpiCard}" Margin="5,0,5,0">
+        <StackPanel>
+          <TextBlock Text="Veritabanı" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
+          <TextBlock x:Name="TxtKpiVeritabani" Text="—" FontSize="18" FontWeight="SemiBold"
+                     Foreground="{StaticResource InkBrush}" Margin="0,6,0,0" />
+        </StackPanel>
+      </Border>
+      <Border Style="{StaticResource AyarKpiCard}" Margin="5,0,5,0">
+        <StackPanel>
+          <TextBlock Text="Firebase" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
+          <TextBlock x:Name="TxtKpiFirebase" Text="—" FontSize="18" FontWeight="SemiBold"
+                     Foreground="{StaticResource InkBrush}" Margin="0,6,0,0" />
+        </StackPanel>
+      </Border>
+      <Border Style="{StaticResource AyarKpiCard}" Margin="10,0,0,0">
+        <StackPanel>
+          <TextBlock Text="Son Yedek" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
+          <TextBlock x:Name="TxtKpiYedek" Text="—" FontSize="18" FontWeight="SemiBold"
+                     Foreground="{StaticResource InkBrush}" Margin="0,6,0,0" />
+        </StackPanel>
+      </Border>
+    </UniformGrid>
+
+    <!-- Main layout -->
+    <Grid Grid.Row="3">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="240" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <!-- Navigation -->
+      <Border Style="{StaticResource AyarCard}" Padding="12,16" Margin="0,0,16,0">
+        <StackPanel x:Name="NavPanel" />
+      </Border>
+
+      <!-- Content -->
+      <ScrollViewer x:Name="IcerikScroll" Grid.Column="1"
+                    Style="{StaticResource ModuleScrollViewerStyle}" Padding="0,0,4,0">
+        <StackPanel>
+
+          <!-- GENEL -->
+          <StackPanel x:Name="PanelGenel" Visibility="Visible">
+            <Border Style="{StaticResource AyarCard}" Margin="0,0,0,16">
               <StackPanel>
-                <TextBlock Text="Bulut ve Kullanıcılar" Style="{StaticResource SatinalmaSectionTitleStyle}" Margin="0,0,0,8" />
-                <TextBlock Text="İnternet üzerinden ortak veri ve giriş sistemi (Firebase). Yapılandırılmamışsa uygulama yerel çalışır."
-                           FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,10" />
-                <TextBlock Text="Uygulama klasöründeki firebase_ayarlar.json (exe ile birlikte kopyalanır)"
-                           FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-                <TextBox x:Name="TxtFirebaseYolu" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" Margin="0,0,0,8" />
-                <TextBlock Text="Push bildirimleri — Firebase Console → Hizmet hesapları → özel anahtar JSON"
-                           FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                  <Button Style="{StaticResource ToolbarButtonStyle}" Content="FCM Service Account JSON Yükle"
-                          Click="FcmServiceAccountYukle_Click" Margin="0,0,8,0" />
-                  <TextBlock x:Name="TxtFcmServiceAccountDurum" VerticalAlignment="Center"
-                             FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                  <Button Style="{StaticResource ToolbarButtonStyle}" Content="Android google-services.json Yükle"
-                          Click="GoogleServicesYukle_Click" />
-                </StackPanel>
-                <TextBlock x:Name="TxtGoogleServicesDurum" FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,8" />
-                <TextBlock x:Name="TxtFirebaseUyari" FontSize="11" Foreground="#B45309" TextWrapping="Wrap" Margin="0,0,0,8" Visibility="Collapsed" />
-                <TextBlock x:Name="TxtGuncellemeDurum" FontSize="11" Foreground="{StaticResource InkMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,12" />
-                <StackPanel Orientation="Horizontal">
-                  <Button x:Name="BtnBulutaYukle" Style="{StaticResource PrimaryToolbarButtonStyle}"
-                          Content="Verileri Buluta Yükle" Margin="0,0,8,0" Click="BulutaYukle_Click"
-                          Visibility="Collapsed" />
-                  <Button x:Name="BtnKullaniciYonetimi" Style="{StaticResource PrimaryToolbarButtonStyle}"
-                          Content="Kullanıcı Yönetimi" Margin="0,0,8,0" Click="KullaniciYonetimi_Click"
-                          Visibility="Collapsed" />
-                  <Button Style="{StaticResource ToolbarButtonStyle}" Content="Kurulum Kılavuzunu Aç"
-                          Click="FirebaseKurulum_Click" Margin="0,0,8,0" />
-                  <Button Style="{StaticResource ToolbarButtonStyle}" Content="Android Firebase Kılavuzu"
-                          Click="FirebaseAndroidKurulum_Click" Margin="0,0,8,0" />
-                  <Button Style="{StaticResource ToolbarButtonStyle}" Content="GitHub Yayın Kılavuzu"
-                          Click="GithubKurulum_Click" Margin="0,0,8,0" />
-                  <Button Style="{StaticResource ToolbarButtonStyle}" Content="Sürüm Güncelleme"
-                          Click="GithubSurumGuncelleme_Click" />
-                </StackPanel>
+                <TextBlock Text="Hoş Geldiniz" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,0"
+                           Text="Satınalma Pro ayar merkezine hoş geldiniz. Sol menüden yapılandırmak istediğiniz bölümü seçin. Değişikliklerinizi kaydetmeyi unutmayın." />
               </StackPanel>
             </Border>
-
-            <Border Style="{StaticResource SatinalmaCardStyle}">
-            <StackPanel>
-              <TextBlock Text="Firma Bilgileri" Style="{StaticResource SatinalmaSectionTitleStyle}" Margin="0,0,0,8" />
-              <TextBlock Text="Tüm PDF belgelerinde görünen firma adı ve logo" FontSize="11"
-                         Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,14" />
-              <TextBlock Text="Firma Adı" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-              <TextBox x:Name="TxtFirmaAdi" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14"
-                       TextChanged="GenelAyarDegisti" />
-              <TextBlock Text="Firma Logosu" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-              <TextBlock Text="PDF ve belgelerde kullanılır. Logo program klasörüne kopyalanır." FontSize="10"
-                         Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,8" Opacity="0.85" />
-              <Grid Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="TxtLogoYolu" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" />
-                <Button Grid.Column="1" Style="{StaticResource ToolbarButtonStyle}" Content="Logo Seç"
-                        Margin="8,0,0,0" Click="LogoSec_Click" />
-              </Grid>
-              <Border Width="140" Height="90" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-                      CornerRadius="10" Background="#FAFBFC" HorizontalAlignment="Left" Margin="0,0,0,24">
-                <Image x:Name="ImgLogoOnizleme" Stretch="Uniform" Margin="10" />
-              </Border>
-
-              <TextBlock Text="Anasayfa Logosu" Style="{StaticResource SatinalmaSectionTitleStyle}" Margin="0,0,0,8" />
-              <TextBlock Text="Modül kartlarının üstünde büyük olarak görünür" FontSize="11"
-                         Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,14" />
-              <Grid Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="TxtAnasayfaLogoYolu" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" />
-                <Button Grid.Column="1" Style="{StaticResource ToolbarButtonStyle}" Content="Logo Seç"
-                        Margin="8,0,0,0" Click="AnasayfaLogoSec_Click" />
-              </Grid>
-              <Border Width="280" Height="120" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-                      CornerRadius="10" Background="#FAFBFC" HorizontalAlignment="Left">
-                <Image x:Name="ImgAnasayfaLogoOnizleme" Stretch="Uniform" Margin="12" />
-              </Border>
-            </StackPanel>
-          </Border>
-          </StackPanel>
-        </ScrollViewer>
-      </TabItem>
-
-      <!-- SATINALMA -->
-      <TabItem Header="Satınalma">
-        <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0,12,18,0">
-          <StackPanel>
-            <Border Style="{StaticResource SatinalmaCardStyle}" Margin="0,0,0,12">
+            <Border Style="{StaticResource AyarCard}">
               <StackPanel>
-                <TextBlock Text="Döviz Kurları" Style="{StaticResource SatinalmaSectionTitleStyle}" Margin="0,0,0,8" />
-                <TextBlock Text="Yeni teklif girerken otomatik doldurulur. Her teklifte günlük kuru değiştirebilirsiniz."
-                           FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,14" />
+                <TextBlock Text="Sistem Bilgileri" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,16"
+                           Text="Uygulama ve ortam hakkında genel bilgiler." />
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                    <TextBlock Text="Uygulama Adı" Style="{StaticResource AyarFormLabel}" />
+                    <TextBlock Text="Satınalma Pro" FontSize="14" FontWeight="Medium"
+                               Foreground="{StaticResource InkBrush}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="Sürüm" Style="{StaticResource AyarFormLabel}" />
+                    <TextBlock x:Name="TxtSistemSurum" Text="—" FontSize="14" FontWeight="Medium"
+                               Foreground="{StaticResource InkBrush}" />
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- FIRMA -->
+          <StackPanel x:Name="PanelFirma" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}">
+              <StackPanel>
+                <TextBlock Text="Firma Bilgileri" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,20"
+                           Text="Tüm PDF belgelerinde görünen firma adı ve logolar." />
+
+                <TextBlock Text="Firma Adı" Style="{StaticResource AyarFormLabel}" />
+                <TextBox x:Name="TxtFirmaAdi" Style="{StaticResource AyarFormBox}"
+                         Margin="0,0,0,24" TextChanged="GenelAyarDegisti" />
+
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+
+                  <!-- Firma logosu -->
+                  <StackPanel Grid.Column="0">
+                    <TextBlock Text="Firma Logosu" Style="{StaticResource AyarFormLabel}" />
+                    <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,0,0,12"
+                               Text="PDF ve belgelerde kullanılır. Logo program klasörüne kopyalanır." />
+                    <Grid Margin="0,0,0,12">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <TextBox x:Name="TxtLogoYolu" Style="{StaticResource AyarFormBox}"
+                               IsReadOnly="True" Height="40" />
+                      <Button Grid.Column="1" Style="{StaticResource AyarGhostButton}"
+                              Content="Logo Seç" Margin="8,0,0,0" Click="LogoSec_Click" />
+                    </Grid>
+                    <Border Style="{StaticResource AyarUploadBox}" Width="180" HorizontalAlignment="Left">
+                      <Image x:Name="ImgLogoOnizleme" Stretch="Uniform" MaxHeight="100" />
+                    </Border>
+                  </StackPanel>
+
+                  <!-- Anasayfa logosu -->
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Text="Anasayfa Logosu" Style="{StaticResource AyarFormLabel}" />
+                    <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,0,0,12"
+                               Text="Modül kartlarının üstünde büyük olarak görünür." />
+                    <Grid Margin="0,0,0,12">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <TextBox x:Name="TxtAnasayfaLogoYolu" Style="{StaticResource AyarFormBox}"
+                               IsReadOnly="True" Height="40" />
+                      <Button Grid.Column="1" Style="{StaticResource AyarGhostButton}"
+                              Content="Logo Seç" Margin="8,0,0,0" Click="AnasayfaLogoSec_Click" />
+                    </Grid>
+                    <Border Style="{StaticResource AyarUploadBox}" Width="280" HorizontalAlignment="Left">
+                      <Image x:Name="ImgAnasayfaLogoOnizleme" Stretch="Uniform" MaxHeight="120" />
+                    </Border>
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- KULLANICILAR -->
+          <StackPanel x:Name="PanelKullanicilar" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}">
+              <StackPanel>
+                <TextBlock Text="Kullanıcı Yönetimi" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,20"
+                           Text="Firebase bulut girişi aktifken kullanıcı hesapları, roller ve modül erişimleri buradan yönetilir. Yerel modda bu özellik devre dışıdır." />
+                <Button x:Name="BtnKullaniciYonetimi" Style="{StaticResource AyarSaveButton}"
+                        Content="Kullanıcı Yönetimini Aç" HorizontalAlignment="Left"
+                        Click="KullaniciYonetimi_Click" Visibility="Collapsed" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- YETKİLENDİRME -->
+          <StackPanel x:Name="PanelYetkilendirme" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}">
+              <StackPanel>
+                <TextBlock Text="Yetkilendirme" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,16"
+                           Text="Kullanıcı rolleri (Admin, Yönetim, Şef, Satınalma, Saha) modül ve sekme erişimlerini belirler. Rol atamaları Kullanıcı Yönetimi ekranından yapılır." />
+                <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1"
+                        CornerRadius="10" Padding="16,14">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="18"
+                               Foreground="{StaticResource AyarPrimaryBrush}"
+                               VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#1E40AF"
+                               VerticalAlignment="Center"
+                               Text="Rol ve yetki değişiklikleri için Kullanıcılar bölümündeki yönetim ekranını kullanın." />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- SATINALMA -->
+          <StackPanel x:Name="PanelSatinalma" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}" Margin="0,0,0,16">
+              <StackPanel>
+                <TextBlock Text="Döviz Kurları" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,16"
+                           Text="Yeni teklif girerken otomatik doldurulur. Her teklifte günlük kuru değiştirebilirsiniz." />
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
                     <ColumnDefinition Width="*" />
                   </Grid.ColumnDefinitions>
                   <StackPanel Grid.Column="0">
-                    <TextBlock Text="Varsayılan USD Kuru (₺)" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-                    <TextBox x:Name="TxtVarsayilanUsdKuru" Style="{StaticResource FilterBoxStyle}" TextChanged="DovizKuruDegisti" />
+                    <TextBlock Text="Varsayılan USD Kuru (₺)" Style="{StaticResource AyarFormLabel}" />
+                    <TextBox x:Name="TxtVarsayilanUsdKuru" Style="{StaticResource AyarFormBox}"
+                             TextChanged="DovizKuruDegisti" />
                   </StackPanel>
                   <StackPanel Grid.Column="2">
-                    <TextBlock Text="Varsayılan EUR Kuru (₺)" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-                    <TextBox x:Name="TxtVarsayilanEurKuru" Style="{StaticResource FilterBoxStyle}" TextChanged="DovizKuruDegisti" />
+                    <TextBlock Text="Varsayılan EUR Kuru (₺)" Style="{StaticResource AyarFormLabel}" />
+                    <TextBox x:Name="TxtVarsayilanEurKuru" Style="{StaticResource AyarFormBox}"
+                             TextChanged="DovizKuruDegisti" />
                   </StackPanel>
                 </Grid>
               </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource SatinalmaCardStyle}" Margin="0,0,0,12">
+            <Border Style="{StaticResource AyarCard}" Margin="0,0,0,16">
               <StackPanel>
-                <TextBlock Text="Teklif İsteme Şartnameleri" Style="{StaticResource SatinalmaSectionTitleStyle}" Margin="0,0,0,8" />
-                <TextBlock Text="Tedarikçi teklif talep PDF'inde tedarikçi bilgileri yerine yer alır" FontSize="11"
-                           Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,10" />
-                <TextBox x:Name="TxtTeklifIstemeSartnameleri" Style="{StaticResource FilterBoxStyle}"
+                <TextBlock Text="Teklif İsteme Şartnameleri" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,12"
+                           Text="Tedarikçi teklif talep PDF'inde tedarikçi bilgileri yerine yer alır." />
+                <TextBox x:Name="TxtTeklifIstemeSartnameleri" Style="{StaticResource AyarFormBox}"
                          Height="160" TextWrapping="Wrap" AcceptsReturn="True"
-                         VerticalContentAlignment="Top" Padding="12,10"
+                         VerticalContentAlignment="Top" Padding="14,12"
                          TextChanged="TeklifIstemeSartnameleriDegisti" />
               </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource SatinalmaCardStyle}" Margin="0,0,0,12">
+            <Border Style="{StaticResource AyarCard}" Margin="0,0,0,16">
               <StackPanel>
-                <TextBlock Text="Şartname Metni" Style="{StaticResource SatinalmaSectionTitleStyle}" Margin="0,0,0,8" />
-                <TextBlock Text="Sipariş PDF'inde metin olarak yer alır" FontSize="11"
-                           Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,10" />
-                <TextBox x:Name="TxtSartnameMetni" Style="{StaticResource FilterBoxStyle}"
+                <TextBlock Text="Şartname Metni" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,12"
+                           Text="Sipariş PDF'inde metin olarak yer alır." />
+                <TextBox x:Name="TxtSartnameMetni" Style="{StaticResource AyarFormBox}"
                          Height="160" TextWrapping="Wrap" AcceptsReturn="True"
-                         VerticalContentAlignment="Top" Padding="12,10"
+                         VerticalContentAlignment="Top" Padding="14,12"
                          TextChanged="SartnameMetniDegisti" />
               </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource SatinalmaCardStyle}">
+            <Border Style="{StaticResource AyarCard}">
               <StackPanel>
-                <TextBlock Text="İmza Ayarları" Style="{StaticResource SatinalmaSectionTitleStyle}" Margin="0,0,0,8" />
-                <TextBlock Text="Talep ve yönetim PDF'lerinde kullanılan imza alanları" FontSize="11"
-                           Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,14" />
+                <TextBlock Text="İmza Ayarları" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,16"
+                           Text="Talep ve yönetim PDF'lerinde kullanılan imza alanları." />
 
                 <Grid Margin="0,0,0,10">
                   <TextBlock Text="Şefler İmza İsimleri" FontWeight="SemiBold" VerticalAlignment="Center" />
-                  <Button Style="{StaticResource PrimaryToolbarButtonStyle}" Content="Şef İmza Ekle"
+                  <Button Style="{StaticResource AyarSaveButton}" Content="Şef İmza Ekle"
                           HorizontalAlignment="Right" Click="SefImzaEkle_Click" />
                 </Grid>
-                <DataGrid x:Name="SefImzaGrid" Style="{StaticResource ModuleEditableDataGridStyle}" Height="120"
-                          AutoGenerateColumns="False" CanUserAddRows="False" CellEditEnding="ImzaGrid_CellEditEnding">
+                <DataGrid x:Name="SefImzaGrid" Style="{StaticResource ModuleEditableDataGridStyle}"
+                          Height="120" AutoGenerateColumns="False" CanUserAddRows="False"
+                          CellEditEnding="ImzaGrid_CellEditEnding">
                   <DataGrid.Columns>
                     <DataGridTextColumn Header="Ünvan" Binding="{Binding Unvan, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Width="*" />
                     <DataGridTextColumn Header="Ad Soyad" Binding="{Binding AdSoyad, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Width="*" />
                     <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Aktif, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70" />
                   </DataGrid.Columns>
                 </DataGrid>
-                <Button Style="{StaticResource ToolbarButtonStyle}" Content="Seçili Şef İmzasını Sil"
+                <Button Style="{StaticResource AyarGhostButton}" Content="Seçili Şef İmzasını Sil"
                         Margin="0,10,0,0" HorizontalAlignment="Left" Click="SefImzaSil_Click" />
 
                 <Grid Margin="0,20,0,10">
                   <TextBlock Text="Yönetim İmza İsimleri" FontWeight="SemiBold" VerticalAlignment="Center" />
-                  <Button Style="{StaticResource PrimaryToolbarButtonStyle}" Content="Yönetim İmza Ekle"
+                  <Button Style="{StaticResource AyarSaveButton}" Content="Yönetim İmza Ekle"
                           HorizontalAlignment="Right" Click="YonetimImzaEkle_Click" />
                 </Grid>
-                <DataGrid x:Name="YonetimImzaGrid" Style="{StaticResource ModuleEditableDataGridStyle}" Height="120"
-                          AutoGenerateColumns="False" CanUserAddRows="False" CellEditEnding="ImzaGrid_CellEditEnding">
+                <DataGrid x:Name="YonetimImzaGrid" Style="{StaticResource ModuleEditableDataGridStyle}"
+                          Height="120" AutoGenerateColumns="False" CanUserAddRows="False"
+                          CellEditEnding="ImzaGrid_CellEditEnding">
                   <DataGrid.Columns>
                     <DataGridTextColumn Header="Ünvan" Binding="{Binding Unvan, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Width="*" />
                     <DataGridTextColumn Header="Ad Soyad" Binding="{Binding AdSoyad, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Width="*" />
                     <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Aktif, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70" />
                   </DataGrid.Columns>
                 </DataGrid>
-                <Button Style="{StaticResource ToolbarButtonStyle}" Content="Seçili Yönetim İmzasını Sil"
+                <Button Style="{StaticResource AyarGhostButton}" Content="Seçili Yönetim İmzasını Sil"
                         Margin="0,10,0,0" HorizontalAlignment="Left" Click="YonetimImzaSil_Click" />
               </StackPanel>
             </Border>
           </StackPanel>
-        </ScrollViewer>
-      </TabItem>
 
-      <!-- MALZEME KATEGORİLERİ -->
-      <TabItem Header="Malzeme Kategorileri">
-        <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0,12,18,0">
-          <Border Style="{StaticResource SatinalmaCardStyle}">
-            <StackPanel>
-              <TextBlock Text="Alınan Malzeme Kategorileri" Style="{StaticResource SatinalmaSectionTitleStyle}" Margin="0,0,0,8" />
-              <TextBlock Text="Satınalma modülünden aktarım yaparken ve Alınan Malzemeler kayıtlarında kullanılır."
-                         FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,14"
-                         TextWrapping="Wrap" />
+          <!-- STOK -->
+          <StackPanel x:Name="PanelStok" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}" Margin="0,0,0,16">
+              <StackPanel>
+                <TextBlock Text="Alınan Malzeme Kategorileri" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,14"
+                           Text="Satınalma modülünden aktarım yaparken ve Alınan Malzemeler kayıtlarında kullanılır." />
+                <ListBox x:Name="KategoriListesi" Height="220"
+                         BorderBrush="{StaticResource AyarBorderBrush}" BorderThickness="1"
+                         Margin="0,0,0,14" />
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBox x:Name="TxtYeniKategori" Style="{StaticResource AyarFormBox}"
+                           ui:ControlHelper.PlaceholderText="Yeni kategori adı" Height="40" />
+                  <Button Grid.Column="1" Style="{StaticResource AyarSaveButton}" Content="Ekle"
+                          Margin="8,0,0,0" Click="KategoriEkle_Click" />
+                  <Button Grid.Column="2" Style="{StaticResource AyarGhostButton}" Content="Sil"
+                          Margin="8,0,0,0" Click="KategoriSil_Click" />
+                </Grid>
+              </StackPanel>
+            </Border>
 
-              <ListBox x:Name="KategoriListesi"
-                       Height="220"
-                       BorderBrush="{StaticResource LineBrush}"
-                       BorderThickness="1"
-                       Margin="0,0,0,14" />
+            <Border Style="{StaticResource AyarCard}">
+              <StackPanel>
+                <TextBlock Text="Malzeme Birim Terimleri" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,14"
+                           Text="Stok giriş/çıkış formlarında ve stok kayıtlarında seçilebilir birimler." />
+                <ListBox x:Name="BirimListesi" Height="220"
+                         BorderBrush="{StaticResource AyarBorderBrush}" BorderThickness="1"
+                         Margin="0,0,0,14" />
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBox x:Name="TxtYeniBirim" Style="{StaticResource AyarFormBox}"
+                           ui:ControlHelper.PlaceholderText="Yeni birim terimi" Height="40" />
+                  <Button Grid.Column="1" Style="{StaticResource AyarSaveButton}" Content="Ekle"
+                          Margin="8,0,0,0" Click="BirimEkle_Click" />
+                  <Button Grid.Column="2" Style="{StaticResource AyarGhostButton}" Content="Sil"
+                          Margin="8,0,0,0" Click="BirimSil_Click" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
 
-              <Grid Margin="0,0,0,0">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="TxtYeniKategori" Style="{StaticResource FilterBoxStyle}"
-                         ui:ControlHelper.PlaceholderText="Yeni kategori adı" />
-                <Button Grid.Column="1" Style="{StaticResource PrimaryToolbarButtonStyle}" Content="Ekle"
-                        Margin="8,0,0,0" Click="KategoriEkle_Click" />
-                <Button Grid.Column="2" Style="{StaticResource ToolbarButtonStyle}" Content="Sil"
-                        Margin="8,0,0,0" Click="KategoriSil_Click" />
-              </Grid>
-            </StackPanel>
-          </Border>
-        </ScrollViewer>
-      </TabItem>
+          <!-- FILO -->
+          <StackPanel x:Name="PanelFilo" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}">
+              <StackPanel>
+                <TextBlock Text="Zimmet Formu Maddeleri" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,14"
+                           Text="Zimmet PDF maddeleri. Numaralı satırlar (1. / 2)) yeni madde başlatır; alt satırlar aynı maddeye eklenir. Numaralandırmayı siz yapın — PDF tekrar numara eklemez. Plaka, marka, şasi no ve firma adı otomatik gelir." />
+                <TextBox x:Name="TxtFiloZimmetMaddeleri" Style="{StaticResource AyarFormBox}"
+                         Height="220" TextWrapping="Wrap" AcceptsReturn="True"
+                         VerticalContentAlignment="Top" Padding="14,12"
+                         TextChanged="FiloZimmetMaddeleriDegisti" />
+                <Button Style="{StaticResource AyarSaveButton}" Content="Zimmet Maddelerini Kaydet"
+                        HorizontalAlignment="Left" Margin="0,16,0,0" Click="FiloZimmetKaydet_Click" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
 
-      <!-- BİRİM TERİMLERİ -->
-      <TabItem Header="Birim Terimleri">
-        <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0,12,18,0">
-          <Border Style="{StaticResource SatinalmaCardStyle}">
-            <StackPanel>
-              <TextBlock Text="Malzeme Birim Terimleri" Style="{StaticResource SatinalmaSectionTitleStyle}" Margin="0,0,0,8" />
-              <TextBlock Text="Stok giriş/çıkış formlarında ve stok kayıtlarında seçilebilir birimler."
-                         FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,14"
-                         TextWrapping="Wrap" />
+          <!-- AKARYAKIT -->
+          <StackPanel x:Name="PanelAkaryakit" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}">
+              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,40">
+                <TextBlock Text="&#xE804;" FontFamily="Segoe MDL2 Assets" FontSize="40"
+                           Foreground="{StaticResource InkMutedBrush}"
+                           HorizontalAlignment="Center" Margin="0,0,0,16" />
+                <TextBlock Text="Akaryakıt modülü ayarları modül ekranından yönetilir"
+                           Style="{StaticResource AyarSectionDesc}" TextAlignment="Center"
+                           FontSize="14" MaxWidth="400" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
 
-              <ListBox x:Name="BirimListesi"
-                       Height="220"
-                       BorderBrush="{StaticResource LineBrush}"
-                       BorderThickness="1"
-                       Margin="0,0,0,14" />
+          <!-- RAPORLAR -->
+          <StackPanel x:Name="PanelRaporlar" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}">
+              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,40">
+                <TextBlock Text="&#xF1EA;" FontFamily="Segoe MDL2 Assets" FontSize="40"
+                           Foreground="{StaticResource InkMutedBrush}"
+                           HorizontalAlignment="Center" Margin="0,0,0,16" />
+                <TextBlock Text="Rapor ayarları yakında bu bölümden yönetilebilecek."
+                           Style="{StaticResource AyarSectionDesc}" TextAlignment="Center"
+                           FontSize="14" MaxWidth="400" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
 
+          <!-- BİLDİRİMLER -->
+          <StackPanel x:Name="PanelBildirimler" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}">
+              <StackPanel>
+                <TextBlock Text="Push Bildirimleri" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,16"
+                           Text="Firebase Cloud Messaging (FCM) ile mobil ve masaüstü push bildirimleri gönderilir. Service Account JSON yüklenmesi gereklidir." />
+                <Border Background="#F8FAFC" BorderBrush="{StaticResource AyarBorderBrush}"
+                        BorderThickness="1" CornerRadius="10" Padding="16,14" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Text="FCM Durumu" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <TextBlock Text="Push bildirimleri için Firebase Console → Hizmet hesapları → özel anahtar JSON dosyasını Bulut ve Senkronizasyon bölümünden yükleyin."
+                               Style="{StaticResource AyarSectionDesc}" />
+                  </StackPanel>
+                </Border>
+                <TextBlock Text="Android google-services.json dosyası mobil uygulama derlemesi için gereklidir."
+                           Style="{StaticResource AyarSectionDesc}" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- BULUT -->
+          <StackPanel x:Name="PanelBulut" Visibility="Collapsed">
+            <Border x:Name="BulutYonetimPanel" Style="{StaticResource AyarCard}">
+              <StackPanel>
+                <TextBlock Text="Bulut ve Senkronizasyon" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,16"
+                           Text="İnternet üzerinden ortak veri ve giriş sistemi (Firebase). Yapılandırılmamışsa uygulama yerel çalışır." />
+
+                <TextBlock Text="Firebase yapılandırma dosyası" Style="{StaticResource AyarFormLabel}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,0,0,8"
+                           Text="Uygulama klasöründeki firebase_ayarlar.json (exe ile birlikte kopyalanır)" />
+                <TextBox x:Name="TxtFirebaseYolu" Style="{StaticResource AyarFormBox}"
+                         IsReadOnly="True" Margin="0,0,0,16" Height="40" />
+
+                <TextBlock Text="Push bildirimleri — Firebase Console → Hizmet hesapları → özel anahtar JSON"
+                           Style="{StaticResource AyarFormLabel}" />
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                  <Button Style="{StaticResource AyarGhostButton}"
+                          Content="FCM Service Account JSON Yükle"
+                          Click="FcmServiceAccountYukle_Click" Margin="0,0,12,0" />
+                  <TextBlock x:Name="TxtFcmServiceAccountDurum" VerticalAlignment="Center"
+                             FontSize="12" Foreground="{StaticResource InkMutedBrush}" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                  <Button Style="{StaticResource AyarGhostButton}"
+                          Content="Android google-services.json Yükle"
+                          Click="GoogleServicesYukle_Click" />
+                </StackPanel>
+                <TextBlock x:Name="TxtGoogleServicesDurum" FontSize="12"
+                           Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,12" />
+
+                <TextBlock x:Name="TxtFirebaseUyari" FontSize="12" Foreground="#B45309"
+                           TextWrapping="Wrap" Margin="0,0,0,12" Visibility="Collapsed" />
+                <TextBlock x:Name="TxtGuncellemeDurum" FontSize="12"
+                           Foreground="{StaticResource InkMutedBrush}" TextWrapping="Wrap"
+                           Margin="0,0,0,16" />
+
+                <StackPanel Orientation="Horizontal">
+                  <Button x:Name="BtnBulutaYukle" Style="{StaticResource AyarSaveButton}"
+                          Content="Verileri Buluta Yükle" Margin="0,0,8,0"
+                          Click="BulutaYukle_Click" Visibility="Collapsed" />
+                  <Button Style="{StaticResource AyarGhostButton}" Content="Kurulum Kılavuzunu Aç"
+                          Click="FirebaseKurulum_Click" Margin="0,0,8,0" />
+                  <Button Style="{StaticResource AyarGhostButton}" Content="Android Firebase Kılavuzu"
+                          Click="FirebaseAndroidKurulum_Click" Margin="0,0,8,0" />
+                  <Button Style="{StaticResource AyarGhostButton}" Content="GitHub Yayın Kılavuzu"
+                          Click="GithubKurulum_Click" Margin="0,0,8,0" />
+                  <Button Style="{StaticResource AyarGhostButton}" Content="Sürüm Güncelleme"
+                          Click="GithubSurumGuncelleme_Click" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- VERİTABANI -->
+          <StackPanel x:Name="PanelVeritabani" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}" Margin="0,0,0,16">
               <Grid>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="TxtYeniBirim" Style="{StaticResource FilterBoxStyle}"
-                         ui:ControlHelper.PlaceholderText="Yeni birim terimi" />
-                <Button Grid.Column="1" Style="{StaticResource PrimaryToolbarButtonStyle}" Content="Ekle"
-                        Margin="8,0,0,0" Click="BirimEkle_Click" />
-                <Button Grid.Column="2" Style="{StaticResource ToolbarButtonStyle}" Content="Sil"
-                        Margin="8,0,0,0" Click="BirimSil_Click" />
+                <StackPanel>
+                  <TextBlock Text="Veri Klasörü" Style="{StaticResource AyarSectionTitle}" />
+                  <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,12"
+                             Text="Tüm modül verilerinin saklandığı yerel klasör." />
+                  <TextBox x:Name="TxtVeriKlasoru" Style="{StaticResource AyarFormBox}"
+                           IsReadOnly="True" Height="40" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                  <Button Style="{StaticResource AyarGhostButton}" Content="Klasörü Aç"
+                          Margin="0,0,8,0" Click="VeriKlasoruAc_Click" />
+                  <Button Style="{StaticResource AyarGhostButton}" Content="Yenile"
+                          Click="VeriDurumYenile_Click" />
+                </StackPanel>
               </Grid>
-            </StackPanel>
-          </Border>
-        </ScrollViewer>
-      </TabItem>
+            </Border>
 
-      <!-- ARAÇ FİLO -->
-      <TabItem Header="Araç Filo">
-        <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0,12,18,0">
-          <Border Style="{StaticResource SatinalmaCardStyle}">
-            <StackPanel>
-              <TextBlock Text="Zimmet Formu Maddeleri" Style="{StaticResource SatinalmaSectionTitleStyle}" Margin="0,0,0,8" />
-              <TextBlock Text="Zimmet PDF maddeleri. Numaralı satırlar (1. / 2)) yeni madde başlatır; alt satırlar aynı maddeye eklenir. Numaralandırmayı siz yapın — PDF tekrar numara eklemez. Plaka, marka, şasi no ve firma adı otomatik gelir."
-                         FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,14"
-                         TextWrapping="Wrap" />
-              <TextBox x:Name="TxtFiloZimmetMaddeleri" Style="{StaticResource FilterBoxStyle}"
-                       Height="220" TextWrapping="Wrap" AcceptsReturn="True"
-                       VerticalContentAlignment="Top" Padding="12,10"
-                       TextChanged="FiloZimmetMaddeleriDegisti" />
-              <Button Style="{StaticResource PrimaryToolbarButtonStyle}" Content="Zimmet Maddelerini Kaydet"
-                      HorizontalAlignment="Left" Margin="0,12,0,0" Click="FiloZimmetKaydet_Click" />
-            </StackPanel>
-          </Border>
-        </ScrollViewer>
-      </TabItem>
+            <Border Style="{StaticResource AyarCard}" Padding="1">
+              <DataGrid x:Name="VeriDurumGrid" Style="{StaticResource ModuleDataGridStyle}"
+                        AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Kategori" Binding="{Binding Kategori}" Width="100" />
+                  <DataGridTextColumn Header="Modül" Binding="{Binding ModulAdi}" Width="*" MinWidth="140" />
+                  <DataGridTextColumn Header="Dosya" Binding="{Binding DosyaAdi}" Width="180" />
+                  <DataGridTextColumn Header="Boyut" Binding="{Binding Boyut}" Width="80" />
+                  <DataGridTextColumn Header="Son Güncelleme" Binding="{Binding SonGuncelleme}" Width="130" />
+                  <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="80" />
+                  <DataGridTemplateColumn Header="" Width="90">
+                    <DataGridTemplateColumn.CellTemplate>
+                      <DataTemplate>
+                        <Button Content="Sıfırla" Style="{StaticResource ToolbarButtonStyle}" Padding="8,4"
+                                Tag="{Binding DosyaAdi}" Click="ModulSifirla_Click" />
+                      </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                  </DataGridTemplateColumn>
+                </DataGrid.Columns>
+              </DataGrid>
+            </Border>
+          </StackPanel>
 
-      <!-- VERİ DOSYALARI -->
-      <TabItem Header="Veri Dosyaları">
-        <Grid Margin="0,12,0,0">
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-          </Grid.RowDefinitions>
-
-          <Border Grid.Row="0" Style="{StaticResource SatinalmaCardStyle}" Padding="14,12" Margin="0,0,0,12">
-            <Grid>
+          <!-- YEDEKLEME -->
+          <StackPanel x:Name="PanelYedekleme" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}" Margin="0,0,0,16">
               <StackPanel>
-                <TextBlock Text="Veri Klasörü" FontWeight="SemiBold" />
-                <TextBox x:Name="TxtVeriKlasoru" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True"
-                         Margin="0,8,0,0" />
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                <Button Style="{StaticResource ToolbarButtonStyle}" Content="Klasörü Aç" Margin="0,0,8,0"
-                        Click="VeriKlasoruAc_Click" />
-                <Button Style="{StaticResource ToolbarButtonStyle}" Content="Yenile" Click="VeriDurumYenile_Click" />
-              </StackPanel>
-            </Grid>
-          </Border>
-
-          <Border Grid.Row="1" Style="{StaticResource SatinalmaCardStyle}" Padding="1">
-            <DataGrid x:Name="VeriDurumGrid" Style="{StaticResource ModuleDataGridStyle}"
-                      AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single">
-              <DataGrid.Columns>
-                <DataGridTextColumn Header="Kategori" Binding="{Binding Kategori}" Width="100" />
-                <DataGridTextColumn Header="Modül" Binding="{Binding ModulAdi}" Width="*" MinWidth="140" />
-                <DataGridTextColumn Header="Dosya" Binding="{Binding DosyaAdi}" Width="180" />
-                <DataGridTextColumn Header="Boyut" Binding="{Binding Boyut}" Width="80" />
-                <DataGridTextColumn Header="Son Güncelleme" Binding="{Binding SonGuncelleme}" Width="130" />
-                <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="80" />
-                <DataGridTemplateColumn Header="" Width="90">
-                  <DataGridTemplateColumn.CellTemplate>
-                    <DataTemplate>
-                      <Button Content="Sıfırla" Style="{StaticResource ToolbarButtonStyle}" Padding="8,4"
-                              Tag="{Binding DosyaAdi}" Click="ModulSifirla_Click" />
-                    </DataTemplate>
-                  </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-              </DataGrid.Columns>
-            </DataGrid>
-          </Border>
-        </Grid>
-      </TabItem>
-
-      <!-- YEDEKLEME -->
-      <TabItem Header="Yedekleme">
-        <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0,12,18,0">
-          <StackPanel>
-            <Border Style="{StaticResource SatinalmaCardStyle}" Margin="0,0,0,12">
-              <StackPanel>
-                <TextBlock Text="Yedek Al / Geri Yükle" Style="{StaticResource SatinalmaSectionTitleStyle}" Margin="0,0,0,8" />
-                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,16"
+                <TextBlock Text="Yedek Al / Geri Yükle" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,16"
                            Text="Tüm modül verilerini ve ayarları tek bir ZIP dosyası olarak yedekleyebilir veya önceki bir yedeği geri yükleyebilirsiniz." />
                 <StackPanel Orientation="Horizontal">
-                  <Button Style="{StaticResource PrimaryToolbarButtonStyle}" Click="YedekAl_Click" Margin="0,0,8,0">
+                  <Button Style="{StaticResource AyarSaveButton}" Click="YedekAl_Click" Margin="0,0,8,0">
                     <StackPanel Orientation="Horizontal">
-                      <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,8,0" />
-                      <TextBlock Text="Yedek Al (ZIP)" />
+                      <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                 Margin="0,0,8,0" VerticalAlignment="Center" />
+                      <TextBlock Text="Yedek Al (ZIP)" VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
-                  <Button Style="{StaticResource ToolbarButtonStyle}" Click="GeriYukle_Click">
+                  <Button Style="{StaticResource AyarGhostButton}" Click="GeriYukle_Click">
                     <StackPanel Orientation="Horizontal">
-                      <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,8,0" />
-                      <TextBlock Text="Geri Yükle" />
+                      <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                 Margin="0,0,8,0" VerticalAlignment="Center" />
+                      <TextBlock Text="Geri Yükle" VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
                 </StackPanel>
               </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource SatinalmaCardStyle}" Background="#FFF1F2" BorderBrush="#FECDD3">
+            <Border Style="{StaticResource AyarCard}" Background="#FFF1F2" BorderBrush="#FECDD3">
               <StackPanel>
-                <TextBlock Text="Tehlikeli İşlemler" FontWeight="SemiBold" Foreground="#9F1239" Margin="0,0,0,8" />
-                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#BE123C" Margin="0,0,0,14"
-                           Text="Tüm verileri sıfırlamak geri alınamaz. İşlem öncesi mutlaka yedek alın." />
-                <Button Style="{StaticResource ToolbarButtonStyle}" HorizontalAlignment="Left"
+                <TextBlock Text="Tehlikeli İşlemler" FontWeight="SemiBold" Foreground="#9F1239"
+                           Margin="0,0,0,8" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Foreground="#BE123C" Margin="0,0,0,14"
+                           TextWrapping="Wrap"
+                           Text="Firma bilgileri, logolar, imzalar ve modül verileri sıfırlanır. Firebase, Android ve oturum ayarları korunur. İşlem geri alınamaz; önce yedek alın." />
+                <Button Style="{StaticResource AyarGhostButton}" HorizontalAlignment="Left"
                         Click="TumVerileriSifirla_Click" Foreground="#BE123C">
                   <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,8,0" />
-                    <TextBlock Text="Tüm Verileri Sıfırla" />
+                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                               Margin="0,0,8,0" VerticalAlignment="Center" />
+                    <TextBlock Text="Tüm Verileri Sıfırla" VerticalAlignment="Center" />
                   </StackPanel>
                 </Button>
               </StackPanel>
             </Border>
           </StackPanel>
-        </ScrollViewer>
-      </TabItem>
-    </TabControl>
+
+          <!-- LOGLAR -->
+          <StackPanel x:Name="PanelLoglar" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}">
+              <StackPanel>
+                <TextBlock Text="Hata Günlüğü" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,16"
+                           Text="Uygulama hataları yerel bir günlük dosyasına kaydedilir. Sorun giderme için bu dosyayı inceleyebilirsiniz." />
+                <Border Background="#F8FAFC" BorderBrush="{StaticResource AyarBorderBrush}"
+                        BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,16">
+                  <StackPanel>
+                    <TextBlock Text="Günlük dosyası konumu" Style="{StaticResource AyarFormLabel}" />
+                    <TextBlock Text="%LocalAppData%\SatinalmaPro\hata-gunlugu.txt"
+                               FontSize="13" FontFamily="Consolas"
+                               Foreground="{StaticResource InkSoftBrush}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+                <Button Style="{StaticResource AyarGhostButton}" HorizontalAlignment="Left"
+                        Click="LogKlasoruAc_Click">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE838;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                               Margin="0,0,8,0" VerticalAlignment="Center" />
+                    <TextBlock Text="Günlük Klasörünü Aç" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- GÜNCELLEME -->
+          <StackPanel x:Name="PanelGuncelleme" Visibility="Collapsed">
+            <Border Style="{StaticResource AyarCard}">
+              <StackPanel>
+                <TextBlock Text="Sürüm Güncelleme" Style="{StaticResource AyarSectionTitle}" />
+                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,16"
+                           Text="GitHub Releases üzerinden otomatik güncelleme yapılandırması ve mevcut sürüm bilgisi." />
+                <TextBlock x:Name="TxtGuncellemeDurum2" FontSize="12"
+                           Foreground="{StaticResource InkMutedBrush}" TextWrapping="Wrap"
+                           Margin="0,0,0,16" />
+                <Button Style="{StaticResource AyarSaveButton}" HorizontalAlignment="Left"
+                        Click="GithubSurumGuncelleme_Click">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                               Margin="0,0,8,0" VerticalAlignment="Center" />
+                    <TextBlock Text="Güncelleme Kılavuzunu Aç" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
   </Grid>
 </UserControl>

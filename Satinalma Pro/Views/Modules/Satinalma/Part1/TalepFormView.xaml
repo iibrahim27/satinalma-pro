@@ -1,0 +1,114 @@
+<UserControl x:Class="SatinalmaPro.Views.Modules.Satinalma.Part1.TalepFormView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:SatinalmaPro.Views.Controls" Background="{StaticResource DashBackgroundBrush}">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <Border Style="{StaticResource SatModCard}" Margin="0,0,0,14">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,12,12">
+          <TextBlock Text="Tarih" Style="{StaticResource SatModHint}" />
+          <TextBox x:Name="TxtTarih" IsReadOnly="True" Margin="0,6,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Margin="0,0,12,12">
+          <TextBlock Text="Talep No" Style="{StaticResource SatModHint}" />
+          <TextBox x:Name="TxtTalepNo" IsReadOnly="True" Margin="0,6,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="2" Margin="0,0,0,12">
+          <TextBlock Text="Talep Eden" Style="{StaticResource SatModHint}" />
+          <TextBox x:Name="TxtTalepEden" IsReadOnly="True" Margin="0,6,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="0,0,0,12">
+          <TextBlock Text="Öncelik" Style="{StaticResource SatModHint}" />
+          <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+            <RadioButton x:Name="RbAcil" Content="Acil" GroupName="Oncelik" Margin="0,0,20,0" />
+            <RadioButton x:Name="RbOncelikli" Content="Öncelikli" GroupName="Oncelik" Margin="0,0,20,0" />
+            <RadioButton x:Name="RbNormal" Content="Normal" GroupName="Oncelik" IsChecked="True" />
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="3">
+          <TextBlock Text="Talep Açıklaması" Style="{StaticResource SatModHint}" />
+          <TextBox x:Name="TxtAciklama" AcceptsReturn="True" TextWrapping="Wrap"
+                   MinHeight="72" MaxHeight="120" VerticalScrollBarVisibility="Auto"
+                   Margin="0,6,0,0" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Border Grid.Row="1" Style="{StaticResource SatModCard}">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Malzemeler" Style="{StaticResource SatModSectionTitle}" Margin="0,0,0,12" />
+
+        <DataGrid x:Name="KalemTablosu" Grid.Row="1" Style="{StaticResource SatModDataGrid}"
+                  IsReadOnly="False" CanUserAddRows="False" SelectionMode="Single"
+                  LoadingRow="KalemTablosu_LoadingRow">
+          <DataGrid.Columns>
+            <DataGridTemplateColumn Header="Malzeme Adı" Width="*">
+              <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                  <controls:MalzemeOneriGiris
+                      Metin="{Binding Malzeme, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                </DataTemplate>
+              </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTextColumn Header="Miktar" Binding="{Binding Miktar, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+            <DataGridTemplateColumn Header="Birim" Width="100">
+              <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                  <ComboBox ItemsSource="{Binding DataContext.Birimler, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            SelectedItem="{Binding Birim, UpdateSourceTrigger=PropertyChanged}" />
+                </DataTemplate>
+              </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTextColumn Header="Satır Açıklaması" Binding="{Binding Aciklama, UpdateSourceTrigger=PropertyChanged}" Width="*" />
+          </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,12,0,0">
+          <Button Content="+ Satır Ekle" Style="{StaticResource ToolbarButtonStyle}" Click="SatirEkle_Click" Margin="0,0,8,0" />
+          <Button Content="− Satır Sil" Style="{StaticResource ToolbarButtonStyle}" Click="SatirSil_Click" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <StackPanel Grid.Row="2" Margin="0,14,0,0">
+      <TextBlock x:Name="TxtHata" Foreground="#DC2626" FontSize="12" Visibility="Collapsed" Margin="0,0,0,10" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+        <Button x:Name="BtnSil" Content="Sil" Style="{StaticResource ToolbarButtonStyle}"
+                Click="Sil_Click" Margin="0,0,8,0" />
+        <Button x:Name="BtnKaydet" Content="Kaydet" Style="{StaticResource ToolbarButtonStyle}"
+                Click="Kaydet_Click" Margin="0,0,8,0" />
+        <Button x:Name="BtnYazdir" Content="Yazdır" Style="{StaticResource ToolbarButtonStyle}"
+                Click="Yazdir_Click" Margin="0,0,8,0" />
+        <Button x:Name="BtnOnayaGonder" Content="Onaya Gönder" Style="{StaticResource PrimaryToolbarButtonStyle}"
+                Click="OnayaGonder_Click" Padding="18,10" />
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</UserControl>

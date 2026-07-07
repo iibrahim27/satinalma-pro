@@ -9,6 +9,20 @@ public static class SatinalmaTabFiltreleri
         || SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep)
         || SatinalmaTalepKuyrugu.SatinalmaKarsilastirma(talep);
 
+    /// <summary>Teklifler sekmesi — bekleyen + giriş + karşılaştırma birleşik.</summary>
+    public static bool TeklifIslemleri(SatinalmaTalep talep) =>
+        TeklifBekleyenSatiri.KuyruktaGoster(talep)
+        || SatinalmaTalepKuyrugu.SatinalmaTeklifGirisiAktif(talep)
+        || TeklifDegerlendirme(talep);
+
+    /// <summary>Arşiv — onaylanan, red ve geçmiş kayıtlar.</summary>
+    public static bool Arsiv(SatinalmaTalep talep) =>
+        Onaylananlar(talep)
+        || Reddedilenler(talep)
+        || OnaylananTeklifler(talep)
+        || GecmisTalepler(talep)
+        || GecmisTeklifliOnaylar(talep);
+
     public static bool OnayBekleyen(SatinalmaTalep talep, bool talepSahibiModu) =>
         SatinalmaTalepKuyrugu.OnayBekleyenListede(talep, talepSahibiModu);
 
@@ -24,11 +38,13 @@ public static class SatinalmaTabFiltreleri
         SatinalmaTalepKuyrugu.Reddedildi(talep);
 
     public static bool SiparisBekleyenMalzeme(OnaylananMalzemeSatiri satir) =>
-        !satir.SiparisTamamlandi && satir.KalanMiktar > 0.0001
-        && satir.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu;
+        !satir.SiparisTamamlandi
+        && satir.KalanMiktar > 0.0001
+        && satir.Durum is SatinalmaTalepDurumlari.Onaylandi or SatinalmaTalepDurumlari.SiparisOlusturuldu;
 
     public static bool GelenSiparisMalzeme(OnaylananMalzemeSatiri satir) =>
-        satir.KabulEdilenMiktar > 0.0001;
+        satir.KabulEdilenMiktar > 0.0001
+        && satir.KalanMiktar <= 0.0001;
 
     public static bool GelenTalepler(SatinalmaTalep talep) =>
         SatinalmaTalepKuyrugu.YonetimTalepler(talep);

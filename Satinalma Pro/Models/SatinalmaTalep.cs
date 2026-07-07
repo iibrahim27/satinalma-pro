@@ -122,7 +122,13 @@ public class SatinalmaTalep
     public Guid? YonetimOnerilenTeklifId { get; set; }
     /// <summary>Satınalmacı öneriyi elle seçtiyse true; aksi halde sistem en düşük fiyatlı teklifi önerir.</summary>
     public bool SatinalmaOnerisiElleSecildi { get; set; }
+    /// <summary>Öneri kalem bazlı (farklı firmalardan birim fiyat) seçildiyse true.</summary>
+    public bool SatinalmaKalemOnerisiElleSecildi { get; set; }
     public string Durum { get; set; } = SatinalmaTalepDurumlari.Taslak;
+    /// <summary>Enterprise Firestore status (draft, submitted, quote_requested, …).</summary>
+    public string Status { get; set; } = "";
+    public string Priority { get; set; } = "normal";
+    public bool HasReturnFlag { get; set; }
     public string SiparisNo { get; set; } = "";
     public Guid? OnaylananTeklifId { get; set; }
     public Dictionary<Guid, string> FirmaSiparisNolari { get; set; } = [];
@@ -155,9 +161,15 @@ public class SatinalmaTalep
         TeklifsizYonetimOnayi && !HerhangiKalemOnayli;
 
     /// <summary>Satınalma önerisi — elle seçim yoksa KDV dahil en düşük toplam.</summary>
-    public SatinalmaTeklif? OnerilenTeklif()
+    public SatinalmaTeklif? OnerilenTeklif() => OnerilenTeklifFirma();
+
+    /// <summary>Tek firma önerisi (kalem bazlı öneride null).</summary>
+    public SatinalmaTeklif? OnerilenTeklifFirma()
     {
         TeklifFiyatlariniGuncelle();
+
+        if (SatinalmaKalemOnerisiElleSecildi)
+            return null;
 
         if (SatinalmaOnerisiElleSecildi && YonetimOnerilenTeklifId is { } id)
         {
@@ -168,6 +180,8 @@ public class SatinalmaTalep
 
         return EnDusukFiyatliTeklif();
     }
+
+    public void TeklifFiyatlariniGuncellePublic() => TeklifFiyatlariniGuncelle();
 
     public SatinalmaTeklif? EnDusukFiyatliTeklif()
     {
@@ -203,6 +217,12 @@ public class SatinalmaTalep
 
     [JsonIgnore]
     public string KalemSayisiMetni => $"{(Kalemler?.Count ?? 0)} kalem";
+
+    [JsonIgnore]
+    public string TeklifSayisiMetni => $"{Teklifler?.Count ?? 0} teklif";
+
+    [JsonIgnore]
+    public string TeklifGirisOzetMetni => $"{Tarih} · {TeklifSayisiMetni}";
 }
 
 public static class SatinalmaTalepDurumlari
@@ -227,16 +247,20 @@ public static class SatinalmaTalepDurumlari
 public static class TalepTurleri
 {
     public const string Acil = "Acil";
+    public const string Oncelikli = "Oncelikli";
     public const string Normal = "Normal";
 
-    public static IReadOnlyList<string> Tum { get; } = [Acil, Normal];
+    public static IReadOnlyList<string> Tum { get; } = [Acil, Oncelikli, Normal];
 
     public static string TurkceAd(string tur) => tur switch
     {
-        Acil => "Acil Talep",
-        Normal => "Normal Talep",
-        _ => tur
+        Acil => "Acil",
+        Oncelikli => "Öncelikli",
+        Normal => "Normal",
+        _ => string.IsNullOrWhiteSpace(tur) ? Normal : tur
     };
+
+    public static string GorunenAd(string tur) => TurkceAd(tur);
 }
 
 public class ImzaAyari
@@ -273,9 +297,12 @@ public class SatinalmaAyarlar
     public ObservableCollection<SartnameDosyasi> Sartnameler { get; set; } = [];
     public int SonTalepSira { get; set; }
     public int SonSiparisSira { get; set; }
+    public int SonIadeSira { get; set; }
     public List<Guid> SilinenTalepIdleri { get; set; } = [];
     public decimal VarsayilanUsdKuru { get; set; }
     public decimal VarsayilanEurKuru { get; set; }
+    /// <summary>Tüm verileri sıfırla sonrası — varsayılan imza ünvanları eklenmez.</summary>
+    public bool ImzaAyarleriTemiz { get; set; }
 
     public static SatinalmaAyarlar VarsayilanOlustur() => new()
     {
@@ -289,5 +316,14 @@ public class SatinalmaAyarlar
         [
             new ImzaAyari { Unvan = "Proje Müdürü", Aktif = true }
         ]
+    };
+
+    /// <summary>Modül sıfırlama — imza ünvanları, şartname ve firma bilgisi boş.</summary>
+    public static SatinalmaAyarlar SifirlanmisOlustur() => new()
+    {
+        SefImzalari = [],
+        YonetimImzalari = [],
+        Sartnameler = [],
+        ImzaAyarleriTemiz = true
     };
 }

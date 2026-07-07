@@ -1,49 +1,37 @@
 package com.satinalmapro.android.ui.screens.home
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Inventory2
-import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.LocalShipping
 import androidx.compose.material.icons.rounded.RequestQuote
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.satinalmapro.android.core.model.DashboardActivity
 import com.satinalmapro.android.core.model.DashboardCard
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.ui.AppViewModel
-import com.satinalmapro.android.ui.components.AppCard
-import com.satinalmapro.android.ui.components.IconBadge
+import com.satinalmapro.android.ui.components.DashboardActivityRow
+import com.satinalmapro.android.ui.components.DashboardGreetingCard
+import com.satinalmapro.android.ui.components.DashboardStatCard
+import com.satinalmapro.android.ui.components.QuickActionTile
 import com.satinalmapro.android.ui.components.SectionTitle
-import com.satinalmapro.android.ui.components.StatusBadge
 import com.satinalmapro.android.ui.theme.AppColors
-import com.satinalmapro.android.ui.theme.AppShapes
+import com.satinalmapro.android.ui.theme.AppSpacing
 
 @Composable
 fun HomeScreen(
@@ -55,109 +43,111 @@ fun HomeScreen(
     val canRequest = KullaniciRolleri.canCreateRequest(role)
     val canQuote = KullaniciRolleri.canEnterQuotes(role)
     val canMaterials = viewModel.canAccess("onaylanan-malzemeler")
-    val notifications by viewModel.notifications.collectAsState()
-    val unreadCount = notifications.count { !it.read }
+    val canStock = KullaniciRolleri.canStockWrite(role)
+    val isDepo = KullaniciRolleri.normalize(role) == KullaniciRolleri.DEPO
     val cards by viewModel.dashboardCards.collectAsState()
     val activities by viewModel.dashboardActivities.collectAsState()
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        contentPadding = PaddingValues(
+            horizontal = AppSpacing.screenHorizontal,
+            vertical = AppSpacing.screenVertical
+        ),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.sectionGap)
     ) {
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("Merhaba,", style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
-                    Text(
-                        user?.fullName ?: "",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = AppColors.TextPrimary
-                    )
-                }
-                BadgedBox(badge = { if (unreadCount > 0) Badge { Text("$unreadCount") } }) {
-                    IconButton(onClick = { viewModel.navigate("bildirimler") }) {
-                        Icon(Icons.Rounded.Notifications, contentDescription = "Bildirimler")
-                    }
-                }
-            }
+            DashboardGreetingCard(
+                userName = user?.fullName.orEmpty(),
+                role = role
+            )
         }
 
         item {
             SectionTitle("Bugünkü Özet")
             Spacer(Modifier.height(12.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                cards.take(4).chunked(2).forEach { rowCards ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        rowCards.forEach { card ->
-                            SummaryCard(
-                                card = card,
-                                modifier = Modifier.weight(1f),
-                                onClick = { viewModel.navigate(card.route) }
-                            )
-                        }
-                        if (rowCards.size == 1) {
-                            Spacer(Modifier.weight(1f))
-                        }
+            cards.take(4).chunked(2).forEach { rowCards ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.cardGap)
+                ) {
+                    rowCards.forEach { card ->
+                        DashboardStatCard(
+                            title = card.title,
+                            value = card.value,
+                            subtitle = card.subtitle,
+                            icon = Icons.Rounded.Description,
+                            iconBg = AppColors.PrimaryContainer,
+                            iconFg = AppColors.Primary,
+                            onClick = { viewModel.navigate(card.route) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (rowCards.size == 1) {
+                        Spacer(Modifier.weight(1f))
                     }
                 }
+                Spacer(Modifier.height(AppSpacing.cardGap))
             }
         }
 
         item {
             SectionTitle("Hızlı İşlemler")
             Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                if (canRequest) {
-                    QuickAction(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Rounded.Add,
-                        label = "Talep\nOluştur",
-                        bg = AppColors.PrimaryContainer,
-                        fg = AppColors.Primary
-                    ) { viewModel.navigate("yeni-talep") }
+            val actions = buildList {
+                if (canRequest) add(Triple(Icons.Rounded.Add, "Yeni Talep", "yeni-talep"))
+                if (canMaterials) add(Triple(Icons.Rounded.Inventory2, "Malzeme Girişi", "onaylanan-malzemeler"))
+                if (canQuote) add(Triple(Icons.Rounded.RequestQuote, "Teklif Girişi", "teklif-bekleyen"))
+                if (isDepo && canStock) {
+                    add(Triple(Icons.Rounded.Inventory2, "Stok Girişi", "stok-giris"))
+                    add(Triple(Icons.Rounded.LocalShipping, "Stok Çıkışı", "stok-cikis"))
                 }
-                if (canMaterials) {
-                    QuickAction(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Rounded.Inventory2,
-                        label = "Malzeme\nGirişi",
-                        bg = AppColors.SuccessContainer,
-                        fg = AppColors.Success
-                    ) { viewModel.navigate("onaylanan-malzemeler") }
+            }
+            actions.chunked(2).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.cardGap)
+                ) {
+                    row.forEach { (icon, label, route) ->
+                        val (bg, fg) = when (route) {
+                            "yeni-talep" -> AppColors.PrimaryContainer to AppColors.Primary
+                            "onaylanan-malzemeler", "stok-giris" -> AppColors.SuccessContainer to AppColors.Success
+                            else -> AppColors.WarningContainer to AppColors.Warning
+                        }
+                        QuickActionTile(
+                            icon = icon,
+                            label = label,
+                            iconBg = bg,
+                            iconFg = fg,
+                            onClick = { viewModel.navigate(route) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
-                if (canQuote) {
-                    QuickAction(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Rounded.RequestQuote,
-                        label = "Teklif\nEkle",
-                        bg = AppColors.WarningContainer,
-                        fg = AppColors.Warning
-                    ) { viewModel.navigate("teklif-gir") }
-                }
+                Spacer(Modifier.height(AppSpacing.cardGap))
             }
         }
 
         item {
-            SectionTitle("Son İşlemler")
+            val sonIslemBaslik = when (KullaniciRolleri.normalize(role)) {
+                KullaniciRolleri.DEPO -> "Son Stok İşlemleri"
+                KullaniciRolleri.ATOLYE -> "Stok Uyarıları"
+                KullaniciRolleri.SAHA, KullaniciRolleri.SEF -> "Son Taleplerim"
+                KullaniciRolleri.YONETIM -> "Son Yönetim İşlemleri"
+                KullaniciRolleri.SATINALMA -> "Son Satınalma İşlemleri"
+                else -> "Son Bildirimler"
+            }
+            SectionTitle(sonIslemBaslik)
             Spacer(Modifier.height(8.dp))
             if (activities.isEmpty()) {
-                Text("Henüz işlem yok.", color = AppColors.TextSecondary)
+                Text("Henüz işlem yok.", color = AppColors.TextSecondary, style = MaterialTheme.typography.bodyMedium)
             } else {
                 activities.forEach { activity ->
-                    RecentActivityCard(activity) {
+                    RecentActivityRow(activity) {
                         activity.route?.let { viewModel.navigate(it) }
                     }
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(AppSpacing.cardGap))
                 }
             }
         }
@@ -165,68 +155,25 @@ fun HomeScreen(
 }
 
 @Composable
-private fun SummaryCard(
-    card: DashboardCard,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    AppCard(modifier = modifier, onClick = onClick) {
-        Column(Modifier.padding(16.dp)) {
-            IconBadge(AppColors.Primary) {
-                Icon(Icons.Rounded.Description, null, tint = AppColors.Primary, modifier = Modifier.size(22.dp))
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(card.title, style = MaterialTheme.typography.labelMedium, color = AppColors.TextSecondary)
-            Text(card.value, style = MaterialTheme.typography.headlineMedium, color = AppColors.TextPrimary)
-            Text(card.subtitle, style = MaterialTheme.typography.labelSmall, color = AppColors.TextSecondary)
-        }
-    }
+private fun RecentActivityRow(item: DashboardActivity, onClick: () -> Unit) {
+    val (bg, fg) = activityStatusColors(item.status)
+    DashboardActivityRow(
+        title = item.title,
+        subtitle = item.subtitle,
+        status = item.status,
+        statusBg = bg,
+        statusFg = fg,
+        onClick = onClick
+    )
 }
 
 @Composable
-private fun QuickAction(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    label: String,
-    bg: Color,
-    fg: Color,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier,
-        shape = AppShapes.medium,
-        color = AppColors.Surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.Border)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Surface(shape = AppShapes.small, color = bg) {
-                Box(Modifier.padding(10.dp), contentAlignment = Alignment.Center) {
-                    Icon(icon, null, tint = fg, modifier = Modifier.size(22.dp))
-                }
-            }
-            Text(label, style = MaterialTheme.typography.labelMedium, color = AppColors.TextPrimary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        }
-    }
-}
-
-@Composable
-private fun RecentActivityCard(item: DashboardActivity, onClick: () -> Unit) {
-    AppCard(onClick = onClick) {
-        Row(
-            Modifier.padding(16.dp).fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(item.title, style = MaterialTheme.typography.titleMedium, color = AppColors.TextPrimary)
-                Text(item.subtitle, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
-            }
-            StatusBadge(item.status, AppColors.PrimaryContainer, AppColors.Primary)
-        }
+private fun activityStatusColors(status: String): Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color> {
+    val lower = status.lowercase()
+    return when {
+        "onay" in lower || "tamam" in lower -> AppColors.SuccessContainer to AppColors.Success
+        "bekl" in lower || "bekleyen" in lower -> AppColors.WarningContainer to AppColors.Warning
+        "red" in lower || "iptal" in lower -> AppColors.DangerContainer to AppColors.Danger
+        else -> AppColors.InfoContainer to AppColors.Info
     }
 }

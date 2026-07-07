@@ -1,0 +1,326 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Satınalma modülü — ERP mavi palet -->
+  <Color x:Key="SatModAccent">#2563EB</Color>
+  <Color x:Key="SatModAccentSoft">#EFF6FF</Color>
+  <Color x:Key="SatModRose">#2563EB</Color>
+  <Color x:Key="SatModBg">#F5F7FB</Color>
+  <Color x:Key="SatModInk">#1E293B</Color>
+
+  <SolidColorBrush x:Key="SatModAccentBrush" Color="{StaticResource SatModAccent}" />
+  <SolidColorBrush x:Key="SatModAccentSoftBrush" Color="{StaticResource SatModAccentSoft}" />
+  <SolidColorBrush x:Key="SatModBgBrush" Color="{StaticResource SatModBg}" />
+  <SolidColorBrush x:Key="SatModInkBrush" Color="{StaticResource SatModInk}" />
+
+  <LinearGradientBrush x:Key="SatModHeroGradient" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Color="#EFF6FF" Offset="0" />
+    <GradientStop Color="#FFFFFF" Offset="0.55" />
+    <GradientStop Color="#F8FAFC" Offset="1" />
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="SatModIconGradient" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Color="#2563EB" Offset="0" />
+    <GradientStop Color="#1D4ED8" Offset="1" />
+  </LinearGradientBrush>
+
+  <DropShadowEffect x:Key="SatModCardShadow" BlurRadius="16" ShadowDepth="0" Opacity="0.08" Color="#0F172A" />
+
+  <Style x:Key="SatModCard" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="22" />
+    <Setter Property="Effect" Value="{StaticResource SatModCardShadow}" />
+  </Style>
+
+  <Style x:Key="SatModSectionTitle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource SatModInkBrush}" />
+  </Style>
+
+  <Style x:Key="SatModHint" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{StaticResource InkMutedBrush}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <Style x:Key="SatModBackButton" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="Margin" Value="0,0,0,14" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+
+  <Style x:Key="SatModDataGrid" TargetType="DataGrid" BasedOn="{StaticResource ModuleDataGridStyle}">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <Style x:Key="SatModListItem" TargetType="ListViewItem">
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ListViewItem">
+          <Border x:Name="Kart" Background="White" BorderBrush="{StaticResource LineBrush}"
+                  BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand">
+            <ContentPresenter />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Kart" Property="Background" Value="{StaticResource SatModAccentSoftBrush}" />
+              <Setter TargetName="Kart" Property="BorderBrush" Value="#93C5FD" />
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter TargetName="Kart" Property="Background" Value="#EFF6FF" />
+              <Setter TargetName="Kart" Property="BorderBrush" Value="#2563EB" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="SatModStatCard" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="18,16" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Effect" Value="{StaticResource SatModCardShadow}" />
+    <Style.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Setter Property="BorderBrush" Value="#93C5FD" />
+        <Setter Property="Background" Value="#F8FAFC" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style x:Key="SatModBadge" TargetType="Border">
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="Background" Value="#EFF6FF" />
+  </Style>
+
+  <LinearGradientBrush x:Key="SatModNavActiveGradient" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Color="#2563EB" Offset="0" />
+    <GradientStop Color="#1D4ED8" Offset="1" />
+  </LinearGradientBrush>
+
+  <Style x:Key="SatModSideNavGroup" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource InkMutedBrush}" />
+    <Setter Property="Margin" Value="14,18,14,6" />
+  </Style>
+
+  <Style x:Key="SatModSideNavItem" TargetType="Button">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Shell"
+                  Background="Transparent"
+                  CornerRadius="10"
+                  Padding="10,9"
+                  Margin="6,0">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <Border x:Name="Accent"
+                      Grid.Column="0"
+                      CornerRadius="2"
+                      Background="Transparent"
+                      Margin="0,2" />
+              <ContentPresenter Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Shell" Property="Background" Value="#F8FAFC" />
+            </Trigger>
+            <Trigger Property="Tag" Value="Active">
+              <Setter TargetName="Shell" Property="Background" Value="{StaticResource SatModNavActiveGradient}" />
+              <Setter TargetName="Accent" Property="Background" Value="White" />
+              <Setter TargetName="Accent" Property="Opacity" Value="0.9" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="SatModSideNavLabel" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource InkSoftBrush}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style x:Key="SatModSideNavLabelActive" TargetType="TextBlock" BasedOn="{StaticResource SatModSideNavLabel}">
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+
+  <Style x:Key="SatModSideNavBadge" TargetType="Border">
+    <Setter Property="MinWidth" Value="22" />
+    <Setter Property="Height" Value="20" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="6,0" />
+    <Setter Property="Background" Value="#DBEAFE" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Visibility" Value="Collapsed" />
+  </Style>
+
+  <DropShadowEffect x:Key="SatModSoftShadow" BlurRadius="20" ShadowDepth="0" Opacity="0.06" Color="#0F172A" />
+
+  <Style x:Key="SatModPremiumCard" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="#E5E7EB" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="22,20" />
+    <Setter Property="Effect" Value="{StaticResource SatModSoftShadow}" />
+  </Style>
+
+  <Style x:Key="SatModWorkflowCard" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="#E5E7EB" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="14,14" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+    <Setter Property="RenderTransform">
+      <Setter.Value>
+        <ScaleTransform ScaleX="1" ScaleY="1" />
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Trigger.EnterActions>
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                               To="1.02" Duration="0:0:0.2" />
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                               To="1.02" Duration="0:0:0.2" />
+            </Storyboard>
+          </BeginStoryboard>
+        </Trigger.EnterActions>
+        <Trigger.ExitActions>
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                               To="1" Duration="0:0:0.2" />
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                               To="1" Duration="0:0:0.2" />
+            </Storyboard>
+          </BeginStoryboard>
+        </Trigger.ExitActions>
+        <Setter Property="BorderBrush" Value="#93C5FD" />
+        <Setter Property="Background" Value="#FAFBFF" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style x:Key="SatModMiniKpiCard" TargetType="Border">
+    <Setter Property="Background" Value="#F8FAFC" />
+    <Setter Property="BorderBrush" Value="#E5E7EB" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="14,12" />
+  </Style>
+
+  <Style x:Key="SatModTabBar" TargetType="Border">
+    <Setter Property="Background" Value="#F8FAFC" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="4" />
+  </Style>
+
+  <Style x:Key="SatModTabButton" TargetType="Button">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource InkMutedBrush}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Padding" Value="14,8" />
+    <Setter Property="Margin" Value="0,0,4,0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="B" Background="{TemplateBinding Background}" CornerRadius="8"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="B" Property="Background" Value="#EFF6FF" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="SatModTabButtonActive" TargetType="Button" BasedOn="{StaticResource SatModTabButton}">
+    <Setter Property="Foreground" Value="{StaticResource SatModAccentBrush}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border Background="White" CornerRadius="8" Padding="{TemplateBinding Padding}"
+                  BorderBrush="#E5E7EB" BorderThickness="1">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="SatModIconButton" TargetType="Button">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="6,4" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="B" Background="Transparent" CornerRadius="8" Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="B" Property="Background" Value="#F1F5F9" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="SatModPanosuGrid" TargetType="DataGrid" BasedOn="{StaticResource ModuleDataGridStyle}">
+    <Setter Property="RowHeight" Value="46" />
+    <Setter Property="CanUserSortColumns" Value="True" />
+    <Setter Property="CanUserResizeColumns" Value="True" />
+    <Setter Property="AlternatingRowBackground" Value="#FAFBFC" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="GridLinesVisibility" Value="Horizontal" />
+    <Setter Property="HeadersVisibility" Value="Column" />
+    <Setter Property="SelectionMode" Value="Single" />
+  </Style>
+
+</ResourceDictionary>

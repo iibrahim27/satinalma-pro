@@ -3,13 +3,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
-        Title="Alınan Malzemelere Aktar"
+        Title="Mal Kabul — Depoya Kaydet"
         Width="440"
         SizeToContent="Height"
         MaxHeight="720"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="White">
+        Background="{StaticResource DashBackgroundBrush}">
   <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
@@ -18,7 +18,7 @@
     </Grid.RowDefinitions>
 
     <StackPanel Grid.Row="0" Margin="0,0,0,16">
-      <TextBlock Text="Alınan Malzemelere Aktar"
+      <TextBlock Text="Mal Kabul"
                  FontSize="18"
                  FontWeight="SemiBold"
                  Foreground="{StaticResource InkBrush}" />
@@ -29,7 +29,8 @@
                  Margin="0,6,0,0" />
     </StackPanel>
 
-    <ScrollViewer Grid.Row="1" Style="{StaticResource ModuleScrollViewerStyle}">
+    <Border Grid.Row="1" Style="{StaticResource ModulePageCardStyle}" Padding="24,20">
+      <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0">
       <StackPanel>
         <TextBlock Text="Miktar"
                    FontSize="12"
@@ -39,13 +40,29 @@
                  Style="{StaticResource FilterBoxStyle}"
                  Margin="0,0,0,14" />
 
-        <TextBlock Text="Kategori"
+        <TextBlock Text="Firma / Tedarikçi"
+                   FontSize="12"
+                   Foreground="{StaticResource InkMutedBrush}"
+                   Margin="0,0,0,6" />
+        <TextBox x:Name="TxtFirma"
+                 Style="{StaticResource FilterBoxStyle}"
+                 Margin="0,0,0,14" />
+
+        <TextBlock Text="Birim Fiyat (₺)"
+                   FontSize="12"
+                   Foreground="{StaticResource InkMutedBrush}"
+                   Margin="0,0,0,6" />
+        <TextBox x:Name="TxtBirimFiyat"
+                 Style="{StaticResource FilterBoxStyle}"
+                 Margin="0,0,0,14" />
+
+        <TextBlock Text="Kategori (listeden seçin veya yeni yazın)"
                    FontSize="12"
                    Foreground="{StaticResource InkMutedBrush}"
                    Margin="0,0,0,6" />
         <ComboBox x:Name="CmbKategori"
                   Style="{StaticResource FilterComboStyle}"
-                  IsEditable="False"
+                  IsEditable="True"
                   Margin="0,0,0,14" />
 
         <TextBlock Text="Tarih"
@@ -72,13 +89,32 @@
                  Style="{StaticResource FilterBoxStyle}"
                  Margin="0,0,0,14" />
 
-        <TextBlock Text="İndirildiği Saha"
+        <CheckBox x:Name="ChkSahayaDirekt"
+                  Content="Malzeme sahaya indi (depo giriş + çıkış)"
+                  FontSize="12"
+                  Foreground="{StaticResource InkMutedBrush}"
+                  Margin="0,0,0,10"
+                  Checked="SahayaDirekt_Changed"
+                  Unchecked="SahayaDirekt_Changed" />
+
+        <TextBlock x:Name="LblDepoSaha"
+                   Text="İndirildiği Saha / Depo"
                    FontSize="12"
                    Foreground="{StaticResource InkMutedBrush}"
                    Margin="0,0,0,6" />
         <TextBox x:Name="TxtIndirildigiSaha"
                  Style="{StaticResource FilterBoxStyle}"
                  Margin="0,0,0,14" />
+
+        <StackPanel x:Name="PnlSahaHedef" Visibility="Collapsed">
+          <TextBlock Text="Malzemenin indiği saha"
+                     FontSize="12"
+                     Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <TextBox x:Name="TxtSahaHedef"
+                   Style="{StaticResource FilterBoxStyle}"
+                   Margin="0,0,0,14" />
+        </StackPanel>
 
         <TextBlock Text="Açıklama"
                    FontSize="12"
@@ -94,7 +130,7 @@
                  Margin="0,0,0,4" />
       </StackPanel>
     </ScrollViewer>
-
+    </Border>
     <StackPanel Grid.Row="2"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"
@@ -104,7 +140,7 @@
               Width="90"
               Margin="0,0,8,0"
               Click="Iptal_Click" />
-      <Button Content="Aktar"
+      <Button Content="Kaydet"
               Style="{StaticResource PrimaryToolbarButtonStyle}"
               Width="100"
               IsDefault="True"

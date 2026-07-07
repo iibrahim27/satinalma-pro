@@ -5,7 +5,7 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Zimmet PDF Geçmişi"
         Width="760" Height="480" MinWidth="640" MinHeight="400"
-        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" Background="White">
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" Background="{StaticResource DashBackgroundBrush}">
   <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />

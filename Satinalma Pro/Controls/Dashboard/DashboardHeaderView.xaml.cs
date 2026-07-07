@@ -6,24 +6,16 @@ namespace SatinalmaPro.Controls.Dashboard;
 
 public partial class DashboardHeaderView : UserControl
 {
-    private bool _koyuTema;
-
     public event EventHandler? BildirimTiklandi;
-    public event EventHandler? HizliIslemTiklandi;
-    public event Action<string>? HizliIslemSecildi;
+    public event EventHandler? AyarlarTiklandi;
+    public event Action<string>? AramaMetniDegisti;
 
     public DashboardHeaderView()
     {
         InitializeComponent();
-        Loaded += (_, _) => KarsilamayiGuncelle();
     }
 
-    public void KarsilamayiGuncelle()
-    {
-        var ad = OturumYoneticisi.AktifKullanici?.AdSoyad ?? "Kullanıcı";
-        var hitap = IlkIsim(ad);
-        TxtKarsilama.Text = $"Hoş geldiniz, {hitap} 👋";
-    }
+    public void BreadcrumbAyarla(string metin) => TxtBreadcrumb.Text = metin;
 
     public void BildirimRozetiniGuncelle(int sayi)
     {
@@ -35,39 +27,16 @@ public partial class DashboardHeaderView : UserControl
     private void BtnBildirim_Click(object sender, RoutedEventArgs e) =>
         BildirimTiklandi?.Invoke(this, EventArgs.Empty);
 
+    private void BtnAyarlar_Click(object sender, RoutedEventArgs e) =>
+        AyarlarTiklandi?.Invoke(this, EventArgs.Empty);
+
     private void BtnTema_Click(object sender, RoutedEventArgs e)
     {
-        _koyuTema = !_koyuTema;
-        TemaIkon.Kind = _koyuTema ? Services.DashboardIconKind.Sun : Services.DashboardIconKind.Moon;
+        TemaIkon.Kind = TemaIkon.Kind == DashboardIconKind.Moon
+            ? DashboardIconKind.Sun
+            : DashboardIconKind.Moon;
     }
 
-    private void BtnHizliIslem_Click(object sender, RoutedEventArgs e)
-    {
-        var menu = new ContextMenu
-        {
-            PlacementTarget = BtnHizliIslem,
-            IsOpen = true
-        };
-
-        EkleMenu("Yeni Satınalma Talebi", "Satınalma");
-        EkleMenu("Stok Girişi", "Stok Yönetimi");
-        EkleMenu("Alınan Malzeme Kaydı", "Alınan Malzemeler");
-        HizliIslemTiklandi?.Invoke(this, EventArgs.Empty);
-
-        void EkleMenu(string baslik, string modul)
-        {
-            var oge = new MenuItem { Header = baslik };
-            oge.Click += (_, _) => HizliIslemSecildi?.Invoke(modul);
-            menu.Items.Add(oge);
-        }
-    }
-
-    private static string IlkIsim(string adSoyad)
-    {
-        if (string.IsNullOrWhiteSpace(adSoyad))
-            return "Kullanıcı";
-
-        var parca = adSoyad.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return parca.Length > 0 ? parca[0] : adSoyad;
-    }
+    private void TxtArama_TextChanged(object sender, TextChangedEventArgs e) =>
+        AramaMetniDegisti?.Invoke(TxtArama.Text);
 }

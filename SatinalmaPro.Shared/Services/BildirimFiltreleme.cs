@@ -5,6 +5,12 @@ namespace SatinalmaPro.Shared.Services;
 
 public static class BildirimFiltreleme
 {
+    public static bool KendiIslemindenMi(BildirimKaydi bildirim, KullaniciProfili? kullanici) =>
+        kullanici is not null
+        && !string.IsNullOrWhiteSpace(bildirim.OlusturanUid)
+        && bildirim.OlusturanUid == kullanici.Uid
+        && (string.IsNullOrWhiteSpace(bildirim.HedefUid) || bildirim.HedefUid != kullanici.Uid);
+
     public static bool KullaniciyaMi(BildirimKaydi bildirim, KullaniciProfili? kullanici)
     {
         if (kullanici is null)
@@ -13,13 +19,24 @@ public static class BildirimFiltreleme
         if (!string.IsNullOrWhiteSpace(bildirim.HedefUid))
             return bildirim.HedefUid == kullanici.Uid;
 
+        if (KendiIslemindenMi(bildirim, kullanici))
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(bildirim.InboxDocId))
+            return true;
+
+        if (KullaniciRolleri.AdminMi(kullanici.Rol))
+        {
+            return !string.IsNullOrWhiteSpace(bildirim.HedefRol);
+        }
+
         if (!string.IsNullOrWhiteSpace(bildirim.HedefRol))
         {
             var rol = KullaniciRolleri.Normalize(kullanici.Rol);
             return KullaniciRolleri.Normalize(bildirim.HedefRol) == rol;
         }
 
-        return KullaniciRolleri.AdminMi(kullanici.Rol);
+        return false;
     }
 
     public static IEnumerable<BildirimKaydi> KullaniciBildirimleri(
@@ -27,22 +44,53 @@ public static class BildirimFiltreleme
         KullaniciProfili? kullanici) =>
         kaynak.Where(b => KullaniciyaMi(b, kullanici));
 
+  public static bool TalepBaglantiliMi(string tip) =>
+        NormalizeTip(tip) is BildirimTipleri.YonetimeGonderildi
+            or BildirimTipleri.TeklifIstendi
+            or BildirimTipleri.TeklifOnayda
+            or BildirimTipleri.TeklifDuzeltmeIstendi
+            or BildirimTipleri.Onaylandi
+            or BildirimTipleri.Reddedildi
+            or BildirimTipleri.SiparisOlusturuldu
+            or BildirimTipleri.MalKabulEdildi;
+
+    private static string NormalizeTip(string tip) => tip.Trim().ToLowerInvariant() switch
+    {
+        "yonetimegonderildi" => BildirimTipleri.YonetimeGonderildi,
+        "teklifistendi" => BildirimTipleri.TeklifIstendi,
+        "teklifonayda" => BildirimTipleri.TeklifOnayda,
+        "teklifduzeltmeistendi" => BildirimTipleri.TeklifDuzeltmeIstendi,
+        "onaylandi" => BildirimTipleri.Onaylandi,
+        "reddedildi" => BildirimTipleri.Reddedildi,
+        "siparisolusturuldu" => BildirimTipleri.SiparisOlusturuldu,
+        "malkabuledildi" => BildirimTipleri.MalKabulEdildi,
+        _ => tip.Trim().ToLowerInvariant()
+    };
+
     /// <summary>
     /// İşlem tamamlandıysa veya talep artık bu bildirimi gerektirmiyorsa geçersiz sayılır.
     /// </summary>
     public static bool GecerliMi(BildirimKaydi bildirim, IEnumerable<SatinalmaTalep> talepler)
     {
+        var tip = NormalizeTip(bildirim.Tip);
+        if (!TalepBaglantiliMi(tip))
+        {
+            if (string.IsNullOrWhiteSpace(tip) && bildirim.TalepId is null)
+                return false;
+            return bildirim.TalepId is null;
+        }
+
         if (bildirim.TalepId is not { } tid)
-            return true;
+            return false;
 
         var talep = talepler.FirstOrDefault(t => t.Id == tid);
         if (talep is null)
             return false;
-
-        return bildirim.Tip switch
+        return tip switch
         {
             BildirimTipleri.YonetimeGonderildi =>
-                SatinalmaTalepKuyrugu.YonetimTalepler(talep),
+                SatinalmaTalepKuyrugu.YonetimTalepler(talep)
+                || talep.Durum == SatinalmaTalepDurumlari.Hazirlaniyor,
             BildirimTipleri.TeklifIstendi =>
                 !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep)
                 && !talep.YonetimOnayKilitli
@@ -86,11 +134,11 @@ public static class BildirimFiltreleme
     /// </summary>
     public static bool Temizlenmemeli(BildirimKaydi bildirim, IEnumerable<SatinalmaTalep> talepler)
     {
-        if (bildirim.Tip != BildirimTipleri.TeklifOnayda)
+        if (NormalizeTip(bildirim.Tip) != BildirimTipleri.TeklifOnayda)
             return false;
 
         if (bildirim.TalepId is not { } tid)
-            return true;
+            return false;
 
         var talep = talepler.FirstOrDefault(t => t.Id == tid);
         return talep is not null && SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep);

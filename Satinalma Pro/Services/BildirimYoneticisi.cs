@@ -1,4 +1,3 @@
-using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using SatinalmaPro.Helpers;
@@ -8,9 +7,6 @@ namespace SatinalmaPro.Services;
 
 public static class BildirimYoneticisi
 {
-    private const string GosterilenAnahtar = "masaustu_bildirim_gosterilen";
-
-    private static readonly HashSet<Guid> ToastGosterilen = [];
     private static DispatcherTimer? _zamanlayici;
     private static bool _kontrolEdiliyor;
 
@@ -29,7 +25,7 @@ public static class BildirimYoneticisi
             return [];
 
         return BildirimDeposu.AnlikListe()
-            .Where(b => KullaniciyaMi(b, kullanici))
+            .Where(b => KullaniciyaMi(b, kullanici) && MasaustuBildirimFiltreleme.GecerliMi(b, SatinalmaDepo.Talepler))
             .ToList();
     }
 
@@ -39,17 +35,15 @@ public static class BildirimYoneticisi
             return;
 
         Durdur();
-        ToastGosterilen.Clear();
-        GosterilenleriYukle();
 
-        _zamanlayici = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
-        _zamanlayici.Tick += async (_, _) => await KontrolEtAsync();
+        _zamanlayici = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _zamanlayici.Tick += async (_, _) => await KontrolEtAsync(hatirlatmaGoster: true);
         _zamanlayici.Start();
 
         _ = IlkYukleAsync();
     }
 
-    public static async Task BildirimleriKontrolEtAsync() => await KontrolEtAsync();
+    public static async Task BildirimleriKontrolEtAsync() => await KontrolEtAsync(hatirlatmaGoster: true);
 
     public static void Durdur()
     {
@@ -59,28 +53,51 @@ public static class BildirimYoneticisi
 
     public static async Task EkleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
     {
-        await BildirimDeposu.EkleAsync(bildirim, iptal);
+        var yeni = await BildirimDeposu.EkleAsync(bildirim, iptal);
         BildirimlerDegisti?.Invoke();
-        ToastGoster(bildirim);
+        if (yeni)
+            ToastGoster(bildirim, ilkGosterim: true);
     }
 
     public static async Task OkunduIsaretleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
     {
         bildirim.Okundu = true;
         bildirim.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        BildirimHatirlatmaDeposu.Temizle(bildirim);
         await BildirimDeposu.KaydetAsync(iptal);
         BildirimlerDegisti?.Invoke();
     }
 
     public static async Task TumunuOkunduIsaretleAsync(CancellationToken iptal = default)
     {
-        foreach (var b in KullaniciBildirimleri())
+        var kullanici = OturumYoneticisi.AktifKullanici;
+        if (kullanici is null)
+            return;
+
+        foreach (var b in BildirimDeposu.AnlikListe().Where(x => KullaniciyaMi(x, kullanici)))
         {
             b.Okundu = true;
             b.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            BildirimHatirlatmaDeposu.Temizle(b);
         }
-        await BildirimDeposu.KaydetAsync(iptal);
+
+        await BildirimDeposu.KaydetYerelAsync(iptal);
+        await BildirimDeposu.InboxTumunuOkunduAsync(iptal);
         BildirimlerDegisti?.Invoke();
+    }
+
+    public static async Task GecersizleriSilAsync(CancellationToken iptal = default)
+    {
+        SatinalmaDepo.Yukle();
+        await BildirimDeposu.YukleAsync(zorla: true, iptal: iptal);
+        await BildirimDeposu.GecersizleriSilAsync(iptal);
+        BildirimlerDegisti?.Invoke();
+    }
+
+    public static async Task SifirlamaSonrasiTemizleAsync(CancellationToken iptal = default)
+    {
+        await GecersizleriSilAsync(iptal);
+        await TemizleAsync(iptal);
     }
 
     public static async Task GecersizleriOkunduYapAsync(CancellationToken iptal = default)
@@ -96,6 +113,7 @@ public static class BildirimYoneticisi
 
             b.Okundu = true;
             b.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            BildirimHatirlatmaDeposu.Temizle(b);
             degisti = true;
         }
 
@@ -113,8 +131,12 @@ public static class BildirimYoneticisi
         if (kullanici is null)
             return;
 
+        foreach (var b in BildirimDeposu.AnlikListe().Where(x => KullaniciyaMi(x, kullanici) && !Korunmali(x)))
+            BildirimHatirlatmaDeposu.Temizle(b);
+
         BildirimDeposu.Sil(b => KullaniciyaMi(b, kullanici) && !Korunmali(b));
-        await BildirimDeposu.KaydetAsync(iptal);
+        await BildirimDeposu.KaydetYerelAsync(iptal);
+        await BildirimDeposu.InboxTemizleAsync(iptal);
         BildirimlerDegisti?.Invoke();
     }
 
@@ -129,21 +151,20 @@ public static class BildirimYoneticisi
 
     private static async Task IlkYukleAsync()
     {
-        await KontrolEtAsync(bildirimGoster: true);
+        await KontrolEtAsync(hatirlatmaGoster: true);
         BildirimlerDegisti?.Invoke();
     }
 
-    private static void ToastGoster(BildirimKaydi bildirim)
+    private static void ToastGoster(BildirimKaydi bildirim, bool ilkGosterim = false)
     {
         var kullanici = OturumYoneticisi.AktifKullanici;
         if (kullanici is null || !ToastGosterilmeli(bildirim, kullanici))
             return;
 
-        if (ToastGosterilen.Contains(bildirim.Id))
+        if (!BildirimHatirlatmaDeposu.GosterilebilirMi(bildirim, ilkGosterim))
             return;
 
-        ToastGosterilen.Add(bildirim.Id);
-        GosterilenleriKaydet();
+        BildirimHatirlatmaDeposu.Gosterildi(bildirim);
 
         var windowsToast = false;
         try
@@ -178,7 +199,7 @@ public static class BildirimYoneticisi
         }
     }
 
-    private static async Task KontrolEtAsync(bool bildirimGoster = true)
+    private static async Task KontrolEtAsync(bool hatirlatmaGoster = false)
     {
         if (_kontrolEdiliyor || !OturumYoneticisi.GirisYapildi)
             return;
@@ -191,14 +212,14 @@ public static class BildirimYoneticisi
             else
                 SatinalmaDepo.Yukle();
 
-            await BildirimDeposu.YukleAsync(zorla: bildirimGoster);
-            await GecersizleriOkunduYapAsync();
+            await BildirimDeposu.YukleAsync(zorla: hatirlatmaGoster);
+            await GecersizleriSilAsync();
 
             var kullanici = OturumYoneticisi.AktifKullanici;
             if (kullanici is null)
                 return;
 
-            if (bildirimGoster)
+            if (hatirlatmaGoster)
             {
                 foreach (var bildirim in KullaniciBildirimleri()
                              .Where(b => ToastGosterilmeli(b, kullanici))
@@ -223,35 +244,4 @@ public static class BildirimYoneticisi
 
     private static bool ToastGosterilmeli(BildirimKaydi bildirim, KullaniciProfili kullanici) =>
         MasaustuBildirimFiltreleme.ToastGosterilmeli(bildirim, kullanici, SatinalmaDepo.Talepler);
-
-    private static string GosterilenDosyaYolu =>
-        SatinalmaProKlasor.DosyaYolu("bildirim_gosterilen.txt");
-
-    private static void GosterilenleriYukle()
-    {
-        ToastGosterilen.Clear();
-        var yol = GosterilenDosyaYolu;
-        if (!File.Exists(yol))
-            return;
-
-        foreach (var parca in File.ReadAllText(yol).Split(',', StringSplitOptions.RemoveEmptyEntries))
-        {
-            if (Guid.TryParse(parca, out var id))
-                ToastGosterilen.Add(id);
-        }
-    }
-
-    private static void GosterilenleriKaydet()
-    {
-        SatinalmaProKlasor.Olustur();
-        var yol = GosterilenDosyaYolu;
-        if (ToastGosterilen.Count == 0)
-        {
-            if (File.Exists(yol))
-                File.Delete(yol);
-            return;
-        }
-
-        File.WriteAllText(yol, string.Join(',', ToastGosterilen));
-    }
 }

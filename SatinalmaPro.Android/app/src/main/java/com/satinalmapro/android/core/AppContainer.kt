@@ -3,41 +3,74 @@ package com.satinalmapro.android.core
 import android.content.Context
 import com.satinalmapro.android.BuildConfig
 import com.satinalmapro.android.core.model.AppNotification
+import com.satinalmapro.android.core.model.BildirimRecord
+import com.satinalmapro.android.core.model.BildirimTipleri
+import com.satinalmapro.android.core.model.SatinalmaAyarlar
 import com.satinalmapro.android.core.model.UygulamaAyarlar
 import com.satinalmapro.android.core.model.ManagedUser
 import com.satinalmapro.android.core.model.UserProfile
+import com.satinalmapro.android.core.model.DashboardActivity
+import com.satinalmapro.android.core.model.DashboardCard
 import com.satinalmapro.android.core.model.StokHareket
+import com.satinalmapro.android.core.model.StokHareketTipi
 import com.satinalmapro.android.core.model.StokKaydi
+import com.satinalmapro.android.core.model.OnaylananMalzemeSatiri
+import com.satinalmapro.android.core.model.AgregaKaydi
+import com.satinalmapro.android.core.model.AlinanMalzemeKaydi
+import com.satinalmapro.android.core.model.CimentoKaydi
 import com.satinalmapro.android.core.model.TalepItem
 import com.satinalmapro.android.core.model.TalepQueue
 import com.satinalmapro.android.core.model.UpdateManifest
 import com.satinalmapro.android.core.NetworkError
 import com.satinalmapro.android.core.NetworkMonitor
 import com.satinalmapro.android.core.roles.KullaniciRolleri
+import com.satinalmapro.android.core.roles.OnaylananMalzemeOlusturucu
 import com.satinalmapro.android.core.roles.MalzemeOneri
+import com.satinalmapro.android.core.roles.TalepKuyrugu
 import com.satinalmapro.android.core.roles.BildirimRota
 import com.satinalmapro.android.data.repository.BildirimRepository
 import com.satinalmapro.android.data.repository.StokRepository
+import com.satinalmapro.android.data.repository.ModulRepository
 import com.satinalmapro.android.data.repository.SettingsRepository
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.satinalmapro.android.data.repository.TalepRepository
+import com.satinalmapro.android.data.detail.PurchaseRequestDetailController
+import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailAction
 import com.satinalmapro.android.data.firebase.FirebaseAuthClient
 import com.satinalmapro.android.data.firebase.FirebaseConfig
 import com.satinalmapro.android.data.firebase.FirestoreClient
 import com.satinalmapro.android.data.firebase.HttpClients
 import com.satinalmapro.android.data.local.OfflineCache
 import com.satinalmapro.android.data.local.RequestDraft
+import com.satinalmapro.android.data.local.BildirimHatirlatmaDeposu
+import com.satinalmapro.android.data.local.BiometricPreferences
 import com.satinalmapro.android.data.local.RequestDraftStore
 import com.satinalmapro.android.services.ApkUpdateInstaller
 import com.satinalmapro.android.services.LocalNotificationHelper
+import com.satinalmapro.android.services.SatinalmaPdfBaglam
+import com.satinalmapro.android.services.StokTeslimFisiHelper
+import com.satinalmapro.android.security.BiometricAuthHelper
+import com.satinalmapro.android.core.helpers.BildirimLog
+import com.satinalmapro.android.core.helpers.BildirimMantikAnahtari
 import com.satinalmapro.android.services.FcmPushService
+import com.satinalmapro.android.services.FcmSubscriptionHelper
+import com.satinalmapro.android.services.FirebaseAuthBridge
+import com.satinalmapro.android.services.MyFirebaseMessagingService
 import kotlin.coroutines.resume
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class AppContainer(private val context: Context) {
     enum class UpdateInstallResult { SUCCESS, NEEDS_PERMISSION, FAILED }
@@ -55,14 +88,21 @@ class AppContainer(private val context: Context) {
     val apkInstaller = ApkUpdateInstaller(context)
     private val offlineCache = OfflineCache(context)
     val draftStore = RequestDraftStore(context)
+    private val hatirlatmaDeposu = BildirimHatirlatmaDeposu(context)
+    val biometricPreferences = BiometricPreferences(context)
     private val fcmPush = FcmPushService(context, config.projectId, firestore)
     val bildirimler = BildirimRepository(firestore, auth, fcmPush)
     val talepler = TalepRepository(firestore, auth, bildirimler)
+    val talepDetayController = PurchaseRequestDetailController(talepler)
     val stokRepo = StokRepository(firestore, auth)
+    val modulRepo = ModulRepository(firestore, auth)
     val settingsRepo = SettingsRepository(firestore, auth)
 
     private val _uygulamaAyarlar = MutableStateFlow(UygulamaAyarlar())
     val uygulamaAyarlar: StateFlow<UygulamaAyarlar> = _uygulamaAyarlar.asStateFlow()
+
+    private val _satinalmaAyarlar = MutableStateFlow(SatinalmaAyarlar())
+    val satinalmaAyarlar: StateFlow<SatinalmaAyarlar> = _satinalmaAyarlar.asStateFlow()
 
     private val _settingsUsers = MutableStateFlow<List<ManagedUser>>(emptyList())
     val settingsUsers: StateFlow<List<ManagedUser>> = _settingsUsers.asStateFlow()
@@ -79,6 +119,15 @@ class AppContainer(private val context: Context) {
     private val _stokHareketleri = MutableStateFlow<List<StokHareket>>(emptyList())
     val stokHareketleri: StateFlow<List<StokHareket>> = _stokHareketleri.asStateFlow()
 
+    private val _agrega = MutableStateFlow<List<AgregaKaydi>>(emptyList())
+    val agregaList: StateFlow<List<AgregaKaydi>> = _agrega.asStateFlow()
+
+    private val _cimento = MutableStateFlow<List<CimentoKaydi>>(emptyList())
+    val cimentoList: StateFlow<List<CimentoKaydi>> = _cimento.asStateFlow()
+
+    private val _alinanMalzemeKayitlari = MutableStateFlow<List<AlinanMalzemeKaydi>>(emptyList())
+    val alinanMalzemeKayitlari: StateFlow<List<AlinanMalzemeKaydi>> = _alinanMalzemeKayitlari.asStateFlow()
+
     private val _materialNames = MutableStateFlow<List<String>>(emptyList())
     val materialNames: StateFlow<List<String>> = _materialNames.asStateFlow()
 
@@ -88,22 +137,24 @@ class AppContainer(private val context: Context) {
     var pendingRoute: String? = null
     var pendingNotificationId: String? = null
 
-    private var knownNotificationIds = emptySet<String>()
-    private var notificationsInitialized = false
+    private val syncMutex = Mutex()
+    private var lastNotifCleanupMs = 0L
+    private val notifCleanupIntervalMs = 3 * 60 * 1000L
 
     suspend fun restoreSession(): Boolean {
         val json = prefs.getString(KEY_SESSION, null) ?: return false
         return try {
             val obj = JSONObject(json)
-            if (!obj.optBoolean("rememberMe", true)) return false
+            val uid = obj.optString("uid")
+            loadProfileCache(uid)?.takeIf { it.active }?.let { _user.value = it }
             auth.restoreSession(
                 obj.getString("refreshToken"),
-                obj.optString("uid").ifBlank { null },
+                uid.ifBlank { null },
                 obj.optString("email").ifBlank { null }
             )
             loadProfile(allowCached = true)
-            runCatching { syncData() }
             registerFcmIfNeeded()
+            syncFcmRoleSubscription(showSuccessToast = false)
             true
         } catch (_: Exception) {
             auth.clear()
@@ -111,7 +162,44 @@ class AppContainer(private val context: Context) {
         }
     }
 
-    suspend fun login(email: String, password: String, rememberMe: Boolean) {
+    fun hasPersistedSession(): Boolean = prefs.contains(KEY_SESSION)
+
+    fun shouldRequireBiometricUnlock(): Boolean {
+        if (!hasPersistedSession() || _user.value == null) return false
+        if (!isBiometricAvailable()) return false
+        return biometricPreferences.isEnabled()
+    }
+
+    fun isBiometricAvailable(): Boolean = BiometricAuthHelper.isHardwareAvailable(context)
+
+    suspend fun changePassword(currentPassword: String, newPassword: String) {
+        if (!NetworkMonitor.isOnline(context)) {
+            throw IllegalStateException(NetworkError.translate("Unable to resolve host"))
+        }
+        val email = auth.email ?: _user.value?.email
+            ?: throw IllegalStateException("Oturum bulunamadı")
+        if (newPassword.length < 6) {
+            throw IllegalStateException("Yeni şifre en az 6 karakter olmalıdır")
+        }
+        auth.changePassword(email, currentPassword, newPassword)
+        prefs.edit().putString(KEY_SESSION, auth.sessionJson(true)).apply()
+    }
+
+    suspend fun sendPasswordResetEmail(email: String) {
+        if (!NetworkMonitor.isOnline(context)) {
+            throw IllegalStateException(NetworkError.translate("Unable to resolve host"))
+        }
+        if (!config.isConfigured) {
+            throw IllegalStateException("Firebase ayarları yapılandırılmamış.")
+        }
+        val trimmed = email.trim()
+        if (trimmed.isBlank() || !trimmed.contains("@")) {
+            throw IllegalStateException("Geçerli bir e-posta adresi girin")
+        }
+        auth.sendPasswordResetEmail(trimmed)
+    }
+
+    suspend fun login(email: String, password: String, @Suppress("UNUSED_PARAMETER") rememberMe: Boolean) {
         if (!NetworkMonitor.isOnline(context)) {
             throw IllegalStateException(NetworkError.translate("Unable to resolve host"))
         }
@@ -120,14 +208,12 @@ class AppContainer(private val context: Context) {
         }
         try {
             auth.signIn(email, password)
+            runCatching { FirebaseAuthBridge.signIn(email, password) }
+                .onFailure { ex -> BildirimLog.w("FCM_TOPIC", "Firebase Auth SDK senkronu atlandı: ${ex.message}") }
             loadProfile(allowCached = false)
-            if (rememberMe) {
-                prefs.edit().putString(KEY_SESSION, auth.sessionJson(true)).apply()
-            } else {
-                prefs.edit().remove(KEY_SESSION).apply()
-            }
-            runCatching { syncData() }
+            prefs.edit().putString(KEY_SESSION, auth.sessionJson(true)).apply()
             registerFcmIfNeeded()
+            syncFcmRoleSubscription()
         } catch (e: Exception) {
             auth.clear()
             prefs.edit().remove(KEY_SESSION).apply()
@@ -136,6 +222,9 @@ class AppContainer(private val context: Context) {
     }
 
     fun logout() {
+        val uid = auth.uid
+        FcmSubscriptionHelper(context).unsubscribeAllRoleTopics()
+        FirebaseAuthBridge.signOut()
         auth.clear()
         _user.value = null
         _materialNames.value = emptyList()
@@ -143,20 +232,38 @@ class AppContainer(private val context: Context) {
         _talepler.value = emptyList()
         _stok.value = emptyList()
         _stokHareketleri.value = emptyList()
+        _agrega.value = emptyList()
+        _cimento.value = emptyList()
+        _alinanMalzemeKayitlari.value = emptyList()
         _uygulamaAyarlar.value = UygulamaAyarlar()
         _settingsUsers.value = emptyList()
-        knownNotificationIds = emptySet()
-        notificationsInitialized = false
         prefs.edit().remove(KEY_SESSION).apply()
+        unregisterFcm(uid)
+    }
+
+    private fun unregisterFcm(uid: String?) {
+        CoroutineScope(Dispatchers.IO).launch {
+            if (!uid.isNullOrBlank()) {
+                runCatching { firestore.updateFcmToken(uid, "") }
+            }
+            runCatching { com.google.firebase.messaging.FirebaseMessaging.getInstance().deleteToken() }
+        }
     }
 
     suspend fun syncData() {
-        val uid = auth.uid ?: return
-        loadMaterialNames()
-        loadTalepler()
-        loadStok()
-        loadNotifications(uid)
-        runCatching { loadUygulamaAyarlar() }
+        if (!syncMutex.tryLock()) return
+        try {
+            val uid = auth.uid ?: return
+            loadMaterialNames()
+            loadTalepler()
+            loadSatinalmaAyarlar()
+            loadStok()
+            loadModulKayitlari()
+            loadNotifications(uid, cleanup = true)
+            runCatching { loadUygulamaAyarlar() }
+        } finally {
+            syncMutex.unlock()
+        }
     }
 
     suspend fun loadUygulamaAyarlar() {
@@ -165,6 +272,21 @@ class AppContainer(private val context: Context) {
         if (KullaniciRolleri.isAdmin(_user.value?.role)) {
             _settingsUsers.value = settingsRepo.loadUsers(::parseUserFields)
         }
+    }
+
+    private suspend fun loadSatinalmaAyarlar() {
+        _satinalmaAyarlar.value = runCatching { talepler.loadAyarlar() }.getOrDefault(SatinalmaAyarlar())
+    }
+
+    fun pdfBaglam(): SatinalmaPdfBaglam {
+        val sat = _satinalmaAyarlar.value
+        val uyg = _uygulamaAyarlar.value
+        val firma = sat.firmaAdi.ifBlank { uyg.firmaAdi }.ifBlank { "Satınalma Pro" }
+        return SatinalmaPdfBaglam(
+            firmaAdi = firma,
+            sefImzalari = sat.sefImzalari.filter { it.aktif },
+            yonetimImzalari = sat.yonetimImzalari.filter { it.aktif }
+        )
     }
 
     suspend fun saveUygulamaAyarlar(ayarlar: UygulamaAyarlar) {
@@ -198,6 +320,62 @@ class AppContainer(private val context: Context) {
         _stokHareketleri.value = runCatching { stokRepo.loadHareketler() }.getOrDefault(emptyList())
     }
 
+    private suspend fun loadModulKayitlari() {
+        _agrega.value = runCatching { modulRepo.loadAgrega() }.getOrDefault(emptyList())
+        _cimento.value = runCatching { modulRepo.loadCimento() }.getOrDefault(emptyList())
+        _alinanMalzemeKayitlari.value = runCatching { modulRepo.loadAlinanMalzemeler() }.getOrDefault(emptyList())
+    }
+
+    fun modulBugun(): String = modulRepo.bugun()
+
+    suspend fun agregaKaydet(kayit: AgregaKaydi) {
+        val role = _user.value?.role
+        val list = _agrega.value.toMutableList()
+        val index = list.indexOfFirst { it.id == kayit.id }
+        if (index >= 0) list[index] = kayit else list.add(0, kayit)
+        modulRepo.saveAgrega(list, role)
+        _agrega.value = modulRepo.loadAgrega()
+    }
+
+    suspend fun agregaSil(id: String) {
+        val role = _user.value?.role
+        val list = _agrega.value.filter { it.id != id }
+        modulRepo.saveAgrega(list, role)
+        _agrega.value = list
+    }
+
+    suspend fun cimentoKaydet(kayit: CimentoKaydi) {
+        val role = _user.value?.role
+        val list = _cimento.value.toMutableList()
+        val index = list.indexOfFirst { it.id == kayit.id }
+        if (index >= 0) list[index] = kayit else list.add(0, kayit)
+        modulRepo.saveCimento(list, role)
+        _cimento.value = modulRepo.loadCimento()
+    }
+
+    suspend fun cimentoSil(id: String) {
+        val role = _user.value?.role
+        val list = _cimento.value.filter { it.id != id }
+        modulRepo.saveCimento(list, role)
+        _cimento.value = list
+    }
+
+    suspend fun alinanMalzemeKaydet(kayit: AlinanMalzemeKaydi) {
+        val role = _user.value?.role
+        val list = _alinanMalzemeKayitlari.value.toMutableList()
+        val index = list.indexOfFirst { it.id == kayit.id }
+        if (index >= 0) list[index] = kayit else list.add(0, kayit)
+        modulRepo.saveAlinanMalzemeler(list, role)
+        _alinanMalzemeKayitlari.value = modulRepo.loadAlinanMalzemeler()
+    }
+
+    suspend fun alinanMalzemeSil(id: String) {
+        val role = _user.value?.role
+        val list = _alinanMalzemeKayitlari.value.filter { it.id != id }
+        modulRepo.saveAlinanMalzemeler(list, role)
+        _alinanMalzemeKayitlari.value = list
+    }
+
     suspend fun createRequest(
         site: String,
         aciklama: String,
@@ -207,7 +385,7 @@ class AppContainer(private val context: Context) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         val talep = talepler.createWithKalemler(user, site, aciklama, oncelik, kalemler)
         reloadTalepler()
-        loadNotifications(user.uid)
+        refreshNotifications()
         draftStore.clear()
         return talep
     }
@@ -216,17 +394,74 @@ class AppContainer(private val context: Context) {
 
     fun saveDraft(draft: RequestDraft) = draftStore.save(draft)
 
+    fun clearDraft() = draftStore.clear()
+
+    private fun requireTeklifGirisYetkisi(user: UserProfile) {
+        if (!KullaniciRolleri.canEnterQuotes(user.role)) {
+            throw IllegalStateException("Teklif girişi yalnızca satınalma yetkisine açıktır")
+        }
+    }
+
     suspend fun addTeklif(talepId: String, firmaAdi: String, marka: String, vadeGunu: Int, teslimSuresi: String, odemeSekli: String, kalemFiyatlari: Map<String, Double>): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        requireTeklifGirisYetkisi(user)
         val result = talepler.addTeklif(talepId, firmaAdi, marka, vadeGunu, teslimSuresi, odemeSekli, kalemFiyatlari)
         reloadTalepler()
+        refreshNotifications()
+        return result
+    }
+
+    suspend fun updateTeklif(
+        talepId: String,
+        teklifId: String,
+        firmaAdi: String,
+        marka: String,
+        vadeGunu: Int,
+        teslimSuresi: String,
+        odemeSekli: String,
+        kalemFiyatlari: Map<String, Double>
+    ): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        requireTeklifGirisYetkisi(user)
+        val result = talepler.updateTeklif(talepId, teklifId, firmaAdi, marka, vadeGunu, teslimSuresi, odemeSekli, kalemFiyatlari)
+        reloadTalepler()
+        refreshNotifications()
+        return result
+    }
+
+    suspend fun deleteTeklif(talepId: String, teklifId: String): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        requireTeklifGirisYetkisi(user)
+        val result = talepler.deleteTeklif(talepId, teklifId)
+        reloadTalepler()
+        refreshNotifications()
+        return result
+    }
+
+    suspend fun satinalmaOnerisiSec(talepId: String, teklifId: String): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        requireTeklifGirisYetkisi(user)
+        val result = talepler.satinalmaOnerisiSec(talepId, teklifId)
+        reloadTalepler()
+        refreshNotifications()
+        return result
+    }
+
+    suspend fun satinalmaOnerisiOtomatigeAl(talepId: String): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        requireTeklifGirisYetkisi(user)
+        val result = talepler.satinalmaOnerisiOtomatigeAl(talepId)
+        reloadTalepler()
+        refreshNotifications()
         return result
     }
 
     suspend fun sendQuotesToManagement(talepId: String): TalepItem {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        requireTeklifGirisYetkisi(user)
         val result = talepler.sendQuotesToManagement(talepId, user)
         reloadTalepler()
-        loadNotifications(user.uid)
+        refreshNotifications()
         return result
     }
 
@@ -234,7 +469,7 @@ class AppContainer(private val context: Context) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         val result = talepler.yonetimOnayla(talepId, user, teklifIste)
         reloadTalepler()
-        loadNotifications(user.uid)
+        refreshNotifications()
         return result
     }
 
@@ -242,7 +477,20 @@ class AppContainer(private val context: Context) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         val result = talepler.yonetimReddet(talepId, user, gerekce)
         reloadTalepler()
-        loadNotifications(user.uid)
+        refreshNotifications()
+        return result
+    }
+
+    suspend fun applyTalepDetayAction(
+        talepId: String,
+        action: PurchaseRequestDetailAction,
+        quoteId: String? = null,
+        note: String? = null
+    ): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepDetayController.apply(talepId, user, action, quoteId, note)
+        reloadTalepler()
+        refreshNotifications()
         return result
     }
 
@@ -250,22 +498,154 @@ class AppContainer(private val context: Context) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         val result = talepler.yonetimTeklifOnayla(talepId, user, teklifId)
         reloadTalepler()
-        loadNotifications(user.uid)
+        refreshNotifications()
+        return result
+    }
+
+    suspend fun kalemTeklifiAta(talepId: String, kalemId: String, teklifId: String?): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepler.kalemTeklifiAta(talepId, kalemId, teklifId)
+        reloadTalepler()
+        return result
+    }
+
+    suspend fun kalemBazliOnayla(talepId: String, kalemTeklifAtamalari: Map<String, String>? = null): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepler.kalemBazliOnayla(talepId, user, kalemTeklifAtamalari)
+        reloadTalepler()
+        refreshNotifications()
+        return result
+    }
+
+    suspend fun teklifGeriGonder(talepId: String, gerekce: String?): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepler.teklifGeriGonder(talepId, user, gerekce)
+        reloadTalepler()
+        refreshNotifications()
+        return result
+    }
+
+    suspend fun siparisVer(talepId: String): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepler.siparisVer(talepId, user)
+        reloadTalepler()
+        refreshNotifications()
         return result
     }
 
     suspend fun teklifsizFirmaFiyatKaydet(talepId: String, girdiler: List<Triple<String, String, Double>>): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        requireTeklifGirisYetkisi(user)
         val result = talepler.teklifsizFirmaFiyatKaydet(talepId, girdiler)
         reloadTalepler()
+        refreshNotifications()
         return result
     }
 
-    suspend fun malKabul(talepId: String, kalemId: String, miktar: Double): TalepItem {
+    suspend fun talepSil(talepId: String) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
-        val result = talepler.malKabul(talepId, kalemId, miktar, user)
+        talepler.talepSil(talepId, user)
         reloadTalepler()
-        loadNotifications(user.uid)
+        refreshNotifications()
+    }
+
+    suspend fun talepGuncelle(
+        talepId: String,
+        site: String,
+        aciklama: String,
+        talepTuru: String,
+        kalemler: List<Triple<String, String, String>>
+    ): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepler.talepGuncelle(talepId, user, site, aciklama, talepTuru, kalemler)
+        reloadTalepler()
+        refreshNotifications()
         return result
+    }
+
+    suspend fun malKabulVeDepoyaKaydet(
+        talepId: String,
+        kalemId: String,
+        miktar: Double,
+        firma: String,
+        birimFiyat: Double,
+        kategori: String,
+        fisNo: String,
+        teslimAlan: String,
+        depoSaha: String,
+        sahayaDirekt: Boolean = false,
+        sahaHedef: String = ""
+    ) {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val satir = OnaylananMalzemeOlusturucu.olustur(_talepler.value)
+            .firstOrNull { it.talepId.equals(talepId, true) && it.kalemId.equals(kalemId, true) }
+            ?: throw IllegalArgumentException("Kalem bulunamadı")
+
+        val kat = kategori.trim().ifBlank { "Malzeme" }
+        kategoriEkle(kat)
+
+        talepler.malKabul(talepId, kalemId, miktar, user)
+
+        val tarih = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+        val indirildigiSaha = if (sahayaDirekt && sahaHedef.isNotBlank()) sahaHedef.trim() else depoSaha
+        val kayit = AlinanMalzemeKaydi(
+            tarih = tarih,
+            faturaNo = fisNo,
+            kategori = kat,
+            malzemeHizmet = satir.malzeme,
+            miktar = miktar,
+            birim = satir.birim,
+            birimFiyati = birimFiyat,
+            tedarikci = firma,
+            indirildigiSaha = indirildigiSaha,
+            teslimAlan = teslimAlan,
+            aciklama = "Satınalma: ${satir.talepNo}",
+            satinalmaTalepId = talepId,
+            satinalmaKalemId = kalemId
+        ).hesaplaToplam()
+        alinanMalzemeKaydet(kayit)
+
+        val teslimEden = listOfNotNull(user.role.takeIf { it.isNotBlank() }, user.fullName.takeIf { it.isNotBlank() })
+            .joinToString(" ")
+        stokRepo.girisYap(
+            user = user,
+            malzeme = satir.malzeme,
+            miktar = miktar,
+            birim = satir.birim,
+            kategori = kat,
+            depo = depoSaha,
+            birimMaliyet = birimFiyat,
+            belgeNo = fisNo,
+            teslimEden = teslimEden,
+            teslimAlan = teslimAlan
+        )
+        if (sahayaDirekt && sahaHedef.isNotBlank()) {
+            stokRepo.cikisYap(
+                user = user,
+                malzeme = satir.malzeme,
+                miktar = miktar,
+                depo = depoSaha,
+                belgeNo = "$fisNo-Ç",
+                teslimEden = teslimEden,
+                teslimAlan = sahaHedef.trim()
+            )
+        }
+        reloadTalepler()
+        loadStok()
+        refreshNotifications()
+    }
+
+    suspend fun sevkiyatiTamamla(talepId: String, kalemId: String) {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        talepler.sevkiyatiTamamla(talepId, kalemId, user)
+        reloadTalepler()
+        refreshNotifications()
+    }
+
+    private suspend fun kategoriEkle(ad: String) {
+        val ayarlar = _uygulamaAyarlar.value
+        if (ayarlar.malzemeKategorileri.any { it.equals(ad, ignoreCase = true) }) return
+        saveUygulamaAyarlar(ayarlar.copy(malzemeKategorileri = ayarlar.malzemeKategorileri + ad))
     }
 
     suspend fun stokGiris(malzeme: String, miktar: Double, birim: String, kategori: String, depo: String, birimMaliyet: Double, belgeNo: String, teslimEden: String, teslimAlan: String) {
@@ -317,18 +697,95 @@ class AppContainer(private val context: Context) {
         loadStok()
     }
 
+    suspend fun stokHareketSil(hareketId: String) {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        stokRepo.hareketSil(user, hareketId)
+        loadStok()
+    }
+
+    suspend fun stokHareketGuncelle(
+        hareketId: String,
+        tarih: String,
+        miktar: Double,
+        belgeNo: String,
+        islemYapan: String,
+        teslimEdilen: String,
+        aciklama: String
+    ) {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        stokRepo.hareketGuncelle(user, hareketId, tarih, miktar, belgeNo, islemYapan, teslimEdilen, aciklama)
+        loadStok()
+    }
+
+    fun stokCikisFisiOlustur(
+        belgeNo: String,
+        teslimAlan: String,
+        satirlar: List<StokRepository.CikisSatir>
+    ): StokTeslimFisiHelper.Fis? {
+        val user = _user.value ?: return null
+        if (satirlar.isEmpty() || teslimAlan.isBlank()) return null
+        val tarih = StokTeslimFisiHelper.bugunTarih()
+        val teslimEden = StokTeslimFisiHelper.teslimEdenMetni(user.role, user.fullName)
+        val firmaAdi = _uygulamaAyarlar.value.firmaAdi.ifBlank { "Satınalma Pro" }
+        val depo = user.site.orEmpty()
+        val fisSatirlar = satirlar.map { satir ->
+            val stok = _stok.value.firstOrNull { it.malzemeAdi.equals(satir.malzeme, true) }
+            val birim = stok?.birim?.ifBlank { "Adet" } ?: "Adet"
+            StokTeslimFisiHelper.Satir(
+                malzeme = satir.malzeme,
+                miktar = StokTeslimFisiHelper.miktarMetni(satir.miktar, birim),
+                birim = birim,
+                depoSaha = depo
+            )
+        }
+        return StokTeslimFisiHelper.Fis(
+            belgeNo = belgeNo,
+            tarih = tarih,
+            teslimEden = teslimEden,
+            teslimAlan = teslimAlan.trim(),
+            satirlar = fisSatirlar,
+            firmaAdi = firmaAdi
+        )
+    }
+
     suspend fun markAllNotificationsRead() {
-        val user = _user.value ?: return
-        val uid = auth.uid ?: return
-        runCatching { bildirimler.tumunuOkunduIsaretle(user) }
-        loadNotifications(uid)
+        syncMutex.withLock {
+            val user = _user.value ?: return
+            val uid = auth.uid ?: return
+            bildirimler.tumunuOkunduIsaretle(user)
+            _notifications.value = _notifications.value.map { it.copy(read = true) }
+            _notifications.value
+                .filter { bildirimler.appNotificationKullaniciyaMi(it, user) }
+                .forEach { hatirlatmaDeposu.temizle(bildirimler.appNotificationToRecord(it)) }
+            runCatching { LocalNotificationHelper.cancelAll(context) }
+            lastNotifCleanupMs = System.currentTimeMillis()
+        }
     }
 
     suspend fun clearNotifications() {
-        val user = _user.value ?: return
+        syncMutex.withLock {
+            val user = _user.value ?: return
+            val uid = auth.uid ?: return
+            _notifications.value
+                .filter { bildirimler.appNotificationKullaniciyaMi(it, user) }
+                .forEach { hatirlatmaDeposu.temizle(bildirimler.appNotificationToRecord(it)) }
+            bildirimler.temizle(user, _talepler.value)
+            _notifications.value = emptyList()
+            lastNotifCleanupMs = System.currentTimeMillis()
+            runCatching { LocalNotificationHelper.cancelAll(context) }
+        }
+    }
+
+    suspend fun markNotificationRead(id: String) {
         val uid = auth.uid ?: return
-        runCatching { bildirimler.temizle(user, _talepler.value) }
-        loadNotifications(uid)
+        val item = _notifications.value.firstOrNull { it.id.equals(id, true) }
+        item?.let { hatirlatmaDeposu.temizle(bildirimler.appNotificationToRecord(it)) }
+        val inboxId = item?.inboxDocId?.takeIf { it.isNotBlank() } ?: id
+        runCatching { firestore.markInboxRead(uid, inboxId) }
+        runCatching { bildirimler.okunduIsaretle(id) }
+        _notifications.value = _notifications.value.map {
+            if (it.id.equals(id, true)) it.copy(read = true) else it
+        }
     }
 
     fun filteredTalepler(queue: TalepQueue): List<TalepItem> =
@@ -337,24 +794,229 @@ class AppContainer(private val context: Context) {
     fun findTalep(id: String?): TalepItem? =
         id?.let { target -> _talepler.value.firstOrNull { it.id.equals(target, true) } }
 
-    fun dashboardData() = talepler.dashboard(
-        _user.value,
-        _talepler.value,
-        _notifications.value.count { !it.read }
-    )
+    fun dashboardData(): Pair<List<DashboardCard>, List<DashboardActivity>> {
+        val user = _user.value
+        val role = KullaniciRolleri.normalize(user?.role)
+        val unread = _notifications.value.count { !it.read }
+        val (cards, _) = talepler.dashboard(user, _talepler.value, unread)
 
-    fun approvedMaterials(): List<TalepItem> = talepler.approvedMaterials(_talepler.value)
+        val finalCards = if (role == KullaniciRolleri.DEPO) {
+            val hareketler = _stokHareketleri.value
+            val girisSayisi = hareketler.count { it.hareketTipi.contains("Giri", ignoreCase = true) }
+            listOf(
+                DashboardCard("Stok Girişi", girisSayisi.toString(), "Kayıtlı giriş hareketi", "stok-giris"),
+                DashboardCard("Stok Hareket", hareketler.size.toString(), "Tüm hareketler", "stok-hareket"),
+                cards.firstOrNull { it.route == "bildirimler" }
+                    ?: DashboardCard("Bildirim", unread.toString(), "Okunmamış", "bildirimler")
+            )
+        } else {
+            cards
+        }
+
+        val activities = rolSonIslemler(
+            user = user,
+            talepler = _talepler.value,
+            notifications = _notifications.value,
+            hareketler = _stokHareketleri.value,
+            stok = _stok.value
+        )
+        return finalCards to activities
+    }
+
+    private fun rolSonIslemler(
+        user: UserProfile?,
+        talepler: List<TalepItem>,
+        notifications: List<AppNotification>,
+        hareketler: List<StokHareket>,
+        stok: List<StokKaydi>
+    ): List<DashboardActivity> {
+        val role = KullaniciRolleri.normalize(user?.role)
+        val uid = user?.uid.orEmpty()
+        val ad = user?.fullName.orEmpty()
+
+        return when (role) {
+            KullaniciRolleri.DEPO -> depoSonIslemler(hareketler)
+            KullaniciRolleri.ATOLYE -> atolyeSonIslemler(stok, hareketler)
+            KullaniciRolleri.YONETIM -> birlestir(
+                bildirimSonIslemler(user, talepler, notifications, 4),
+                talepSonIslemler(
+                    role, uid, ad, talepler,
+                    TalepQueue.GELEN_TALEPLER,
+                    TalepQueue.TEKLIF_BEKLEYEN,
+                    TalepQueue.TEKLIF_ONAY,
+                    TalepQueue.RED_TALEPLER,
+                    TalepQueue.ONAY_GECMISI
+                ),
+                limit = 6
+            )
+            KullaniciRolleri.SATINALMA -> birlestir(
+                bildirimSonIslemler(user, talepler, notifications, 4),
+                talepSonIslemler(
+                    role, uid, ad, talepler,
+                    TalepQueue.TEKLIF_GIR,
+                    TalepQueue.ONAY_BEKLEYEN,
+                    TalepQueue.TEKLIF_ONAY,
+                    TalepQueue.GELEN_TALEPLER,
+                    TalepQueue.RED_TALEPLER
+                ),
+                limit = 6
+            )
+            KullaniciRolleri.ADMIN -> birlestir(
+                bildirimSonIslemler(user, talepler, notifications, 4),
+                talepSonIslemler(
+                    role, uid, ad, talepler,
+                    TalepQueue.GELEN_TALEPLER,
+                    TalepQueue.TEKLIF_GIR,
+                    TalepQueue.TEKLIF_ONAY,
+                    TalepQueue.ONAY_BEKLEYEN,
+                    TalepQueue.RED_TALEPLER
+                ),
+                limit = 6
+            )
+            KullaniciRolleri.SEF, KullaniciRolleri.SAHA -> talepSonIslemler(
+                role, uid, ad, talepler,
+                TalepQueue.TALEPLERIM,
+                TalepQueue.ONAY_BEKLEYEN,
+                TalepQueue.ONAYLANAN_TALEPLER
+            )
+            else -> talepSonIslemler(
+                role, uid, ad, talepler,
+                TalepQueue.TALEPLERIM,
+                TalepQueue.ONAY_BEKLEYEN
+            )
+        }
+    }
+
+    private fun birlestir(
+        bildirimler: List<DashboardActivity>,
+        talepler: List<DashboardActivity>,
+        limit: Int
+    ): List<DashboardActivity> = (bildirimler + talepler).take(limit)
+
+    private fun bildirimSonIslemler(
+        user: UserProfile?,
+        talepler: List<TalepItem>,
+        notifications: List<AppNotification>,
+        limit: Int
+    ): List<DashboardActivity> =
+        notifications
+            .filter {
+                bildirimler.appNotificationKullaniciyaMi(it, user) &&
+                    bildirimler.appNotificationGecerliMi(it, talepler)
+            }
+            .take(limit)
+            .map { n ->
+                DashboardActivity(
+                    title = n.title.ifBlank { n.message },
+                    subtitle = n.time.ifBlank { "Bildirim" },
+                    status = if (n.read) "Okundu" else "Yeni",
+                    route = n.route?.let { BildirimRota.safeRoute(it, user?.role) } ?: "bildirimler",
+                    talepId = n.requestId
+                )
+            }
+
+    private fun talepSonIslemler(
+        role: String,
+        uid: String,
+        ad: String,
+        talepler: List<TalepItem>,
+        vararg kuyruklar: TalepQueue,
+        limit: Int = 6
+    ): List<DashboardActivity> =
+        kuyruklar
+            .flatMap { kuyruk -> TalepKuyrugu.filtre(kuyruk, talepler, uid, ad, role) }
+            .filter { TalepKuyrugu.kayitli(it) }
+            .distinctBy { it.id }
+            .sortedByDescending { it.guncellemeUtc }
+            .take(limit)
+            .map { talepToActivity(it) }
+
+    private fun talepToActivity(talep: TalepItem): DashboardActivity =
+        DashboardActivity(
+            title = talep.talepNo.ifBlank { "Talep" },
+            subtitle = "${talep.malzemeOzeti} · ${talep.talepEden}",
+            status = talep.durum,
+            route = "talep-detay?id=${talep.id}",
+            talepId = talep.id
+        )
+
+    private fun atolyeSonIslemler(stok: List<StokKaydi>, hareketler: List<StokHareket>): List<DashboardActivity> {
+        val uyarilar = stok
+            .filter { it.durumMetin != "Normal" }
+            .sortedWith(
+                compareBy<StokKaydi> { if (it.durumMetin == "Tükendi") 0 else 1 }
+                    .thenBy { it.malzemeAdi }
+            )
+            .take(4)
+            .map { kayit ->
+                DashboardActivity(
+                    title = kayit.malzemeAdi,
+                    subtitle = "Mevcut: ${kayit.mevcutMiktar} ${kayit.birim}",
+                    status = if (kayit.durumMetin == "Tükendi") "Kritik" else "Düşük",
+                    route = "stok-durum",
+                    talepId = null
+                )
+            }
+        if (uyarilar.isNotEmpty()) return uyarilar
+        return depoSonIslemler(hareketler).take(5)
+    }
+
+    private fun depoSonIslemler(hareketler: List<StokHareket>): List<DashboardActivity> =
+        hareketler
+            .sortedWith(
+                compareByDescending<StokHareket> { it.tarih }
+                    .thenByDescending { it.id }
+            )
+            .take(5)
+            .map { h ->
+                val route = when {
+                    h.hareketTipi.equals(StokHareketTipi.GIRIS, ignoreCase = true) ||
+                        h.hareketTipi.contains("Giri", ignoreCase = true) -> "stok-giris"
+                    h.hareketTipi.equals(StokHareketTipi.CIKIS, ignoreCase = true) ||
+                        h.hareketTipi.contains("Çık", ignoreCase = true) ||
+                        h.hareketTipi.contains("Cik", ignoreCase = true) -> "stok-cikis"
+                    else -> "stok-hareket"
+                }
+                val miktarMetin = if (h.birim.isBlank()) h.miktar.toString() else "${h.miktar} ${h.birim}"
+                DashboardActivity(
+                    title = h.belgeNo.ifBlank { h.malzemeAdi.ifBlank { "Stok hareketi" } },
+                    subtitle = buildString {
+                        append(h.malzemeAdi)
+                        if (miktarMetin.isNotBlank()) {
+                            append(" · ")
+                            append(miktarMetin)
+                        }
+                        if (h.depoSaha.isNotBlank()) {
+                            append(" · ")
+                            append(h.depoSaha)
+                        }
+                    },
+                    status = h.hareketTipi.ifBlank { "Hareket" },
+                    route = route,
+                    talepId = null
+                )
+            }
+
+    fun approvedMaterials(): List<OnaylananMalzemeSatiri> = talepler.approvedMaterials(_talepler.value)
+
+    fun siparisBekleyenMalzemeler(): List<OnaylananMalzemeSatiri> =
+        talepler.siparisBekleyenMalzemeler(_talepler.value)
 
     suspend fun refreshNotifications() {
         val uid = auth.uid ?: return
-        loadNotifications(uid)
+        if (!syncMutex.tryLock()) return
+        try {
+            loadNotifications(uid, cleanup = false)
+        } finally {
+            syncMutex.unlock()
+        }
     }
 
-    suspend fun markNotificationRead(id: String) {
+    suspend fun ensureFcmRegistered() = registerFcmIfNeeded()
+
+    suspend fun refreshNotificationsWithCleanup() {
         val uid = auth.uid ?: return
-        runCatching { firestore.markInboxRead(uid, id) }
-        runCatching { bildirimler.okunduIsaretle(id) }
-        loadNotifications(uid)
+        loadNotifications(uid, cleanup = true)
     }
 
     private suspend fun loadTalepler() {
@@ -593,67 +1255,122 @@ class AppContainer(private val context: Context) {
         _materialNames.value = names.toList()
     }
 
-    private suspend fun loadNotifications(uid: String) {
+    private suspend fun temizleGecersizBildirimler(uid: String) {
+        val removed = runCatching { bildirimler.gecersizleriSil(_talepler.value, uid) }.getOrDefault(emptyList())
+        removed.forEach { id -> LocalNotificationHelper.cancel(context, id) }
+    }
+
+    private suspend fun loadNotifications(uid: String, cleanup: Boolean = true) {
+        val now = System.currentTimeMillis()
+        if (cleanup || now - lastNotifCleanupMs > notifCleanupIntervalMs) {
+            temizleGecersizBildirimler(uid)
+            lastNotifCleanupMs = now
+        }
         val user = _user.value
         val talepList = _talepler.value
-        val cloud = runCatching { bildirimler.loadAll() }.getOrDefault(emptyList())
-        val cloudMapped = bildirimler.toAppNotifications(cloud, user, talepList)
-        val inbox = runCatching {
-            firestore.readInbox(uid).mapNotNull { doc ->
-                val fields = doc.optJSONObject("fields") ?: return@mapNotNull null
-                fun s(key: String) = fields.optJSONObject(key)?.optString("stringValue").orEmpty()
-                val tip = s("tip").ifBlank { s("type") }
-                val talepId = s("talepId").ifBlank { null }
-                val route = s("route").ifBlank {
-                    BildirimRota.hedefRoute(BildirimRota.normalizeTip(tip), talepId, user?.role)
-                }
-                AppNotification(
-                    id = doc.optString("name").substringAfterLast('/'),
-                    title = s("baslik").ifBlank { s("title") },
-                    message = s("mesaj").ifBlank { s("message") },
-                    type = tip,
-                    time = s("zaman").ifBlank { s("time") },
-                    requestId = talepId,
-                    route = route,
-                    read = fields.optJSONObject("isRead")?.optBoolean("booleanValue")
-                        ?: fields.optJSONObject("okundu")?.optBoolean("booleanValue") ?: false
-                )
-            }
+        val inboxRecords: List<BildirimRecord> = runCatching {
+            tumInboxKayitlari(uid).mapNotNull { doc: JSONObject -> inboxToRecord(doc, user?.role) }
         }.getOrDefault(emptyList())
-        val merged = linkedMapOf<String, AppNotification>()
-        cloudMapped.forEach { merged[it.id] = it }
-        inbox.forEach { item ->
-            val existing = merged[item.id]
-            merged[item.id] = if (existing == null) {
-                item
-            } else {
-                existing.copy(read = item.read || existing.read)
+        val cloud = runCatching { bildirimler.loadAll() }.getOrDefault(emptyList())
+        val mergedRecords = bildirimler.inboxIleBirlestir(cloud, inboxRecords, user)
+            .filter { bildirimler.kullaniciyaMi(it, user) && bildirimler.gecerliMi(it, talepList) }
+        _notifications.value = bildirimler.toAppNotifications(mergedRecords, user, talepList)
+        trayBildirimleriniGoster(mergedRecords, user)
+    }
+
+    /** FCM ulaşmazsa periyodik senkron ile tray bildirimi (masaüstü → Android). */
+    private fun trayBildirimleriniGoster(records: List<BildirimRecord>, user: UserProfile?) {
+        if (user == null) return
+        for (record in records) {
+            if (record.okundu) continue
+            if (!bildirimler.kullaniciyaMi(record, user)) continue
+            if (!hatirlatmaDeposu.gosterilebilirMi(record)) continue
+            val route = BildirimRota.hedefRoute(
+                BildirimRota.normalizeTip(record.tip),
+                record.talepId,
+                user.role
+            )
+            val id = record.inboxDocId?.takeIf { it.isNotBlank() }
+                ?: BildirimMantikAnahtari.olustur(record)
+            if (LocalNotificationHelper.show(context, record.baslik, record.mesaj, route, id)) {
+                hatirlatmaDeposu.gosterildi(record)
             }
         }
-        val sorted = merged.values.sortedByDescending { it.time }
-        if (notificationsInitialized) {
-            sorted.filter { !it.read && it.id !in knownNotificationIds }.forEach { item ->
-                val route = item.route?.takeIf { it.isNotBlank() }
-                    ?: BildirimRota.hedefRoute(
-                        BildirimRota.normalizeTip(item.type),
-                        item.requestId,
-                        user?.role
-                    )
-                LocalNotificationHelper.show(context, item.title, item.message, route, item.id)
-            }
-        } else {
-            notificationsInitialized = true
+    }
+
+    private fun inboxToRecord(doc: JSONObject, @Suppress("UNUSED_PARAMETER") role: String?): BildirimRecord? {
+        val fields = doc.optJSONObject("fields") ?: return null
+        if (inboxArsivlenmisMi(fields)) return null
+        fun s(key: String) = fields.optJSONObject(key)?.optString("stringValue").orEmpty()
+        val eventCode = s("eventCode")
+        val tip = s("tip").ifBlank { s("type") }.ifBlank { eventCodeToTip(eventCode) }
+        val talepId = s("talepId").ifBlank { s("entityId") }.ifBlank { null }
+        val hedefRol = s("hedefRol").ifBlank { s("targetRole") }.ifBlank { null }
+        val hedefUid = s("hedefUid").ifBlank { s("targetUid") }.ifBlank { null }
+        val olusturanUid = s("olusturanUid").ifBlank { s("createdBy") }.ifBlank { null }
+        val docId = doc.optString("name").substringAfterLast('/')
+        if (docId.isBlank()) return null
+        val guncellemeUtc = fields.optJSONObject("guncellemeUtc")?.optString("integerValue")?.toLongOrNull()
+            ?: fields.optJSONObject("updatedAt")?.optString("integerValue")?.toLongOrNull()
+            ?: 0L
+        return BildirimRecord(
+            id = docId,
+            baslik = s("baslik").ifBlank { s("title") },
+            mesaj = s("mesaj").ifBlank { s("message") },
+            tip = tip,
+            talepId = talepId,
+            hedefRol = hedefRol,
+            hedefUid = hedefUid,
+            olusturanUid = olusturanUid.orEmpty(),
+            olusturmaTarihi = s("zaman").ifBlank { s("time") },
+            okundu = fields.optJSONObject("isRead")?.optBoolean("booleanValue")
+                ?: fields.optJSONObject("okundu")?.optBoolean("booleanValue") ?: false,
+            guncellemeUtc = guncellemeUtc,
+            inboxDocId = docId
+        )
+    }
+
+    private suspend fun tumInboxKayitlari(uid: String): List<JSONObject> =
+        runCatching { firestore.readInbox(uid, limit = 200) }.getOrDefault(emptyList())
+
+    private fun inboxArsivlenmisMi(fields: JSONObject): Boolean {
+        if (!fields.optJSONObject("dismissedAt")?.optString("timestampValue").isNullOrBlank()) return true
+        if (!fields.optJSONObject("archivedAt")?.optString("timestampValue").isNullOrBlank()) return true
+        return fields.optJSONObject("isArchived")?.optBoolean("booleanValue") == true
+    }
+
+    private fun eventCodeToTip(eventCode: String): String = when (eventCode) {
+        "talep.yonetime_gonderildi" -> BildirimTipleri.YONETIME_GONDERILDI
+        "teklif.istendi" -> BildirimTipleri.TEKLIF_ISTENDI
+        "teklif.yonetime_gonderildi" -> BildirimTipleri.TEKLIF_ONAYDA
+        "teklif.duzeltme_istendi" -> BildirimTipleri.TEKLIF_DUZELTME_ISTENDI
+        "talep.onaylandi" -> BildirimTipleri.ONAYLANDI
+        "talep.reddedildi" -> BildirimTipleri.REDDEDILDI
+        "siparis.olusturuldu" -> BildirimTipleri.SIPARIS_OLUSTURULDU
+        "depo.mal_kabul_yapildi" -> BildirimTipleri.MAL_KABUL_EDILDI
+        else -> eventCode
+    }
+
+    fun syncFcmRoleSubscription(showSuccessToast: Boolean = true) {
+        if (!FirebaseAuthBridge.hasMatchingSession(auth.uid)) {
+            BildirimLog.w("FCM_TOPIC", "Firebase Auth SDK oturumu yok — topic aboneliği atlandı")
+            return
         }
-        knownNotificationIds = sorted.map { it.id }.toSet()
-        _notifications.value = sorted
+        FcmSubscriptionHelper(context).syncRoleTopicSubscription(showSuccessToast)
     }
 
     private suspend fun registerFcmIfNeeded() {
         val uid = auth.uid ?: return
         try {
-            val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.awaitTask()
+            val pending = prefs.getString(MyFirebaseMessagingService.KEY_PENDING_FCM_TOKEN, null)
+            val token = pending?.takeIf { it.isNotBlank() }
+                ?: com.google.firebase.messaging.FirebaseMessaging.getInstance().token.awaitTask()
             firestore.updateFcmToken(uid, token)
-        } catch (_: Exception) { }
+            prefs.edit().remove(MyFirebaseMessagingService.KEY_PENDING_FCM_TOKEN).apply()
+            BildirimLog.i("FCM_TOKEN", "Kayıt tamam uid=$uid token=${token.take(12)}…")
+        } catch (ex: Exception) {
+            BildirimLog.e("FCM_TOKEN", "Token kaydı başarısız uid=$uid", ex)
+        }
     }
 
     private fun parseManifest(json: String): UpdateManifest {
@@ -685,18 +1402,26 @@ class AppContainer(private val context: Context) {
         private const val KEY_SKIPPED_UPDATE_BUILD = "skipped_update_build"
 
         fun loadFirebaseConfig(context: Context): FirebaseConfig {
-            return try {
+            var apiKey = ""
+            var projectId = ""
+            var updateManifestUrl = ""
+            try {
                 context.assets.open("firebase_ayarlar.json").bufferedReader().use { reader ->
                     val obj = JSONObject(reader.readText())
-                    FirebaseConfig(
-                        apiKey = obj.optString("apiKey"),
-                        projectId = obj.optString("projectId"),
-                        updateManifestUrl = obj.optString("guncellemeManifestUrl")
-                    )
+                    apiKey = obj.optString("apiKey")
+                    projectId = obj.optString("projectId")
+                    updateManifestUrl = obj.optString("guncellemeManifestUrl")
                 }
             } catch (_: Exception) {
-                FirebaseConfig("", "", "")
+                // firebase_ayarlar.json yoksa google-services.json'dan doldur
             }
+            if (apiKey.isBlank() || projectId.isBlank()) {
+                GoogleServicesLoader.readProjectFromAssets(context)?.let { (pid, key) ->
+                    if (projectId.isBlank()) projectId = pid
+                    if (apiKey.isBlank()) apiKey = key
+                }
+            }
+            return FirebaseConfig(apiKey, projectId, updateManifestUrl)
         }
     }
 

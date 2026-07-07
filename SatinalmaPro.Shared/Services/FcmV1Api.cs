@@ -23,6 +23,12 @@ public static class FcmV1Api
     public static bool ServiceAccountMevcut(string? jsonYolu) =>
         !string.IsNullOrWhiteSpace(jsonYolu) && File.Exists(jsonYolu);
 
+    /// <summary>Firestore admin erişimi (push fan-out, inbox yazımı).</summary>
+    public static Task<string> ServiceAccountErisimTokeniAlAsync(
+        string serviceAccountJsonYolu,
+        CancellationToken iptal = default) =>
+        ErisimTokeniAlAsync(serviceAccountJsonYolu, iptal);
+
     public static async Task TokenaGonderAsync(
         string serviceAccountJsonYolu,
         string projectId,
@@ -127,7 +133,8 @@ public static class FcmV1Api
             expires: simdi.AddMinutes(55),
             signingCredentials: credentials);
 
-        token.Payload["scope"] = "https://www.googleapis.com/auth/firebase.messaging";
+        token.Payload["scope"] =
+            "https://www.googleapis.com/auth/firebase.messaging https://www.googleapis.com/auth/datastore";
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

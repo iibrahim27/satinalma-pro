@@ -10,7 +10,7 @@ public class SiparisKalemSatiri
 
     public string SiparisNo => Kaynak.SiparisNo;
     public string TalepNo => Kaynak.TalepNo;
-    public string Firma => Kaynak.Firma;
+    public string Firma => string.IsNullOrWhiteSpace(Kaynak.Firma) ? "—" : Kaynak.Firma;
     public string Malzeme => Kaynak.Malzeme;
     public string Birim => Kaynak.Birim;
     public string KabulDurumu => Kaynak.KabulDurumu;

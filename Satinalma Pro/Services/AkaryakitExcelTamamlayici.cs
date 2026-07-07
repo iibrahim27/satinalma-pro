@@ -5,7 +5,10 @@ namespace SatinalmaPro.Services;
 
 public static class AkaryakitExcelTamamlayici
 {
-    public static void DagitilanKaydiniTamamla(AkaryakitKaydi kayit, IEnumerable<AkaryakitKaydi> tumKayitlar)
+    public static void DagitilanKaydiniTamamla(
+        AkaryakitKaydi kayit,
+        IEnumerable<AkaryakitKaydi> tumKayitlar,
+        bool excelKmSaatVar = false)
     {
         kayit.KayitTipi = "Dağıtılan";
         kayit.Birim = "Lt";
@@ -40,11 +43,14 @@ public static class AkaryakitExcelTamamlayici
                 : onceki?.SoforOperator ?? "";
         }
 
-        if (kayit.KmSayaci is null && onceki?.KmSayaci is not null)
-            kayit.KmSayaci = onceki.KmSayaci;
+        if (!excelKmSaatVar)
+        {
+            if (kayit.KmSayaci is null && onceki?.KmSayaci is not null)
+                kayit.KmSayaci = onceki.KmSayaci;
 
-        if (kayit.SaatSayaci is null && onceki?.SaatSayaci is not null)
-            kayit.SaatSayaci = onceki.SaatSayaci;
+            if (kayit.SaatSayaci is null && onceki?.SaatSayaci is not null)
+                kayit.SaatSayaci = onceki.SaatSayaci;
+        }
 
         kayit.ToplamTutariHesapla();
     }

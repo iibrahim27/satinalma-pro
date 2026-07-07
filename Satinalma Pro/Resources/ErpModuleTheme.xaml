@@ -1,0 +1,234 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Color x:Key="ErpBg">#F5F7FB</Color>
+  <Color x:Key="ErpCardBorder">#E6EAF2</Color>
+  <Color x:Key="ErpPrimary">#2563EB</Color>
+  <Color x:Key="ErpPrimaryHover">#3B82F6</Color>
+
+  <SolidColorBrush x:Key="ErpBgBrush" Color="{StaticResource ErpBg}" />
+  <SolidColorBrush x:Key="ErpCardBorderBrush" Color="{StaticResource ErpCardBorder}" />
+
+  <DropShadowEffect x:Key="ErpCardShadow" BlurRadius="24" ShadowDepth="0" Opacity="0.05" Color="#000000" />
+
+  <!-- Premium kart -->
+  <Style x:Key="ErpCard" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource ErpCardBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Effect" Value="{StaticResource ErpCardShadow}" />
+  </Style>
+
+  <Style x:Key="ErpPageTitle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource DashTextBrush}" />
+  </Style>
+
+  <Style x:Key="ErpPageSubtitle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource DashTextSecondaryBrush}" />
+  </Style>
+
+  <Style x:Key="ErpBreadcrumb" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{StaticResource DashTextSecondaryBrush}" />
+  </Style>
+
+  <!-- KPI kart -->
+  <Style x:Key="ErpKpiCard" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource ErpCardBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="18,16" />
+    <Setter Property="Margin" Value="0,0,12,0" />
+    <Setter Property="MinWidth" Value="150" />
+    <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+    <Setter Property="RenderTransform">
+      <Setter.Value>
+        <ScaleTransform ScaleX="1" ScaleY="1" />
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Trigger.EnterActions>
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                               To="1.02" Duration="0:0:0.2" />
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                               To="1.02" Duration="0:0:0.2" />
+            </Storyboard>
+          </BeginStoryboard>
+        </Trigger.EnterActions>
+        <Trigger.ExitActions>
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                               To="1" Duration="0:0:0.2" />
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                               To="1" Duration="0:0:0.2" />
+            </Storyboard>
+          </BeginStoryboard>
+        </Trigger.ExitActions>
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style x:Key="ErpKpiLabel" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{StaticResource DashTextSecondaryBrush}" />
+  </Style>
+
+  <Style x:Key="ErpKpiValue" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource DashTextBrush}" />
+    <Setter Property="Margin" Value="0,4,0,0" />
+  </Style>
+
+  <Style x:Key="ErpKpiHint" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{StaticResource DashTextSecondaryBrush}" />
+    <Setter Property="Margin" Value="0,2,0,0" />
+  </Style>
+
+  <!-- Filtre paneli -->
+  <Style x:Key="ErpFilterPanel" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource ErpCardBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="20,16" />
+    <Setter Property="Margin" Value="0,0,0,16" />
+  </Style>
+
+  <Style x:Key="ErpFilterToggleBtn" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <!-- Tablo toolbar -->
+  <Style x:Key="ErpTableToolbar" TargetType="Border">
+    <Setter Property="Background" Value="#FAFBFC" />
+    <Setter Property="BorderBrush" Value="{StaticResource ErpCardBorderBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="16,12" />
+  </Style>
+
+  <Style x:Key="ErpTableToolbarBtn" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
+    <Setter Property="Padding" Value="10,7" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Margin" Value="0,0,6,0" />
+  </Style>
+
+  <!-- Premium DataGrid -->
+  <Style x:Key="ErpPremiumGrid" TargetType="DataGrid" BasedOn="{StaticResource ModuleDataGridStyle}">
+    <Setter Property="RowHeight" Value="48" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="White" />
+    <Setter Property="GridLinesVisibility" Value="Horizontal" />
+    <Setter Property="HorizontalGridLinesBrush" Value="#F1F5F9" />
+    <Setter Property="HeadersVisibility" Value="Column" />
+    <Setter Property="CanUserSortColumns" Value="True" />
+    <Setter Property="CanUserResizeColumns" Value="True" />
+    <Setter Property="SelectionMode" Value="Single" />
+    <Setter Property="AlternatingRowBackground" Value="#FAFBFC" />
+    <Setter Property="ColumnHeaderHeight" Value="44" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <Style TargetType="DataGridColumnHeader">
+    <Setter Property="Background" Value="#F8FAFC" />
+    <Setter Property="Foreground" Value="{StaticResource DashTextBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Padding" Value="12,10" />
+    <Setter Property="BorderBrush" Value="#E6EAF2" />
+    <Setter Property="BorderThickness" Value="0,0,1,1" />
+  </Style>
+
+  <Style TargetType="DataGridRow">
+    <Setter Property="Background" Value="White" />
+    <Style.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Setter Property="Background" Value="#EFF6FF" />
+      </Trigger>
+      <Trigger Property="IsSelected" Value="True">
+        <Setter Property="Background" Value="#DBEAFE" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <!-- Durum badge -->
+  <Style x:Key="ErpBadge" TargetType="Border">
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="10,4" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+
+  <Style x:Key="ErpBadgeText" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <!-- Alt durum çubuğu -->
+  <Style x:Key="ErpFooterBar" TargetType="Border">
+    <Setter Property="Background" Value="#0F172A" />
+    <Setter Property="Padding" Value="16,10" />
+    <Setter Property="CornerRadius" Value="0,0,16,16" />
+  </Style>
+
+  <Style x:Key="ErpFooterText" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="#CBD5E1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style x:Key="ErpFooterValue" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="6,0,20,0" />
+  </Style>
+
+  <!-- Kategori ağacı -->
+  <Style x:Key="ErpTreePanel" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{StaticResource ErpCardBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="14" />
+    <Setter Property="Effect" Value="{StaticResource ErpCardShadow}" />
+  </Style>
+
+  <Style x:Key="ErpTreeItem" TargetType="TreeViewItem">
+    <Setter Property="Padding" Value="4,6" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource DashTextBrush}" />
+    <Style.Triggers>
+      <Trigger Property="IsSelected" Value="True">
+        <Setter Property="Background" Value="#EFF6FF" />
+        <Setter Property="Foreground" Value="#2563EB" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+      </Trigger>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Setter Property="Background" Value="#F8FAFC" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style x:Key="ErpIconBtn" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
+    <Setter Property="Width" Value="36" />
+    <Setter Property="Height" Value="36" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+
+  <Style x:Key="ErpNavPill" TargetType="Button" BasedOn="{StaticResource SatinalmaNavPillStyle}" />
+  <Style x:Key="ErpNavPillActive" TargetType="Button" BasedOn="{StaticResource SatinalmaNavPillActiveStyle}" />
+
+</ResourceDictionary>

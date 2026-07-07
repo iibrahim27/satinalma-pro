@@ -4,17 +4,25 @@
         xmlns:views="clr-namespace:SatinalmaPro.Views"
         Title="Satınalma Pro — Giriş"
         Width="440"
-        Height="620"
+        Height="680"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        Background="White">
+        Background="{StaticResource DashBackgroundBrush}">
 
   <Grid>
-    <Rectangle Fill="{StaticResource GridPatternBrush}" Opacity="0.45" />
-    <Ellipse Width="360" Height="360" HorizontalAlignment="Right" VerticalAlignment="Top"
-             Margin="0,-120,-80,0" Fill="{StaticResource AuraBrush}" Opacity="0.08" />
-    <Ellipse Width="280" Height="280" HorizontalAlignment="Left" VerticalAlignment="Bottom"
-             Margin="-80,0,0,-80" Fill="{StaticResource AuraBrush}" Opacity="0.06" />
-    <views:GirisView x:Name="GirisKontrol" Margin="32,28" VerticalAlignment="Center" />
+    <Rectangle Fill="{StaticResource GridPatternBrush}" Opacity="0.35" />
+    <Ellipse Width="320" Height="320" HorizontalAlignment="Right" VerticalAlignment="Top"
+             Margin="0,-100,-60,0" Fill="{StaticResource AuraBrush}" Opacity="0.08" />
+    <Ellipse Width="260" Height="260" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+             Margin="-70,0,0,-70" Fill="{StaticResource AuraBrush}" Opacity="0.06" />
+
+    <Border Background="White" CornerRadius="20" Margin="24,24,24,32"
+            BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+            VerticalAlignment="Center" Padding="28,24">
+      <Border.Effect>
+        <DropShadowEffect BlurRadius="24" ShadowDepth="0" Opacity="0.08" Color="#000000" />
+      </Border.Effect>
+      <views:GirisView x:Name="GirisKontrol" />
+    </Border>
   </Grid>
 </Window>

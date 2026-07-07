@@ -18,6 +18,18 @@ public partial class AracFiloView : UserControl, IModulKlavyeKisayollari
     private readonly FiltreZamanlayici _filtreZamanlayici;
     private readonly ModulSayfalamaYoneticisi<FiloAracKaydi> _sayfalama = new();
     private bool _uyariGosterildi;
+    private bool _yogunGorunum;
+    private bool _tamEkran;
+    private bool _arayuzHazir;
+    private string? _grupAlani;
+
+    private static readonly (string Baslik, string Alan)[] GrupSecenekleri =
+    [
+        ("Araç Tipi", "AracTipi"),
+        ("Sahiplik", "SahiplikTipi"),
+        ("Saha", "Saha"),
+        ("Durum", "Durum")
+    ];
 
     public ObservableCollection<FiloAracKaydi> Araclar => ModulVeriDeposu.FiloAraclari;
 
@@ -30,11 +42,13 @@ public partial class AracFiloView : UserControl, IModulKlavyeKisayollari
         _gorunum = CollectionViewSource.GetDefaultView(Araclar);
         _gorunum.Filter = KayitFiltresi;
         FiloGrid.ItemsSource = _sayfalama.SayfaKayitlari;
+        ErpDataGridYardimcisi.PremiumGridAyarla(FiloGrid);
         ModulSayfalamaYardimcisi.CubukBagla(_sayfalama, SayfalamaBar);
 
         CmbAracTipi.SelectedIndex = 0;
         CmbSahiplik.SelectedIndex = 0;
         KisayolYenile();
+        _arayuzHazir = true;
     }
 
     private void AracFiloView_Loaded(object sender, RoutedEventArgs e)
@@ -141,9 +155,26 @@ public partial class AracFiloView : UserControl, IModulKlavyeKisayollari
         AracButonlariniGuncelle();
     }
 
-    private void SayfalamayiYenile(bool ilkSayfayaDon = false) =>
-        ModulSayfalamaYardimcisi.FiltreSonrasi(
-            _sayfalama, _gorunum, k => ModulSayfalamaYardimcisi.TarihSira(k.KayitTarihi), SayfalamaBar, ilkSayfayaDon);
+    private void SayfalamayiYenile(bool ilkSayfayaDon = false)
+    {
+        ErpModulTabloYardimcisi.SayfalamayiUygula(
+            _sayfalama, _gorunum, k => ModulSayfalamaYardimcisi.TarihSira(k.KayitTarihi),
+            SayfalamaBar, _grupAlani, string.IsNullOrEmpty(_grupAlani) ? null : k => FiloGrupAnahtari(k, _grupAlani!), ilkSayfayaDon);
+
+        var filtrelenmis = ModulSayfalamaYardimcisi.FiltrelenmisListe<FiloAracKaydi>(_gorunum);
+        ErpModulTabloYardimcisi.GrupBilgiGuncelle(
+            TxtGrupBilgi, _grupAlani, GrupSecenekleri,
+            filtrelenmis.Select(k => FiloGrupAnahtari(k, _grupAlani!)));
+    }
+
+    private static string FiloGrupAnahtari(FiloAracKaydi kayit, string alan) => alan switch
+    {
+        "AracTipi" => kayit.AracTipi ?? "",
+        "SahiplikTipi" => kayit.SahiplikTipi ?? "",
+        "Saha" => kayit.Saha ?? "",
+        "Durum" => kayit.Durum ?? "",
+        _ => ""
+    };
 
     public void KisayolYenile()
     {
@@ -369,5 +400,45 @@ public partial class AracFiloView : UserControl, IModulKlavyeKisayollari
         TxtFiltrelenen.Text = gorunen.Count == Araclar.Count
             ? "Tümü"
             : $"{gorunen.Count} / {Araclar.Count} araç";
+    }
+
+    private void Kolonlar_Click(object sender, RoutedEventArgs e) =>
+        ErpModulTabloYardimcisi.Kolonlar(FiloGrid, Window.GetWindow(this));
+
+    private void Grupla_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement hedef)
+            return;
+
+        ErpModulTabloYardimcisi.Grupla(hedef, GrupSecenekleri, _grupAlani, alan =>
+        {
+            _grupAlani = alan;
+            SayfalamayiYenile(ilkSayfayaDon: true);
+            OzetGuncelle();
+        });
+    }
+
+    private void FiltreOdak_Click(object sender, RoutedEventArgs e) =>
+        ErpModulTabloYardimcisi.FiltreOdakla(FiltreKart);
+
+    private void YogunGorunum_Click(object sender, RoutedEventArgs e) =>
+        ErpModulTabloYardimcisi.Yogun(FiloGrid, ref _yogunGorunum);
+
+    private void TamEkran_Click(object sender, RoutedEventArgs e) =>
+        ErpModulTabloYardimcisi.TamEkran(AnaIcerikGrid, TabloKart, 4, [0, 1, 2, 3], ref _tamEkran, BtnTamEkran);
+
+    private void SayfaBoyutuDegisti(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_arayuzHazir)
+            return;
+
+        if (CmbSayfaBoyutu.SelectedItem is not ComboBoxItem { Tag: string tag })
+            return;
+
+        if (!int.TryParse(tag, out var boyut) || boyut == _sayfalama.SayfaBoyutu)
+            return;
+
+        ErpModulTabloYardimcisi.SayfaBoyutuDegistir(
+            _sayfalama, boyut, k => ModulSayfalamaYardimcisi.TarihSira(k.KayitTarihi), _grupAlani, SayfalamaBar);
     }
 }

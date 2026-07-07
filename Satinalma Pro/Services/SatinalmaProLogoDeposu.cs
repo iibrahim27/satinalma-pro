@@ -82,4 +82,16 @@ public static class SatinalmaProLogoDeposu
 
     public static string GorunenAd(string? kayitliYol) =>
         string.IsNullOrWhiteSpace(kayitliYol) ? "" : Path.GetFileName(kayitliYol.Replace('\\', '/'));
+
+    /// <summary>logos klasöründeki tüm dosyaları siler (firma / anasayfa logo sıfırlama).</summary>
+    public static void TumDosyalariSil()
+    {
+        if (!Directory.Exists(LogolarKlasoru))
+            return;
+
+        foreach (var dosya in Directory.GetFiles(LogolarKlasoru))
+        {
+            try { File.Delete(dosya); } catch { /* dosya kilitli olabilir */ }
+        }
+    }
 }

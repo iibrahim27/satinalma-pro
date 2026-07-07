@@ -9,6 +9,9 @@
                 <ui:XamlControlsResources />
                 <ResourceDictionary Source="Resources/Theme.xaml" />
                 <ResourceDictionary Source="Resources/DashboardTheme.xaml" />
+                <ResourceDictionary Source="Resources/SatinalmaModuleTheme.xaml" />
+                <ResourceDictionary Source="Resources/AyarlarModuleTheme.xaml" />
+                <ResourceDictionary Source="Resources/ErpModuleTheme.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

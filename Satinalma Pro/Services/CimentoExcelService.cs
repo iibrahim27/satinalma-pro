@@ -20,7 +20,7 @@ public static class CimentoExcelService
     private static readonly string[] DisaAktarBasliklari =
     [
         "Tarih", "İrsaliye No", "Çimento Sınıfı", "Çimento Cinsi", "Miktar", "Birim",
-        "Birim Fiyatı", "Toplam Tutar", "Fatura Durumu", "Tedarikçi", "İndirildiği Saha", "Teslim Alan", "Açıklama"
+        "Birim Fiyatı", "Toplam Tutar", "Tedarikçi", "İndirildiği Saha", "Teslim Alan", "Açıklama"
     ];
 
     public static void SablonKaydet()
@@ -117,11 +117,10 @@ public static class CimentoExcelService
             sayfa.Cell(satirNo, 6).Value = k.Birim;
             sayfa.Cell(satirNo, 7).Value = k.BirimFiyati;
             sayfa.Cell(satirNo, 8).Value = k.ToplamTutar;
-            sayfa.Cell(satirNo, 9).Value = k.FaturaDurumuMetin;
-            sayfa.Cell(satirNo, 10).Value = k.Tedarikci;
-            sayfa.Cell(satirNo, 11).Value = k.IndirildigiSaha;
-            sayfa.Cell(satirNo, 12).Value = k.TeslimAlan;
-            sayfa.Cell(satirNo, 13).Value = k.Aciklama;
+            sayfa.Cell(satirNo, 9).Value = k.Tedarikci;
+            sayfa.Cell(satirNo, 10).Value = k.IndirildigiSaha;
+            sayfa.Cell(satirNo, 11).Value = k.TeslimAlan;
+            sayfa.Cell(satirNo, 12).Value = k.Aciklama;
             satirNo++;
         }
 
@@ -209,12 +208,12 @@ public static class CimentoPdfService
         });
 
         var tablo = new Table { CellSpacing = 0 };
-        for (var i = 0; i < 10; i++)
+        for (var i = 0; i < 9; i++)
             tablo.Columns.Add(new TableColumn());
 
         var baslikGrup = new TableRowGroup();
         var baslikSatir = new TableRow { Background = Brushes.Gainsboro };
-        foreach (var h in new[] { "Tarih", "İrsaliye", "Sınıf", "Cins", "Miktar", "Birim Fiyat", "Tutar", "Fatura", "Tedarikçi", "Saha" })
+        foreach (var h in new[] { "Tarih", "İrsaliye", "Sınıf", "Cins", "Miktar", "Birim Fiyat", "Tutar", "Tedarikçi", "Saha" })
             baslikSatir.Cells.Add(Hucre(h, true));
         baslikGrup.Rows.Add(baslikSatir);
         tablo.RowGroups.Add(baslikGrup);
@@ -231,7 +230,6 @@ public static class CimentoPdfService
             satir.Cells.Add(Hucre(k.Miktar.ToString("N2", CultureInfo.CurrentCulture)));
             satir.Cells.Add(Hucre(k.BirimFiyati.ToString("C2", CultureInfo.GetCultureInfo("tr-TR"))));
             satir.Cells.Add(Hucre(k.ToplamTutar.ToString("C2", CultureInfo.GetCultureInfo("tr-TR"))));
-            satir.Cells.Add(Hucre(k.FaturaDurumuMetin));
             satir.Cells.Add(Hucre(k.Tedarikci));
             satir.Cells.Add(Hucre(k.IndirildigiSaha));
             veriGrup.Rows.Add(satir);

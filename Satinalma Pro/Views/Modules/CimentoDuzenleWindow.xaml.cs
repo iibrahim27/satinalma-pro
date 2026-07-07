@@ -21,7 +21,6 @@ public partial class CimentoDuzenleWindow : Window
     {
         TxtTarih.Text = _kayit.Tarih;
         TxtIrsaliyeNo.Text = _kayit.IrsaliyeNo;
-        ChkFaturasiKesildi.IsChecked = _kayit.FaturasiKesildi;
         CmbCimentoSinifi.Text = _kayit.CimentoSinifi;
         CmbCimentoCinsi.Text = _kayit.CimentoCinsi;
         TxtMiktar.Text = _kayit.Miktar.ToString(CultureInfo.CurrentCulture);
@@ -61,7 +60,6 @@ public partial class CimentoDuzenleWindow : Window
 
         _kayit.Tarih = TxtTarih.Text.Trim();
         _kayit.IrsaliyeNo = TxtIrsaliyeNo.Text.Trim();
-        _kayit.FaturasiKesildi = ChkFaturasiKesildi.IsChecked == true;
         _kayit.CimentoSinifi = CmbCimentoSinifi.Text.Trim();
         _kayit.CimentoCinsi = CmbCimentoCinsi.Text.Trim();
         _kayit.Miktar = miktar;

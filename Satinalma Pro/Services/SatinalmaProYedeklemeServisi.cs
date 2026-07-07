@@ -6,6 +6,24 @@ namespace SatinalmaPro.Services;
 
 public static class SatinalmaProYedeklemeServisi
 {
+    /// <summary>
+    /// Firebase, Android ve oturum yapılandırması — "Tüm Verileri Sıfırla" ile dokunulmaz.
+    /// </summary>
+    private static readonly HashSet<string> SifirlamaDisiDosyalar = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "firebase_ayarlar.json",
+        "google-services.json",
+        FirebaseAyarDeposu.FcmServiceAccountDosyaAdi,
+        "oturum.json",
+        "giris_tercihleri.json",
+        "profil_onbellek.json",
+        "bulut_senkron_zaman.json",
+        "bildirim_hatirlatma.json"
+    };
+
+    public static bool SifirlamaDisiMi(string dosyaAdi) =>
+        SifirlamaDisiDosyalar.Contains(Path.GetFileName(dosyaAdi));
+
     public static string Yedekle(string hedefZipYolu)
     {
         SatinalmaProKlasor.Olustur();
@@ -50,6 +68,9 @@ public static class SatinalmaProYedeklemeServisi
 
     public static void ModulSifirla(string dosyaAdi)
     {
+        if (SifirlamaDisiMi(dosyaAdi))
+            return;
+
         switch (dosyaAdi)
         {
             case "uygulama_ayarlar.json":
@@ -74,6 +95,10 @@ public static class SatinalmaProYedeklemeServisi
                 FinansmanVeriDeposu.Sifirla();
                 break;
             default:
+                if (!SatinalmaProVeriKatalogu.TumKayitlar.Any(t =>
+                        string.Equals(t.DosyaAdi, dosyaAdi, StringComparison.OrdinalIgnoreCase)))
+                    return;
+
                 var yol = SatinalmaProKlasor.DosyaYolu(dosyaAdi);
                 if (File.Exists(yol))
                     File.Delete(yol);
@@ -83,11 +108,21 @@ public static class SatinalmaProYedeklemeServisi
         BulutVeriSenkronu.SifirlemeyiBulutaPlanla(dosyaAdi);
     }
 
+    /// <summary>
+    /// Firma bilgileri, logolar, imzalar ve modül verilerini sıfırlar.
+    /// Firebase / Android yapılandırması ve oturum dosyalarına dokunmaz.
+    /// </summary>
     public static void TumVerileriSifirla()
     {
         foreach (var tanim in SatinalmaProVeriKatalogu.TumKayitlar)
-            ModulSifirla(tanim.DosyaAdi);
+        {
+            if (SifirlamaDisiMi(tanim.DosyaAdi))
+                continue;
 
+            ModulSifirla(tanim.DosyaAdi);
+        }
+
+        SatinalmaProLogoDeposu.TumDosyalariSil();
         YenidenYukle();
     }
 

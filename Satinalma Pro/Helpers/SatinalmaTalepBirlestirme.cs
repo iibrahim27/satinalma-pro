@@ -49,6 +49,7 @@ public static class SatinalmaTalepBirlestirme
         if (ReferenceEquals(hedef, kaynak))
             return;
 
+        // Daha yeni kazanan kaydın durumu korunur — geri gönder sonrası eski bulut aşaması ezmez.
         if (hedef.GuncellemeUtc > kaynak.GuncellemeUtc)
             return;
 
@@ -68,6 +69,9 @@ public static class SatinalmaTalepBirlestirme
         var kaynakAsama = SharedDurumlar.SurecAsamaSkoru(kaynak.Durum);
         if (kaynakAsama > hedefAsama)
             hedef.Durum = kaynak.Durum;
+
+        if (SatinalmaTalepYardimcisi.GercekTeklifVar(hedef) && kaynakAsama < hedefAsama)
+            return;
     }
 
     private static SatinalmaTalep KazananKayit(SatinalmaTalep a, SatinalmaTalep b)
@@ -108,26 +112,30 @@ public static class SatinalmaTalepBirlestirme
         if (ReferenceEquals(hedef, kaynak))
             return;
 
-        if (hedef.GuncellemeUtc > kaynak.GuncellemeUtc)
-            return;
-
         hedef.Teklifler ??= [];
         if (ReferenceEquals(hedef.Teklifler, kaynak.Teklifler))
             return;
 
-        foreach (var teklif in (kaynak.Teklifler ?? []).ToList())
+        // Her iki taraftaki teklifleri birleştir — zaman damgası teklifleri asla silmesin
+        foreach (var kaynakTaraf in new[] { hedef, kaynak })
         {
-            var mevcut = hedef.Teklifler.FirstOrDefault(t => t.Id == teklif.Id);
-            if (mevcut is null)
+            foreach (var teklif in (kaynakTaraf.Teklifler ?? []).ToList())
             {
-                hedef.Teklifler.Add(teklif);
-                continue;
-            }
+                if (!SatinalmaTalepYardimcisi.GercekTeklifVar(teklif))
+                    continue;
 
-            if (TeklifDolulukSkoru(teklif) > TeklifDolulukSkoru(mevcut))
-            {
-                hedef.Teklifler.Remove(mevcut);
-                hedef.Teklifler.Add(teklif);
+                var mevcut = hedef.Teklifler.FirstOrDefault(t => t.Id == teklif.Id);
+                if (mevcut is null)
+                {
+                    hedef.Teklifler.Add(teklif);
+                    continue;
+                }
+
+                if (TeklifDolulukSkoru(teklif) > TeklifDolulukSkoru(mevcut))
+                {
+                    hedef.Teklifler.Remove(mevcut);
+                    hedef.Teklifler.Add(teklif);
+                }
             }
         }
     }
@@ -142,6 +150,9 @@ public static class SatinalmaTalepBirlestirme
             skor += 5;
         return skor;
     }
+
+    private static int TeklifDolulukSkoru(SatinalmaTalep talep) =>
+        (talep.Teklifler ?? []).Sum(TeklifDolulukSkoru);
 
     private static int Skor(SatinalmaTalep talep)
     {

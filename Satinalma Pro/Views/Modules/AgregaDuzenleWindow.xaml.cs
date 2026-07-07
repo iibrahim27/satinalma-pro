@@ -21,7 +21,6 @@ public partial class AgregaDuzenleWindow : Window
     {
         TxtTarih.Text = _kayit.Tarih;
         TxtIrsaliyeNo.Text = _kayit.IrsaliyeNo;
-        ChkFaturasiKesildi.IsChecked = _kayit.FaturasiKesildi;
         CmbAgregaTuru.Text = _kayit.AgregaTuru;
         CmbAgregaCinsi.Text = _kayit.AgregaCinsi;
         TxtMiktar.Text = _kayit.Miktar.ToString(CultureInfo.CurrentCulture);
@@ -61,7 +60,6 @@ public partial class AgregaDuzenleWindow : Window
 
         _kayit.Tarih = TarihYardimcisi.Normalize(TxtTarih.Text.Trim());
         _kayit.IrsaliyeNo = TxtIrsaliyeNo.Text.Trim();
-        _kayit.FaturasiKesildi = ChkFaturasiKesildi.IsChecked == true;
         _kayit.AgregaTuru = CmbAgregaTuru.Text.Trim();
         _kayit.AgregaCinsi = CmbAgregaCinsi.Text.Trim();
         _kayit.Miktar = miktar;

@@ -40,6 +40,8 @@ public static class PencereOneGetirDinleyicisi
 
     private static void PencereyiOneGetir()
     {
+        MasaustuTepsiYoneticisi.Goster();
+
         Window? hedef = Application.Current?.MainWindow;
         if (hedef is null || !hedef.IsLoaded)
         {

@@ -17,21 +17,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.ui.components.UpdateDialog
+import com.satinalmapro.android.ui.screens.login.BiometricUnlockScreen
 import com.satinalmapro.android.ui.screens.login.LoginScreen
+import com.satinalmapro.android.ui.screens.shell.AtolyeShell
 import com.satinalmapro.android.ui.screens.shell.RoleShell
+import com.satinalmapro.android.ui.screens.login.SplashScreen
 import com.satinalmapro.android.ui.theme.AppColors
 
 @Composable
 fun AppRoot(viewModel: AppViewModel) {
     val splashDone by viewModel.splashDone.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+    val needsBiometricUnlock by viewModel.needsBiometricUnlock.collectAsState()
     val splashMessage by viewModel.splashMessage.collectAsState()
     val showUpdateDialog by viewModel.showUpdateDialog.collectAsState()
     val pendingUpdate by viewModel.pendingUpdate.collectAsState()
     val updateProgress by viewModel.updateProgress.collectAsState()
     val updateMessage by viewModel.updateMessage.collectAsState()
     val updateError by viewModel.updateError.collectAsState()
+    val user by viewModel.user.collectAsState()
+    val isAtolye = KullaniciRolleri.isAtolyeOnly(user?.role)
 
     LaunchedEffect(Unit) {
         viewModel.startSplash()
@@ -41,7 +48,9 @@ fun AppRoot(viewModel: AppViewModel) {
     Box(Modifier.fillMaxSize()) {
         when {
             !splashDone -> SplashScreen(splashMessage)
+            needsBiometricUnlock -> BiometricUnlockScreen(viewModel)
             !isLoggedIn -> LoginScreen(viewModel)
+            isAtolye -> AtolyeShell(viewModel)
             else -> RoleShell(viewModel)
         }
 
@@ -77,12 +86,3 @@ fun AppRoot(viewModel: AppViewModel) {
     }
 }
 
-@Composable
-private fun SplashScreen(message: String) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            CircularProgressIndicator(color = AppColors.Primary)
-            Text(message, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
-        }
-    }
-}

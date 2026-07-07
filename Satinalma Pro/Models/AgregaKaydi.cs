@@ -6,8 +6,10 @@ public class AgregaKaydi
 {
     public string Tarih { get; set; } = "";
 
-    [JsonPropertyName("FaturaNo")]
+    [JsonPropertyName("faturaNo")]
     public string IrsaliyeNo { get; set; } = "";
+
+    public string SiparisNo { get; set; } = "";
 
     public string AgregaTuru { get; set; } = "";
     public string AgregaCinsi { get; set; } = "";
@@ -29,7 +31,7 @@ public class AgregaKaydi
         _ => $"{ArtisYuzdesi.Value:N1}%"
     };
 
-    public string FaturaDurumuMetin => FaturasiKesildi ? "Kesildi" : "Kesilmedi";
+    public string FaturaDurumuMetin => FaturasiKesildi ? "Kesildi" : "Bekliyor";
 
     public void ToplamTutariHesapla() =>
         ToplamTutar = Math.Round((decimal)Miktar * BirimFiyati, 2);

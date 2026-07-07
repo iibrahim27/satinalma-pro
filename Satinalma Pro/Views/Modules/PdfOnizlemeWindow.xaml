@@ -10,7 +10,7 @@
         MinWidth="720"
         MinHeight="520"
         WindowStartupLocation="CenterScreen"
-        Background="White">
+        Background="{StaticResource DashBackgroundBrush}">
   <Grid Margin="16">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />

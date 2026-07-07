@@ -2,49 +2,89 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:dash="clr-namespace:SatinalmaPro.Controls.Dashboard">
-  <Grid Margin="0,0,0,28">
-    <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="*" />
-      <ColumnDefinition Width="Auto" />
-    </Grid.ColumnDefinitions>
+  <Border Background="{StaticResource DashCardBrush}" BorderBrush="{StaticResource DashBorderBrush}"
+          BorderThickness="0,0,0,1" Padding="24,14,24,14">
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
 
-    <StackPanel VerticalAlignment="Center">
-      <TextBlock x:Name="TxtKarsilama" FontSize="28" FontWeight="SemiBold"
-                 Foreground="{StaticResource DashTextBrush}" />
-      <TextBlock Text="Satınalma süreçlerinizi kolayca yönetin."
-                 FontSize="14" Foreground="{StaticResource DashTextSecondaryBrush}" Margin="0,6,0,0" />
-    </StackPanel>
+      <!-- Breadcrumb -->
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                   Foreground="{StaticResource DashTextSecondaryBrush}" VerticalAlignment="Center" />
+        <TextBlock Text="Ana Sayfa" FontSize="13" Foreground="{StaticResource DashTextSecondaryBrush}"
+                   Margin="8,0,0,0" VerticalAlignment="Center" />
+        <TextBlock Text="/" FontSize="13" Foreground="{StaticResource DashTextSecondaryBrush}"
+                   Margin="8,0" VerticalAlignment="Center" />
+        <TextBlock x:Name="TxtBreadcrumb" Text="Dashboard" FontSize="13" FontWeight="SemiBold"
+                   Foreground="{StaticResource DashTextBrush}" VerticalAlignment="Center" />
+      </StackPanel>
 
-    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-      <Button x:Name="BtnBildirim" Style="{StaticResource DashGhostButtonStyle}" Margin="0,0,10,0"
-              Click="BtnBildirim_Click" ToolTip="Bildirimler">
+      <!-- Arama -->
+      <Border Grid.Column="1" Margin="32,0" MaxWidth="520" HorizontalAlignment="Center"
+              Background="#F8FAFC" BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="1"
+              CornerRadius="10" Padding="12,8">
         <Grid>
-          <dash:IconControl Kind="Bell" IconSize="18" StrokeBrush="{StaticResource DashTextBrush}" />
-          <Border x:Name="BadgeBildirim" Background="{StaticResource DashPrimaryBrush}"
-                  CornerRadius="8" MinWidth="18" Height="18"
-                  HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12,-6,-6,0"
-                  Visibility="Collapsed">
-            <TextBlock x:Name="TxtBadgeSayi" Foreground="White" FontSize="10" FontWeight="Bold"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,0" />
-          </Border>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                     Foreground="{StaticResource DashTextSecondaryBrush}" VerticalAlignment="Center" />
+          <TextBox x:Name="TxtArama" Grid.Column="1" Margin="10,0,0,0" BorderThickness="0" Background="Transparent"
+                   FontSize="13" Foreground="{StaticResource DashTextBrush}"
+                   VerticalAlignment="Center" TextChanged="TxtArama_TextChanged" />
+          <TextBlock Grid.Column="1" IsHitTestVisible="False" Margin="10,0,0,0"
+                     Text="Ara (Ctrl+F)" FontSize="13" Foreground="{StaticResource DashTextSecondaryBrush}"
+                     VerticalAlignment="Center">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding Text, ElementName=TxtArama}" Value="">
+                    <Setter Property="Visibility" Value="Visible" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
         </Grid>
-      </Button>
+      </Border>
 
-      <Button x:Name="BtnTema" Style="{StaticResource DashGhostButtonStyle}" Margin="0,0,10,0"
-              Padding="12,10" Click="BtnTema_Click" ToolTip="Gece / Gündüz">
-        <dash:IconControl x:Name="TemaIkon" Kind="Moon" IconSize="18"
-                          StrokeBrush="{StaticResource DashTextBrush}" />
-      </Button>
+      <!-- Sağ ikonlar -->
+      <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+        <Button x:Name="BtnBildirim" Style="{StaticResource DashGhostButtonStyle}" Margin="0,0,8,0"
+                Padding="10,8" Click="BtnBildirim_Click" ToolTip="Bildirimler">
+          <Grid>
+            <dash:IconControl Kind="Bell" IconSize="18" StrokeBrush="{StaticResource DashTextBrush}" />
+            <Border x:Name="BadgeBildirim" Background="{StaticResource DashPrimaryBrush}"
+                    CornerRadius="8" MinWidth="18" Height="18"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10,-6,-6,0"
+                    Visibility="Collapsed">
+              <TextBlock x:Name="TxtBadgeSayi" Foreground="White" FontSize="10" FontWeight="Bold"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,0" />
+            </Border>
+          </Grid>
+        </Button>
 
-      <Button x:Name="BtnHizliIslem" Style="{StaticResource DashPrimaryButtonStyle}"
-              Click="BtnHizliIslem_Click">
-        <StackPanel Orientation="Horizontal">
-          <TextBlock Text="+" FontSize="16" FontWeight="Bold" Margin="0,0,8,0" />
-          <TextBlock Text="Hızlı İşlem" VerticalAlignment="Center" />
-          <dash:IconControl Kind="ChevronDown" IconSize="14" StrokeBrush="White"
-                            Margin="10,0,0,0" VerticalAlignment="Center" />
-        </StackPanel>
-      </Button>
-    </StackPanel>
-  </Grid>
+        <Button x:Name="BtnAyarlar" Style="{StaticResource DashGhostButtonStyle}" Margin="0,0,8,0"
+                Padding="10,8" Click="BtnAyarlar_Click" ToolTip="Ayarlar">
+          <dash:IconControl Kind="Settings" IconSize="18" StrokeBrush="{StaticResource DashTextBrush}" />
+        </Button>
+
+        <Button x:Name="BtnYardim" Style="{StaticResource DashGhostButtonStyle}" Margin="0,0,8,0"
+                Padding="10,8" ToolTip="Yardım">
+          <TextBlock Text="?" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource DashTextBrush}" />
+        </Button>
+
+        <Button x:Name="BtnTema" Style="{StaticResource DashGhostButtonStyle}" Padding="10,8"
+                Click="BtnTema_Click" ToolTip="Gece / Gündüz" Visibility="Collapsed">
+          <dash:IconControl x:Name="TemaIkon" Kind="Moon" IconSize="18" StrokeBrush="{StaticResource DashTextBrush}" />
+        </Button>
+      </StackPanel>
+    </Grid>
+  </Border>
 </UserControl>

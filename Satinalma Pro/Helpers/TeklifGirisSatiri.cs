@@ -18,11 +18,31 @@ public class TeklifGirisSatiri
 
     public SatinalmaTeklif Teklif => _teklif;
 
-    public bool OneriMi =>
-        _talep.SatinalmaOnerisiElleSecildi
-        && _talep.YonetimOnerilenTeklifId == _teklif.Id;
+    public bool OneriMi => OneriMetni.Length > 0;
 
-    public string OneriMetni => OneriMi ? "★" : "";
+    public string OneriMetni
+    {
+        get
+        {
+            if (_talep.SatinalmaKalemOnerisiElleSecildi)
+            {
+                var tumu = _talep.Kalemler.All(k => k.OnerilenTeklifId == _teklif.Id)
+                           && _talep.Kalemler.Any(k => k.OnerilenTeklifId != null);
+                if (tumu)
+                    return "★";
+
+                if (_talep.Kalemler.Any(k => k.OnerilenTeklifId == _teklif.Id))
+                    return "◆";
+
+                return "";
+            }
+
+            return _talep.SatinalmaOnerisiElleSecildi
+                   && _talep.YonetimOnerilenTeklifId == _teklif.Id
+                ? "★"
+                : "";
+        }
+    }
 
     public string FirmaAdi => _teklif.FirmaAdi;
     public string VadeGosterim => _teklif.VadeGunu > 0 ? $"{_teklif.VadeGunu} gün" : "—";

@@ -25,7 +25,11 @@ data class AppNotification(
     val time: String,
     val requestId: String? = null,
     val route: String? = null,
-    val read: Boolean = false
+    val read: Boolean = false,
+    val targetRole: String? = null,
+    val targetUid: String? = null,
+    val createdByUid: String? = null,
+    val inboxDocId: String? = null
 )
 
 data class MenuItem(

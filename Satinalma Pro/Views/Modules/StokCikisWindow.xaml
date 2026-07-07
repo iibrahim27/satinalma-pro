@@ -11,8 +11,8 @@
         MinHeight="560"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
-        Background="White">
-  <Grid Margin="28">
+        Background="{StaticResource DashBackgroundBrush}">
+  <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
@@ -20,12 +20,12 @@
     </Grid.RowDefinitions>
 
     <StackPanel Grid.Row="0" Margin="0,0,0,16">
-      <TextBlock Text="Stok Çıkışı" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" />
-      <TextBlock Text="Birden fazla malzeme satırı ekleyerek toplu çıkış yapın" FontSize="13"
-                 Foreground="{StaticResource InkMutedBrush}" Margin="0,4,0,0" />
+      <TextBlock Text="Stok Çıkışı" Style="{StaticResource ModuleDialogTitleStyle}" />
+      <TextBlock Text="Birden fazla malzeme satırı ekleyerek toplu çıkış yapın" Style="{StaticResource ModuleDialogSubtitleStyle}" />
     </StackPanel>
 
-    <ScrollViewer Grid.Row="1" Style="{StaticResource ModuleScrollViewerStyle}">
+    <Border Grid.Row="1" Style="{StaticResource ModulePageCardStyle}" Padding="24,20">
+      <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0">
       <StackPanel>
         <Grid Margin="0,0,0,14">
           <Grid.ColumnDefinitions>
@@ -38,19 +38,19 @@
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
           <StackPanel Grid.Column="0">
-            <TextBlock Text="Tarih" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+            <TextBlock Text="Tarih" Style="{StaticResource ModuleFormLabelStyle}" />
             <TextBox x:Name="TxtTarih" Style="{StaticResource FilterBoxStyle}" />
           </StackPanel>
           <StackPanel Grid.Column="2">
-            <TextBlock Text="Belge No" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-            <TextBox x:Name="TxtBelge" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" Background="#F8FAFC" />
+            <TextBlock Text="Belge No" Style="{StaticResource ModuleFormLabelStyle}" />
+            <TextBox x:Name="TxtBelge" Style="{StaticResource ModuleReadOnlyFieldStyle}" />
           </StackPanel>
           <StackPanel Grid.Column="4">
-            <TextBlock Text="Teslim Eden" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-            <TextBox x:Name="TxtTeslimEden" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" Background="#F8FAFC" />
+            <TextBlock Text="Teslim Eden" Style="{StaticResource ModuleFormLabelStyle}" />
+            <TextBox x:Name="TxtTeslimEden" Style="{StaticResource ModuleReadOnlyFieldStyle}" />
           </StackPanel>
           <StackPanel Grid.Column="6">
-            <TextBlock Text="Teslim Edilen" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+            <TextBlock Text="Teslim Edilen" Style="{StaticResource ModuleFormLabelStyle}" />
             <TextBox x:Name="TxtTeslimEdilen" Style="{StaticResource FilterBoxStyle}"
                      ui:ControlHelper.PlaceholderText="Malzemeyi teslim alan kişi" />
           </StackPanel>
@@ -73,26 +73,26 @@
                 <ColumnDefinition Width="0.7*" />
               </Grid.ColumnDefinitions>
               <StackPanel Grid.Column="0">
-                <TextBlock Text="Kategori" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+                <TextBlock Text="Kategori" Style="{StaticResource ModuleFormLabelStyle}" />
                 <ComboBox x:Name="CmbKategori" Style="{StaticResource FilterComboStyle}" IsEditable="False"
                           SelectionChanged="KategoriDegisti" />
               </StackPanel>
               <StackPanel Grid.Column="2">
-                <TextBlock Text="Malzeme" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+                <TextBlock Text="Malzeme" Style="{StaticResource ModuleFormLabelStyle}" />
                 <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" Background="White" CornerRadius="4" Padding="2,0" MinHeight="34">
                   <controls:MalzemeOneriGiris x:Name="MalzemeGiris" />
                 </Border>
               </StackPanel>
               <StackPanel Grid.Column="4">
-                <TextBlock Text="Mevcut Stok" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+                <TextBlock Text="Mevcut Stok" Style="{StaticResource ModuleFormLabelStyle}" />
                 <TextBox x:Name="TxtMevcut" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" Background="White" />
               </StackPanel>
               <StackPanel Grid.Column="6">
-                <TextBlock Text="Miktar" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+                <TextBlock Text="Miktar" Style="{StaticResource ModuleFormLabelStyle}" />
                 <TextBox x:Name="TxtMiktar" Style="{StaticResource FilterBoxStyle}" />
               </StackPanel>
               <StackPanel Grid.Column="8">
-                <TextBlock Text="Birim" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+                <TextBlock Text="Birim" Style="{StaticResource ModuleFormLabelStyle}" />
                 <ComboBox x:Name="CmbBirim" Style="{StaticResource FilterComboStyle}" IsEditable="False" IsEnabled="False" />
               </StackPanel>
             </Grid>
@@ -105,7 +105,7 @@
                   IsEnabled="False" Click="SatirSil_Click" />
         </StackPanel>
 
-        <Border Background="White" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="12" Padding="1">
+        <Border Style="{StaticResource ModuleGridContainerStyle}">
           <DataGrid x:Name="SatirGrid" Style="{StaticResource ModuleDataGridStyle}" Height="240"
                     AlternatingRowBackground="Transparent" IsReadOnly="True"
                     SelectionChanged="SatirGrid_SelectionChanged">
@@ -120,9 +120,10 @@
         </Border>
       </StackPanel>
     </ScrollViewer>
-
+    </Border>
     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
       <Button Content="İptal" Style="{StaticResource ToolbarButtonStyle}" Width="100" Margin="0,0,8,0" Click="Iptal_Click" />
+      <Button Content="Fiş Önizle / Yazdır" Style="{StaticResource ToolbarButtonStyle}" Width="160" Margin="0,0,8,0" Click="FisOnizle_Click" />
       <Button Content="Kaydet" Style="{StaticResource PrimaryToolbarButtonStyle}" Width="120" Click="Kaydet_Click" />
     </StackPanel>
   </Grid>

@@ -235,6 +235,8 @@ public static class BulutVeriSenkronu
                         SatinalmaDepo.Ayarlar.SonTalepSira, bulutAyarlar.SonTalepSira);
                     SatinalmaDepo.Ayarlar.SonSiparisSira = Math.Max(
                         SatinalmaDepo.Ayarlar.SonSiparisSira, bulutAyarlar.SonSiparisSira);
+                    SatinalmaDepo.Ayarlar.SonIadeSira = Math.Max(
+                        SatinalmaDepo.Ayarlar.SonIadeSira, bulutAyarlar.SonIadeSira);
                     json = JsonSerializer.Serialize(SatinalmaDepo.Ayarlar, JsonSecenekleri);
                 }
             }
@@ -244,7 +246,7 @@ public static class BulutVeriSenkronu
             YerelOnbellegeYaz(anahtar, json);
             BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
             if (talepBirlesikJson is not null)
-                SatinalmaDepo.TalepleriYukle(talepBirlesikJson);
+                SatinalmaDepo.TalepleriBirlestirVeYukle(talepBirlesikJson);
         }
         finally
         {
@@ -483,6 +485,8 @@ public static class BulutVeriSenkronu
                         SatinalmaDepo.Ayarlar.SonTalepSira, bulutAyarlar.SonTalepSira);
                     SatinalmaDepo.Ayarlar.SonSiparisSira = Math.Max(
                         SatinalmaDepo.Ayarlar.SonSiparisSira, bulutAyarlar.SonSiparisSira);
+                    SatinalmaDepo.Ayarlar.SonIadeSira = Math.Max(
+                        SatinalmaDepo.Ayarlar.SonIadeSira, bulutAyarlar.SonIadeSira);
                     json = JsonSerializer.Serialize(SatinalmaDepo.Ayarlar, JsonSecenekleri);
                 }
             }
@@ -492,7 +496,7 @@ public static class BulutVeriSenkronu
             YerelOnbellegeYaz(anahtar, json);
             BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
             if (talepBirlesikJson is not null)
-                SatinalmaDepo.TalepleriYukle(talepBirlesikJson);
+                SatinalmaDepo.TalepleriBirlestirVeYukle(talepBirlesikJson);
         }
     }
 

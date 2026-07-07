@@ -1,0 +1,160 @@
+<Window x:Class="SatinalmaPro.Views.Modules.Satinalma.Part1.YonetimTeklifIncelemeWindow"
+
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+
+        ui:WindowHelper.UseModernWindowStyle="True"
+
+        Title="Teklif İnceleme"
+
+        Width="1040"
+
+        Height="820"
+
+        MinWidth="800"
+
+        MinHeight="640"
+
+        WindowStartupLocation="CenterOwner"
+
+        Background="{StaticResource DashBackgroundBrush}">
+
+  <Grid Margin="24">
+
+    <Grid.RowDefinitions>
+
+      <RowDefinition Height="Auto" />
+
+      <RowDefinition Height="Auto" />
+
+      <RowDefinition Height="Auto" />
+
+      <RowDefinition Height="*" />
+
+      <RowDefinition Height="Auto" />
+
+      <RowDefinition Height="Auto" />
+
+    </Grid.RowDefinitions>
+
+
+
+    <StackPanel>
+
+      <TextBlock x:Name="TxtBaslik" FontSize="20" FontWeight="Bold"
+
+                 Foreground="{StaticResource SatModInkBrush}" />
+
+      <TextBlock x:Name="TxtOzet" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
+
+                 Margin="0,6,0,0" TextWrapping="Wrap" />
+
+    </StackPanel>
+
+
+
+    <Border x:Name="DuzeltmeNotuPanel" Grid.Row="1" Background="#FFF7ED"
+
+            BorderBrush="#FDBA74" BorderThickness="1" CornerRadius="10"
+
+            Padding="12,10" Margin="0,14,0,0" Visibility="Collapsed">
+
+      <TextBlock x:Name="TxtDuzeltmeNotu" TextWrapping="Wrap" FontSize="12" Foreground="#9A3412" />
+
+    </Border>
+
+
+
+    <Border x:Name="OneriBanner" Grid.Row="2" Background="#ECFDF5" BorderBrush="#059669"
+
+            BorderThickness="1" CornerRadius="10" Padding="12,10" Margin="0,14,0,0" Visibility="Collapsed">
+
+      <TextBlock x:Name="TxtOneriBanner" TextWrapping="Wrap" FontSize="12" FontWeight="SemiBold"
+
+                 Foreground="#047857" />
+
+    </Border>
+
+
+
+    <StackPanel Grid.Row="3" Margin="0,16,0,0">
+
+      <StackPanel x:Name="TeklifAksiyonPanel" Visibility="Collapsed" Margin="0,0,0,12" />
+
+      <Grid Margin="0,0,0,8">
+
+        <TextBlock Text="Fiyat Karşılaştırma Tablosu" FontWeight="SemiBold" VerticalAlignment="Center" />
+
+        <Button x:Name="BtnOneriyiUygula" Content="Öneriyi tüm kalemlere uygula"
+
+                Style="{StaticResource ToolbarButtonStyle}" HorizontalAlignment="Right"
+
+                Padding="12,6" Click="OneriyiUygula_Click" Visibility="Collapsed" />
+
+      </Grid>
+
+      <TextBlock Text="Birim fiyatları karşılaştırın. Seçim yapmak için fiyat hücresine tıklayın."
+
+                 FontSize="11" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,8" />
+
+      <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="10"
+
+              Background="White" Padding="4">
+
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+
+          <Grid x:Name="KarsilastirmaGrid" />
+
+        </ScrollViewer>
+
+      </Border>
+
+    </StackPanel>
+
+
+
+    <StackPanel Grid.Row="4" Margin="0,12,0,0">
+
+      <TextBlock x:Name="TxtSecimOzeti" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
+
+                 TextWrapping="Wrap" />
+
+    </StackPanel>
+
+
+
+    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+
+      <Button Content="Karşılaştırma PDF" Style="{StaticResource ToolbarButtonStyle}"
+
+              Click="KarsilastirmaPdf_Click" Margin="0,0,8,0" Padding="14,8" />
+
+      <Button Content="Onay Belgesi PDF" Style="{StaticResource ToolbarButtonStyle}"
+
+              Click="OnayPdf_Click" Margin="0,0,8,0" Padding="14,8" />
+
+      <Button x:Name="BtnGeriGonder" Content="Teklifleri Revizeye Gönder" Style="{StaticResource ToolbarButtonStyle}"
+
+              Click="GeriGonder_Click" Margin="0,0,8,0" Padding="14,8" Visibility="Collapsed" />
+
+      <Button x:Name="BtnReddet" Content="Talebi Komple Reddet" Style="{StaticResource ToolbarButtonStyle}"
+
+              Click="Reddet_Click" Margin="0,0,8,0" Padding="14,8" Visibility="Collapsed" />
+
+      <Button x:Name="BtnOnayla" Content="Teklif Onayla" Style="{StaticResource PrimaryToolbarButtonStyle}"
+
+              Click="Onayla_Click" Margin="0,0,8,0" Padding="18,8" Visibility="Collapsed" />
+
+      <Button Content="Kapat" Style="{StaticResource ToolbarButtonStyle}"
+
+              Click="Kapat_Click" Padding="18,8" IsCancel="True" />
+
+    </StackPanel>
+
+  </Grid>
+
+</Window>
+

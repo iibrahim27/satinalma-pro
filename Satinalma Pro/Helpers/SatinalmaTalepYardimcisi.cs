@@ -4,6 +4,12 @@ namespace SatinalmaPro.Helpers;
 
 public static class SatinalmaTalepYardimcisi
 {
+    public static bool TeklifDuzeltmeBekliyor(SatinalmaTalep talep) =>
+        !string.IsNullOrWhiteSpace(talep.TeklifDuzeltmeNotu)
+        && talep.Durum == SatinalmaTalepDurumlari.Karsilastirma
+        && GercekTeklifVar(talep)
+        && !talep.YonetimOnayKilitli;
+
     public static bool TeklifYonetimOnayiBekliyor(SatinalmaTalep talep) =>
         talep.Durum == SatinalmaTalepDurumlari.YonetimOnayinda
         && (talep.Teklifler?.Count ?? 0) > 0
@@ -16,7 +22,7 @@ public static class SatinalmaTalepYardimcisi
     public static bool TeklifDuzenlemeDevamEdiyor(SatinalmaTalep talep) =>
         !talep.YonetimOnayKilitli
         && !talep.HerhangiKalemOnayli
-        && (talep.Teklifler?.Count ?? 0) > 0
+        && GercekTeklifVar(talep)
         && talep.Durum is SatinalmaTalepDurumlari.Karsilastirma
             or SatinalmaTalepDurumlari.TeklifGirisi
             or SatinalmaTalepDurumlari.ImzaSurecinde
@@ -42,6 +48,26 @@ public static class SatinalmaTalepYardimcisi
 
     public static bool TalepKalemleriDuzenlenebilir(SatinalmaTalep talep) =>
         FormDuzenlenebilir(talep) || TeklifDuzenlemeDevamEdiyor(talep);
+
+    /// <summary>Talep sahibi düzenleme sonrası süreci başa alır (teklifler ve onaylar temizlenir).</summary>
+    public static void SahipDuzenlemeSonrasiHazirla(SatinalmaTalep talep)
+    {
+        talep.Durum = SatinalmaTalepDurumlari.ImzaSurecinde;
+        talep.Teklifler?.Clear();
+        talep.TeklifsizYonetimOnayi = false;
+        talep.YonetimOnayKilitli = false;
+        talep.RedGerekcesi = "";
+        talep.OnaylananTeklifId = null;
+        talep.YonetimOnerilenTeklifId = null;
+        talep.TeklifDuzeltmeNotu = "";
+        talep.YonetimOnaylayanAd = "";
+        talep.SiparisNo = "";
+        talep.FirmaSiparisNolari?.Clear();
+
+        talep.Kalemler ??= [];
+        foreach (var kalem in talep.Kalemler)
+            kalem.OnaylananTeklifId = null;
+    }
 
     public static void Dokun(SatinalmaTalep talep) =>
         talep.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -95,7 +121,7 @@ public static class SatinalmaTalepYardimcisi
         SatinalmaIcTeklifGirisi(
             talep.Durum,
             talep.OlusturanRol,
-            talep.Teklifler?.Count ?? 0,
+            GercekTeklifSayisi(talep),
             talep.YonetimOnayKilitli,
             talep.TalepTuru);
 
@@ -110,6 +136,57 @@ public static class SatinalmaTalepYardimcisi
         && !yonetimOnayKilitli
         && durum is SatinalmaTalepDurumlari.Hazirlaniyor or SatinalmaTalepDurumlari.ImzaSurecinde
         && teklifSayisi == 0;
+
+    public static bool GercekTeklifVar(SatinalmaTeklif teklif) =>
+        !string.IsNullOrWhiteSpace(teklif.FirmaAdi)
+        || teklif.Fiyatlar?.Any(f => f.BirimFiyat > 0) == true
+        || teklif.GenelToplam > 0;
+
+    public static bool GercekTeklifVar(SatinalmaTalep talep) =>
+        talep.Teklifler?.Any(GercekTeklifVar) == true;
+
+    public static int GercekTeklifSayisi(SatinalmaTalep talep) =>
+        talep.Teklifler?.Count(GercekTeklifVar) ?? 0;
+
+    public static bool DurumunuNormalizeEt(SatinalmaTalep talep)
+    {
+        if (string.IsNullOrWhiteSpace(talep.Durum))
+            return false;
+
+        var eski = talep.Durum.Trim();
+        if (SatinalmaTalepDurumlari.TumDurumlar.Contains(eski))
+            return false;
+
+        var kanonik = SatinalmaTalepDurumlari.TumDurumlar
+            .FirstOrDefault(d => d.Equals(eski, StringComparison.OrdinalIgnoreCase));
+        if (kanonik is not null)
+        {
+            talep.Durum = kanonik;
+            return true;
+        }
+
+        if (eski.Contains("Teklif", StringComparison.OrdinalIgnoreCase)
+            && eski.Contains("Gir", StringComparison.OrdinalIgnoreCase)
+            && !eski.Contains("Kar", StringComparison.OrdinalIgnoreCase))
+        {
+            talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
+            return true;
+        }
+
+        return false;
+    }
+
+    public static bool DurumlariniNormalizeEt(IList<SatinalmaTalep> talepler)
+    {
+        var degisti = false;
+        foreach (var talep in talepler)
+        {
+            if (DurumunuNormalizeEt(talep))
+                degisti = true;
+        }
+
+        return degisti;
+    }
 
     public static void KayitOncesiHazirla(SatinalmaTalep talep)
     {
@@ -192,6 +269,49 @@ public static class SatinalmaTalepYardimcisi
         foreach (var talep in talepler)
         {
             if (YonetimOnayMirasiniGuncelle(talep))
+                degisti = true;
+        }
+
+        return degisti;
+    }
+
+    public static bool TeklifGirisAsamasiniNormalizeEt(SatinalmaTalep talep)
+    {
+        if (talep.HerhangiKalemOnayli)
+            return false;
+
+        var teklifSureci = talep.Durum is SatinalmaTalepDurumlari.TeklifGirisi
+            or SatinalmaTalepDurumlari.Karsilastirma
+            or SatinalmaTalepDurumlari.ImzaSurecinde
+            or SatinalmaTalepDurumlari.YonetimOnayinda
+            or SatinalmaTalepDurumlari.Hazirlaniyor
+            || SatinalmaTalepKuyrugu.YonetimTeklifBekleyen(talep);
+
+        if (!teklifSureci)
+            return false;
+
+        var degisti = false;
+        if (talep.YonetimOnayKilitli)
+        {
+            talep.YonetimOnayKilitli = false;
+            degisti = true;
+        }
+
+        if (talep.TeklifsizYonetimOnayi)
+        {
+            talep.TeklifsizYonetimOnayi = false;
+            degisti = true;
+        }
+
+        return degisti;
+    }
+
+    public static bool TeklifGirisAsamalariniNormalizeEt(IList<SatinalmaTalep> talepler)
+    {
+        var degisti = false;
+        foreach (var talep in talepler)
+        {
+            if (TeklifGirisAsamasiniNormalizeEt(talep))
                 degisti = true;
         }
 

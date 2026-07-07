@@ -17,5 +17,9 @@ public sealed class NotificationInboxEntry
     public string Screen { get; set; } = "";
     public string Action { get; set; } = "";
     public bool IsRead { get; set; }
+    public bool IsArchived { get; set; }
+    public DateTime? DismissedAt { get; set; }
     public DateTime? CreatedAt { get; set; }
+
+    public bool IsDismissed => DismissedAt.HasValue || IsArchived;
 }

@@ -3,11 +3,14 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
+using SatinalmaPro.Views.Controls;
 using Microsoft.Win32;
 
 namespace SatinalmaPro.Views.Modules;
@@ -18,6 +21,20 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
     private readonly FiltreZamanlayici _filtreZamanlayici;
     private readonly ModulSayfalamaYoneticisi<AlinanMalzemeKaydi> _sayfalama = new();
     private bool _hesaplamaBekliyor;
+    private bool _filtreAcik;
+    private bool _tamEkran;
+    private bool _yogunGorunum;
+    private bool _arayuzHazir;
+    private string? _grupAlani;
+    private readonly Dictionary<string, TextBlock> _kpiMetinleri = new(StringComparer.Ordinal);
+
+    private static readonly (string Baslik, string Alan)[] GrupSecenekleri =
+    [
+        ("Kategori", "Kategori"),
+        ("Tedarikçi", "Tedarikci"),
+        ("Şantiye", "IndirildigiSaha"),
+        ("Teslim Alan", "TeslimAlan")
+    ];
 
     public ObservableCollection<AlinanMalzemeKaydi> Kayitlar => UygulamaVeriDeposu.AlinanMalzemeler;
 
@@ -30,6 +47,7 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
         _gorunum = CollectionViewSource.GetDefaultView(Kayitlar);
         _gorunum.Filter = KayitFiltresi;
         MalzemeGrid.ItemsSource = _sayfalama.SayfaKayitlari;
+        ErpDataGridYardimcisi.PremiumGridAyarla(MalzemeGrid);
         ModulSayfalamaYardimcisi.CubukBagla(_sayfalama, SayfalamaBar);
 
         MalzemeFiltre.OneriKaynaginiAyarla(MalzemeAdiOneriServisi.Ara);
@@ -41,8 +59,10 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
             KullaniciYetkileri.ModulErisiminiUygula(this, "Alınan Malzemeler");
             MalzemeKategoriDeposu.KayitlardanSenkronizeEt();
             FiltreCombolariGuncelle();
+            KpiOlustur();
             SayfalamayiYenile();
             OzetGuncelle();
+            _arayuzHazir = true;
             _ = HesaplamalariArkaPlandaYapAsync();
         };
     }
@@ -74,6 +94,122 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
             _hesaplamaBekliyor = false;
         }
     }
+
+    #region UI — KPI & Filtre paneli
+
+    private void KpiOlustur()
+    {
+        KpiPanel.Children.Clear();
+        _kpiMetinleri.Clear();
+        var kpiler = new (string Baslik, string Deger, string Alt, string Renk, string Ikon)[]
+        {
+            ("Toplam Kayıt", "0", "Modüldeki tüm kayıtlar", "#2563EB", "\uE8F1"),
+            ("Toplam Tutar", "₺0", "Genel toplam tutar", "#8B5CF6", "\uE8C7"),
+            ("Aylık Ortalama Tutar", "₺0", "Ay bazında ortalama", "#16A34A", "\uE787"),
+            ("Filtreye Göre Tutar", "₺0", "Aktif filtre sonucu", "#0891B2", "\uE71C"),
+            ("En Çok Alınan Malzeme", "—", "Kalem sayısına göre", "#F59E0B", "\uE7BF")
+        };
+
+        foreach (var kpi in kpiler)
+        {
+            var renk = (Color)ColorConverter.ConvertFromString(kpi.Renk)!;
+            var degerTb = new TextBlock
+            {
+                Text = kpi.Deger,
+                Style = (Style)FindResource("ErpKpiValue"),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = kpi.Deger
+            };
+            var kart = new Border { Style = (Style)FindResource("ErpKpiCard") };
+            kart.Child = new StackPanel
+            {
+                Children =
+                {
+                    new Border
+                    {
+                        Width = 36, Height = 36, CornerRadius = new CornerRadius(10),
+                        Background = new SolidColorBrush(renk) { Opacity = 0.12 },
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        Child = new TextBlock
+                        {
+                            Text = kpi.Ikon, FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 16,
+                            Foreground = new SolidColorBrush(renk),
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            VerticalAlignment = VerticalAlignment.Center
+                        }
+                    },
+                    new TextBlock { Text = kpi.Baslik, Style = (Style)FindResource("ErpKpiLabel"), Margin = new Thickness(0, 10, 0, 0) },
+                    degerTb,
+                    new TextBlock { Text = kpi.Alt, Style = (Style)FindResource("ErpKpiHint") }
+                }
+            };
+            _kpiMetinleri[kpi.Baslik] = degerTb;
+            KpiPanel.Children.Add(kart);
+        }
+    }
+
+    private void KpiGuncelle(string baslik, string deger)
+    {
+        if (_kpiMetinleri.TryGetValue(baslik, out var tb))
+            tb.Text = deger;
+    }
+
+    private void FiltreToggle_Click(object sender, RoutedEventArgs e) =>
+        ErpDataGridYardimcisi.FiltrePaneliToggle(FilterIcerik, BtnFiltreToggle, ref _filtreAcik);
+
+    private void FiltreYenile_Click(object sender, RoutedEventArgs e) => FiltreYenile();
+
+    private void Kolonlar_Click(object sender, RoutedEventArgs e) =>
+        ErpDataGridYardimcisi.KolonSeciminiGoster(MalzemeGrid, Window.GetWindow(this));
+
+    private void Grupla_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement hedef)
+            return;
+
+        ErpDataGridYardimcisi.GruplaMenusunuGoster(hedef, GrupSecenekleri, _grupAlani, alan =>
+        {
+            _grupAlani = alan;
+            SayfalamayiYenile(ilkSayfayaDon: true);
+            OzetGuncelle();
+        });
+    }
+
+    private void FiltreOdak_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_filtreAcik)
+            ErpDataGridYardimcisi.FiltrePaneliToggle(FilterIcerik, BtnFiltreToggle, ref _filtreAcik);
+
+        ErpDataGridYardimcisi.FiltrePanelineOdakla(FiltreBaslikKart);
+        TxtArama.Focus();
+    }
+
+    private void YogunGorunum_Click(object sender, RoutedEventArgs e) =>
+        ErpDataGridYardimcisi.YogunGorunumToggle(MalzemeGrid, ref _yogunGorunum);
+
+    private void TamEkran_Click(object sender, RoutedEventArgs e) =>
+        ErpDataGridYardimcisi.TabloTamEkranToggle(AnaIcerikGrid, TabloKart, 4, [0, 1, 2, 3], ref _tamEkran, BtnTamEkran);
+
+    private void SayfaBoyutuDegisti(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_arayuzHazir)
+            return;
+
+        if (CmbSayfaBoyutu.SelectedItem is not ComboBoxItem { Tag: string tag })
+            return;
+
+        if (!int.TryParse(tag, out var boyut) || boyut == _sayfalama.SayfaBoyutu)
+            return;
+
+        if (string.IsNullOrEmpty(_grupAlani))
+            _sayfalama.SayfaBoyutunuAyarla(boyut, k => ModulSayfalamaYardimcisi.TarihSira(k.Tarih));
+        else
+            _sayfalama.SayfaBoyutunuDegistir(boyut, ilkSayfayaDon: true);
+
+        SayfalamaBar.Guncelle(_sayfalama.GuncelSayfa, _sayfalama.ToplamSayfa, _sayfalama.ToplamKayit);
+    }
+
+    #endregion
 
     #region Araç çubuğu
 
@@ -170,6 +306,8 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
         MalzemeFiltre.MetniTemizle();
         CmbKategori.SelectedIndex = 0;
         CmbTedarikci.SelectedIndex = 0;
+        CmbSantiye.SelectedIndex = 0;
+        CmbTeslimAlan.SelectedIndex = 0;
         FiltreYenile();
     }
 
@@ -179,9 +317,60 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
         OzetGuncelle();
     }
 
-    private void SayfalamayiYenile(bool ilkSayfayaDon = false) =>
-        ModulSayfalamaYardimcisi.FiltreSonrasi(
-            _sayfalama, _gorunum, k => ModulSayfalamaYardimcisi.TarihSira(k.Tarih), SayfalamaBar, ilkSayfayaDon);
+    private void SayfalamayiYenile(bool ilkSayfayaDon = false)
+    {
+        _gorunum.SortDescriptions.Clear();
+        _gorunum.Refresh();
+
+        var filtrelenmis = ModulSayfalamaYardimcisi.FiltrelenmisListe<AlinanMalzemeKaydi>(_gorunum);
+        if (string.IsNullOrEmpty(_grupAlani))
+        {
+            _sayfalama.KaynakGuncelle(filtrelenmis, k => ModulSayfalamaYardimcisi.TarihSira(k.Tarih), ilkSayfayaDon);
+        }
+        else
+        {
+            _sayfalama.SiraliKaynakGuncelle(GruplanmisListe(filtrelenmis, _grupAlani), ilkSayfayaDon);
+        }
+
+        SayfalamaBar.Guncelle(_sayfalama.GuncelSayfa, _sayfalama.ToplamSayfa, _sayfalama.ToplamKayit);
+        GrupBilgiGuncelle(filtrelenmis);
+    }
+
+    private static List<AlinanMalzemeKaydi> GruplanmisListe(IEnumerable<AlinanMalzemeKaydi> kaynak, string alan) =>
+        kaynak
+            .OrderBy(k => GrupAnahtari(k, alan), StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(k => ModulSayfalamaYardimcisi.TarihSira(k.Tarih))
+            .ToList();
+
+    private static string GrupAnahtari(AlinanMalzemeKaydi kayit, string alan) => alan switch
+    {
+        "Kategori" => kayit.Kategori ?? "",
+        "Tedarikci" => kayit.Tedarikci ?? "",
+        "IndirildigiSaha" => kayit.IndirildigiSaha ?? "",
+        "TeslimAlan" => kayit.TeslimAlan ?? "",
+        _ => ""
+    };
+
+    private void GrupBilgiGuncelle(IReadOnlyList<AlinanMalzemeKaydi> filtrelenmis)
+    {
+        if (string.IsNullOrEmpty(_grupAlani))
+        {
+            TxtGrupBilgi.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var baslik = GrupSecenekleri.FirstOrDefault(g => g.Alan == _grupAlani).Baslik;
+        if (string.IsNullOrEmpty(baslik))
+            baslik = _grupAlani;
+
+        var grupSayisi = filtrelenmis
+            .Select(k => GrupAnahtari(k, _grupAlani))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+
+        TxtGrupBilgi.Text = $"· Gruplama: {baslik} ({grupSayisi} grup)";
+        TxtGrupBilgi.Visibility = Visibility.Visible;
+    }
 
     public void KisayolYenile()
     {
@@ -203,14 +392,6 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
         FiltreYenile();
     }
 
-    private static void VerileriHesapla(IEnumerable<AlinanMalzemeKaydi> kayitlar)
-    {
-        foreach (var kayit in kayitlar)
-            kayit.ToplamTutariHesapla();
-
-        AlinanMalzemeArtisHesaplayici.Hesapla(kayitlar);
-    }
-
     private bool KayitFiltresi(object item)
     {
         if (item is not AlinanMalzemeKaydi kayit)
@@ -228,7 +409,7 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
             if (DpBaslangic.SelectedDate is DateTime b && tarih.Date < b.Date)
                 return false;
 
-            if (DpBitis.SelectedDate is DateTime e && tarih.Date > e.Date)
+            if (DpBitis.SelectedDate is DateTime bit && tarih.Date > bit.Date)
                 return false;
         }
 
@@ -237,17 +418,26 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
             !kayit.MalzemeHizmet.Contains(malzeme, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        var kategori = ComboDegeri(CmbKategori);
-        if (!string.IsNullOrEmpty(kategori) && kategori != "Tümü" &&
-            !kayit.Kategori.Equals(kategori, StringComparison.OrdinalIgnoreCase))
+        if (!ComboEslesir(CmbKategori, kayit.Kategori))
             return false;
 
-        var tedarikci = ComboDegeri(CmbTedarikci);
-        if (!string.IsNullOrEmpty(tedarikci) && tedarikci != "Tümü" &&
-            !kayit.Tedarikci.Equals(tedarikci, StringComparison.OrdinalIgnoreCase))
+        if (!ComboEslesir(CmbTedarikci, kayit.Tedarikci))
+            return false;
+
+        if (!ComboEslesir(CmbSantiye, kayit.IndirildigiSaha))
+            return false;
+
+        if (!ComboEslesir(CmbTeslimAlan, kayit.TeslimAlan))
             return false;
 
         return true;
+    }
+
+    private static bool ComboEslesir(ComboBox combo, string? deger)
+    {
+        var secim = ComboDegeri(combo);
+        return string.IsNullOrEmpty(secim) || secim == "Tümü"
+            || (deger ?? "").Equals(secim, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool AramaEslesir(AlinanMalzemeKaydi kayit, string arama) =>
@@ -267,21 +457,22 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
     {
         var seciliKategori = ComboDegeri(CmbKategori);
         var seciliTedarikci = ComboDegeri(CmbTedarikci);
+        var seciliSantiye = ComboDegeri(CmbSantiye);
+        var seciliTeslim = ComboDegeri(CmbTeslimAlan);
 
-        CmbKategori.Items.Clear();
-        CmbTedarikci.Items.Clear();
+        ComboDoldur(CmbKategori, MalzemeKategoriDeposu.TumListe(), seciliKategori);
+        ComboDoldur(CmbTedarikci, Kayitlar.Select(k => k.Tedarikci), seciliTedarikci);
+        ComboDoldur(CmbSantiye, Kayitlar.Select(k => k.IndirildigiSaha), seciliSantiye);
+        ComboDoldur(CmbTeslimAlan, Kayitlar.Select(k => k.TeslimAlan), seciliTeslim);
+    }
 
-        CmbKategori.Items.Add(new ComboBoxItem { Content = "Tümü" });
-        CmbTedarikci.Items.Add(new ComboBoxItem { Content = "Tümü" });
-
-        foreach (var k in MalzemeKategoriDeposu.TumListe())
-            CmbKategori.Items.Add(new ComboBoxItem { Content = k });
-
-        foreach (var t in Kayitlar.Select(k => k.Tedarikci).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().OrderBy(s => s))
-            CmbTedarikci.Items.Add(new ComboBoxItem { Content = t });
-
-        CmbKategori.SelectedIndex = IndexBul(CmbKategori, seciliKategori);
-        CmbTedarikci.SelectedIndex = IndexBul(CmbTedarikci, seciliTedarikci);
+    private static void ComboDoldur(ComboBox combo, IEnumerable<string> degerler, string? secili)
+    {
+        combo.Items.Clear();
+        combo.Items.Add(new ComboBoxItem { Content = "Tümü" });
+        foreach (var d in degerler.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().OrderBy(s => s))
+            combo.Items.Add(new ComboBoxItem { Content = d });
+        combo.SelectedIndex = IndexBul(combo, secili);
     }
 
     private static int IndexBul(ComboBox combo, string? deger)
@@ -302,18 +493,15 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
 
     #region Tablo işlemleri
 
-    private void MalzemeGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
-        KayitButonlariniGuncelle();
+    private void MalzemeGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
 
-    private void KayitDuzenle_Click(object sender, RoutedEventArgs e) => MenuDuzenle_Click(sender, e);
-
-    private void KayitSil_Click(object sender, RoutedEventArgs e) => MenuSil_Click(sender, e);
-
-    private void KayitButonlariniGuncelle()
+    private void MalzemeGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        var secili = SeciliKayit() is not null;
-        BtnKayitDuzenle.IsEnabled = secili;
-        BtnKayitSil.IsEnabled = secili;
+        if (!KullaniciYetkileri.ModulYazabilir("Alınan Malzemeler"))
+            return;
+
+        if (SeciliKayit() is { } kayit)
+            KaydiDuzenle(kayit);
     }
 
     private void MalzemeGrid_LoadingRow(object sender, DataGridRowEventArgs e)
@@ -322,21 +510,80 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
             e.Row.Background = KategoriRenkleri.GetFirca(kayit.Kategori);
     }
 
-    private void MalzemeGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private void SatirMenu_Click(object sender, RoutedEventArgs e)
     {
-        if (SeciliKayit() is { } kayit)
-            KaydiDuzenle(kayit);
+        if (sender is not Button { Tag: AlinanMalzemeKaydi kayit })
+            return;
+
+        MalzemeGrid.SelectedItem = kayit;
+        var menu = new ContextMenu { PlacementTarget = sender as UIElement, Placement = PlacementMode.Bottom };
+        EkleMenu(menu, "Görüntüle", () =>
+        {
+            var pencere = new AlinanMalzemeDuzenleWindow(kayit) { Owner = Window.GetWindow(this) };
+            pencere.ShowDialog();
+        });
+        EkleMenu(menu, "Düzenle", () => KaydiDuzenle(kayit));
+        EkleMenu(menu, "Kopyala", () => KaydiKopyala(kayit));
+        EkleMenu(menu, "Geçmişi Göster", () => GecmisiGoster(kayit));
+        menu.Items.Add(new Separator());
+        EkleMenu(menu, "PDF", () => AlinanMalzemePdfOlusturucu.Indir([kayit], kayit.MalzemeHizmet));
+        EkleMenu(menu, "Yazdır", () => AlinanMalzemePdfOlusturucu.Yazdir([kayit], kayit.MalzemeHizmet));
+        EkleMenu(menu, "Sil", () => KaydiSil(kayit));
+        menu.IsOpen = true;
     }
 
-    private void MenuDuzenle_Click(object sender, RoutedEventArgs e)
+    private void GecmisiGoster(AlinanMalzemeKaydi kayit)
     {
-        if (SeciliKayit() is { } kayit)
-            KaydiDuzenle(kayit);
+        var baslik = string.IsNullOrWhiteSpace(kayit.MalzemeHizmet)
+            ? "Kayıt geçmişi"
+            : $"{kayit.MalzemeHizmet} — kayıt özeti";
+
+        var pencere = new ErpKayitGecmisiWindow(baslik, KayitGecmisiSatirlari(kayit))
+        {
+            Owner = Window.GetWindow(this)
+        };
+        pencere.ShowDialog();
     }
 
-    private void MenuSil_Click(object sender, RoutedEventArgs e)
+    private static IEnumerable<string> KayitGecmisiSatirlari(AlinanMalzemeKaydi kayit)
     {
-        if (SeciliKayit() is not { } kayit)
+        yield return $"Tarih: {kayit.Tarih}";
+        yield return $"İrsaliye / Fatura No: {(string.IsNullOrWhiteSpace(kayit.FaturaNo) ? "—" : kayit.FaturaNo)}";
+        yield return $"Malzeme: {kayit.MalzemeHizmet}";
+        yield return $"Kategori: {kayit.Kategori}";
+        yield return $"Miktar: {kayit.Miktar:N2} {kayit.Birim}";
+        yield return $"Birim fiyat: ₺{kayit.BirimFiyati:N2}";
+        yield return $"Toplam: ₺{kayit.ToplamTutar:N2}";
+        yield return $"Tedarikçi: {kayit.Tedarikci}";
+        yield return $"Şantiye: {kayit.IndirildigiSaha}";
+        yield return $"Teslim alan: {(string.IsNullOrWhiteSpace(kayit.TeslimAlan) ? "—" : kayit.TeslimAlan)}";
+        if (!string.IsNullOrWhiteSpace(kayit.Aciklama))
+            yield return $"Açıklama: {kayit.Aciklama}";
+        if (kayit.SatinalmaTalepId is Guid talepId)
+            yield return $"Satınalma talebi: {talepId}";
+    }
+
+    private static void EkleMenu(ContextMenu menu, string baslik, Action action)
+    {
+        var item = new MenuItem { Header = baslik };
+        item.Click += (_, _) => action();
+        menu.Items.Add(item);
+    }
+
+    private void KaydiKopyala(AlinanMalzemeKaydi kayit)
+    {
+        if (KullaniciYetkileri.YazmaIslemiEngellendi("Alınan Malzemeler"))
+            return;
+
+        var kopya = kayit.Kopyala();
+        kopya.FaturaNo = "";
+        Kayitlar.Add(kopya);
+        VeriGuncellendi();
+    }
+
+    private void KaydiSil(AlinanMalzemeKaydi kayit)
+    {
+        if (KullaniciYetkileri.YazmaIslemiEngellendi("Alınan Malzemeler"))
             return;
 
         if (MessageBox.Show($"{kayit.FaturaNo} numaralı kaydı silmek istiyor musunuz?", "Kayıt Sil",
@@ -352,6 +599,9 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
 
     private void KaydiDuzenle(AlinanMalzemeKaydi kayit)
     {
+        if (KullaniciYetkileri.YazmaIslemiEngellendi("Alınan Malzemeler"))
+            return;
+
         var pencere = new AlinanMalzemeDuzenleWindow(kayit) { Owner = Window.GetWindow(this) };
         if (pencere.ShowDialog() != true)
             return;
@@ -394,25 +644,55 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
 
     private void OzetGuncelle()
     {
-        var gorunenSayi = 0;
-        double toplamMiktar = 0;
-        decimal toplamTutar = 0;
+        var tumu = Kayitlar.ToList();
+        var gorunen = GorunenKayitlar();
+        var gorunenSayi = gorunen.Count;
+        var toplamMiktar = gorunen.Sum(k => k.Miktar);
+        var toplamTutarTumu = tumu.Sum(k => k.ToplamTutar);
+        var filtreTutar = gorunen.Sum(k => k.ToplamTutar);
 
-        foreach (var oge in _gorunum)
-        {
-            if (oge is not AlinanMalzemeKaydi kayit)
-                continue;
+        var aylikToplamlar = tumu
+            .Select(k => (Kayit: k, Tarih: TarihOku(k.Tarih)))
+            .Where(x => x.Tarih.HasValue)
+            .GroupBy(x => (x.Tarih!.Value.Year, x.Tarih!.Value.Month))
+            .Select(g => g.Sum(x => x.Kayit.ToplamTutar))
+            .ToList();
+        var aylikOrtalama = aylikToplamlar.Count > 0 ? aylikToplamlar.Average() : 0m;
 
-            gorunenSayi++;
-            toplamMiktar += kayit.Miktar;
-            toplamTutar += kayit.ToplamTutar;
-        }
+        var enCokGrup = tumu
+            .Where(k => !string.IsNullOrWhiteSpace(k.MalzemeHizmet))
+            .GroupBy(k => k.MalzemeHizmet.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Select(g => new { Ad = g.Key, Adet = g.Count() })
+            .OrderByDescending(x => x.Adet)
+            .FirstOrDefault();
 
-        TxtToplamKayit.Text = Kayitlar.Count.ToString();
-        TxtToplamMiktar.Text = $"{toplamMiktar:N1} Ton";
-        TxtToplamTutar.Text = $"₺{toplamTutar:N0}";
-        TxtFiltrelenen.Text = gorunenSayi == Kayitlar.Count
-            ? "Tümü"
-            : $"{gorunenSayi} / {Kayitlar.Count} kayıt";
+        var enCokMalzeme = enCokGrup?.Ad ?? "—";
+        var enCokAdet = enCokGrup?.Adet ?? 0;
+
+        KpiGuncelle("Toplam Kayıt", tumu.Count.ToString("N0"));
+        KpiGuncelle("Toplam Tutar", $"₺{toplamTutarTumu:N0}");
+        KpiGuncelle("Aylık Ortalama Tutar", $"₺{aylikOrtalama:N0}");
+        KpiGuncelle("Filtreye Göre Tutar", $"₺{filtreTutar:N0}");
+        KpiGuncelle("En Çok Alınan Malzeme", enCokMalzeme);
+        if (_kpiMetinleri.TryGetValue("En Çok Alınan Malzeme", out var enCokTb))
+            enCokTb.ToolTip = enCokAdet > 0 ? $"{enCokMalzeme} ({enCokAdet:N0} kalem)" : enCokMalzeme;
+        if (_kpiMetinleri.TryGetValue("Filtreye Göre Tutar", out var filtreTb))
+            filtreTb.ToolTip = $"{gorunenSayi:N0} kayıt · ₺{filtreTutar:N2}";
+
+        TxtTabloBaslik.Text = $"Malzeme Listesi ({gorunenSayi:N0} kayıt)";
+        TxtAltKayit.Text = gorunenSayi.ToString("N0");
+        TxtAltMiktar.Text = $"{toplamMiktar:N1}";
+        TxtAltTutar.Text = $"₺{filtreTutar:N0}";
+    }
+
+    private static DateTime? TarihOku(string? tarih)
+    {
+        if (string.IsNullOrWhiteSpace(tarih))
+            return null;
+
+        if (DateTime.TryParseExact(tarih, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+            return dt;
+
+        return DateTime.TryParse(tarih, CultureInfo.CurrentCulture, DateTimeStyles.None, out dt) ? dt : null;
     }
 }

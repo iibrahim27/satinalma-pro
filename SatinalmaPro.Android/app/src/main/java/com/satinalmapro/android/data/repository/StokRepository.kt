@@ -9,6 +9,7 @@ import com.satinalmapro.android.core.model.UserProfile
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.data.firebase.FirebaseAuthClient
 import com.satinalmapro.android.data.firebase.FirestoreClient
+import com.satinalmapro.android.services.StokTeslimFisiHelper
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -302,11 +303,101 @@ class StokRepository(
                     depoSaha = guncel.depoSaha,
                     birimMaliyet = guncel.birimMaliyet,
                     belgeNo = belge,
-                    islemYapan = user.fullName,
+                    islemYapan = StokTeslimFisiHelper.teslimEdenMetni(user.role, user.fullName),
                     teslimEdilen = teslimAlan
                 )
             )
         }
+        saveStok(stokList)
+        saveHareketler(hareketList)
+    }
+
+    private fun hareketDuzenlenebilir(hareket: StokHareket): Boolean =
+        hareket.hareketTipi.equals(StokHareketTipi.GIRIS, true) ||
+            hareket.hareketTipi.equals(StokHareketTipi.CIKIS, true)
+
+    private fun stokEtkisiniGeriAl(stokList: MutableList<StokKaydi>, hareket: StokHareket) {
+        val stok = stokBul(stokList, hareket.malzemeAdi, hareket.depoSaha) ?: return
+        val index = stokList.indexOf(stok)
+        val guncel = when {
+            hareket.hareketTipi.equals(StokHareketTipi.GIRIS, true) -> stok.copy(
+                mevcutMiktar = (stok.mevcutMiktar - hareket.miktar).coerceAtLeast(0.0),
+                sonGuncelleme = bugun(),
+                toplamDeger = (stok.mevcutMiktar - hareket.miktar).coerceAtLeast(0.0) * stok.birimMaliyet
+            )
+            hareket.hareketTipi.equals(StokHareketTipi.CIKIS, true) -> stok.copy(
+                mevcutMiktar = stok.mevcutMiktar + hareket.miktar,
+                sonGuncelleme = bugun(),
+                toplamDeger = (stok.mevcutMiktar + hareket.miktar) * stok.birimMaliyet
+            )
+            else -> return
+        }
+        stokList[index] = guncel
+    }
+
+    suspend fun hareketSil(user: UserProfile, hareketId: String) {
+        if (!KullaniciRolleri.canStockWrite(user.role)) throw IllegalStateException("Stok düzenleme yetkiniz yok")
+        val hareketList = loadHareketler().toMutableList()
+        val hareket = hareketList.firstOrNull { it.id == hareketId }
+            ?: throw IllegalArgumentException("Hareket bulunamadı")
+        if (!hareketDuzenlenebilir(hareket)) throw IllegalArgumentException("Bu hareket düzenlenemez")
+        val stokList = loadStok().toMutableList()
+        stokEtkisiniGeriAl(stokList, hareket)
+        hareketList.removeAll { it.id == hareketId }
+        saveStok(stokList)
+        saveHareketler(hareketList)
+    }
+
+    suspend fun hareketGuncelle(
+        user: UserProfile,
+        hareketId: String,
+        tarih: String,
+        miktar: Double,
+        belgeNo: String,
+        islemYapan: String,
+        teslimEdilen: String,
+        aciklama: String
+    ) {
+        if (!KullaniciRolleri.canStockWrite(user.role)) throw IllegalStateException("Stok düzenleme yetkiniz yok")
+        if (miktar <= 0) throw IllegalArgumentException("Geçerli miktar girin")
+        val hareketList = loadHareketler().toMutableList()
+        val eski = hareketList.firstOrNull { it.id == hareketId }
+            ?: throw IllegalArgumentException("Hareket bulunamadı")
+        if (!hareketDuzenlenebilir(eski)) throw IllegalArgumentException("Bu hareket düzenlenemez")
+        val stokList = loadStok().toMutableList()
+        stokEtkisiniGeriAl(stokList, eski)
+        hareketList.removeAll { it.id == hareketId }
+
+        val stok = stokBul(stokList, eski.malzemeAdi, eski.depoSaha)
+            ?: throw IllegalArgumentException("Stok kaydı bulunamadı")
+        if (eski.hareketTipi.equals(StokHareketTipi.CIKIS, true) && miktar > stok.mevcutMiktar) {
+            throw IllegalArgumentException("Yetersiz stok")
+        }
+
+        val index = stokList.indexOf(stok)
+        val guncelStok = when {
+            eski.hareketTipi.equals(StokHareketTipi.GIRIS, true) -> stok.copy(
+                mevcutMiktar = stok.mevcutMiktar + miktar,
+                sonGuncelleme = tarih.ifBlank { bugun() },
+                toplamDeger = (stok.mevcutMiktar + miktar) * stok.birimMaliyet
+            )
+            else -> stok.copy(
+                mevcutMiktar = stok.mevcutMiktar - miktar,
+                sonGuncelleme = tarih.ifBlank { bugun() },
+                toplamDeger = (stok.mevcutMiktar - miktar) * stok.birimMaliyet
+            )
+        }
+        stokList[index] = guncelStok
+        hareketList.add(
+            eski.copy(
+                tarih = tarih.ifBlank { eski.tarih },
+                miktar = miktar,
+                belgeNo = belgeNo.ifBlank { eski.belgeNo },
+                islemYapan = islemYapan.ifBlank { eski.islemYapan },
+                teslimEdilen = teslimEdilen.ifBlank { eski.teslimEdilen },
+                aciklama = aciklama
+            )
+        )
         saveStok(stokList)
         saveHareketler(hareketList)
     }

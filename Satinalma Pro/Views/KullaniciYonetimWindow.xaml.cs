@@ -268,7 +268,11 @@ public partial class KullaniciYonetimWindow : Window
     private void CmbYeniRol_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_seciliKullanici is not null)
+        {
+            foreach (var satir in _modulSatirlari)
+                YazmaKutusunuRolIleSinirla(satir.Yazma, satir.ModulAdi, AktifFormRolu());
             return;
+        }
 
         RolVarsayilaniniSec();
     }
@@ -295,13 +299,22 @@ public partial class KullaniciYonetimWindow : Window
     private void YetkileriRoldenYukle(string rol, IEnumerable<string> moduller)
     {
         var set = moduller.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var yazabilir = KullaniciRolleri.YazabilirMi(rol);
+        var yazmaAtanabilir = KullaniciYetkileri.RolYazmaAtanabilir(rol);
 
         foreach (var satir in _modulSatirlari)
         {
             var okuma = set.Contains(satir.ModulAdi);
             satir.Okuma.IsChecked = okuma;
-            satir.Yazma.IsChecked = okuma && yazabilir;
+
+            if (satir.ModulAdi.Equals("Satınalma", StringComparison.OrdinalIgnoreCase))
+            {
+                var r = KullaniciRolleri.Normalize(rol);
+                satir.Yazma.IsChecked = okuma && (yazmaAtanabilir || r is KullaniciRolleri.Yonetim or KullaniciRolleri.Sef or KullaniciRolleri.Saha);
+            }
+            else
+                satir.Yazma.IsChecked = okuma && yazmaAtanabilir;
+
+            YazmaKutusunuRolIleSinirla(satir.Yazma, satir.ModulAdi, rol);
             foreach (var sekme in satir.SekmeKutulari)
             {
                 var ad = sekme.Content?.ToString() ?? "";
@@ -332,7 +345,8 @@ public partial class KullaniciYonetimWindow : Window
             }
 
             satir.Okuma.IsChecked = yetki.Okuma;
-            satir.Yazma.IsChecked = yetki.Yazma;
+            satir.Yazma.IsChecked = yetki.Yazma && YazmaAtanabilirMi(AktifFormRolu(), satir.ModulAdi);
+            YazmaKutusunuRolIleSinirla(satir.Yazma, satir.ModulAdi, AktifFormRolu());
             foreach (var sekmeKutu in satir.SekmeKutulari)
             {
                 var ad = sekmeKutu.Content?.ToString() ?? "";
@@ -343,6 +357,7 @@ public partial class KullaniciYonetimWindow : Window
 
     private List<ModulYetkiKaydi> YetkileriTopla()
     {
+        var rol = AktifFormRolu();
         var liste = new List<ModulYetkiKaydi>();
         foreach (var satir in _modulSatirlari)
         {
@@ -355,16 +370,41 @@ public partial class KullaniciYonetimWindow : Window
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .ToList();
 
+            var yazma = satir.Yazma.IsChecked == true && YazmaAtanabilirMi(rol, satir.ModulAdi);
+
             liste.Add(new ModulYetkiKaydi
             {
                 Modul = satir.ModulAdi,
                 Okuma = satir.Okuma.IsChecked == true,
-                Yazma = satir.Yazma.IsChecked == true,
+                Yazma = yazma,
                 Sekmeler = sekmeler.Count == satir.SekmeKutulari.Count ? [] : sekmeler
             });
         }
 
         return liste;
+    }
+
+    private string AktifFormRolu() =>
+        KullaniciRolleri.Normalize(CmbYeniRol.SelectedItem?.ToString());
+
+    private static bool YazmaAtanabilirMi(string rol, string modulAdi)
+    {
+        if (modulAdi.Equals("Satınalma", StringComparison.OrdinalIgnoreCase))
+        {
+            var r = KullaniciRolleri.Normalize(rol);
+            return KullaniciYetkileri.RolYazmaAtanabilir(rol)
+                   || r is KullaniciRolleri.Yonetim or KullaniciRolleri.Sef or KullaniciRolleri.Saha;
+        }
+
+        return KullaniciYetkileri.RolYazmaAtanabilir(rol);
+    }
+
+    private static void YazmaKutusunuRolIleSinirla(CheckBox yazma, string modulAdi, string? rol)
+    {
+        rol ??= KullaniciRolleri.Saha;
+        yazma.IsEnabled = YazmaAtanabilirMi(rol, modulAdi);
+        if (!yazma.IsEnabled)
+            yazma.IsChecked = false;
     }
 
     private KullaniciProfili FormdanProfilOlustur(string? uid = null)

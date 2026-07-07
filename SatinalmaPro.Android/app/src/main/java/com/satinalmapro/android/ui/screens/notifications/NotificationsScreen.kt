@@ -1,13 +1,11 @@
 package com.satinalmapro.android.ui.screens.notifications
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,6 +14,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -30,8 +30,13 @@ import androidx.compose.ui.unit.dp
 import com.satinalmapro.android.core.model.AppNotification
 import com.satinalmapro.android.core.roles.BildirimRota
 import com.satinalmapro.android.ui.AppViewModel
+import com.satinalmapro.android.ui.components.AppCard
+import com.satinalmapro.android.ui.components.AppEmptyState
+import com.satinalmapro.android.ui.components.AppPullRefreshBox
 import com.satinalmapro.android.ui.theme.AppColors
+import com.satinalmapro.android.ui.theme.AppSpacing
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsScreen(viewModel: AppViewModel) {
     val notifications by viewModel.notifications.collectAsState()
@@ -39,11 +44,9 @@ fun NotificationsScreen(viewModel: AppViewModel) {
     val loading by viewModel.loading.collectAsState()
     val unreadCount = notifications.count { !it.read }
 
-    Column(Modifier.fillMaxSize()) {
+    AppPullRefreshBox(isRefreshing = loading, onRefresh = { viewModel.refreshData() }) {
         Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             OutlinedButton(
@@ -63,17 +66,11 @@ fun NotificationsScreen(viewModel: AppViewModel) {
         }
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.cardGap)
         ) {
             if (notifications.isEmpty()) {
-                item {
-                    Text(
-                        "Bildirim yok.",
-                        color = AppColors.TextSecondary,
-                        modifier = Modifier.padding(vertical = 24.dp)
-                    )
-                }
+                item { AppEmptyState("Bildirim yok.") }
             }
             items(notifications, key = { it.id }) { item ->
                 NotificationTimelineItem(item) {
@@ -97,55 +94,51 @@ private fun NotificationTimelineItem(item: AppNotification, onClick: () -> Unit)
         "Reddedildi" -> AppColors.Danger
         else -> AppColors.Primary
     }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    AppCard(onClick = onClick) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top
+        ) {
             Surface(shape = CircleShape, color = accent, modifier = Modifier.size(12.dp)) {}
-            Spacer(Modifier.height(48.dp))
-        }
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    item.time,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = AppColors.TextSecondary,
-                    modifier = Modifier.weight(1f)
-                )
-                if (!item.read) {
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "Yeni",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.Primary,
-                        fontWeight = FontWeight.SemiBold
+                        item.time,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = AppColors.TextSecondary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (!item.read) {
+                        Text(
+                            "Yeni",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AppColors.Primary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Rounded.Notifications,
+                        null,
+                        tint = accent,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        item.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = AppColors.TextPrimary
                     )
                 }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.material3.Icon(
-                    Icons.Rounded.Notifications,
-                    null,
-                    tint = accent,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(6.dp))
                 Text(
-                    item.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = AppColors.TextPrimary
+                    item.message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextSecondary,
+                    modifier = Modifier.padding(top = 4.dp)
                 )
             }
-            Text(
-                item.message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppColors.TextSecondary,
-                modifier = Modifier.padding(top = 4.dp)
-            )
         }
     }
 }

@@ -2,25 +2,48 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:dash="clr-namespace:SatinalmaPro.Controls.Dashboard"
-             Width="280"
-             Background="White">
+             Width="240"
+             Background="{StaticResource DashSidebarGradientBrush}"
+             BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="0,0,1,0">
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
 
-    <Border Padding="24,28,24,20" BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="0,0,0,1">
-      <Image x:Name="ImgLogo" MaxHeight="56" Stretch="Uniform" HorizontalAlignment="Left" />
+    <Border Padding="20,24,20,18" BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="0,0,0,1">
+      <Image x:Name="ImgLogo" Stretch="Uniform" MaxHeight="52" HorizontalAlignment="Center" />
     </Border>
 
-    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="12,16,12,12">
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="10,12,10,8">
       <StackPanel x:Name="NavPanel" />
     </ScrollViewer>
 
-    <Border Grid.Row="2" Padding="16,14" BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="0,1,0,0">
-      <Button x:Name="BtnProfil" Style="{StaticResource DashGhostButtonStyle}" Padding="10,10"
+    <StackPanel Grid.Row="2" Margin="12,0,12,8">
+      <Border Padding="12,10" CornerRadius="10" Background="#F8FAFC" BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="1">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <StackPanel>
+            <TextBlock Text="Şirket Bilgileri" FontSize="10" Foreground="{StaticResource DashSidebarMutedBrush}" />
+            <TextBlock x:Name="TxtSirketAdi" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{StaticResource DashSidebarTextBrush}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <TextBlock Grid.Column="1" Text="&#xE712;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                     Foreground="{StaticResource DashSidebarMutedBrush}" VerticalAlignment="Top" />
+        </Grid>
+      </Border>
+      <Border Margin="0,8,0,0" Padding="10,8" CornerRadius="10" Background="#F8FAFC" BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="1">
+        <TextBlock x:Name="TxtMaliYil" FontSize="12" Foreground="{StaticResource DashSidebarTextBrush}" />
+      </Border>
+    </StackPanel>
+
+    <Border Grid.Row="3" Padding="12,12,12,16" BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="0,1,0,0" Background="White">
+      <Button x:Name="BtnProfil" Style="{StaticResource DashSidebarNavButtonStyle}" Padding="8,8"
               HorizontalContentAlignment="Stretch" Click="BtnProfil_Click">
         <Grid>
           <Grid.ColumnDefinitions>
@@ -28,22 +51,22 @@
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="Auto" />
           </Grid.ColumnDefinitions>
-
-          <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource DashPrimaryBrush}">
-            <TextBlock x:Name="TxtAvatar" Text="İP" Foreground="White" FontWeight="SemiBold"
+          <Border Width="38" Height="38" CornerRadius="19" Background="{StaticResource DashPrimaryBrush}">
+            <TextBlock x:Name="TxtAvatar" Text="YK" Foreground="White" FontWeight="SemiBold" FontSize="13"
                        HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
-
-          <StackPanel Grid.Column="1" Margin="12,0,8,0" VerticalAlignment="Center">
+          <StackPanel Grid.Column="1" Margin="10,0,6,0" VerticalAlignment="Center">
             <TextBlock x:Name="TxtKullaniciAd" FontSize="13" FontWeight="SemiBold"
-                       Foreground="{StaticResource DashTextBrush}" TextTrimming="CharacterEllipsis" />
-            <TextBlock x:Name="TxtKullaniciRol" FontSize="12"
-                       Foreground="{StaticResource DashTextSecondaryBrush}" />
+                       Foreground="{StaticResource DashSidebarTextBrush}" TextTrimming="CharacterEllipsis" />
+            <TextBlock x:Name="TxtKullaniciRol" FontSize="11" Foreground="{StaticResource DashSidebarMutedBrush}" />
+            <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+              <Ellipse Width="7" Height="7" Fill="{StaticResource DashSuccessBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="Çevrimiçi" FontSize="10" Foreground="{StaticResource DashSuccessBrush}"
+                         Margin="5,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
           </StackPanel>
-
-          <dash:IconControl Grid.Column="2" Kind="ChevronDown" IconSize="16"
-                            StrokeBrush="{StaticResource DashTextSecondaryBrush}"
-                            VerticalAlignment="Center" />
+          <dash:IconControl Grid.Column="2" Kind="ChevronDown" IconSize="14"
+                            StrokeBrush="{StaticResource DashSidebarMutedBrush}" VerticalAlignment="Center" />
         </Grid>
       </Button>
     </Border>

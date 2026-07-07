@@ -1,5 +1,10 @@
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
+using SatinalmaPro.Helpers;
 using SatinalmaPro.Services;
 
 namespace SatinalmaPro.Views;
@@ -10,12 +15,63 @@ public partial class AcilisEkrani : Window
 
     private double _prgGenislik;
     private double _sonYuzde;
+    private TaskCompletionSource<bool>? _girisTamam;
 
     public AcilisEkrani()
     {
         InitializeComponent();
+        TxtVersiyon.Text = $"Versiyon {UygulamaBilgisi.Versiyon}";
+        GirisKontrol.GirisBasarili += GirisKontrol_GirisBasarili;
         Loaded += (_, _) => GuncellePrgGenisligi();
         PrgTrack.SizeChanged += (_, _) => GuncellePrgGenisligi();
+    }
+
+    public Task<bool> OturumAcAsync()
+    {
+        if (!OturumYoneticisi.BulutAktif)
+        {
+            MessageBox.Show(
+                "Firebase yapılandırılmamış — yerel mod aktif.\n\n" +
+                "• Veriler yalnızca bu bilgisayarda saklanır\n" +
+                "• Mobil uygulama ile senkron olmaz\n" +
+                "• Tüm modül yetkileri açıktır\n\n" +
+                "Bulut kurulumu için: Ayarlar → Genel → Kurulum Kılavuzunu Aç",
+                UygulamaBilgisi.Ad,
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return Task.FromResult(true);
+        }
+
+        _girisTamam = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Dispatcher.Invoke(GirisPaneliniGoster);
+        return _girisTamam.Task;
+    }
+
+    private void GirisPaneliniGoster()
+    {
+        PanelYukleme.Visibility = Visibility.Collapsed;
+        PanelGiris.Visibility = Visibility.Visible;
+        Title = $"{UygulamaBilgisi.Ad} — Giriş";
+        Height = 740;
+        GirisKontrol.TercihleriYukle();
+    }
+
+    private void YuklemePaneliniGoster()
+    {
+        PanelGiris.Visibility = Visibility.Collapsed;
+        PanelYukleme.Visibility = Visibility.Visible;
+        Title = UygulamaBilgisi.Ad;
+        Height = 720;
+    }
+
+    private void GirisKontrol_GirisBasarili()
+    {
+        if (_girisTamam is null)
+            return;
+
+        YuklemePaneliniGoster();
+        _girisTamam.TrySetResult(true);
+        _girisTamam = null;
     }
 
     private void GuncellePrgGenisligi()
@@ -58,9 +114,17 @@ public partial class AcilisEkrani : Window
 
         if (OturumYoneticisi.BulutAktif)
         {
-            await Dispatcher.InvokeAsync(() => Ilerle(15, "Oturum bekleniyor...", "Giriş sonrası veriler yüklenecek"));
-            await Task.Delay(200);
-            await Dispatcher.InvokeAsync(() => Ilerle(100, "Hazır", "Giriş yapın"));
+            while (Environment.TickCount64 - baslangic < ToplamSureMs)
+            {
+                var gecen = Environment.TickCount64 - baslangic;
+                var yuzde = Math.Clamp(10 + gecen * 90.0 / ToplamSureMs, 10, 99);
+                await Dispatcher.InvokeAsync(() =>
+                    Ilerle(yuzde, "Uygulama yükleniyor...", "Hazırlanıyor..."));
+                await Task.Delay(40);
+            }
+
+            await Dispatcher.InvokeAsync(() => Ilerle(100, "Hazır", "Giriş ekranı açılıyor..."));
+            await Task.Delay(300);
             return false;
         }
 
@@ -108,6 +172,7 @@ public partial class AcilisEkrani : Window
         _sonYuzde = 0;
         Dispatcher.Invoke(() =>
         {
+            YuklemePaneliniGoster();
             TxtBaslik.Text = "Bulut verileri senkronize ediliyor...";
             TxtDurum.Text = "Bağlantı kuruluyor...";
             TxtYuzde.Text = "0%";
@@ -141,6 +206,31 @@ public partial class AcilisEkrani : Window
 
     private void BtnKapat_Click(object sender, RoutedEventArgs e)
     {
+        _girisTamam?.TrySetResult(false);
         Application.Current.Shutdown();
+    }
+
+    private void PencereSurukle_Preview(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Left)
+            return;
+
+        if (e.Source is DependencyObject kaynak && SuruklenemezMi(kaynak))
+            return;
+
+        try { DragMove(); }
+        catch { /* sürükleme sırasında ikinci tıklama yoksay */ }
+    }
+
+    private static bool SuruklenemezMi(DependencyObject? o)
+    {
+        while (o is not null)
+        {
+            if (o is Button or TextBox or PasswordBox or CheckBox or ScrollBar)
+                return true;
+            o = VisualTreeHelper.GetParent(o);
+        }
+
+        return false;
     }
 }

@@ -17,6 +17,19 @@ public partial class AkaryakitView : UserControl, IModulKlavyeKisayollari
     private readonly ICollectionView _gorunum;
     private readonly FiltreZamanlayici _filtreZamanlayici;
     private readonly ModulSayfalamaYoneticisi<AkaryakitKaydi> _sayfalama = new();
+    private bool _yogunGorunum;
+    private bool _tamEkran;
+    private bool _arayuzHazir;
+    private string? _grupAlani;
+
+    private static readonly (string Baslik, string Alan)[] GrupSecenekleri =
+    [
+        ("Kayıt Tipi", "KayitTipi"),
+        ("Araç Tipi", "AracTipi"),
+        ("Yakıt Türü", "YakitTuru"),
+        ("Plaka", "PlakaVeyaKod"),
+        ("Saha", "Saha")
+    ];
 
     public ObservableCollection<AkaryakitKaydi> Kayitlar => ModulVeriDeposu.Akaryakit;
 
@@ -29,16 +42,41 @@ public partial class AkaryakitView : UserControl, IModulKlavyeKisayollari
         _gorunum = CollectionViewSource.GetDefaultView(Kayitlar);
         _gorunum.Filter = KayitFiltresi;
         YakitGrid.ItemsSource = _sayfalama.SayfaKayitlari;
+        ErpDataGridYardimcisi.PremiumGridAyarla(YakitGrid);
         ModulSayfalamaYardimcisi.CubukBagla(_sayfalama, SayfalamaBar);
 
         VerileriHesapla();
         FiltreCombolariGuncelle();
         SayfalamayiYenile();
         OzetGuncelle();
+        AdminExcelYetkisiniUygula();
+        _arayuzHazir = true;
+    }
+
+    private void AdminExcelYetkisiniUygula()
+    {
+        var admin = KullaniciYetkileri.AdminMi;
+        BtnExcelYukle.Visibility = admin ? Visibility.Visible : Visibility.Collapsed;
+        BtnSablonIndir.Visibility = admin ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private static bool AdminExcelEngellendi()
+    {
+        if (KullaniciYetkileri.AdminMi)
+            return false;
+
+        MessageBox.Show(
+            "Geçmiş veri Excel yükleme ve şablon indirme yalnızca admin kullanıcılar içindir.",
+            UygulamaBilgisi.Ad,
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+        return true;
     }
 
     private void ExcelYukle_Click(object sender, RoutedEventArgs e)
     {
+        if (AdminExcelEngellendi())
+            return;
         var dialog = new OpenFileDialog
         {
             Title = "Excel Dosyası Seç",
@@ -77,8 +115,13 @@ public partial class AkaryakitView : UserControl, IModulKlavyeKisayollari
         }
     }
 
-    private void SablonIndir_Click(object sender, RoutedEventArgs e) =>
+    private void SablonIndir_Click(object sender, RoutedEventArgs e)
+    {
+        if (AdminExcelEngellendi())
+            return;
+
         AkaryakitExcelService.SablonKaydet();
+    }
 
     private void PdfIndir_Click(object sender, RoutedEventArgs e) =>
         AkaryakitPdfOlusturucu.Indir(GorunenKayitlar(), "Akaryakıt Takip Raporu", FiltreOzetiMetni());
@@ -136,9 +179,67 @@ public partial class AkaryakitView : UserControl, IModulKlavyeKisayollari
         OzetGuncelle();
     }
 
-    private void SayfalamayiYenile(bool ilkSayfayaDon = false) =>
-        ModulSayfalamaYardimcisi.FiltreSonrasi(
-            _sayfalama, _gorunum, k => ModulSayfalamaYardimcisi.TarihSira(k.Tarih), SayfalamaBar, ilkSayfayaDon);
+    private void SayfalamayiYenile(bool ilkSayfayaDon = false)
+    {
+        ErpModulTabloYardimcisi.SayfalamayiUygula(
+            _sayfalama, _gorunum, k => ModulSayfalamaYardimcisi.TarihSira(k.Tarih),
+            SayfalamaBar, _grupAlani, string.IsNullOrEmpty(_grupAlani) ? null : k => AkaryakitGrupAnahtari(k, _grupAlani!), ilkSayfayaDon);
+
+        var filtrelenmis = ModulSayfalamaYardimcisi.FiltrelenmisListe<AkaryakitKaydi>(_gorunum);
+        ErpModulTabloYardimcisi.GrupBilgiGuncelle(
+            TxtGrupBilgi, _grupAlani, GrupSecenekleri,
+            filtrelenmis.Select(k => AkaryakitGrupAnahtari(k, _grupAlani!)));
+    }
+
+    private static string AkaryakitGrupAnahtari(AkaryakitKaydi kayit, string alan) => alan switch
+    {
+        "KayitTipi" => kayit.KayitTipi ?? "",
+        "AracTipi" => kayit.AracTipi ?? "",
+        "YakitTuru" => kayit.YakitTuru ?? "",
+        "PlakaVeyaKod" => kayit.PlakaVeyaKod ?? "",
+        "Saha" => kayit.Saha ?? "",
+        _ => ""
+    };
+
+    private void Kolonlar_Click(object sender, RoutedEventArgs e) =>
+        ErpModulTabloYardimcisi.Kolonlar(YakitGrid, Window.GetWindow(this));
+
+    private void Grupla_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement hedef)
+            return;
+
+        ErpModulTabloYardimcisi.Grupla(hedef, GrupSecenekleri, _grupAlani, alan =>
+        {
+            _grupAlani = alan;
+            SayfalamayiYenile(ilkSayfayaDon: true);
+            OzetGuncelle();
+        });
+    }
+
+    private void FiltreOdak_Click(object sender, RoutedEventArgs e) =>
+        ErpModulTabloYardimcisi.FiltreOdakla(FiltreKart);
+
+    private void YogunGorunum_Click(object sender, RoutedEventArgs e) =>
+        ErpModulTabloYardimcisi.Yogun(YakitGrid, ref _yogunGorunum);
+
+    private void TamEkran_Click(object sender, RoutedEventArgs e) =>
+        ErpModulTabloYardimcisi.TamEkran(AnaIcerikGrid, TabloKart, 5, [0, 1, 2, 3, 4], ref _tamEkran, BtnTamEkran);
+
+    private void SayfaBoyutuDegisti(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_arayuzHazir)
+            return;
+
+        if (CmbSayfaBoyutu.SelectedItem is not ComboBoxItem { Tag: string tag })
+            return;
+
+        if (!int.TryParse(tag, out var boyut) || boyut == _sayfalama.SayfaBoyutu)
+            return;
+
+        ErpModulTabloYardimcisi.SayfaBoyutuDegistir(
+            _sayfalama, boyut, k => ModulSayfalamaYardimcisi.TarihSira(k.Tarih), _grupAlani, SayfalamaBar);
+    }
 
     public void KisayolYenile()
     {

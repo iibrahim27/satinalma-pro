@@ -97,6 +97,19 @@ if (-not (Test-Path $gradlew)) {
     throw "Android Gradle bulunamadi: $gradlew"
 }
 
+if (-not $env:JAVA_HOME) {
+    $javaAdaylari = @(
+        "$env:ProgramFiles\Android\Android Studio\jbr",
+        "${env:ProgramFiles(x86)}\Android\Android Studio\jbr",
+        "$env:LOCALAPPDATA\Programs\Android\Android Studio\jbr"
+    ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+    if ($javaAdaylari) {
+        $env:JAVA_HOME = $javaAdaylari
+        $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
+        Write-Host "  JAVA_HOME otomatik ayarlandi: $env:JAVA_HOME" -ForegroundColor Yellow
+    }
+}
+
 Push-Location $androidKok
 try {
     & $gradlew assembleRelease --no-daemon

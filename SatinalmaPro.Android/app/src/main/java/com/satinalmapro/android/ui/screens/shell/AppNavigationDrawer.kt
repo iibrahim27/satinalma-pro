@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,7 +20,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ListAlt
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Approval
-import androidx.compose.material.icons.rounded.CompareArrows
+import androidx.compose.material.icons.rounded.Assessment
+import androidx.compose.material.icons.automirrored.rounded.CompareArrows
+import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Home
@@ -32,6 +36,11 @@ import androidx.compose.material.icons.rounded.RequestQuote
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.automirrored.rounded.Undo
+import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -58,7 +67,9 @@ fun AppNavigationDrawer(
     user: UserProfile?,
     menus: List<MenuItem>,
     selectedRoute: String,
-    onItemClick: (MenuItem) -> Unit
+    menuBadges: Map<String, Int> = emptyMap(),
+    onItemClick: (MenuItem) -> Unit,
+    onLogout: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         DrawerHeader(user)
@@ -72,7 +83,7 @@ fun AppNavigationDrawer(
                     else -> item.group ?: "Genel"
                 }
             }
-            val order = listOf("", "Genel", "Talep", "Teklif", "Malzeme", "Stok")
+            val order = listOf("", "Genel", "Satınalma", "Talep", "Teklif", "Malzeme", "Stok", "Yönetim")
             order.forEach { groupKey ->
                 val items = grouped[groupKey] ?: return@forEach
                 if (groupKey.isNotBlank()) {
@@ -88,12 +99,22 @@ fun AppNavigationDrawer(
                 }
                 items(items, key = { it.route }) { item ->
                     val selected = item.route == selectedRoute
+                    val badge = menuBadges[item.route] ?: 0
                     NavigationDrawerItem(
                         label = {
-                            Text(
-                                item.title,
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
-                            )
+                            if (badge > 0) {
+                                BadgedBox(badge = { Badge { Text(if (badge > 99) "99+" else badge.toString()) } }) {
+                                    Text(
+                                        item.title,
+                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    item.title,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                                )
+                            }
                         },
                         icon = {
                             Icon(
@@ -108,19 +129,42 @@ fun AppNavigationDrawer(
                         colors = NavigationDrawerItemDefaults.colors(
                             selectedContainerColor = AppColors.PrimaryContainer,
                             selectedIconColor = AppColors.Primary,
-                            selectedTextColor = AppColors.Primary
+                            selectedTextColor = AppColors.Primary,
+                            unselectedContainerColor = Color.Transparent,
+                            unselectedIconColor = AppColors.TextSecondary,
+                            unselectedTextColor = AppColors.TextPrimary
                         )
                     )
                 }
             }
         }
         HorizontalDivider(color = AppColors.Border)
-        Text(
-            text = "Satınalma Pro v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-            style = MaterialTheme.typography.labelSmall,
-            color = AppColors.TextSecondary,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+        ) {
+            Button(
+                onClick = onLogout,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.Danger.copy(alpha = 0.12f),
+                    contentColor = AppColors.Danger
+                )
+            ) {
+                Icon(Icons.AutoMirrored.Rounded.Logout, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                Text("Çıkış Yap", fontWeight = FontWeight.SemiBold)
+            }
+            HorizontalDivider(color = AppColors.Border)
+            Text(
+                text = "Satınalma Pro v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.TextSecondary,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+            )
+        }
     }
 }
 
@@ -137,6 +181,7 @@ private fun DrawerHeader(user: UserProfile?) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .statusBarsPadding()
             .background(
                 Brush.verticalGradient(
                     listOf(Color(0xFF1D4ED8), Color(0xFF2563EB), Color(0xFF3B82F6))
@@ -189,7 +234,7 @@ private fun routeIcon(route: String): ImageVector = when (route) {
     "gelen-talepler" -> Icons.Rounded.Inbox
     "teklif-bekleyen" -> Icons.Rounded.RequestQuote
     "teklif-gir" -> Icons.Rounded.PriceChange
-    "teklif-karsilastirma" -> Icons.Rounded.CompareArrows
+    "teklif-karsilastirma" -> Icons.AutoMirrored.Rounded.CompareArrows
     "teklifsiz-firma-fiyat" -> Icons.Rounded.PriceChange
     "teklif-onay" -> Icons.Rounded.Approval
     "onaylanan-teklifler" -> Icons.Rounded.TaskAlt
@@ -198,11 +243,22 @@ private fun routeIcon(route: String): ImageVector = when (route) {
     "gecmis-teklifli-onaylar" -> Icons.Rounded.History
     "red-talepler" -> Icons.AutoMirrored.Rounded.Undo
     "onaylanan-malzemeler" -> Icons.Rounded.LocalShipping
+    "alinan-malzemeler" -> Icons.Rounded.Inventory2
+    "agrega" -> Icons.Rounded.Category
+    "cimento" -> Icons.Rounded.Inventory2
     "stok-durum" -> Icons.Rounded.Inventory2
     "stok-giris" -> Icons.Rounded.Inventory2
     "stok-cikis" -> Icons.Rounded.SwapHoriz
     "stok-hareket" -> Icons.Rounded.Dashboard
     "stok-sayim" -> Icons.Rounded.Inventory2
+    "yonetim-teklif-girilen" -> Icons.Rounded.Approval
+    "yonetim-direk-onaylanan" -> Icons.Rounded.TaskAlt
+    "satinalma-teklif-istenen" -> Icons.Rounded.RequestQuote
+    "satinalma-teklif-girilen" -> Icons.Rounded.PriceChange
+    "satinalma-onaylanan" -> Icons.Rounded.TaskAlt
+    "satinalma-siparis" -> Icons.Rounded.LocalShipping
+    "satinalma-mal-kabul" -> Icons.Rounded.Inventory2
+    "raporlar" -> Icons.Rounded.Assessment
     "bildirimler" -> Icons.Rounded.Notifications
     "profil" -> Icons.Rounded.Person
     else -> Icons.Rounded.Dashboard

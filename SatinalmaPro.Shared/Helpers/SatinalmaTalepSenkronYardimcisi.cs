@@ -23,6 +23,7 @@ public static class SatinalmaTalepSenkronYardimcisi
         hedef.SilinenTalepIdleri = SilinenleriBirlestir(hedef.SilinenTalepIdleri, kaynak.SilinenTalepIdleri);
         hedef.SonTalepSira = Math.Max(hedef.SonTalepSira, kaynak.SonTalepSira);
         hedef.SonSiparisSira = Math.Max(hedef.SonSiparisSira, kaynak.SonSiparisSira);
+        hedef.SonIadeSira = Math.Max(hedef.SonIadeSira, kaynak.SonIadeSira);
 
         if (string.IsNullOrWhiteSpace(hedef.FirmaAdi) && !string.IsNullOrWhiteSpace(kaynak.FirmaAdi))
             hedef.FirmaAdi = kaynak.FirmaAdi;

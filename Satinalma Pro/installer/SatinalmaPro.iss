@@ -2,7 +2,7 @@
 ; Derleme: Inno Setup 6 kurulu olmalı, sonra ISCC.exe ile derlenir
 
 #define MyAppName "Satınalma Pro"
-#define MyAppVersion "2.1.29"
+#define MyAppVersion "2.1.44"
 #define MyAppPublisher "MV İNŞAAT"
 #define MyAppExeName "SatinalmaPro.exe"
 #define MyPublishDir "..\bin\Release\net9.0-windows10.0.17763.0\win-x64\publish"
@@ -39,3 +39,31 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[UninstallDelete]
+; Kurulum kaldırıldığında giriş hatırlatma dosyalarını sil (AppData — Program Files dışında)
+Type: files; Name: "{userappdata}\SatinalmaPro\giris_tercihleri.json"
+Type: files; Name: "{userappdata}\SatinalmaPro\giris_sifre.dat"
+Type: files; Name: "{userappdata}\SatinalmaPro\oturum.json"
+
+[Code]
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  VeriKlasoru: String;
+begin
+  if CurUninstallStep <> usPostUninstall then
+    Exit;
+
+  VeriKlasoru := ExpandConstant('{userappdata}\SatinalmaPro');
+  if not DirExists(VeriKlasoru) then
+    Exit;
+
+  if MsgBox(
+    'Kayıtlı giriş bilgileri silindi.' + #13#10 + #13#10 +
+    'Tüm uygulama verilerini de silmek ister misiniz?' + #13#10 +
+    '(Talepler, ayarlar ve yerel yedekler — bulutta senkron varsa geri yüklenebilir.)',
+    mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
+  begin
+    DelTree(VeriKlasoru, True, True, True);
+  end;
+end;

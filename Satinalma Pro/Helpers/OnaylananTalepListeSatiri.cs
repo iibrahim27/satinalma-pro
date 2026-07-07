@@ -45,6 +45,17 @@ public class OnaylananTalepListeSatiri
             : firmaListesi.Count == 1
                 ? firmaListesi[0]
                 : $"{firmaListesi[0]} (+{firmaListesi.Count - 1})";
+
+        OnaylayanOzet = string.IsNullOrWhiteSpace(talep.YonetimOnaylayanAd)
+            ? "—"
+            : string.IsNullOrWhiteSpace(talep.YonetimOnayTarihi)
+                ? talep.YonetimOnaylayanAd
+                : $"{talep.YonetimOnaylayanAd} · {talep.YonetimOnayTarihi}";
+
+        OnayTuruMetni = talep.TeklifsizYonetimOnayi && !talep.HerhangiKalemOnayli
+            ? "Teklifsiz"
+            : "Teklifli";
+        OnayTarihi = string.IsNullOrWhiteSpace(talep.YonetimOnayTarihi) ? "—" : talep.YonetimOnayTarihi;
     }
 
     public SatinalmaTalep Talep { get; }
@@ -54,6 +65,9 @@ public class OnaylananTalepListeSatiri
     public string TalepEden => Talep.TalepEden;
     public string DurumEtiketi { get; }
     public string OnayliFirmaOzet { get; }
+    public string OnaylayanOzet { get; }
+    public string OnayTuruMetni { get; }
+    public string OnayTarihi { get; }
     public Brush KartArkaPlan { get; }
     public Brush KartKenar { get; }
     public Brush RozetArkaPlan { get; }

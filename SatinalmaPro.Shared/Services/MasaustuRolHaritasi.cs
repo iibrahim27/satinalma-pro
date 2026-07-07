@@ -18,6 +18,7 @@ public static class MasaustuRolHaritasi
     public const string OnaylananTeklifler = "Onaylanan Teklifler";
     public const string OnayGecmisi = "Onay Geçmişi";
     public const string AlinanMalzemeler = "Alınan Malzemeler";
+    public const string GelenSiparisler = "Gelen Siparişler";
     public const string GecmisTalepler = "Geçmiş Talepler";
     public const string GecmisTeklifliOnaylar = "Geçmiş Teklifli Onaylar";
     public const string RedTalepler = "Red Talepler";
@@ -30,6 +31,7 @@ public static class MasaustuRolHaritasi
             ["onaylanan-talepler"] = OnaylananTalepler,
             ["gelen-talepler"] = GelenTalepler,
             ["teklif-bekleyen"] = TeklifBekleyen,
+            ["teklif-bekleyen"] = TeklifBekleyen,
             ["teklif-gir"] = TeklifGirisi,
             ["teklif-giris"] = TeklifGirisi,
             ["teklif-karsilastirma"] = Karsilastirma,
@@ -40,7 +42,25 @@ public static class MasaustuRolHaritasi
             ["gecmis-talepler"] = GecmisTalepler,
             ["gecmis-teklifli-onaylar"] = GecmisTeklifliOnaylar,
             ["red-talepler"] = RedTalepler,
-            ["onay-gecmisi"] = OnayGecmisi
+            ["onay-gecmisi"] = OnayGecmisi,
+            ["satinalma-siparis"] = AlinanMalzemeler,
+            ["satinalma-mal-kabul"] = "Mal Kabul Edilmiş",
+            ["satinalma-onaylanan"] = OnaylananTeklifler,
+            ["satinalma-teklif-istenen"] = TeklifGirisi,
+            ["satinalma-teklif-girilen"] = TeklifGirisi,
+            ["satinalma-teklif-duzeltme"] = "Düzeltme Bekleyen",
+            ["satinalma-onay-bekleyen"] = OnayBekleyen,
+            ["satinalma-onaylanan-talepler"] = OnaylananTalepler,
+            ["yonetim-gelen-talepler"] = GelenTalepler,
+            ["yonetim-teklif-bekleyen"] = TeklifBekleyen,
+            ["yonetim-teklif-girilen"] = TeklifOnay,
+            ["yonetim-direk-onaylanan"] = GecmisTalepler,
+            ["yonetim-red-verilen"] = RedTalepler,
+            ["yonetim-gecmis"] = GecmisTalepler,
+            ["satinalma-karsilastirma"] = Karsilastirma,
+            ["agrega"] = "Agrega",
+            ["cimento"] = "Çimento",
+            ["alinan-malzemeler"] = AlinanMalzemeler
         };
 
     private static readonly Dictionary<string, string> StokRouteToSekme =
@@ -61,8 +81,7 @@ public static class MasaustuRolHaritasi
             ["Reddedilenler"] = RedTalepler,
             ["Teklif Değerlendirme"] = Karsilastirma,
             ["Onaylanan Teklifler"] = OnaylananTeklifler,
-            ["Siparişler"] = AlinanMalzemeler,
-            ["Gelen Siparişler"] = AlinanMalzemeler
+            ["Siparişler"] = AlinanMalzemeler
         };
 
     public static IReadOnlyList<string> SatinalmaSekmeleri(string? rol) =>
@@ -121,6 +140,14 @@ public static class MasaustuRolHaritasi
         if (hedef.Equals(Panel, StringComparison.OrdinalIgnoreCase))
             return SatinalmaSekmeleri(rol).Count > 0;
 
+        if (hedef.Equals(GelenSiparisler, StringComparison.OrdinalIgnoreCase))
+            return SatinalmaSekmeleri(rol).Contains(AlinanMalzemeler, StringComparer.OrdinalIgnoreCase);
+
+        if (hedef.Equals(TeklifGirisi, StringComparison.OrdinalIgnoreCase)
+            || hedef.Equals(Karsilastirma, StringComparison.OrdinalIgnoreCase)
+            || hedef.Equals(TeklifsizFirmaFiyat, StringComparison.OrdinalIgnoreCase))
+            return KullaniciRolleri.SatinalmaTeklifGirebilir(rol);
+
         return SatinalmaSekmeleri(rol).Contains(hedef, StringComparer.OrdinalIgnoreCase);
     }
 
@@ -148,7 +175,7 @@ public static class MasaustuRolHaritasi
             ];
 
         if (rol == KullaniciRolleri.Yonetim)
-            return ["Satınalma", "Stok Yönetimi"];
+            return ["Satınalma", "Stok Yönetimi", "Agrega", "Çimento", "Alınan Malzemeler"];
 
         var moduller = new List<string>();
         if (SatinalmaSekmeleri(rol).Count > 0)
@@ -165,6 +192,20 @@ public static class MasaustuRolHaritasi
             moduller.Add("Agrega");
             moduller.Add("Çimento");
         }
+
+        if (rol is KullaniciRolleri.Yonetim or KullaniciRolleri.Saha or KullaniciRolleri.Admin
+            || KullaniciRolleri.AdminMi(rol))
+        {
+            if (!moduller.Contains("Agrega", StringComparer.OrdinalIgnoreCase))
+                moduller.Add("Agrega");
+            if (!moduller.Contains("Çimento", StringComparer.OrdinalIgnoreCase))
+                moduller.Add("Çimento");
+        }
+
+        if (RolNavigasyonu.Menuler(rol).Any(m =>
+                m.Route.Equals("alinan-malzemeler", StringComparison.OrdinalIgnoreCase))
+            && !moduller.Contains("Alınan Malzemeler", StringComparer.OrdinalIgnoreCase))
+            moduller.Add("Alınan Malzemeler");
 
         return moduller.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }

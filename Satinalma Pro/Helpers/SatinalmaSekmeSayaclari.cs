@@ -22,7 +22,9 @@ public static class SatinalmaSekmeSayaclari
             "Gelen Talepler" => talepler.Count(SatinalmaTabFiltreleri.GelenTalepler),
             "Onay Bekleyen" => talepler.Count(t => SatinalmaTabFiltreleri.OnayBekleyen(t, KullaniciYetkileri.SatinalmaSadeceTalepModu())),
             "Teklif Bekleyen" => talepler.Count(TeklifBekleyenSatiri.KuyruktaGoster),
-            "Teklif Girişi" => talepler.Count(SatinalmaTalepKuyrugu.SatinalmaTeklifGirisiAktif),
+            "Teklif Girişi" => talepler.Count(t =>
+                SatinalmaTalepKuyrugu.SatinalmaTeklifGirisiAktif(t)
+                || TeklifBekleyenSatiri.KuyruktaGoster(t)),
             "Karşılaştırma" => talepler.Count(SatinalmaTabFiltreleri.TeklifDegerlendirme),
             "Teklif Onay" => talepler.Count(SatinalmaTabFiltreleri.TeklifOnay),
             "Onaylanan Talepler" => talepler.Count(SatinalmaTabFiltreleri.Onaylananlar),
@@ -30,8 +32,7 @@ public static class SatinalmaSekmeSayaclari
             "Geçmiş Teklifli Onaylar" => talepler.Count(SatinalmaTabFiltreleri.GecmisTeklifliOnaylar),
             "Red Talepler" => talepler.Count(SatinalmaTabFiltreleri.Reddedilenler),
             "Alınan Malzemeler" => AlinanMalzemeSayisi(),
-            "Gelen Siparişler" => SatinalmaDepo.OnaylananMalzemeleriOlustur()
-                .Count(SatinalmaTabFiltreleri.GelenSiparisMalzeme),
+            "Gelen Siparişler" => ModulVeriDeposu.AlinanMalzemeler.Count(k => k.SatinalmaTalepId.HasValue),
             _ => 0
         };
     }

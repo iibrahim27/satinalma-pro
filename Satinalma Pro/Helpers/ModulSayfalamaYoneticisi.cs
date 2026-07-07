@@ -4,7 +4,7 @@ namespace SatinalmaPro.Helpers;
 
 public sealed class ModulSayfalamaYoneticisi<T>
 {
-    private readonly int _sayfaBoyutu;
+    private int _sayfaBoyutu;
 
     public ModulSayfalamaYoneticisi(int? sayfaBoyutu = null) =>
         _sayfaBoyutu = sayfaBoyutu ?? ModulSayfalama.SayfaBoyutu;
@@ -17,18 +17,45 @@ public sealed class ModulSayfalamaYoneticisi<T>
     public int SayfaBoyutu => _sayfaBoyutu;
 
     private List<T> _sirali = [];
+    private Func<T, DateTime>? _tarihSecici;
+
+    public void SayfaBoyutunuAyarla(int yeniBoyut, Func<T, DateTime> tarihSecici)
+    {
+        _sayfaBoyutu = Math.Max(1, yeniBoyut);
+        _tarihSecici = tarihSecici;
+        KaynakGuncelle(_sirali, tarihSecici, ilkSayfayaDon: true);
+    }
+
+    /// <summary>Mevcut sıralamayı koruyarak sayfa boyutunu değiştirir (gruplama vb.).</summary>
+    public void SayfaBoyutunuDegistir(int yeniBoyut, bool ilkSayfayaDon = true)
+    {
+        _sayfaBoyutu = Math.Max(1, yeniBoyut);
+        SayfalamaMetaGuncelle(ilkSayfayaDon);
+    }
 
     public void KaynakGuncelle(IEnumerable<T> kaynak, Func<T, DateTime> tarihSecici, bool ilkSayfayaDon = false)
     {
-        if (ilkSayfayaDon)
-            GuncelSayfa = 1;
-
         var indeksli = kaynak.Select((kayit, index) => (kayit, index)).ToList();
         _sirali = indeksli
             .OrderByDescending(x => tarihSecici(x.kayit))
             .ThenByDescending(x => x.index)
             .Select(x => x.kayit)
             .ToList();
+
+        SayfalamaMetaGuncelle(ilkSayfayaDon);
+    }
+
+    /// <summary>Önceden sıralanmış listeyi doğrudan uygular (gruplama vb.).</summary>
+    public void SiraliKaynakGuncelle(IEnumerable<T> sirali, bool ilkSayfayaDon = false)
+    {
+        _sirali = sirali.ToList();
+        SayfalamaMetaGuncelle(ilkSayfayaDon);
+    }
+
+    private void SayfalamaMetaGuncelle(bool ilkSayfayaDon)
+    {
+        if (ilkSayfayaDon)
+            GuncelSayfa = 1;
 
         ToplamKayit = _sirali.Count;
         ToplamSayfa = ToplamKayit == 0 ? 1 : (int)Math.Ceiling(ToplamKayit / (double)_sayfaBoyutu);

@@ -71,6 +71,29 @@ class FirebaseAuthClient(private val config: FirebaseConfig) {
         tokenExpiryMs = 0
     }
 
+    suspend fun changePassword(email: String, currentPassword: String, newPassword: String) {
+        signIn(email, currentPassword)
+        val body = JSONObject()
+            .put("idToken", idToken!!)
+            .put("password", newPassword)
+            .put("returnSecureToken", true)
+        val response = HttpClients.postJson(
+            "https://identitytoolkit.googleapis.com/v1/accounts:update?key=${config.apiKey}",
+            body.toString()
+        )
+        applyAuthResponse(response)
+    }
+
+    suspend fun sendPasswordResetEmail(email: String) {
+        val body = JSONObject()
+            .put("requestType", "PASSWORD_RESET")
+            .put("email", email.trim())
+        HttpClients.postJson(
+            "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${config.apiKey}",
+            body.toString()
+        )
+    }
+
     /** Yeni Firebase hesabı oluşturur; mevcut admin oturumunu korur. */
     suspend fun createUserAccount(email: String, password: String): String {
         val savedRefresh = refreshToken
@@ -144,6 +167,20 @@ class FirestoreClient(
         }
     }
 
+    suspend fun listUsersAdmin(adminToken: String): List<JSONObject> {
+        val response = HttpClients.get("$root/users", adminToken)
+        if (response.isBlank()) return emptyList()
+        val docs = JSONObject(response).optJSONArray("documents") ?: return emptyList()
+        return buildList {
+            for (i in 0 until docs.length()) add(docs.getJSONObject(i))
+        }
+    }
+
+    suspend fun readUserAdmin(adminToken: String, uid: String): JSONObject? {
+        val response = HttpClients.get("$root/users/$uid", adminToken)
+        return if (response.isBlank()) null else JSONObject(response).optJSONObject("fields")
+    }
+
     suspend fun updateFcmToken(uid: String, token: String?) {
         val body = JSONObject()
             .put("fields", JSONObject().put("fcmToken", JSONObject().put("stringValue", token ?: "")))
@@ -161,13 +198,62 @@ class FirestoreClient(
         return fields.optJSONObject("json")?.optString("stringValue")
     }
 
-    suspend fun readInbox(uid: String, limit: Int = 50): List<JSONObject> {
+    suspend fun readInbox(uid: String, limit: Int = 100): List<JSONObject> {
         val response = HttpClients.get("$root/users/$uid/notification_inbox?pageSize=$limit", auth.validToken())
         if (response.isBlank()) return emptyList()
         val docs = JSONObject(response).optJSONArray("documents") ?: return emptyList()
         return buildList {
             for (i in 0 until docs.length()) add(docs.getJSONObject(i))
         }
+    }
+
+    suspend fun writeInboxEntry(
+        uid: String,
+        docId: String,
+        record: com.satinalmapro.android.core.model.BildirimRecord
+    ) {
+        if (uid.isBlank() || docId.isBlank()) return
+        writeInboxEntryAdmin(auth.validToken(), uid, docId, record)
+    }
+
+    suspend fun writeInboxEntryAdmin(
+        adminToken: String,
+        uid: String,
+        docId: String,
+        record: com.satinalmapro.android.core.model.BildirimRecord
+    ) {
+        if (uid.isBlank() || docId.isBlank()) return
+        val now = java.time.Instant.now().toString()
+        val fields = JSONObject()
+            .put("title", JSONObject().put("stringValue", record.baslik))
+            .put("baslik", JSONObject().put("stringValue", record.baslik))
+            .put("message", JSONObject().put("stringValue", record.mesaj))
+            .put("mesaj", JSONObject().put("stringValue", record.mesaj))
+            .put("tip", JSONObject().put("stringValue", record.tip))
+            .put("type", JSONObject().put("stringValue", record.tip))
+            .put("talepId", JSONObject().put("stringValue", record.talepId.orEmpty()))
+            .put("entityId", JSONObject().put("stringValue", record.talepId.orEmpty()))
+            .put("entityType", JSONObject().put("stringValue", "talep"))
+            .put("eventCode", JSONObject().put("stringValue", record.tip))
+            .put("hedefRol", JSONObject().put("stringValue", record.hedefRol.orEmpty()))
+            .put("targetRole", JSONObject().put("stringValue", record.hedefRol.orEmpty()))
+            .put("hedefUid", JSONObject().put("stringValue", record.hedefUid.orEmpty()))
+            .put("targetUid", JSONObject().put("stringValue", record.hedefUid.orEmpty()))
+            .put("olusturanUid", JSONObject().put("stringValue", record.olusturanUid))
+            .put("createdBy", JSONObject().put("stringValue", record.olusturanUid))
+            .put("isRead", JSONObject().put("booleanValue", false))
+            .put("okundu", JSONObject().put("booleanValue", false))
+            .put("createdAt", JSONObject().put("timestampValue", now))
+            .put("guncellemeUtc", JSONObject().put(
+                "integerValue",
+                (if (record.guncellemeUtc > 0) record.guncellemeUtc else System.currentTimeMillis()).toString()
+            ))
+        val body = JSONObject().put("fields", fields).toString()
+        HttpClients.postJsonAuthorized(
+            "$root/users/$uid/notification_inbox?documentId=${java.net.URLEncoder.encode(docId, Charsets.UTF_8.name())}",
+            body,
+            adminToken
+        )
     }
 
     suspend fun writeDocumentJson(path: String, json: String, updatedBy: String) {
@@ -184,16 +270,58 @@ class FirestoreClient(
     }
 
     suspend fun markInboxRead(uid: String, docId: String) {
+        val now = java.time.Instant.now().toString()
         val body = JSONObject()
             .put("fields", JSONObject()
                 .put("isRead", JSONObject().put("booleanValue", true))
-                .put("okundu", JSONObject().put("booleanValue", true))
-                .put("readAt", JSONObject().put("stringValue", java.time.Instant.now().toString())))
+                .put("readAt", JSONObject().put("timestampValue", now)))
         HttpClients.patch(
-            "$root/users/$uid/notification_inbox/$docId?updateMask.fieldPaths=isRead&updateMask.fieldPaths=okundu&updateMask.fieldPaths=readAt",
+            "$root/users/$uid/notification_inbox/$docId?updateMask.fieldPaths=isRead&updateMask.fieldPaths=readAt",
             body.toString(),
             auth.validToken()
         )
+    }
+
+    suspend fun markInboxDismissed(uid: String, docId: String) {
+        val now = java.time.Instant.now().toString()
+        val body = JSONObject()
+            .put("fields", JSONObject()
+                .put("isRead", JSONObject().put("booleanValue", true))
+                .put("isArchived", JSONObject().put("booleanValue", true))
+                .put("dismissedAt", JSONObject().put("timestampValue", now))
+                .put("archivedAt", JSONObject().put("timestampValue", now)))
+        HttpClients.patch(
+            "$root/users/$uid/notification_inbox/$docId" +
+                "?updateMask.fieldPaths=isRead&updateMask.fieldPaths=isArchived" +
+                "&updateMask.fieldPaths=dismissedAt&updateMask.fieldPaths=archivedAt",
+            body.toString(),
+            auth.validToken()
+        )
+    }
+
+    suspend fun deleteInboxDocument(uid: String, docId: String) {
+        HttpClients.delete(
+            "$root/users/$uid/notification_inbox/$docId",
+            auth.validToken()
+        )
+    }
+
+    suspend fun clearInbox(uid: String) {
+        readInbox(uid).forEach { doc ->
+            val id = doc.optString("name").substringAfterLast('/')
+            if (id.isNotBlank()) {
+                runCatching { markInboxDismissed(uid, id) }
+            }
+        }
+    }
+
+    suspend fun markAllInboxRead(uid: String) {
+        readInbox(uid).forEach { doc ->
+            val id = doc.optString("name").substringAfterLast('/')
+            if (id.isNotBlank()) {
+                runCatching { markInboxRead(uid, id) }
+            }
+        }
     }
 
     suspend fun saveUserProfile(user: com.satinalmapro.android.core.model.ManagedUser) {
@@ -295,6 +423,15 @@ object HttpClients {
                     .build()
             }
         }
+
+    suspend fun delete(url: String, token: String): String = withContext(Dispatchers.IO) {
+        executeRequest {
+            requestBuilder(url)
+                .delete()
+                .addHeader("Authorization", "Bearer $token")
+                .build()
+        }
+    }
 
     private inline fun executeRequest(build: () -> okhttp3.Request): String {
         try {

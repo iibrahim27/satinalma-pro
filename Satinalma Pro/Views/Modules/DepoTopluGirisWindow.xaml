@@ -1,0 +1,228 @@
+<Window x:Class="SatinalmaPro.Views.Modules.DepoTopluGirisWindow"
+
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+
+        xmlns:controls="clr-namespace:SatinalmaPro.Views.Controls"
+
+        ui:WindowHelper.UseModernWindowStyle="True"
+
+        Title="Depo Stok Girişi"
+
+        Width="900"
+
+        Height="680"
+
+        MinWidth="760"
+
+        MinHeight="560"
+
+        WindowStartupLocation="CenterOwner"
+
+        ResizeMode="CanResize"
+
+        Background="{StaticResource DashBackgroundBrush}">
+
+  <Grid Margin="24">
+
+    <Grid.RowDefinitions>
+
+      <RowDefinition Height="Auto" />
+
+      <RowDefinition Height="*" />
+
+      <RowDefinition Height="Auto" />
+
+    </Grid.RowDefinitions>
+
+
+
+    <StackPanel Grid.Row="0" Margin="0,0,0,16">
+
+      <TextBlock Text="Depo Stok Girişi" Style="{StaticResource ModuleDialogTitleStyle}" />
+
+      <TextBlock Text="Depoda mevcut ürünleri satır satır ekleyin; tamamladığınızda stok durumuna yansır"
+
+                 Style="{StaticResource ModuleDialogSubtitleStyle}" />
+
+    </StackPanel>
+
+
+
+    <Border Grid.Row="1" Style="{StaticResource ModulePageCardStyle}" Padding="24,20">
+
+      <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0">
+
+        <StackPanel>
+
+          <Grid Margin="0,0,0,14">
+
+            <Grid.ColumnDefinitions>
+
+              <ColumnDefinition Width="*" />
+
+              <ColumnDefinition Width="12" />
+
+              <ColumnDefinition Width="*" />
+
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+
+              <TextBlock Text="Depo / Saha" Style="{StaticResource ModuleFormLabelStyle}" />
+
+              <TextBox x:Name="TxtDepoSaha" Style="{StaticResource FilterBoxStyle}" Text="Depo" />
+
+            </StackPanel>
+
+            <StackPanel Grid.Column="2">
+
+              <TextBlock Text="Tarih" Style="{StaticResource ModuleFormLabelStyle}" />
+
+              <TextBox x:Name="TxtTarih" Style="{StaticResource FilterBoxStyle}" />
+
+            </StackPanel>
+
+          </Grid>
+
+
+
+          <Border Style="{StaticResource ModuleFormSectionStyle}" Margin="0,0,0,10">
+
+            <StackPanel>
+
+              <TextBlock Text="Yeni Satır" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" Margin="0,0,0,12" />
+
+              <Grid>
+
+                <Grid.ColumnDefinitions>
+
+                  <ColumnDefinition Width="1.1*" />
+
+                  <ColumnDefinition Width="12" />
+
+                  <ColumnDefinition Width="1.5*" />
+
+                  <ColumnDefinition Width="12" />
+
+                  <ColumnDefinition Width="0.8*" />
+
+                  <ColumnDefinition Width="12" />
+
+                  <ColumnDefinition Width="0.7*" />
+
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+
+                  <TextBlock Text="Kategori" Style="{StaticResource ModuleFormLabelStyle}" />
+
+                  <ComboBox x:Name="CmbKategori" Style="{StaticResource FilterComboStyle}" IsEditable="True"
+
+                            IsTextSearchEnabled="False"
+
+                            ui:ControlHelper.PlaceholderText="Yazın veya listeden seçin"
+
+                            Loaded="CmbKategori_Loaded" />
+
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+
+                  <TextBlock Text="Malzeme Adı" Style="{StaticResource ModuleFormLabelStyle}" />
+
+                  <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" Background="White" CornerRadius="4" Padding="2,0" MinHeight="34">
+
+                    <controls:MalzemeOneriGiris x:Name="MalzemeGiris" />
+
+                  </Border>
+
+                </StackPanel>
+
+                <StackPanel Grid.Column="4">
+
+                  <TextBlock Text="Miktar" Style="{StaticResource ModuleFormLabelStyle}" />
+
+                  <TextBox x:Name="TxtMiktar" Style="{StaticResource FilterBoxStyle}" />
+
+                </StackPanel>
+
+                <StackPanel Grid.Column="6">
+
+                  <TextBlock Text="Birim" Style="{StaticResource ModuleFormLabelStyle}" />
+
+                  <ComboBox x:Name="CmbBirim" Style="{StaticResource FilterComboStyle}" IsEditable="True"
+
+                            IsTextSearchEnabled="False"
+
+                            ui:ControlHelper.PlaceholderText="Birim seçin" />
+
+                </StackPanel>
+
+              </Grid>
+
+            </StackPanel>
+
+          </Border>
+
+
+
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+
+            <Button Style="{StaticResource PrimaryToolbarButtonStyle}" Content="Satır Ekle" Margin="0,0,8,0" Click="SatirEkle_Click" />
+
+            <Button x:Name="BtnSatirSil" Style="{StaticResource ToolbarButtonStyle}" Content="Satır Sil"
+
+                    IsEnabled="False" Click="SatirSil_Click" />
+
+          </StackPanel>
+
+
+
+          <Border Style="{StaticResource ModuleGridContainerStyle}">
+
+            <DataGrid x:Name="SatirGrid" Style="{StaticResource ModuleDataGridStyle}" Height="260"
+
+                      AlternatingRowBackground="Transparent" IsReadOnly="True"
+
+                      SelectionChanged="SatirGrid_SelectionChanged">
+
+              <DataGrid.Columns>
+
+                <DataGridTextColumn Header="Kategori" Binding="{Binding Kategori}" Width="120" />
+
+                <DataGridTextColumn Header="Malzeme Adı" Binding="{Binding Malzeme}" Width="*" MinWidth="160" />
+
+                <DataGridTextColumn Header="Miktar" Binding="{Binding MiktarGosterim}" Width="90" />
+
+                <DataGridTextColumn Header="Birim" Binding="{Binding Birim}" Width="80" />
+
+              </DataGrid.Columns>
+
+            </DataGrid>
+
+          </Border>
+
+        </StackPanel>
+
+      </ScrollViewer>
+
+    </Border>
+
+
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+
+      <Button Content="İptal" Style="{StaticResource ToolbarButtonStyle}" Width="100" Margin="0,0,8,0" Click="Iptal_Click" />
+
+      <Button Content="Depoyu Tamamla" Style="{StaticResource PrimaryToolbarButtonStyle}" Width="150" Click="DepoyuTamamla_Click" />
+
+    </StackPanel>
+
+  </Grid>
+
+</Window>
+

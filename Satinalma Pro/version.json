@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.29",
-    "build":  80,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.29/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.29/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.29/SatinalmaPro.apk",
-    "notes":  "Alinan Malzemeler KPI dashboard; fatura durum kolonu kaldirildi. Excel sablon butonu. Ayarlar sol menu duzeltmesi. Bildirim temizle/tumunu okundu (masaustu+Android). Kullanici listesi genisletildi. Android ust menu status bar duzeltmesi. Tum Verileri Sifirla: yalnizca firma/logolar/imzalar/modul verileri; Firebase ve Android ayarlari korunur.",
+    "version":  "2.1.44",
+    "build":  95,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.44/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.44/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.44/SatinalmaPro.apk",
+    "notes":  "- Yonetim Onay Gecmisi: teklifsiz ve teklifli tum onaylar tek sekmede, PDF yazdirma\n- Teklif girisi: kalem bazli satinalma onerisi (farkli firmalardan birim fiyat secimi)\n- Android: bildirim temizle / okundu isaretle duzeltmeleri, FCM push iyilestirmeleri\n- Mal kabul ve iade akis iyilestirmeleri",
     "zorunlu":  false
 }

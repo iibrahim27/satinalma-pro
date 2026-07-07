@@ -20,7 +20,7 @@
 
         ResizeMode="CanResizeWithGrip"
 
-        Background="White">
+        Background="{StaticResource DashBackgroundBrush}">
 
   <Grid Margin="20">
 

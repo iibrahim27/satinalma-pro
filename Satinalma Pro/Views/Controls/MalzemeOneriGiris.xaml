@@ -6,6 +6,7 @@
              BorderThickness="0"
              Padding="4,2"
              VerticalContentAlignment="Center"
+             ToolTip="F2 — Alınan Malzemeler listesinden seç"
              TextChanged="MetinKutusu_TextChanged"
              LostKeyboardFocus="MetinKutusu_LostKeyboardFocus"
              PreviewKeyDown="MetinKutusu_PreviewKeyDown" />

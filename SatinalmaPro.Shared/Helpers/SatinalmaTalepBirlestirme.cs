@@ -71,6 +71,9 @@ public static class SatinalmaTalepBirlestirme
         var kaynakAsama = SatinalmaTalepDurumlari.SurecAsamaSkoru(kaynak.Durum);
         if (kaynakAsama > hedefAsama)
             hedef.Durum = kaynak.Durum;
+
+        if (SatinalmaTalepYardimcisi.GercekTeklifVar(hedef) && kaynakAsama < hedefAsama)
+            return;
     }
 
     private static SatinalmaTalep KazananKayit(SatinalmaTalep a, SatinalmaTalep b)
@@ -109,23 +112,26 @@ public static class SatinalmaTalepBirlestirme
         if (ReferenceEquals(hedef, kaynak))
             return;
 
-        if (hedef.GuncellemeUtc > kaynak.GuncellemeUtc)
-            return;
-
         hedef.Teklifler ??= [];
-        foreach (var teklif in kaynak.Teklifler ?? [])
+        foreach (var kaynakTaraf in new[] { hedef, kaynak })
         {
-            var mevcut = hedef.Teklifler.FirstOrDefault(t => t.Id == teklif.Id);
-            if (mevcut is null)
+            foreach (var teklif in kaynakTaraf.Teklifler ?? [])
             {
-                hedef.Teklifler.Add(teklif);
-                continue;
-            }
+                if (!SatinalmaTalepYardimcisi.GercekTeklifVar(teklif))
+                    continue;
 
-            if (TeklifDolulukSkoru(teklif) > TeklifDolulukSkoru(mevcut))
-            {
-                hedef.Teklifler.Remove(mevcut);
-                hedef.Teklifler.Add(teklif);
+                var mevcut = hedef.Teklifler.FirstOrDefault(t => t.Id == teklif.Id);
+                if (mevcut is null)
+                {
+                    hedef.Teklifler.Add(teklif);
+                    continue;
+                }
+
+                if (TeklifDolulukSkoru(teklif) > TeklifDolulukSkoru(mevcut))
+                {
+                    hedef.Teklifler.Remove(mevcut);
+                    hedef.Teklifler.Add(teklif);
+                }
             }
         }
     }

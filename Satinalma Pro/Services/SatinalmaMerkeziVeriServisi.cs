@@ -15,14 +15,18 @@ public static class SatinalmaMerkeziVeriServisi
 
     public static async Task VerileriHazirlaAsync(CancellationToken iptal = default)
     {
-        SatinalmaDepo.Yukle();
-        if (FirebaseVerisiKullanilabilir)
-            await IadeDeposu.YukleAsync(iptal).ConfigureAwait(false);
+        if (!FirebaseVerisiKullanilabilir)
+            return;
+
+        await IadeDeposu.YukleAsync(iptal).ConfigureAwait(false);
     }
 
     public static void VerileriHazirla()
     {
-        VerileriHazirlaAsync().GetAwaiter().GetResult();
+        if (!FirebaseVerisiKullanilabilir)
+            return;
+
+        _ = VerileriHazirlaAsync();
     }
 
     public static IReadOnlyList<KpiKartModel> KpiKartlari()
@@ -105,13 +109,19 @@ public static class SatinalmaMerkeziVeriServisi
         if (!FirebaseVerisiKullanilabilir)
             return SatinalmaMerkeziMockServisi.Bildirimler();
 
-        return BildirimDeposu.Bildirimler.Take(20).Select(b => new BildirimModel
-        {
-            Baslik = b.Baslik,
-            Mesaj = b.Mesaj,
-            Zaman = b.OlusturmaTarihi,
-            Okundu = b.Okundu
-        }).ToList();
+        var kullanici = OturumYoneticisi.AktifKullanici;
+        return BildirimDeposu.Bildirimler
+            .Where(b => kullanici is not null
+                && MasaustuBildirimFiltreleme.KullaniciyaMi(b, kullanici)
+                && MasaustuBildirimFiltreleme.GecerliMi(b, SatinalmaDepo.Talepler))
+            .Take(20)
+            .Select(b => new BildirimModel
+            {
+                Baslik = b.Baslik,
+                Mesaj = b.Mesaj,
+                Zaman = b.OlusturmaTarihi,
+                Okundu = b.Okundu
+            }).ToList();
     }
 
     public static IReadOnlyList<DepoTakipSatirModel> DepoTakip()
@@ -179,11 +189,17 @@ public static class SatinalmaMerkeziVeriServisi
 
     public static IReadOnlyList<IadeSatirModel> Iadeler()
     {
+        if (IadeDeposu.Kayitlar.Count == 0)
+            IadeDeposu.YerelYukle();
+
+        var satirlar = IadeDeposu.MerkeziSatirlar();
+        if (satirlar.Count > 0)
+            return satirlar;
+
         if (!FirebaseVerisiKullanilabilir)
             return SatinalmaMerkeziMockServisi.Iadeler();
 
-        var satirlar = IadeDeposu.MerkeziSatirlar();
-        return satirlar.Count > 0 ? satirlar : [];
+        return [];
     }
 
     public static IReadOnlyList<TamamlananSatirModel> Tamamlananlar()

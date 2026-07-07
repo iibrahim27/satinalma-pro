@@ -1,0 +1,154 @@
+<UserControl x:Class="SatinalmaPro.Views.Modules.Satinalma.Part1.SatinalmaPanosuView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.modernwpf.com/2019"
+             xmlns:dash="clr-namespace:SatinalmaPro.Controls.Dashboard"
+             Background="{StaticResource SatModBgBrush}">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" MinWidth="640" />
+      <ColumnDefinition Width="360" MinWidth="300" MaxWidth="400" />
+    </Grid.ColumnDefinitions>
+
+    <!-- Sol: süreç + tablo -->
+    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                  Padding="0,0,16,0">
+      <StackPanel>
+        <!-- Workflow -->
+        <Border Style="{StaticResource SatModPremiumCard}" Margin="0,0,0,20">
+          <StackPanel>
+            <Grid Margin="0,0,0,16">
+              <TextBlock Text="Satınalma Süreci" Style="{StaticResource SatModSectionTitle}" />
+              <TextBlock Text="Canlı süreç takibi" HorizontalAlignment="Right" FontSize="12"
+                         Foreground="{StaticResource InkMutedBrush}" VerticalAlignment="Center" />
+            </Grid>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+              <StackPanel x:Name="WorkflowPanel" Orientation="Horizontal" />
+            </ScrollViewer>
+          </StackPanel>
+        </Border>
+
+        <!-- Tablo -->
+        <Border Style="{StaticResource SatModPremiumCard}">
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" MinHeight="280" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="0,0,0,14">
+              <TextBlock Text="Son Talepler" Style="{StaticResource SatModSectionTitle}" VerticalAlignment="Center" />
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Grid Width="220" Margin="0,0,10,0">
+                  <TextBox x:Name="TxtArama" Style="{StaticResource FilterBoxStyle}" Height="36"
+                           TextChanged="AramaDegisti"
+                           ui:ControlHelper.PlaceholderText="Talep no, malzeme, şantiye..." />
+                  <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                             Foreground="{StaticResource InkMutedBrush}" HorizontalAlignment="Right"
+                             VerticalAlignment="Center" Margin="0,0,12,0" IsHitTestVisible="False" />
+                </Grid>
+                <Button Style="{StaticResource ToolbarButtonStyle}" Height="36" Content="Tümünü Gör"
+                        Click="TumTalepler_Click" />
+              </StackPanel>
+            </Grid>
+
+            <Border Grid.Row="1" Style="{StaticResource SatModTabBar}" Margin="0,0,0,12">
+              <StackPanel Orientation="Horizontal">
+                <Button x:Name="TabTumu" Style="{StaticResource SatModTabButtonActive}" Content="Tümü"
+                        Click="Tab_Click" Tag="Tumu" />
+                <Button x:Name="TabBekleyen" Style="{StaticResource SatModTabButton}" Content="Bekleyen"
+                        Click="Tab_Click" Tag="Bekleyen" />
+                <Button x:Name="TabTeklif" Style="{StaticResource SatModTabButton}" Content="Teklif"
+                        Click="Tab_Click" Tag="Teklif" />
+                <Button x:Name="TabOnay" Style="{StaticResource SatModTabButton}" Content="Onay"
+                        Click="Tab_Click" Tag="Onay" />
+                <Button x:Name="TabSiparis" Style="{StaticResource SatModTabButton}" Content="Sipariş"
+                        Click="Tab_Click" Tag="Siparis" />
+              </StackPanel>
+            </Border>
+
+            <Border Grid.Row="2" Background="White" CornerRadius="12" BorderBrush="#E5E7EB" BorderThickness="1">
+              <DataGrid x:Name="TalepGrid" Style="{StaticResource SatModPanosuGrid}"
+                        CanUserSortColumns="True" CanUserResizeColumns="True"
+                        SelectionChanged="TalepGrid_SelectionChanged"
+                        MouseDoubleClick="TalepGrid_MouseDoubleClick">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Talep No" Binding="{Binding TalepNo}" Width="100" />
+                  <DataGridTextColumn Header="Talep Eden" Binding="{Binding TalepEden}" Width="110" />
+                  <DataGridTextColumn Header="Şantiye" Binding="{Binding Santiye}" Width="110" />
+                  <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="130" />
+                  <DataGridTextColumn Header="Kategori" Binding="{Binding Kategori}" Width="90" />
+                  <DataGridTemplateColumn Header="Öncelik" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                      <DataTemplate>
+                        <Border CornerRadius="6" Padding="8,3" HorizontalAlignment="Center"
+                                Background="{Binding OncelikArkaPlan}">
+                          <TextBlock Text="{Binding Oncelik}" FontSize="11" FontWeight="SemiBold"
+                                     Foreground="{Binding OncelikYazi}" />
+                        </Border>
+                      </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                  </DataGridTemplateColumn>
+                  <DataGridTextColumn Header="Teklif" Binding="{Binding TeklifSayisi}" Width="55" />
+                  <DataGridTemplateColumn Header="Durum" Width="110">
+                    <DataGridTemplateColumn.CellTemplate>
+                      <DataTemplate>
+                        <Border CornerRadius="6" Padding="8,3" HorizontalAlignment="Center"
+                                Background="{Binding DurumArkaPlan}">
+                          <TextBlock Text="{Binding Durum}" FontSize="11" FontWeight="SemiBold"
+                                     Foreground="{Binding DurumYazi}" />
+                        </Border>
+                      </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                  </DataGridTemplateColumn>
+                  <DataGridTextColumn Header="Son İşlem" Binding="{Binding SonIslem}" Width="95" />
+                  <DataGridTemplateColumn Header="" Width="48" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                      <DataTemplate>
+                        <Button Style="{StaticResource SatModIconButton}" Tag="{Binding}"
+                                Click="SatirMenu_Tikla" ToolTip="İşlemler">
+                          <TextBlock Text="&#xE712;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                     Foreground="{StaticResource InkMutedBrush}" />
+                        </Button>
+                      </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                  </DataGridTemplateColumn>
+                </DataGrid.Columns>
+              </DataGrid>
+            </Border>
+          </Grid>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Sağ panel -->
+    <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel>
+        <Border Style="{StaticResource SatModPremiumCard}" Margin="0,0,0,16">
+          <StackPanel>
+            <TextBlock Text="Satınalma Özeti" Style="{StaticResource SatModSectionTitle}" Margin="0,0,0,14" />
+            <UniformGrid x:Name="KpiPanel" Rows="3" Columns="2" />
+          </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource SatModPremiumCard}" Margin="0,0,0,16">
+          <StackPanel>
+            <TextBlock Text="Aylık Satınalma" Style="{StaticResource SatModSectionTitle}" Margin="0,0,0,8" />
+            <TextBlock Text="Aylık talep sayısı" FontSize="11" Foreground="{StaticResource InkMutedBrush}"
+                       Margin="0,0,0,12" />
+            <dash:ErpLineChartPanel x:Name="AylikGrafik" Height="160" />
+          </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource SatModPremiumCard}">
+          <StackPanel>
+            <TextBlock Text="En Çok Satın Alınan Kategoriler" Style="{StaticResource SatModSectionTitle}"
+                       Margin="0,0,0,12" TextWrapping="Wrap" />
+            <dash:ErpDonutChartPanel x:Name="KategoriGrafik" Height="200" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

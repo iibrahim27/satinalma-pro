@@ -1,0 +1,21 @@
+<Window x:Class="SatinalmaPro.Views.Controls.ErpKayitGecmisiWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Kayıt Geçmişi"
+        Width="520" Height="420"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource ErpBgBrush}">
+  <Border Style="{StaticResource ErpCard}" Margin="16" Padding="20">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <TextBlock x:Name="TxtBaslik" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource DashTextBrush}" Margin="0,0,0,12" />
+      <ListBox x:Name="GecmisListe" Grid.Row="1" BorderThickness="0" Background="Transparent" FontSize="13" />
+      <Button Grid.Row="2" Style="{StaticResource PrimaryToolbarButtonStyle}" Content="Kapat" HorizontalAlignment="Right"
+              Margin="0,16,0,0" Padding="16,8" Click="Kapat_Click" IsDefault="True" />
+    </Grid>
+  </Border>
+</Window>

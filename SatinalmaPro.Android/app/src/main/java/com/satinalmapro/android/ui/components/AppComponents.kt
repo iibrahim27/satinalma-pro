@@ -20,32 +20,42 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.satinalmapro.android.ui.theme.AppColors
+import com.satinalmapro.android.ui.theme.AppElevation
 import com.satinalmapro.android.ui.theme.AppShapes
+import com.satinalmapro.android.ui.theme.AppSpacing
 
 @Composable
 fun AppCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    contentPadding: androidx.compose.ui.unit.Dp = AppSpacing.cardPadding,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val colors = CardDefaults.cardColors(containerColor = AppColors.Surface)
+    val elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.card)
+    val border = BorderStroke(1.dp, AppColors.Border)
+    val shape = AppShapes.medium
+    val wrapped: @Composable ColumnScope.() -> Unit = {
+        Column(Modifier.padding(contentPadding), content = content)
+    }
     if (onClick != null) {
         Card(
             onClick = onClick,
             modifier = modifier.fillMaxWidth(),
-            shape = AppShapes.medium,
-            colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
-            border = BorderStroke(1.dp, AppColors.Border),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            content = content
+            shape = shape,
+            colors = colors,
+            border = border,
+            elevation = elevation,
+            content = wrapped
         )
     } else {
         Card(
             modifier = modifier.fillMaxWidth(),
-            shape = AppShapes.medium,
-            colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
-            border = BorderStroke(1.dp, AppColors.Border),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            content = content
+            shape = shape,
+            colors = colors,
+            border = border,
+            elevation = elevation,
+            content = wrapped
         )
     }
 }
@@ -143,8 +153,8 @@ fun ScreenScaffold(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.screenVertical),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.sectionGap),
         content = content
     )
 }

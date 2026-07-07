@@ -41,4 +41,39 @@ public static class VisualTreeYardimcisi
 
         return null;
     }
+
+    public static T? FindDescendant<T>(DependencyObject? root) where T : DependencyObject
+    {
+        if (root is null)
+            return null;
+
+        if (root is T match)
+            return match;
+
+        if (root is Visual or Visual3D)
+        {
+            var count = VisualTreeHelper.GetChildrenCount(root);
+            for (var i = 0; i < count; i++)
+            {
+                var found = FindDescendant<T>(VisualTreeHelper.GetChild(root, i));
+                if (found is not null)
+                    return found;
+            }
+        }
+
+        if (root is FrameworkElement fe)
+        {
+            foreach (var child in LogicalTreeHelper.GetChildren(fe))
+            {
+                if (child is DependencyObject dep)
+                {
+                    var found = FindDescendant<T>(dep);
+                    if (found is not null)
+                        return found;
+                }
+            }
+        }
+
+        return null;
+    }
 }

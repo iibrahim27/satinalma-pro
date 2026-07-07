@@ -23,6 +23,8 @@ public partial class StatCardControl : UserControl
 
         TxtTrend.Foreground = veri.TrendPozitif
             ? AppTheme.Brush(AppTheme.SuccessHex)
-            : AppTheme.Brush(AppTheme.WarningHex);
+            : AppTheme.Brush(AppTheme.DangerHex);
+
+        Sparkline.Points = veri.Sparkline;
     }
 }

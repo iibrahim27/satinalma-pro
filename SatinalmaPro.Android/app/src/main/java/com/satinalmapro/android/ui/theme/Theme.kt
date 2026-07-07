@@ -1,47 +1,50 @@
 package com.satinalmapro.android.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 private val LightColorScheme = lightColorScheme(
-    primary = AppColors.Primary,
-    onPrimary = AppColors.Surface,
-    primaryContainer = AppColors.PrimaryContainer,
-    onPrimaryContainer = AppColors.Primary,
-    secondary = AppColors.TextSecondary,
-    background = AppColors.Background,
-    onBackground = AppColors.TextPrimary,
-    surface = AppColors.Surface,
-    onSurface = AppColors.TextPrimary,
-    surfaceVariant = AppColors.Background,
-    onSurfaceVariant = AppColors.TextSecondary,
-    outline = AppColors.Border,
-    error = AppColors.Danger,
-    onError = AppColors.Surface
+    primary = LightAppColors.Primary,
+    onPrimary = LightAppColors.Surface,
+    primaryContainer = LightAppColors.PrimaryContainer,
+    onPrimaryContainer = LightAppColors.Primary,
+    secondary = LightAppColors.TextSecondary,
+    background = LightAppColors.Background,
+    onBackground = LightAppColors.TextPrimary,
+    surface = LightAppColors.Surface,
+    onSurface = LightAppColors.TextPrimary,
+    surfaceVariant = LightAppColors.Background,
+    onSurfaceVariant = LightAppColors.TextSecondary,
+    outline = LightAppColors.Border,
+    error = LightAppColors.Danger,
+    onError = LightAppColors.Surface
 )
 
-private val ColorDarkSurface = AppColors.TextPrimary.copy(alpha = 0.92f)
-
 private val DarkColorScheme = darkColorScheme(
-    primary = AppColors.Primary,
-    onPrimary = AppColors.Surface,
-    primaryContainer = AppColors.Primary.copy(alpha = 0.25f),
-    background = AppColors.TextPrimary,
-    surface = ColorDarkSurface,
-    onSurface = AppColors.Surface,
-    outline = AppColors.Border.copy(alpha = 0.4f)
+    primary = DarkAppColors.Primary,
+    onPrimary = DarkAppColors.Background,
+    primaryContainer = DarkAppColors.PrimaryContainer,
+    onPrimaryContainer = DarkAppColors.Primary,
+    secondary = DarkAppColors.TextSecondary,
+    background = DarkAppColors.Background,
+    onBackground = DarkAppColors.TextPrimary,
+    surface = DarkAppColors.Surface,
+    onSurface = DarkAppColors.TextPrimary,
+    surfaceVariant = DarkAppColors.Background,
+    onSurfaceVariant = DarkAppColors.TextSecondary,
+    outline = DarkAppColors.Border,
+    error = DarkAppColors.Danger,
+    onError = DarkAppColors.TextPrimary
 )
 
 private val AppTypography = Typography(
@@ -71,13 +74,13 @@ private val AppTypography = Typography(
     ),
     bodyLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
         lineHeight = 24.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp
     ),
@@ -98,22 +101,30 @@ private val AppTypography = Typography(
 @Composable
 fun SatinalmaProTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val palette = if (darkTheme) DarkAppColors else LightAppColors
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = AppTypography,
-        shapes = AppShapes,
-        content = content
-    )
+    CompositionLocalProvider(LocalAppColors provides palette) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = AppTypography,
+            shapes = AppShapes,
+            content = content
+        )
+    }
 }
+
+@Composable
+fun appFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = AppColors.TextPrimary,
+    unfocusedTextColor = AppColors.TextPrimary,
+    focusedLabelColor = AppColors.TextSecondary,
+    unfocusedLabelColor = AppColors.TextSecondary,
+    cursorColor = AppColors.Primary,
+    focusedBorderColor = AppColors.Primary,
+    unfocusedBorderColor = AppColors.Border,
+    focusedContainerColor = AppColors.Surface,
+    unfocusedContainerColor = AppColors.Surface
+)

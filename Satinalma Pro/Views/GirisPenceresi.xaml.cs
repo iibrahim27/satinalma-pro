@@ -17,6 +17,7 @@ public partial class GirisPenceresi : Window
             DialogResult = true;
             Close();
         };
+        Loaded += (_, _) => GirisKontrol.TercihleriYukle();
     }
 
     public static bool OturumAc(Window? sahip)

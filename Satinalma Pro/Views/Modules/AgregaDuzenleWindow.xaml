@@ -10,108 +10,102 @@
         MinHeight="600"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
-        Background="White">
-  <Grid Margin="28">
+        Background="{StaticResource DashBackgroundBrush}">
+  <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
 
-    <StackPanel Grid.Row="0" Margin="0,0,0,20">
-      <TextBlock Text="Agrega Kaydı"
-                 FontSize="22"
-                 FontWeight="SemiBold"
-                 Foreground="{StaticResource InkBrush}" />
-      <TextBlock Text="Gelen agrega / mıcır kaydını güncelleyin"
-                 FontSize="13"
-                 Foreground="{StaticResource InkMutedBrush}"
-                 Margin="0,4,0,0" />
+    <StackPanel Grid.Row="0" Margin="0,0,0,16">
+      <TextBlock Text="Agrega Kaydı" Style="{StaticResource ModuleDialogTitleStyle}" />
+      <TextBlock Text="Gelen agrega / mıcır kaydını güncelleyin" Style="{StaticResource ModuleDialogSubtitleStyle}" />
     </StackPanel>
 
-    <ScrollViewer Grid.Row="1" Style="{StaticResource ModuleScrollViewerStyle}">
-      <StackPanel>
-        <TextBlock Text="Tarih" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-        <TextBox x:Name="TxtTarih" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+    <Border Grid.Row="1" Style="{StaticResource ModulePageCardStyle}" Padding="24,20">
+      <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0">
+        <StackPanel>
+          <TextBlock Text="Tarih" Style="{StaticResource ModuleFormLabelStyle}" />
+          <TextBox x:Name="TxtTarih" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
 
-        <TextBlock Text="İrsaliye No" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-        <TextBox x:Name="TxtIrsaliyeNo" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+          <TextBlock Text="İrsaliye No" Style="{StaticResource ModuleFormLabelStyle}" />
+          <TextBox x:Name="TxtIrsaliyeNo" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
 
-        <CheckBox x:Name="ChkFaturasiKesildi" Content="Faturası kesildi" Margin="0,0,0,14" />
+          <TextBlock Text="Agrega Türü" Style="{StaticResource ModuleFormLabelStyle}" />
+          <ComboBox x:Name="CmbAgregaTuru" Style="{StaticResource FilterComboStyle}" Margin="0,0,0,14" IsEditable="True">
+            <ComboBoxItem Content="Mıcır" />
+            <ComboBoxItem Content="Kum" />
+            <ComboBoxItem Content="Çakıl" />
+            <ComboBoxItem Content="Karışım" />
+            <ComboBoxItem Content="Dolgu" />
+            <ComboBoxItem Content="Diğer" />
+          </ComboBox>
 
-        <TextBlock Text="Agrega Türü" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-        <ComboBox x:Name="CmbAgregaTuru" Style="{StaticResource FilterComboStyle}" Margin="0,0,0,14" IsEditable="True">
-          <ComboBoxItem Content="Mıcır" />
-          <ComboBoxItem Content="Kum" />
-          <ComboBoxItem Content="Çakıl" />
-          <ComboBoxItem Content="Karışım" />
-          <ComboBoxItem Content="Dolgu" />
-          <ComboBoxItem Content="Diğer" />
-        </ComboBox>
+          <TextBlock Text="Agrega Cinsi" Style="{StaticResource ModuleFormLabelStyle}" />
+          <ComboBox x:Name="CmbAgregaCinsi" Style="{StaticResource FilterComboStyle}" Margin="0,0,0,14" IsEditable="True">
+            <ComboBoxItem Content="Mıcır 0-11" />
+            <ComboBoxItem Content="Mıcır 11-22" />
+            <ComboBoxItem Content="Kum 0-4" />
+            <ComboBoxItem Content="Kum 0-7" />
+            <ComboBoxItem Content="Çakıl 5-15" />
+            <ComboBoxItem Content="Agrega 0-32" />
+          </ComboBox>
 
-        <TextBlock Text="Agrega Cinsi" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-        <ComboBox x:Name="CmbAgregaCinsi" Style="{StaticResource FilterComboStyle}" Margin="0,0,0,14" IsEditable="True">
-          <ComboBoxItem Content="Mıcır 0-11" />
-          <ComboBoxItem Content="Mıcır 11-22" />
-          <ComboBoxItem Content="Kum 0-4" />
-          <ComboBoxItem Content="Kum 0-7" />
-          <ComboBoxItem Content="Çakıl 5-15" />
-          <ComboBoxItem Content="Agrega 0-32" />
-        </ComboBox>
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="12" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+              <TextBlock Text="Miktar" Style="{StaticResource ModuleFormLabelStyle}" />
+              <TextBox x:Name="TxtMiktar" Style="{StaticResource FilterBoxStyle}" TextChanged="TutarHesapla" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="Birim" Style="{StaticResource ModuleFormLabelStyle}" />
+              <TextBox x:Name="TxtBirim" Style="{StaticResource FilterBoxStyle}" />
+            </StackPanel>
+          </Grid>
 
-        <Grid Margin="0,0,0,14">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="12" />
-            <ColumnDefinition Width="*" />
-          </Grid.ColumnDefinitions>
-          <StackPanel Grid.Column="0">
-            <TextBlock Text="Miktar" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-            <TextBox x:Name="TxtMiktar" Style="{StaticResource FilterBoxStyle}" TextChanged="TutarHesapla" />
-          </StackPanel>
-          <StackPanel Grid.Column="2">
-            <TextBlock Text="Birim" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-            <TextBox x:Name="TxtBirim" Style="{StaticResource FilterBoxStyle}" />
-          </StackPanel>
-        </Grid>
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="12" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+              <TextBlock Text="Birim Fiyatı" Style="{StaticResource ModuleFormLabelStyle}" />
+              <TextBox x:Name="TxtBirimFiyati" Style="{StaticResource FilterBoxStyle}" TextChanged="TutarHesapla" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="Toplam Tutar" Style="{StaticResource ModuleFormLabelStyle}" />
+              <TextBox x:Name="TxtToplamTutar" Style="{StaticResource ModuleReadOnlyFieldStyle}" />
+            </StackPanel>
+          </Grid>
 
-        <Grid Margin="0,0,0,14">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="12" />
-            <ColumnDefinition Width="*" />
-          </Grid.ColumnDefinitions>
-          <StackPanel Grid.Column="0">
-            <TextBlock Text="Birim Fiyatı" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-            <TextBox x:Name="TxtBirimFiyati" Style="{StaticResource FilterBoxStyle}" TextChanged="TutarHesapla" />
-          </StackPanel>
-          <StackPanel Grid.Column="2">
-            <TextBlock Text="Toplam Tutar" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-            <TextBox x:Name="TxtToplamTutar" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" Background="#F8FAFC" />
-          </StackPanel>
-        </Grid>
+          <TextBlock Text="Tedarikçi" Style="{StaticResource ModuleFormLabelStyle}" />
+          <TextBox x:Name="TxtTedarikci" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
 
-        <TextBlock Text="Tedarikçi" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-        <TextBox x:Name="TxtTedarikci" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+          <TextBlock Text="İndirildiği Saha" Style="{StaticResource ModuleFormLabelStyle}" />
+          <TextBox x:Name="TxtIndirildigiSaha" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
 
-        <TextBlock Text="İndirildiği Saha" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-        <TextBox x:Name="TxtIndirildigiSaha" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+          <TextBlock Text="Teslim Alan" Style="{StaticResource ModuleFormLabelStyle}" />
+          <TextBox x:Name="TxtTeslimAlan" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
 
-        <TextBlock Text="Teslim Alan" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-        <TextBox x:Name="TxtTeslimAlan" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+          <TextBlock Text="Açıklama" Style="{StaticResource ModuleFormLabelStyle}" />
+          <TextBox x:Name="TxtAciklama"
+                   Style="{StaticResource FilterBoxStyle}"
+                   Height="80"
+                   TextWrapping="Wrap"
+                   AcceptsReturn="True"
+                   VerticalContentAlignment="Top"
+                   Padding="12,10" />
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
 
-        <TextBlock Text="Açıklama" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
-        <TextBox x:Name="TxtAciklama"
-                 Style="{StaticResource FilterBoxStyle}"
-                 Height="80"
-                 TextWrapping="Wrap"
-                 AcceptsReturn="True"
-                 VerticalContentAlignment="Top"
-                 Padding="12,10" />
-      </StackPanel>
-    </ScrollViewer>
-
-    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
       <Button Content="İptal" Style="{StaticResource ToolbarButtonStyle}" Width="100" Margin="0,0,8,0" Click="Iptal_Click" />
       <Button Content="Kaydet" Style="{StaticResource PrimaryToolbarButtonStyle}" Width="120" Click="Kaydet_Click" />
     </StackPanel>

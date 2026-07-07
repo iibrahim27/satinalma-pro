@@ -27,6 +27,12 @@ public class AlinanMalzemeKaydi
         _ => $"{ArtisYuzdesi.Value:N1}%"
     };
 
+    /// <summary>Fatura durumu rozeti — UI gösterimi.</summary>
+    public string FaturaDurumuMetin =>
+        string.IsNullOrWhiteSpace(FaturaNo) ? "Bekliyor" : "Kesildi";
+
+    public string SiparisNoGoster => "—";
+
     public void ToplamTutariHesapla() =>
         ToplamTutar = Math.Round((decimal)Miktar * BirimFiyati, 2);
 

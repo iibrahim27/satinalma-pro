@@ -11,9 +11,9 @@
       <Grid Margin="4">
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto" />
-          <RowDefinition Height="160" />
+          <RowDefinition Height="1.4*" MinHeight="280" />
           <RowDefinition Height="Auto" />
-          <RowDefinition Height="*" />
+          <RowDefinition Height="*" MinHeight="200" />
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,10">
@@ -25,6 +25,7 @@
         <DataGrid x:Name="KullaniciGrid" Grid.Row="1" Style="{StaticResource ModuleDataGridStyle}"
                   SelectionUnit="FullRow" SelectionMode="Single"
                   AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                  VerticalScrollBarVisibility="Auto"
                   MouseDoubleClick="KullaniciGrid_MouseDoubleClick"
                   SelectionChanged="KullaniciGrid_SelectionChanged">
           <DataGrid.Columns>

@@ -4,59 +4,67 @@
              xmlns:dash="clr-namespace:SatinalmaPro.Controls.Dashboard"
              xmlns:helpers="clr-namespace:SatinalmaPro.Helpers"
              helpers:ScrollWheelHelper.IsEnabled="True">
-  <UserControl.Resources>
-    <Storyboard x:Key="GirisAnimasyonu">
-      <DoubleAnimation Storyboard.TargetName="Root"
-                       Storyboard.TargetProperty="Opacity"
-                       From="0" To="1" Duration="0:0:0.35" />
-      <DoubleAnimation Storyboard.TargetName="RootTransform"
-                       Storyboard.TargetProperty="(TranslateTransform.Y)"
-                       From="24" To="0" Duration="0:0:0.35">
-        <DoubleAnimation.EasingFunction>
-          <CubicEase EasingMode="EaseOut" />
-        </DoubleAnimation.EasingFunction>
-      </DoubleAnimation>
-    </Storyboard>
-  </UserControl.Resources>
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,24">
+    <StackPanel x:Name="Root" Margin="0,0,0,8">
 
-  <UserControl.Triggers>
-    <EventTrigger RoutedEvent="Loaded">
-      <BeginStoryboard Storyboard="{StaticResource GirisAnimasyonu}" />
-    </EventTrigger>
-  </UserControl.Triggers>
-
-  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                Padding="0,0,8,24">
-    <Grid x:Name="Root" Opacity="0" RenderTransformOrigin="0.5,0">
-      <Grid.RenderTransform>
-        <TranslateTransform x:Name="RootTransform" Y="24" />
-      </Grid.RenderTransform>
-
-      <Grid.RowDefinitions>
-        <RowDefinition Height="Auto" />
-        <RowDefinition Height="Auto" />
-        <RowDefinition Height="Auto" />
-        <RowDefinition Height="Auto" />
-      </Grid.RowDefinitions>
-
-      <UniformGrid x:Name="StatGrid" Grid.Row="0" Rows="1" Columns="4" Margin="0,0,0,28" />
-
-      <StackPanel Grid.Row="1" Margin="0,0,0,28">
-        <TextBlock Text="Modüller" FontSize="18" FontWeight="SemiBold"
-                   Foreground="{StaticResource DashTextBrush}" Margin="0,0,0,18" />
-        <WrapPanel x:Name="ModulPanel" ItemWidth="260" ItemHeight="180" />
-      </StackPanel>
-
-      <Grid Grid.Row="2">
+      <!-- Hoş geldiniz + tarih + rapor -->
+      <Grid Margin="0,0,0,20">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*" />
-          <ColumnDefinition Width="24" />
-          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-
-        <dash:ActivityPanelControl x:Name="ActivityPanel" Grid.Column="0" />
-        <dash:StockAlertPanelControl x:Name="StockPanel" Grid.Column="2" />
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock x:Name="TxtKarsilama" FontSize="26" FontWeight="Bold" Foreground="{StaticResource DashTextBrush}" />
+          <TextBlock Text="Satınalma süreçlerinizi kolayca yönetin."
+                     FontSize="14" Foreground="{StaticResource DashTextSecondaryBrush}" Margin="0,6,0,0" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+          <Border Background="{StaticResource DashCardBrush}" BorderBrush="{StaticResource DashBorderBrush}"
+                  BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="0,0,12,0">
+            <TextBlock x:Name="TxtTarihSaat" FontSize="12" Foreground="{StaticResource DashTextSecondaryBrush}" />
+          </Border>
+          <Button x:Name="BtnRaporOlustur" Style="{StaticResource DashPrimaryButtonStyle}" Click="BtnRaporOlustur_Click">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="&#xE9F9;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,8,0" />
+              <TextBlock Text="Rapor Oluştur" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
       </Grid>
-    </Grid>
+
+      <!-- 5 KPI -->
+      <UniformGrid x:Name="StatGrid" Rows="1" Columns="5" Margin="0,0,0,20" />
+
+      <!-- Orta: grafik + hızlı işlemler -->
+      <Grid Margin="0,0,0,20">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="2*" />
+          <ColumnDefinition Width="16" />
+          <ColumnDefinition Width="1.4*" />
+          <ColumnDefinition Width="16" />
+          <ColumnDefinition Width="1.1*" />
+        </Grid.ColumnDefinitions>
+        <dash:ErpLineChartPanel x:Name="LineChart" Grid.Column="0" />
+        <dash:ErpDonutChartPanel x:Name="DonutChart" Grid.Column="2" />
+        <dash:ErpQuickActionsPanel x:Name="QuickActions" Grid.Column="4" />
+      </Grid>
+
+      <!-- Alt: timeline + grid + widget -->
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1.1*" />
+          <ColumnDefinition Width="16" />
+          <ColumnDefinition Width="2*" />
+          <ColumnDefinition Width="16" />
+          <ColumnDefinition Width="1*" />
+        </Grid.ColumnDefinitions>
+        <dash:ActivityPanelControl x:Name="ActivityPanel" Grid.Column="0" />
+        <dash:ErpOpenRecordsPanel x:Name="OpenRecords" Grid.Column="2" />
+        <dash:ErpRightWidgetsPanel x:Name="RightWidgets" Grid.Column="4" />
+      </Grid>
+
+      <!-- Modül kartları gizli — navigasyon sidebar'dan -->
+      <WrapPanel x:Name="ModulPanel" Visibility="Collapsed" />
+    </StackPanel>
   </ScrollViewer>
 </UserControl>

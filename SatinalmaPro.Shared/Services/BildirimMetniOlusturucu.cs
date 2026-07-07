@@ -1,3 +1,4 @@
+using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Models;
 
 namespace SatinalmaPro.Shared.Services;
@@ -34,10 +35,15 @@ public static class BildirimMetniOlusturucu
         return parcalar.Count > 0 ? string.Join(" · ", parcalar) : talepNo;
     }
 
-    public static (string Baslik, string Mesaj) Olustur(string tip, SatinalmaTalep talep, string? firmaAdi = null, string? ek = null)
+    public static (string Baslik, string Mesaj) Olustur(
+        string tip,
+        SatinalmaTalep talep,
+        string? firmaAdi = null,
+        string? ek = null,
+        string? onaylayanRol = null)
     {
         var malzemeler = talep.Kalemler?.OrderBy(k => k.SiraNo).Select(k => k.Malzeme);
-        return Olustur(tip, talep.TalepNo, talep.TalepEden, talep.TalepAciklamasi, malzemeler, firmaAdi, ek);
+        return Olustur(tip, talep.TalepNo, talep.TalepEden, talep.TalepAciklamasi, malzemeler, firmaAdi, ek, onaylayanRol);
     }
 
     public static (string Baslik, string Mesaj) Olustur(
@@ -47,21 +53,28 @@ public static class BildirimMetniOlusturucu
         string? aciklama,
         IEnumerable<string>? malzemeler,
         string? firmaAdi = null,
-        string? ek = null)
+        string? ek = null,
+        string? onaylayanRol = null)
     {
         var satir = TalepSatiri(talepNo, talepEden, aciklama, malzemeler);
+        var satinalmaOnayladi = OnayBildirimYardimcisi.SatinalmaOnayladi(onaylayanRol);
 
         return tip switch
         {
             BildirimTipleri.YonetimeGonderildi => ($"Yeni talep: {talepNo}", satir),
-            BildirimTipleri.TeklifIstendi => ($"Teklif istendi: {talepNo}", satir),
+            BildirimTipleri.TeklifIstendi => ($"Teklif istendi: {talepNo}",
+                string.IsNullOrWhiteSpace(ek) ? satir : TalepSatiri(talepNo, talepEden, ek, null)),
             BildirimTipleri.TeklifOnayda => ($"Teklif onayda: {talepNo}", satir),
             BildirimTipleri.TeklifDuzeltmeIstendi => ($"Teklif düzeltme: {talepNo}",
                 string.IsNullOrWhiteSpace(ek) ? satir : TalepSatiri(talepNo, talepEden, ek, null)),
             BildirimTipleri.Reddedildi => ($"Talep reddedildi: {talepNo}",
                 string.IsNullOrWhiteSpace(ek) ? satir : TalepSatiri(talepNo, talepEden, ek, null)),
+            BildirimTipleri.Onaylandi when satinalmaOnayladi && !string.IsNullOrWhiteSpace(firmaAdi) =>
+                ($"Satınalma teklife onay verdi: {talepNo}", $"Satınalma {firmaAdi} firmasına onay verdi."),
+            BildirimTipleri.Onaylandi when satinalmaOnayladi =>
+                ($"Satınalma talebi onayladı: {talepNo}", satir),
             BildirimTipleri.Onaylandi when !string.IsNullOrWhiteSpace(firmaAdi) =>
-                ($"Firma onaylandı: {talepNo}", $"Yönetim {firmaAdi} firmasına onay verdi."),
+                ($"Teklife onay verildi: {talepNo}", $"Yönetim {firmaAdi} firmasına onay verdi."),
             BildirimTipleri.Onaylandi => ($"Talep onaylandı: {talepNo}", satir),
             BildirimTipleri.SiparisOlusturuldu => ($"Sipariş verildi: {talepNo}",
                 string.IsNullOrWhiteSpace(ek) ? satir : $"{satir} · {ek}"),

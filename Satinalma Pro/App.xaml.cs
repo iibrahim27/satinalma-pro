@@ -33,15 +33,8 @@ public partial class App : Application
                     }
                 }
 
-                if (!oneGetirildi)
-                {
-                    MessageBox.Show(
-                        $"{UygulamaBilgisi.Ad} zaten çalışıyor.\n\n" +
-                        "Pencere görünmüyorsa Görev Yöneticisi'nden \"SatinalmaPro\" sürecini sonlandırın.",
-                        UygulamaBilgisi.Ad,
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                }
+                Shutdown();
+                return;
             }
 
             Shutdown();
@@ -90,7 +83,7 @@ public partial class App : Application
                 return;
             }
 
-            if (!GirisPenceresi.OturumAc(splash))
+            if (!await splash.OturumAcAsync())
             {
                 splash.Close();
                 Shutdown();
@@ -131,8 +124,9 @@ public partial class App : Application
             MainWindow = main;
             PencereOneGetirDinleyicisi.Bagla(main);
             main.Show();
+            MasaustuTepsiYoneticisi.Bagla(main);
             splash.Kapat();
-            ShutdownMode = ShutdownMode.OnMainWindowClose;
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
         }
         catch (Exception ex)
         {
@@ -148,6 +142,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        MasaustuTepsiYoneticisi.Temizle();
         OturumYoneticisi.UygulamaKapanirken();
         TekOrnekKorumasi.SerbestBirak();
         base.OnExit(e);

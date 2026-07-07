@@ -75,6 +75,8 @@ public class SatinalmaTalepKalemi
     public string Birim { get; set; } = "Adet";
     public string Aciklama { get; set; } = "";
     public Guid? OnaylananTeklifId { get; set; }
+    /// <summary>Satınalma önerisi — kalem bazlı firma/fiyat seçimi.</summary>
+    public Guid? OnerilenTeklifId { get; set; }
     public double KabulEdilenMiktar { get; set; }
     public bool SiparisTamamlandi { get; set; }
 }
@@ -99,7 +101,13 @@ public class SatinalmaTalep
     public Guid? YonetimOnerilenTeklifId { get; set; }
     /// <summary>Satınalmacı öneriyi elle seçtiyse true; aksi halde sistem en düşük fiyatlı teklifi önerir.</summary>
     public bool SatinalmaOnerisiElleSecildi { get; set; }
+    /// <summary>Öneri kalem bazlı (farklı firmalardan birim fiyat) seçildiyse true.</summary>
+    public bool SatinalmaKalemOnerisiElleSecildi { get; set; }
     public string Durum { get; set; } = SatinalmaTalepDurumlari.Taslak;
+    /// <summary>Enterprise Firestore status (draft, submitted, quote_requested, …).</summary>
+    public string Status { get; set; } = "";
+    public string Priority { get; set; } = "normal";
+    public bool HasReturnFlag { get; set; }
     public string SiparisNo { get; set; } = "";
     public Guid? OnaylananTeklifId { get; set; }
     public Dictionary<Guid, string> FirmaSiparisNolari { get; set; } = [];
@@ -128,7 +136,7 @@ public class SatinalmaTalep
         && (Teklifler?.Count ?? 0) == 0
         && !TeklifOnayiBekliyor;
 
-    public bool TeklifGirilmis => (Teklifler?.Count ?? 0) > 0;
+    public bool TeklifGirilmis => SatinalmaTalepYardimcisi.GercekTeklifVar(this);
 
     public bool TeklifsizFirmaFiyatBekliyor =>
         TeklifsizYonetimOnayi && !HerhangiKalemOnayli;
@@ -137,9 +145,14 @@ public class SatinalmaTalep
         kalem.OnaylananTeklifId is { } id ? Teklifler.FirstOrDefault(t => t.Id == id) : null;
 
     /// <summary>Satınalma önerisi — elle seçim yoksa KDV dahil en düşük toplam.</summary>
-    public SatinalmaTeklif? OnerilenTeklif()
+    public SatinalmaTeklif? OnerilenTeklif() => OnerilenTeklifFirma();
+
+    public SatinalmaTeklif? OnerilenTeklifFirma()
     {
         TeklifFiyatlariniGuncelle();
+
+        if (SatinalmaKalemOnerisiElleSecildi)
+            return null;
 
         if (SatinalmaOnerisiElleSecildi && YonetimOnerilenTeklifId is { } id)
         {
@@ -241,8 +254,11 @@ public class SatinalmaAyarlar
     public List<ImzaAyari>? YonetimImzalari { get; set; }
     public int SonTalepSira { get; set; }
     public int SonSiparisSira { get; set; }
+    public int SonIadeSira { get; set; }
     /// <summary>Tüm cihazlarda silinmiş sayılan talep kimlikleri.</summary>
     public List<Guid> SilinenTalepIdleri { get; set; } = [];
     public decimal VarsayilanUsdKuru { get; set; }
     public decimal VarsayilanEurKuru { get; set; }
+    /// <summary>Tüm verileri sıfırla sonrası — varsayılan imza ünvanları eklenmez.</summary>
+    public bool ImzaAyarleriTemiz { get; set; }
 }

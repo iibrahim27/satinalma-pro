@@ -58,8 +58,13 @@ public static class AlinanMalzemeAktarimServisi
         string kategori,
         string tarih,
         string teslimAlan,
-        string depoSaha)
+        string depoSaha,
+        bool sahayaDirekt = false,
+        string? sahaHedef = null)
     {
+        var belgeNo = StokBelgeNoUretici.SonrakiGirisBelgeNo();
+        var islemYapan = KullaniciYetkileri.AktifKullaniciAdi() ?? "";
+
         StokIslemServisi.GirisYap(
             tarih,
             satir.Malzeme,
@@ -68,8 +73,20 @@ public static class AlinanMalzemeAktarimServisi
             miktar,
             depoSaha,
             satir.BirimFiyati,
-            StokBelgeNoUretici.SonrakiGirisBelgeNo(),
-            KullaniciYetkileri.AktifKullaniciAdi() ?? "",
+            belgeNo,
+            islemYapan,
             teslimAlan);
+
+        if (sahayaDirekt && !string.IsNullOrWhiteSpace(sahaHedef))
+        {
+            StokIslemServisi.CikisYap(
+                tarih,
+                satir.Malzeme,
+                depoSaha,
+                miktar,
+                $"{belgeNo}-Ç",
+                islemYapan,
+                sahaHedef.Trim());
+        }
     }
 }

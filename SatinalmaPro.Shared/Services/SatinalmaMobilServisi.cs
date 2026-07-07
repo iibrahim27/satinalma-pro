@@ -120,10 +120,7 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         await TalepKaydetAsync(talep, iptal);
 
         await _bildirimler.CokluEkleAsync(
-        [
-            BildirimKaydiOlustur(BildirimTipleri.Onaylandi, talep, hedefUid: talep.OlusturanUid),
-            BildirimKaydiOlustur(BildirimTipleri.Onaylandi, talep, hedefRol: KullaniciRolleri.Satinalma)
-        ], iptal);
+            OnaylandiKayitlari(talep), iptal);
     }
 
     public async Task YonetimOnaylaAsync(SatinalmaTalep talep, bool teklifIste, CancellationToken iptal = default)
@@ -144,11 +141,7 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
             await TalepKaydetAsync(talep, iptal);
             await _bildirimler.GecersizleriOkunduYapAsync(iptal);
 
-            await _bildirimler.CokluEkleAsync(
-            [
-                BildirimKaydiOlustur(BildirimTipleri.Onaylandi, talep, hedefUid: talep.OlusturanUid),
-                BildirimKaydiOlustur(BildirimTipleri.Onaylandi, talep, hedefRol: KullaniciRolleri.Satinalma)
-            ], iptal);
+            await _bildirimler.CokluEkleAsync(OnaylandiKayitlari(talep), iptal);
             return;
         }
 
@@ -156,7 +149,20 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         await TalepKaydetAsync(talep, iptal);
         await _bildirimler.GecersizleriOkunduYapAsync(iptal);
 
-        await _bildirimler.EkleAsync(BildirimKaydiOlustur(BildirimTipleri.TeklifIstendi, talep, hedefRol: KullaniciRolleri.Satinalma), iptal);
+        await _bildirimler.EkleAsync(
+            BildirimKaydiOlustur(BildirimTipleri.TeklifIstendi, talep, hedefRol: KullaniciRolleri.Satinalma),
+            iptal);
+
+        if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
+        {
+            await _bildirimler.EkleAsync(
+                BildirimKaydiOlustur(
+                    BildirimTipleri.TeklifIstendi,
+                    talep,
+                    hedefUid: talep.OlusturanUid,
+                    ek: OnayBildirimYardimcisi.TeklifIstemeBildirimEk(_depo.AktifKullanici?.Rol)),
+                iptal);
+        }
     }
 
     public async Task YonetimReddetAsync(SatinalmaTalep talep, string? gerekce, CancellationToken iptal = default)
@@ -187,11 +193,16 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
 
         talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
         talep.TeklifDuzeltmeNotu = string.IsNullOrWhiteSpace(gerekce) ? "" : gerekce.Trim();
+        talep.OnaylananTeklifId = null;
+        talep.Kalemler ??= [];
+        foreach (var kalem in talep.Kalemler)
+            kalem.OnaylananTeklifId = null;
+
         await TalepKaydetAsync(talep, iptal);
-        await _bildirimler.GecersizleriOkunduYapAsync(iptal);
         await _bildirimler.EkleAsync(
             BildirimKaydiOlustur(BildirimTipleri.TeklifDuzeltmeIstendi, talep, hedefRol: KullaniciRolleri.Satinalma, ek: talep.TeklifDuzeltmeNotu),
             iptal);
+        await _bildirimler.GecersizleriOkunduYapAsync(iptal);
     }
 
     public Task TeklifReddetAsync(SatinalmaTalep talep, string? gerekce, CancellationToken iptal = default) =>
@@ -199,10 +210,8 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
 
     public async Task YonetimeTeklifOnayGonderAsync(SatinalmaTalep talep, CancellationToken iptal = default)
     {
-        if ((talep.Teklifler?.Count ?? 0) == 0)
-            throw new InvalidOperationException("Yönetime göndermek için en az bir teklif girilmelidir.");
-
-        talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
+        var oneri = SatinalmaIsAkisi.YonetimeTeklifGonderiminiDogrula(talep);
+        SatinalmaIsAkisi.YonetimeTeklifGonderiminiHazirla(talep, oneri);
         await TalepKaydetAsync(talep, iptal);
 
         await _bildirimler.EkleAsync(BildirimKaydiOlustur(BildirimTipleri.TeklifOnayda, talep, hedefRol: KullaniciRolleri.Yonetim), iptal);
@@ -341,12 +350,7 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         var firmaSayisi = onayliKalemler.Select(k => k.OnaylananTeklifId).Distinct().Count();
         var firmaAdi = firmaSayisi == 1 ? anaTeklif?.FirmaAdi : null;
 
-        var onayKayitlari = new List<BildirimKaydi>
-        {
-            BildirimKaydiOlustur(BildirimTipleri.Onaylandi, talep, hedefRol: KullaniciRolleri.Satinalma, firmaAdi: firmaAdi)
-        };
-        if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
-            onayKayitlari.Add(BildirimKaydiOlustur(BildirimTipleri.Onaylandi, talep, hedefUid: talep.OlusturanUid));
+        var onayKayitlari = OnaylandiKayitlari(talep, firmaAdi);
         await _bildirimler.CokluEkleAsync(onayKayitlari, iptal);
 
         await _bildirimler.GecersizleriOkunduYapAsync(iptal);
@@ -599,61 +603,14 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         await TalepKaydetAsync(talep, iptal);
     }
 
-    public List<OnaylananMalzemeSatiri> OnaylananMalzemeleriOlustur()
-    {
-        var liste = new List<OnaylananMalzemeSatiri>();
+    public List<OnaylananMalzemeSatiri> OnaylananMalzemeleriOlustur() =>
+        OnaylananMalzemeOlusturucu.Olustur(_depo.Talepler);
 
-        foreach (var talep in _depo.Talepler.Where(t => t.HerhangiKalemOnayli))
-        {
-            talep.FirmaSiparisNolari ??= [];
-
-            foreach (var kalem in talep.Kalemler.Where(k => k.OnaylananTeklifId != null).OrderBy(k => k.SiraNo))
-            {
-                var teklif = talep.KalemOnayTeklifi(kalem);
-                if (teklif is null)
-                    continue;
-
-                teklif.FiyatlariHesapla(talep.Kalemler);
-                var fiyat = teklif.Fiyatlar.FirstOrDefault(f => f.KalemId == kalem.Id);
-                if (fiyat is null)
-                    continue;
-
-                var siparisNo = talep.FirmaSiparisNolari.TryGetValue(teklif.Id, out var no) && !string.IsNullOrWhiteSpace(no)
-                    ? no
-                    : talep.SiparisNo;
-
-                liste.Add(new OnaylananMalzemeSatiri
-                {
-                    TalepId = talep.Id,
-                    KalemId = kalem.Id,
-                    TeklifId = teklif.Id,
-                    TalepNo = talep.TalepNo,
-                    SiparisNo = siparisNo,
-                    Tarih = talep.Tarih,
-                    Durum = talep.Durum,
-                    Firma = teklif.FirmaAdi,
-                    Marka = string.IsNullOrWhiteSpace(fiyat.Marka) ? teklif.Marka : fiyat.Marka,
-                    Malzeme = kalem.Malzeme,
-                    SiparisMiktari = kalem.Miktar,
-                    KabulEdilenMiktar = kalem.KabulEdilenMiktar,
-                    SiparisTamamlandi = kalem.SiparisTamamlandi,
-                    Birim = kalem.Birim,
-                    BirimFiyati = fiyat.TlBirimFiyat(teklif.UsdKuru, teklif.EurKuru),
-                    ToplamTutar = fiyat.ToplamTutar,
-                    KalemAciklamasi = kalem.Aciklama,
-                    VadeGunu = teklif.VadeGunu
-                });
-            }
-        }
-
-        return liste;
-    }
+    public int MalKabulBekleyenSayisi() =>
+        OnaylananMalzemeleriOlustur().Count(OnaylananMalzemeOlusturucu.MalKabulBekleyen);
 
     public SatinalmaTalepKalemi? KalemBul(Guid talepId, Guid kalemId) =>
         _depo.Talepler.FirstOrDefault(t => t.Id == talepId)?.Kalemler.FirstOrDefault(k => k.Id == kalemId);
-
-    public int MalKabulBekleyenSayisi() =>
-        OnaylananMalzemeleriOlustur().Count(s => !s.SiparisTamamlandi && s.KalanMiktar > 0.0001);
 
     public async Task MalKabulAsync(Guid talepId, Guid kalemId, double miktar, CancellationToken iptal = default)
     {
@@ -664,16 +621,24 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         if (miktar <= 0)
             throw new InvalidOperationException("Miktar sıfırdan büyük olmalıdır.");
 
-        var kalem = KalemBul(talepId, kalemId)
+        var talep = _depo.Talepler.First(t => t.Id == talepId);
+        var kalem = talep.Kalemler.FirstOrDefault(k => k.Id == kalemId)
             ?? throw new InvalidOperationException("Kalem bulunamadı.");
 
         kalem.KabulEdilenMiktar += miktar;
-        if (kalem.KabulEdilenMiktar >= kalem.Miktar)
+
+        if (kalem.KabulEdilenMiktar > kalem.Miktar + 0.0001)
+        {
+            kalem.Miktar = kalem.KabulEdilenMiktar;
+            talep.Teklifler ??= [];
+            foreach (var teklif in talep.Teklifler)
+                teklif.FiyatlariHesapla(talep.Kalemler);
+        }
+
+        if (kalem.KabulEdilenMiktar >= kalem.Miktar - 0.0001)
             kalem.SiparisTamamlandi = true;
 
-        await TalepKaydetAsync(_depo.Talepler.First(t => t.Id == talepId), iptal);
-
-        var talep = _depo.Talepler.First(t => t.Id == talepId);
+        await TalepKaydetAsync(talep, iptal);
         var ozet = $"{kalem.Malzeme} · {miktar:N2} {kalem.Birim}";
         var malKabulKayitlari = new List<BildirimKaydi>
         {
@@ -810,6 +775,14 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         await _bildirimler.CokluEkleAsync(stokKayitlari, iptal);
     }
 
+    private List<BildirimKaydi> OnaylandiKayitlari(SatinalmaTalep talep, string? firmaAdi = null)
+    {
+        var kayitlar = new List<BildirimKaydi>();
+        foreach (var (hedefRol, hedefUid) in OnayBildirimYardimcisi.OnaylandiHedefleri(talep.OlusturanUid, _depo.AktifKullanici?.Rol))
+            kayitlar.Add(BildirimKaydiOlustur(BildirimTipleri.Onaylandi, talep, hedefRol, hedefUid, firmaAdi));
+        return kayitlar;
+    }
+
     private BildirimKaydi BildirimKaydiOlustur(
         string tip,
         SatinalmaTalep talep,
@@ -818,7 +791,8 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         string? firmaAdi = null,
         string? ek = null)
     {
-        var (baslik, mesaj) = BildirimMetniOlusturucu.Olustur(tip, talep, firmaAdi, ek);
+        var (baslik, mesaj) = BildirimMetniOlusturucu.Olustur(
+            tip, talep, firmaAdi, ek, _depo.AktifKullanici?.Rol);
         return new BildirimKaydi
         {
             Baslik = baslik,

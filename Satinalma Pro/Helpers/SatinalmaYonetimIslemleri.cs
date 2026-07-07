@@ -1,5 +1,6 @@
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
+using SatinalmaPro.Shared.Procurement;
 
 namespace SatinalmaPro.Helpers;
 
@@ -19,19 +20,27 @@ public static class SatinalmaYonetimIslemleri
         if (!teklifIste)
         {
             talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
+            talep.Status = ProcurementStatus.Approved;
+            talep.Priority = ProcurementTalepAdapter.EffectivePriority(talep);
             talep.TeklifsizYonetimOnayi = true;
             YonetimOnayiKaydet(talep);
             await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
 
-            await BildirimGonderAsync(() => SatinalmaBildirimleri.OnaylandiAsync(talep, hedefUid: talep.OlusturanUid));
-            await BildirimGonderAsync(() => SatinalmaBildirimleri.OnaylandiAsync(talep, hedefRol: KullaniciRolleri.Satinalma));
+            await BildirimGonderAsync(() => SatinalmaBildirimleri.OnaylandiBildirimleriGonderAsync(talep));
             await BildirimYoneticisi.GecersizleriOkunduYapAsync();
             return;
         }
 
         talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
+        talep.Status = ProcurementStatus.QuoteRequested;
+        talep.Priority = ProcurementTalepAdapter.EffectivePriority(talep);
+        talep.YonetimOnayKilitli = false;
+        talep.TeklifsizYonetimOnayi = false;
+        SatinalmaTalepYardimcisi.Dokun(talep);
         await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
         await BildirimGonderAsync(() => SatinalmaBildirimleri.TeklifIstendiAsync(talep));
+        if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
+            await BildirimGonderAsync(() => SatinalmaBildirimleri.TeklifIstendiOlusturucuyaAsync(talep));
         await BildirimYoneticisi.GecersizleriOkunduYapAsync();
     }
 
@@ -41,6 +50,8 @@ public static class SatinalmaYonetimIslemleri
             throw new InvalidOperationException("Red yetkiniz yok.");
 
         talep.Durum = SatinalmaTalepDurumlari.Reddedildi;
+        talep.Status = ProcurementStatus.Rejected;
+        talep.Priority = ProcurementTalepAdapter.EffectivePriority(talep);
         talep.RedGerekcesi = string.IsNullOrWhiteSpace(gerekce) ? "" : gerekce.Trim();
         await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
 
@@ -51,12 +62,13 @@ public static class SatinalmaYonetimIslemleri
     private static async Task AcilOnaylaAsync(SatinalmaTalep talep)
     {
         talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
+        talep.Status = ProcurementStatus.Approved;
+        talep.Priority = ProcurementTalepAdapter.EffectivePriority(talep);
         talep.TeklifsizYonetimOnayi = true;
         YonetimOnayiKaydet(talep);
         await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
 
-        await BildirimGonderAsync(() => SatinalmaBildirimleri.OnaylandiAsync(talep, hedefUid: talep.OlusturanUid));
-        await BildirimGonderAsync(() => SatinalmaBildirimleri.OnaylandiAsync(talep, hedefRol: KullaniciRolleri.Satinalma));
+        await BildirimGonderAsync(() => SatinalmaBildirimleri.OnaylandiBildirimleriGonderAsync(talep));
         await BildirimYoneticisi.GecersizleriOkunduYapAsync();
     }
 
@@ -81,11 +93,17 @@ public static class SatinalmaYonetimIslemleri
             throw new InvalidOperationException("Bu talep için geri gönderilecek teklif onayı bulunamadı.");
 
         talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
+        talep.Status = ProcurementStatus.Comparison;
+        talep.Priority = ProcurementTalepAdapter.EffectivePriority(talep);
         talep.TeklifDuzeltmeNotu = string.IsNullOrWhiteSpace(gerekce) ? "" : gerekce.Trim();
-        await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
+        talep.OnaylananTeklifId = null;
+        talep.Kalemler ??= [];
+        foreach (var kalem in talep.Kalemler)
+            kalem.OnaylananTeklifId = null;
 
-        await BildirimYoneticisi.GecersizleriOkunduYapAsync();
+        await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
         await BildirimGonderAsync(() => SatinalmaBildirimleri.TeklifDuzeltmeyeGonderildiAsync(talep, talep.TeklifDuzeltmeNotu));
+        await BildirimYoneticisi.GecersizleriOkunduYapAsync();
     }
 
     public static async Task TeklifReddetAsync(SatinalmaTalep talep, string? gerekce) =>

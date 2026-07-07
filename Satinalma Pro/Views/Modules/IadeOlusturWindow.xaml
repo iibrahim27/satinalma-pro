@@ -1,0 +1,153 @@
+<Window x:Class="SatinalmaPro.Views.Modules.IadeOlusturWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Yeni İade Kaydı"
+        Width="460"
+        SizeToContent="Height"
+        MaxHeight="760"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{StaticResource DashBackgroundBrush}">
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <StackPanel Grid.Row="0" Margin="0,0,0,16">
+      <TextBlock Text="İade Oluştur"
+                 FontSize="18"
+                 FontWeight="SemiBold"
+                 Foreground="{StaticResource InkBrush}" />
+      <TextBlock Text="Hasarlı veya hatalı malzeme iadesini kaydedin. İsteğe bağlı olarak depodan stok çıkışı yapılır."
+                 TextWrapping="Wrap"
+                 FontSize="13"
+                 Foreground="{StaticResource InkMutedBrush}"
+                 Margin="0,6,0,0" />
+    </StackPanel>
+
+    <Border Grid.Row="1" Style="{StaticResource ModulePageCardStyle}" Padding="24,20">
+      <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0">
+        <StackPanel>
+          <TextBlock Text="Kabul edilmiş kalem (isteğe bağlı)"
+                     FontSize="12"
+                     Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <ComboBox x:Name="CmbKalem"
+                    Style="{StaticResource FilterComboStyle}"
+                    DisplayMemberPath="Etiket"
+                    SelectionChanged="KalemSecildi"
+                    Margin="0,0,0,14" />
+
+          <TextBlock Text="Sipariş No"
+                     FontSize="12"
+                     Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <TextBox x:Name="TxtSiparisNo"
+                   Style="{StaticResource FilterBoxStyle}"
+                   Margin="0,0,0,14" />
+
+          <TextBlock Text="Firma / Tedarikçi"
+                     FontSize="12"
+                     Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <TextBox x:Name="TxtFirma"
+                   Style="{StaticResource FilterBoxStyle}"
+                   Margin="0,0,0,14" />
+
+          <TextBlock Text="Malzeme"
+                     FontSize="12"
+                     Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <TextBox x:Name="TxtMalzeme"
+                   Style="{StaticResource FilterBoxStyle}"
+                   Margin="0,0,0,14" />
+
+          <TextBlock Text="İade Miktarı"
+                     FontSize="12"
+                     Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <TextBox x:Name="TxtMiktar"
+                   Style="{StaticResource FilterBoxStyle}"
+                   Margin="0,0,0,14" />
+
+          <TextBlock Text="Birim"
+                     FontSize="12"
+                     Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <TextBox x:Name="TxtBirim"
+                   Style="{StaticResource FilterBoxStyle}"
+                   Margin="0,0,0,14" />
+
+          <TextBlock Text="İade Nedeni"
+                     FontSize="12"
+                     Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <TextBox x:Name="TxtNeden"
+                   Style="{StaticResource FilterBoxStyle}"
+                   Height="72"
+                   TextWrapping="Wrap"
+                   AcceptsReturn="True"
+                   VerticalContentAlignment="Top"
+                   Padding="12,10"
+                   Margin="0,0,0,14" />
+
+          <TextBlock Text="Durum"
+                     FontSize="12"
+                     Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <ComboBox x:Name="CmbDurum"
+                    Style="{StaticResource FilterComboStyle}"
+                    Margin="0,0,0,14" />
+
+          <CheckBox x:Name="ChkStokCikis"
+                    Content="Depodan stok çıkışı yap"
+                    FontSize="12"
+                    Margin="0,0,0,10"
+                    Checked="StokCikis_Changed"
+                    Unchecked="StokCikis_Changed" />
+
+          <TextBlock x:Name="LblDepo"
+                   Text="Depo / Saha"
+                   FontSize="12"
+                   Foreground="{StaticResource InkMutedBrush}"
+                   Margin="0,0,0,6"
+                   Visibility="Collapsed" />
+          <TextBox x:Name="TxtDepo"
+                   Style="{StaticResource FilterBoxStyle}"
+                   Margin="0,0,0,14"
+                   Visibility="Collapsed" />
+
+          <TextBlock x:Name="LblTeslimEdilen"
+                   Text="Teslim edilen (firma / saha)"
+                   FontSize="12"
+                   Foreground="{StaticResource InkMutedBrush}"
+                   Margin="0,0,0,6"
+                   Visibility="Collapsed" />
+          <TextBox x:Name="TxtTeslimEdilen"
+                   Style="{StaticResource FilterBoxStyle}"
+                   Visibility="Collapsed" />
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <StackPanel Grid.Row="2"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Margin="0,20,0,0">
+      <Button Content="İptal"
+              Style="{StaticResource ToolbarButtonStyle}"
+              Width="90"
+              Margin="0,0,8,0"
+              Click="Iptal_Click" />
+      <Button Content="Kaydet"
+              Style="{StaticResource PrimaryToolbarButtonStyle}"
+              Width="100"
+              IsDefault="True"
+              Click="Kaydet_Click" />
+    </StackPanel>
+  </Grid>
+</Window>

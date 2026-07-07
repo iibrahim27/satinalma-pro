@@ -39,6 +39,8 @@ data class TeklifItem(
     val onaylandi: Boolean = false,
     val fiyatlar: List<TeklifFiyat> = emptyList()
 ) {
+    val araToplam: Double get() = fiyatlar.sumOf { it.toplamTutar }
+    val kdvTutari: Double get() = fiyatlar.sumOf { it.kdvTutari }
     val genelToplam: Double get() = fiyatlar.sumOf { it.toplamKdvDahil }
 }
 
@@ -54,11 +56,21 @@ data class TalepItem(
     val olusturanRol: String = "",
     val redGerekcesi: String = "",
     val durum: String = "Taslak",
+    val status: String = "",
+    val priority: String = "",
     val guncellemeUtc: Long = 0,
     val teklifsizYonetimOnayi: Boolean = false,
     val yonetimOnayKilitli: Boolean = false,
+    val yonetimOnaylayanUid: String = "",
     val yonetimOnaylayanAd: String = "",
+    val yonetimOnaylayanEposta: String = "",
+    val yonetimOnayTarihi: String = "",
+    val onaylananTeklifId: String? = null,
+    val teklifDuzeltmeNotu: String = "",
+    val yonetimOnerilenTeklifId: String? = null,
+    val satinalmaOnerisiElleSecildi: Boolean = false,
     val siparisNo: String = "",
+    val firmaSiparisNolari: Map<String, String> = emptyMap(),
     val kalemler: List<TalepKalem> = emptyList(),
     val teklifler: List<TeklifItem> = emptyList()
 ) {
@@ -73,12 +85,60 @@ data class TalepItem(
 
     val teklifGirilmis: Boolean
         get() = teklifler.any { it.firmaAdi.isNotBlank() || it.fiyatlar.any { f -> f.birimFiyat > 0 } }
+
+    fun onerilenTeklif(): TeklifItem? {
+        val gecerli = teklifler.filter { it.firmaAdi.isNotBlank() && it.genelToplam > 0 }
+        if (satinalmaOnerisiElleSecildi && !yonetimOnerilenTeklifId.isNullOrBlank()) {
+            return gecerli.firstOrNull { it.id.equals(yonetimOnerilenTeklifId, true) }
+        }
+        return gecerli.minWithOrNull(compareBy<TeklifItem> { it.genelToplam }.thenBy { it.firmaAdi.lowercase() })
+    }
 }
 
+data class OnaylananMalzemeSatiri(
+    val talepId: String,
+    val kalemId: String,
+    val teklifId: String = "",
+    val talepNo: String = "",
+    val siparisNo: String = "",
+    val tarih: String = "",
+    val durum: String = "",
+    val firma: String = "",
+    val marka: String = "",
+    val malzeme: String = "",
+    val siparisMiktari: Double = 0.0,
+    val kabulEdilenMiktar: Double = 0.0,
+    val siparisTamamlandi: Boolean = false,
+    val birim: String = "",
+    val birimFiyati: Double = 0.0
+) {
+    val kalanMiktar: Double get() = (siparisMiktari - kabulEdilenMiktar).coerceAtLeast(0.0)
+
+    val kabulDurumu: String
+        get() = when {
+            siparisTamamlandi || kabulEdilenMiktar >= siparisMiktari -> "Tamamlandı"
+            kabulEdilenMiktar > 0 -> "Kısmi"
+            else -> "Bekliyor"
+        }
+}
+
+data class ImzaAyari(
+    val unvan: String = "",
+    val adSoyad: String = "",
+    val aktif: Boolean = true
+)
+
 data class SatinalmaAyarlar(
+    val firmaAdi: String = "",
+    val sartnameMetni: String = "",
+    val teklifIstemeSartnameleri: String = "",
+    val sefImzalari: List<ImzaAyari> = emptyList(),
+    val yonetimImzalari: List<ImzaAyari> = emptyList(),
     var sonTalepSira: Int = 0,
     var sonSiparisSira: Int = 0,
-    val silinenTalepIdleri: List<String> = emptyList()
+    val silinenTalepIdleri: List<String> = emptyList(),
+    val varsayilanUsdKuru: Double = 0.0,
+    val varsayilanEurKuru: Double = 0.0
 )
 
 data class DashboardCard(
@@ -110,5 +170,12 @@ enum class TalepQueue {
     TEKLIF_GIR,
     TEKLIF_KARSILASTIRMA,
     TEKLIF_ONAY,
-    TEKLIFSIZ_FIRMA_FIYAT
+    TEKLIFSIZ_FIRMA_FIYAT,
+    YONETIM_DIREK_ONAYLANAN,
+    SATINALMA_TEKLIF_ISTENEN,
+    SATINALMA_TEKLIF_GIRILEN,
+    SATINALMA_TEKLIF_DUZELTME,
+    SATINALMA_ONAYLANAN,
+    SATINALMA_SIPARIS,
+    SATINALMA_MAL_KABUL
 }

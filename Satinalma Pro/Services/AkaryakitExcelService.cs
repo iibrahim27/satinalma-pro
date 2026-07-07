@@ -8,7 +8,8 @@ namespace SatinalmaPro.Services;
 
 public static class AkaryakitExcelService
 {
-    private static readonly string[] SablonBasliklari = ["Tarih", "Plaka", "Verilen Miktar"];
+    private static readonly string[] SablonBasliklari =
+        ["Tarih", "Plaka", "Km", "Saat", "Verilen Yakıt Miktarı"];
 
     private static readonly string[] DisaAktarBasliklari =
     [
@@ -23,20 +24,22 @@ public static class AkaryakitExcelService
         {
             Title = "Excel Şablonu Kaydet",
             Filter = "Excel Dosyası (*.xlsx)|*.xlsx",
-            FileName = "Akaryakit_Dagitilan_Sablon.xlsx"
+            FileName = "Akaryakit_Gecmis_Veri_Sablonu.xlsx"
         };
 
         if (dialog.ShowDialog() != true)
             return;
 
         using var kitap = new XLWorkbook();
-        var sayfa = kitap.Worksheets.Add("Dağıtılan");
+        var sayfa = kitap.Worksheets.Add("Geçmiş Veriler");
         for (var i = 0; i < SablonBasliklari.Length; i++)
             sayfa.Cell(1, i + 1).Value = SablonBasliklari[i];
 
         sayfa.Cell(2, 1).Value = "15.06.2026";
         sayfa.Cell(2, 2).Value = "34 ABC 123";
-        sayfa.Cell(2, 3).Value = 85;
+        sayfa.Cell(2, 3).Value = 125400;
+        sayfa.Cell(2, 4).Value = 3420;
+        sayfa.Cell(2, 5).Value = 85;
 
         sayfa.Row(1).Style.Font.Bold = true;
         sayfa.Row(1).Style.Fill.BackgroundColor = XLColor.FromHtml("#FEF3C7");
@@ -44,7 +47,9 @@ public static class AkaryakitExcelService
         kitap.SaveAs(dialog.FileName);
 
         MessageBox.Show(
-            "Dağıtılan yakıt şablonu kaydedildi.\n\nSadece Tarih, Plaka ve Verilen Miktar sütunlarını doldurun.\nAraç bilgileri, şoför ve saha filo kayıtlarından otomatik gelir.",
+            "Geçmiş veri şablonu kaydedildi.\n\n" +
+            "Sütunlar: Tarih, Plaka, Km, Saat, Verilen Yakıt Miktarı\n\n" +
+            "Her satır dağıtılan yakıt kaydı olarak eklenir. Araç bilgileri filo kayıtlarından otomatik tamamlanır.",
             UygulamaBilgisi.Ad,
             MessageBoxButton.OK,
             MessageBoxImage.Information);
@@ -63,10 +68,11 @@ public static class AkaryakitExcelService
 
         var kolonlar = BaslikKolonlari(sayfa);
         var basitSablon = BasitSablonMu(kolonlar);
+        var gecmisSablon = GecmisSablonMu(kolonlar);
 
         foreach (var satir in satirlar)
         {
-            var kayit = basitSablon
+            var kayit = basitSablon || gecmisSablon
                 ? BasitSatirdanOku(satir, kolonlar)
                 : TamSatirdanOku(satir, kolonlar);
 
@@ -75,12 +81,13 @@ public static class AkaryakitExcelService
                 kayit.Miktar <= 0)
                 continue;
 
-            if (basitSablon || !kayit.AlinanKayit)
+            if (basitSablon || gecmisSablon || !kayit.AlinanKayit)
             {
                 kayit.KayitTipi = "Dağıtılan";
                 AkaryakitExcelTamamlayici.DagitilanKaydiniTamamla(
                     kayit,
-                    mevcutKayitlar.Concat(liste));
+                    mevcutKayitlar.Concat(liste),
+                    excelKmSaatVar: gecmisSablon || kayit.KmSayaci is not null || kayit.SaatSayaci is not null);
             }
             else
                 kayit.ToplamTutariHesapla();
@@ -94,7 +101,21 @@ public static class AkaryakitExcelService
     private static bool BasitSablonMu(Dictionary<string, int> kolonlar) =>
         KolonVar(kolonlar, "Tarih") &&
         (KolonVar(kolonlar, "Plaka") || KolonVar(kolonlar, "Plaka / Kod")) &&
-        (KolonVar(kolonlar, "Verilen Miktar") || KolonVar(kolonlar, "Miktar") || KolonVar(kolonlar, "Verilen Yakıt"));
+        MiktarKolonuVar(kolonlar) &&
+        !GecmisSablonMu(kolonlar);
+
+    private static bool GecmisSablonMu(Dictionary<string, int> kolonlar) =>
+        KolonVar(kolonlar, "Tarih") &&
+        (KolonVar(kolonlar, "Plaka") || KolonVar(kolonlar, "Plaka / Kod")) &&
+        (KolonVar(kolonlar, "Km") || KolonVar(kolonlar, "KM") || KolonVar(kolonlar, "Km Sayacı")) &&
+        (KolonVar(kolonlar, "Saat") || KolonVar(kolonlar, "SAAT") || KolonVar(kolonlar, "Saat Sayacı")) &&
+        MiktarKolonuVar(kolonlar);
+
+    private static bool MiktarKolonuVar(Dictionary<string, int> kolonlar) =>
+        KolonVar(kolonlar, "Verilen Yakıt Miktarı") ||
+        KolonVar(kolonlar, "Verilen Miktar") ||
+        KolonVar(kolonlar, "Miktar") ||
+        KolonVar(kolonlar, "Verilen Yakıt");
 
     private static AkaryakitKaydi BasitSatirdanOku(IXLRangeRow satir, Dictionary<string, int> kolonlar) =>
         new()
@@ -102,7 +123,9 @@ public static class AkaryakitExcelService
             KayitTipi = "Dağıtılan",
             Tarih = HucreTarih(satir, kolonlar, "Tarih"),
             PlakaVeyaKod = HucreMetin(satir, kolonlar, "Plaka", "Plaka / Kod"),
-            Miktar = HucreDouble(satir, kolonlar, "Verilen Miktar", "Miktar", "Verilen Yakıt"),
+            KmSayaci = HucreNullableDouble(satir, kolonlar, "Km", "KM", "Km Sayacı"),
+            SaatSayaci = HucreNullableDouble(satir, kolonlar, "Saat", "SAAT", "Saat Sayacı"),
+            Miktar = HucreDouble(satir, kolonlar, "Verilen Yakıt Miktarı", "Verilen Miktar", "Miktar", "Verilen Yakıt"),
             Birim = "Lt"
         };
 

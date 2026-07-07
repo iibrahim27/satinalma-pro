@@ -10,31 +10,30 @@
         MinHeight="560"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
-        Background="White">
-  <Grid Margin="28">
+        Background="{StaticResource DashBackgroundBrush}">
+  <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
 
-    <StackPanel Grid.Row="0" Margin="0,0,0,20">
+    <StackPanel Grid.Row="0" Margin="0,0,0,16">
       <TextBlock Text="Stok Kaydı"
                  FontSize="22"
                  FontWeight="SemiBold"
                  Foreground="{StaticResource InkBrush}" />
       <TextBlock Text="Depo stok bilgilerini güncelleyin"
-                 FontSize="13"
-                 Foreground="{StaticResource InkMutedBrush}"
-                 Margin="0,4,0,0" />
+                 Style="{StaticResource ModuleDialogSubtitleStyle}" />
     </StackPanel>
 
-    <ScrollViewer Grid.Row="1" Style="{StaticResource ModuleScrollViewerStyle}">
+    <Border Grid.Row="1" Style="{StaticResource ModulePageCardStyle}" Padding="24,20">
+      <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0">
       <StackPanel>
-        <TextBlock Text="Malzeme Adı" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+        <TextBlock Text="Malzeme Adı" Style="{StaticResource ModuleFormLabelStyle}" />
         <TextBox x:Name="TxtMalzemeAdi" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
 
-        <TextBlock Text="Kategori" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+        <TextBlock Text="Kategori" Style="{StaticResource ModuleFormLabelStyle}" />
         <ComboBox x:Name="CmbKategori" Style="{StaticResource FilterComboStyle}" Margin="0,0,0,14" IsEditable="True" />
 
         <Grid Margin="0,0,0,14">
@@ -44,13 +43,13 @@
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
           <StackPanel Grid.Column="0">
-            <TextBlock Text="Mevcut Miktar" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+            <TextBlock Text="Mevcut Miktar" Style="{StaticResource ModuleFormLabelStyle}" />
             <TextBox x:Name="TxtMevcutMiktar"
                      Style="{StaticResource FilterBoxStyle}"
                      TextChanged="DegerHesapla" />
           </StackPanel>
           <StackPanel Grid.Column="2">
-            <TextBlock Text="Minimum Stok" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+            <TextBlock Text="Minimum Stok" Style="{StaticResource ModuleFormLabelStyle}" />
             <TextBox x:Name="TxtMinimumStok" Style="{StaticResource FilterBoxStyle}" />
           </StackPanel>
         </Grid>
@@ -62,11 +61,11 @@
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
           <StackPanel Grid.Column="0">
-            <TextBlock Text="Birim" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+            <TextBlock Text="Birim" Style="{StaticResource ModuleFormLabelStyle}" />
             <TextBox x:Name="TxtBirim" Style="{StaticResource FilterBoxStyle}" />
           </StackPanel>
           <StackPanel Grid.Column="2">
-            <TextBlock Text="Depo / Saha" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+            <TextBlock Text="Depo / Saha" Style="{StaticResource ModuleFormLabelStyle}" />
             <TextBox x:Name="TxtDepoSaha" Style="{StaticResource FilterBoxStyle}" />
           </StackPanel>
         </Grid>
@@ -78,13 +77,13 @@
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
           <StackPanel Grid.Column="0">
-            <TextBlock Text="Birim Maliyet" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+            <TextBlock Text="Birim Maliyet" Style="{StaticResource ModuleFormLabelStyle}" />
             <TextBox x:Name="TxtBirimMaliyet"
                      Style="{StaticResource FilterBoxStyle}"
                      TextChanged="DegerHesapla" />
           </StackPanel>
           <StackPanel Grid.Column="2">
-            <TextBlock Text="Toplam Değer" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+            <TextBlock Text="Toplam Değer" Style="{StaticResource ModuleFormLabelStyle}" />
             <TextBox x:Name="TxtToplamDeger"
                      Style="{StaticResource FilterBoxStyle}"
                      IsReadOnly="True"
@@ -92,10 +91,10 @@
           </StackPanel>
         </Grid>
 
-        <TextBlock Text="Son Güncelleme" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+        <TextBlock Text="Son Güncelleme" Style="{StaticResource ModuleFormLabelStyle}" />
         <TextBox x:Name="TxtSonGuncelleme" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
 
-        <TextBlock Text="Açıklama" FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+        <TextBlock Text="Açıklama" Style="{StaticResource ModuleFormLabelStyle}" />
         <TextBox x:Name="TxtAciklama"
                  Style="{StaticResource FilterBoxStyle}"
                  Height="80"
@@ -105,7 +104,7 @@
                  Padding="12,10" />
       </StackPanel>
     </ScrollViewer>
-
+    </Border>
     <StackPanel Grid.Row="2"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"

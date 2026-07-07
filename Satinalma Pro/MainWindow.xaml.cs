@@ -28,7 +28,7 @@ public partial class MainWindow : Window
         Sidebar.NavigasyonSecildi += Sidebar_NavigasyonSecildi;
         Sidebar.CikisTiklandi += (_, _) => Cikis_Click(this, new RoutedEventArgs());
         Header.BildirimTiklandi += (_, _) => Bildirimler_Click(this, new RoutedEventArgs());
-        Header.HizliIslemSecildi += modul => OnModuleSelected(modul);
+        Header.AyarlarTiklandi += (_, _) => OnModuleSelected("Ayarlar");
         AltBilgiyiGuncelle(modulde: false);
         Loaded += OnLoaded;
         Activated += OnActivated;
@@ -60,12 +60,8 @@ public partial class MainWindow : Window
     private void YonetimTeklifOnay_Click(object sender, RoutedEventArgs e)
     {
         OnModuleSelected("Satınalma");
-        if (MainRegion.Content is SatinalmaMerkeziView merkez)
-            merkez.BildirimdenAc(null, 0, "teklif-onay");
-        else if (MainRegion.Content is SatinalmaShellView shell)
-            shell.BildirimdenAc(null, 0, "teklif-onay");
-        else if (MainRegion.Content is SatinalmaView satinalma)
-            satinalma.BildirimdenAc(null, 0, "teklif-onay");
+        if (MainRegion.Content is SatinalmaShellView shell)
+            shell.BildirimdenAc(null, 0, "yonetim-teklif-girilen");
     }
 
     private void KisayollariBagla()
@@ -100,9 +96,6 @@ public partial class MainWindow : Window
         if (MainRegion.Content is SatinalmaShellView shell)
             return shell.EscapeTusunuIsle();
 
-        if (MainRegion.Content is SatinalmaView view)
-            return view.EscapeTusunuIsle();
-
         return false;
     }
 
@@ -124,6 +117,12 @@ public partial class MainWindow : Window
             return;
 
         e.Cancel = true;
+        MasaustuTepsiYoneticisi.TepsiyeGizle();
+    }
+
+    /// <summary>Sistem tepsisi menüsünden tamamen kapatma.</summary>
+    public void TamamenKapatIstendi()
+    {
         if (_kapanisDevamEdiyor)
             return;
 
@@ -155,8 +154,9 @@ public partial class MainWindow : Window
                 FinansmanVeriDeposu.Kaydet();
                 UygulamaAyarDeposu.Kaydet();
                 SatinalmaDepo.Kaydet();
+                MasaustuTepsiYoneticisi.Temizle();
                 _kapanisaIzinVer = true;
-                Close();
+                System.Windows.Application.Current.Shutdown();
             });
         }
         catch (Exception ex)
@@ -164,8 +164,9 @@ public partial class MainWindow : Window
             HataGunlugu.Kaydet(ex, "MainWindow.KapanisIsleminiCalistirAsync");
             await Dispatcher.InvokeAsync(() =>
             {
+                MasaustuTepsiYoneticisi.Temizle();
                 _kapanisaIzinVer = true;
-                Close();
+                System.Windows.Application.Current.Shutdown();
             });
         }
         finally
@@ -198,7 +199,7 @@ public partial class MainWindow : Window
             _modulOnbellegi.Clear();
             ShowHome();
             Sidebar.Yenile();
-            Header.KarsilamayiGuncelle();
+            AnasayfaKarsilamayiGuncelle();
             AltBilgiyiGuncelle(modulde: false);
         }
         catch (Exception ex)
@@ -221,7 +222,7 @@ public partial class MainWindow : Window
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         Sidebar.Yenile();
-        Header.KarsilamayiGuncelle();
+        AnasayfaKarsilamayiGuncelle();
 
         if (MainRegion.Content is HomeView home)
         {
@@ -278,6 +279,7 @@ public partial class MainWindow : Window
         Title = UygulamaBilgisi.Ad;
         AltBilgiyiGuncelle(modulde: false);
         Sidebar.AktifOgeyiAyarla("Ana Sayfa");
+        Header.BreadcrumbAyarla("Dashboard");
 
         _homeView ??= new HomeView();
         _homeView.ModuleSelected -= OnModuleSelected;
@@ -286,9 +288,11 @@ public partial class MainWindow : Window
         MainRegion.Content = _homeView;
         _homeView.ModulleriYenile();
         BildirimRozetiniGuncelle();
-        Header.KarsilamayiGuncelle();
+        AnasayfaKarsilamayiGuncelle();
         Focus();
     }
+
+    private void AnasayfaKarsilamayiGuncelle() => _homeView?.KarsilamayiGuncelle();
 
     private void AltBilgiyiGuncelle(bool modulde)
     {
@@ -358,6 +362,7 @@ public partial class MainWindow : Window
 
         ModulBaslikPanel.Visibility = modulAdi == "Satınalma" ? Visibility.Collapsed : Visibility.Visible;
         Header.Visibility = Visibility.Collapsed;
+        Header.BreadcrumbAyarla(modulAdi);
         Sidebar.AktifOgeyiAyarla(modulAdi);
         Title = $"{UygulamaBilgisi.Ad} — {modulAdi}";
         AltBilgiyiGuncelle(modulde: true);
@@ -376,9 +381,6 @@ public partial class MainWindow : Window
 
         ModulBasliginiGoster(moduleTitle);
 
-        if (moduleTitle == "Satınalma")
-            _modulOnbellegi.Remove("Satınalma");
-
         Mouse.OverrideCursor = Cursors.Wait;
         try
         {
@@ -392,7 +394,7 @@ public partial class MainWindow : Window
                     "Çimento" => new CimentoView(),
                     "Akaryakıt Takip" => new AkaryakitView(),
                     "Araç Filo Takip" => new AracFiloView(),
-                    "Satınalma" => new SatinalmaShellView(),
+                    "Satınalma" => OlusturSatinalmaShell(),
                     "Raporlamalar" => new RaporlamalarView(),
                     "Finansman Raporlama" => new FinansmanRaporlamaView(),
                     "Ayarlar" => new AyarlarView(),
@@ -404,9 +406,6 @@ public partial class MainWindow : Window
             MainRegion.Content = view;
             Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded,
                 () => KullaniciYetkileri.ModulErisiminiUygula(view, moduleTitle));
-            if (view is IModulKlavyeKisayollari modul)
-                Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background,
-                    () => modul.KisayolYenile());
         }
         finally
         {
@@ -424,33 +423,9 @@ public partial class MainWindow : Window
         OnModuleSelected(hedef.Modul);
 
         if (MainRegion.Content is SatinalmaShellView shell)
-        {
             shell.BildirimdenAc(hedef.TalepId, hedef.Adim, hedef.Sekme);
-            return;
-        }
-
-        if (hedef.Modul == "Satınalma" && DeepLinkServisi.SatinalmaOperasyonGerektirir(hedef.Sekme))
-        {
-            if (!_modulOnbellegi.TryGetValue("Satınalma-Operasyon", out var opView))
-            {
-                opView = new SatinalmaView();
-                _modulOnbellegi["Satınalma-Operasyon"] = opView;
-            }
-
-            MainRegion.Content = opView;
-            KullaniciYetkileri.ModulErisiminiUygula(opView, hedef.Modul);
-            if (opView is IModulKlavyeKisayollari klavye)
-                klavye.KisayolYenile();
-
-            if (opView is SatinalmaView satinalma)
-                satinalma.BildirimdenAc(hedef.TalepId, hedef.Adim, hedef.Sekme);
-            return;
-        }
-
-        if (MainRegion.Content is SatinalmaMerkeziView merkez)
-            merkez.BildirimdenAc(hedef.TalepId, hedef.Adim, hedef.Sekme);
-        else if (MainRegion.Content is SatinalmaView satinalmaView)
-            satinalmaView.BildirimdenAc(hedef.TalepId, hedef.Adim, hedef.Sekme);
+        else if (MainRegion.Content is StokYonetimiView stokView)
+            stokView.BildirimdenAc(hedef.Sekme);
     }
 
     public void SatinalmaOperasyonModunaGec(Guid? talepId = null, string sekme = "talepler")
@@ -462,8 +437,17 @@ public partial class MainWindow : Window
 
         if (MainRegion.Content is SatinalmaShellView shell)
             shell.BildirimdenAc(talepId, 0, sekme);
-        else if (MainRegion.Content is SatinalmaView sv)
-            sv.BildirimdenAc(talepId, 0, sekme);
+    }
+
+    private static SatinalmaShellView OlusturSatinalmaShell()
+    {
+        var shell = new SatinalmaShellView();
+        shell.StokModuluIstendi += () =>
+        {
+            if (Application.Current.MainWindow is MainWindow ana)
+                ana.ModulAc("Stok Yönetimi");
+        };
+        return shell;
     }
 }
 

@@ -10,7 +10,7 @@
         MinHeight="640"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
-        Background="White">
+        Background="{StaticResource DashBackgroundBrush}">
   <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
@@ -19,13 +19,13 @@
     </Grid.RowDefinitions>
 
     <StackPanel Grid.Row="0" Margin="0,0,0,16">
-      <TextBlock x:Name="TxtBaslik" Text="Araç Detayı" FontSize="22" FontWeight="SemiBold"
-                 Foreground="{StaticResource InkBrush}" />
+      <TextBlock x:Name="TxtBaslik" Text="Araç Detayı" Style="{StaticResource ModuleDialogTitleStyle}" />
       <TextBlock Text="Araç bilgileri, ruhsat ve görseller"
-                 FontSize="13" Foreground="{StaticResource InkMutedBrush}" Margin="0,4,0,0" />
+                 Style="{StaticResource ModuleDialogSubtitleStyle}" />
     </StackPanel>
 
-    <ScrollViewer Grid.Row="1" Style="{StaticResource ModuleScrollViewerStyle}">
+    <Border Grid.Row="1" Style="{StaticResource ModulePageCardStyle}" Padding="24,20">
+      <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0">
       <StackPanel>
         <Border Background="#F8FAFC" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
                 CornerRadius="12" Padding="16" Margin="0,0,0,14">
@@ -120,8 +120,7 @@
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
 
-          <Border Grid.Column="0" Margin="0,0,8,0" Background="White" BorderBrush="{StaticResource LineBrush}"
-                  BorderThickness="1" CornerRadius="12" Padding="14">
+          <Border Grid.Column="0" Margin="0,0,8,0" Style="{StaticResource ModulePageCardStyle}" Padding="14">
             <StackPanel>
               <TextBlock Text="Ruhsat" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,10" />
               <Border Height="140" Background="#F8FAFC" BorderBrush="{StaticResource LineBrush}"
@@ -138,8 +137,7 @@
             </StackPanel>
           </Border>
 
-          <Border Grid.Column="1" Margin="8,0,0,0" Background="White" BorderBrush="{StaticResource LineBrush}"
-                  BorderThickness="1" CornerRadius="12" Padding="14">
+          <Border Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource ModulePageCardStyle}" Padding="14">
             <StackPanel>
               <Grid Margin="0,0,0,10">
                 <TextBlock Text="Görseller" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
@@ -162,6 +160,7 @@
 
       </StackPanel>
     </ScrollViewer>
+    </Border>
 
     <StackPanel x:Name="PanelAltButonlar" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
       <Button x:Name="BtnKapat" Content="Kapat" Style="{StaticResource ToolbarButtonStyle}" Width="110" Margin="0,0,8,0"

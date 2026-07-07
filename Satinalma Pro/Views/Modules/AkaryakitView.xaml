@@ -3,8 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.modernwpf.com/2019"
              xmlns:helpers="clr-namespace:SatinalmaPro.Helpers"
-             xmlns:controls="clr-namespace:SatinalmaPro.Views.Controls">
-  <Grid>
+             xmlns:controls="clr-namespace:SatinalmaPro.Views.Controls" Background="{StaticResource DashBackgroundBrush}">
+  <Grid x:Name="AnaIcerikGrid">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
@@ -23,78 +23,80 @@
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
 
-      <Border Grid.Column="0" CornerRadius="14" Padding="20,18" BorderThickness="1"
-              Background="#ECFDF5" BorderBrush="#10B981">
+      <!-- Gelen -->
+      <Border Grid.Column="0" Style="{StaticResource ModuleKpiCardStyle}">
         <Grid>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-          </Grid.ColumnDefinitions>
-          <Border Grid.Column="0" Width="44" Height="44" CornerRadius="12" Background="#10B981" Margin="0,0,14,0">
-            <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="20"
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <Border Width="40" Height="40" CornerRadius="10" Background="{StaticResource DashSuccessBrush}" HorizontalAlignment="Left">
+            <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="18"
                        Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
-          <StackPanel Grid.Column="1" VerticalAlignment="Center">
-            <TextBlock Text="Gelen Akaryakıt" FontSize="12" Foreground="#047857" FontWeight="SemiBold" />
-            <TextBlock x:Name="TxtGelenAkaryakit" Text="0 Lt" FontSize="28" FontWeight="Bold"
-                       Foreground="#059669" Margin="0,4,0,0" />
-            <TextBlock x:Name="TxtGelenKayit" Text="0 alım kaydı" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0" />
+          <StackPanel Grid.Row="1" Margin="0,12,0,0">
+            <TextBlock Text="Gelen Akaryakıt" FontSize="12" Foreground="{StaticResource InkMutedBrush}" />
+            <TextBlock x:Name="TxtGelenAkaryakit" Text="0 Lt" FontSize="24" FontWeight="Bold"
+                       Foreground="{StaticResource InkBrush}" Margin="0,4,0,0" />
+            <TextBlock x:Name="TxtGelenKayit" Text="0 alım kaydı" FontSize="11"
+                       Foreground="{StaticResource InkMutedBrush}" Margin="0,4,0,0" />
           </StackPanel>
         </Grid>
       </Border>
 
-      <Border Grid.Column="2" CornerRadius="14" Padding="20,18" BorderThickness="1"
-              Background="#EFF6FF" BorderBrush="#3B82F6">
+      <!-- Stok -->
+      <Border Grid.Column="2" Style="{StaticResource ModuleKpiCardStyle}">
         <Grid>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-          </Grid.ColumnDefinitions>
-          <Border Grid.Column="0" Width="44" Height="44" CornerRadius="12" Background="#3B82F6" Margin="0,0,14,0">
-            <TextBlock Text="&#xE7C5;" FontFamily="Segoe MDL2 Assets" FontSize="20"
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <Border Width="40" Height="40" CornerRadius="10" Background="{StaticResource DashPrimaryBrush}" HorizontalAlignment="Left">
+            <TextBlock Text="&#xE7C5;" FontFamily="Segoe MDL2 Assets" FontSize="18"
                        Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
-          <StackPanel Grid.Column="1" VerticalAlignment="Center">
-            <TextBlock Text="Stok Akaryakıt" FontSize="12" Foreground="#1D4ED8" FontWeight="SemiBold" />
-            <TextBlock x:Name="TxtStokAkaryakit" Text="0 Lt" FontSize="28" FontWeight="Bold"
-                       Foreground="#2563EB" Margin="0,4,0,0" />
-            <TextBlock x:Name="TxtStokDurum" Text="Gelen − dağıtılan" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0" />
+          <StackPanel Grid.Row="1" Margin="0,12,0,0">
+            <TextBlock Text="Stok Akaryakıt" FontSize="12" Foreground="{StaticResource InkMutedBrush}" />
+            <TextBlock x:Name="TxtStokAkaryakit" Text="0 Lt" FontSize="24" FontWeight="Bold"
+                       Foreground="{StaticResource InkBrush}" Margin="0,4,0,0" />
+            <TextBlock x:Name="TxtStokDurum" Text="Gelen − dağıtılan" FontSize="11"
+                       Foreground="{StaticResource InkMutedBrush}" Margin="0,4,0,0" />
           </StackPanel>
         </Grid>
       </Border>
 
-      <Border Grid.Column="4" CornerRadius="14" Padding="20,18" BorderThickness="1"
-              Background="#FFFBEB" BorderBrush="#F59E0B">
+      <!-- Dağıtılan -->
+      <Border Grid.Column="4" Style="{StaticResource ModuleKpiCardStyle}">
         <Grid>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-          </Grid.ColumnDefinitions>
-          <Border Grid.Column="0" Width="44" Height="44" CornerRadius="12" Background="#F59E0B" Margin="0,0,14,0">
-            <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="20"
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <Border Width="40" Height="40" CornerRadius="10" Background="{StaticResource DashWarningBrush}" HorizontalAlignment="Left">
+            <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="18"
                        Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
-          <StackPanel Grid.Column="1" VerticalAlignment="Center">
-            <TextBlock Text="Dağıtılan Akaryakıt" FontSize="12" Foreground="#B45309" FontWeight="SemiBold" />
-            <TextBlock x:Name="TxtDagitilanAkaryakit" Text="0 Lt" FontSize="28" FontWeight="Bold"
-                       Foreground="#D97706" Margin="0,4,0,0" />
-            <TextBlock x:Name="TxtDagitilanKayit" Text="0 dağıtım kaydı" FontSize="11" Foreground="#6B7280" Margin="0,2,0,0" />
+          <StackPanel Grid.Row="1" Margin="0,12,0,0">
+            <TextBlock Text="Dağıtılan Akaryakıt" FontSize="12" Foreground="{StaticResource InkMutedBrush}" />
+            <TextBlock x:Name="TxtDagitilanAkaryakit" Text="0 Lt" FontSize="24" FontWeight="Bold"
+                       Foreground="{StaticResource InkBrush}" Margin="0,4,0,0" />
+            <TextBlock x:Name="TxtDagitilanKayit" Text="0 dağıtım kaydı" FontSize="11"
+                       Foreground="{StaticResource InkMutedBrush}" Margin="0,4,0,0" />
           </StackPanel>
         </Grid>
       </Border>
     </Grid>
 
-    <Border Grid.Row="1" Background="White" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-            CornerRadius="14" Padding="14,12" Margin="0,0,0,12">
+    <Border Grid.Row="1" Style="{StaticResource ModulePageCardStyle}" Padding="14,12" Margin="0,0,0,12">
       <Grid>
         <StackPanel Orientation="Horizontal">
-          <Button Style="{StaticResource PrimaryToolbarButtonStyle}" Click="ExcelYukle_Click">
+          <Button x:Name="BtnExcelYukle" Style="{StaticResource PrimaryToolbarButtonStyle}" Click="ExcelYukle_Click">
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,8,0" />
               <TextBlock Text="Excel Yükle" />
             </StackPanel>
           </Button>
-          <Button Style="{StaticResource ToolbarButtonStyle}" Click="SablonIndir_Click">
+          <Button x:Name="BtnSablonIndir" Style="{StaticResource ToolbarButtonStyle}" Click="SablonIndir_Click">
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,8,0" />
               <TextBlock Text="Şablon İndir" />
@@ -136,8 +138,7 @@
       </Grid>
     </Border>
 
-    <Border Grid.Row="2" Background="White" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-            CornerRadius="14" Padding="14,12,30,12" Margin="0,0,0,12">
+    <Border Grid.Row="2" x:Name="FiltreKart" Style="{StaticResource ModulePageCardStyle}" Padding="14,12,30,12" Margin="0,0,0,12">
       <Grid>
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*" MinWidth="180" />
@@ -204,7 +205,7 @@
       <Border Style="{StaticResource StatChipStyle}">
         <StackPanel>
           <TextBlock Text="Toplam Kayıt" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
-          <TextBlock x:Name="TxtToplamKayit" Text="0" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" Margin="0,2,0,0" />
+          <TextBlock x:Name="TxtToplamKayit" Text="0" Style="{StaticResource ModuleDialogTitleStyle}" Margin="0,2,0,0" />
         </StackPanel>
       </Border>
       <Border Style="{StaticResource StatChipStyle}">
@@ -216,13 +217,12 @@
       <Border Style="{StaticResource StatChipStyle}" Margin="0">
         <StackPanel>
           <TextBlock Text="Filtrelenen" FontSize="11" Foreground="{StaticResource InkMutedBrush}" />
-          <TextBlock x:Name="TxtFiltrelenen" Text="0 kayıt" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" Margin="0,2,0,0" />
+          <TextBlock x:Name="TxtFiltrelenen" Text="0 kayıt" Style="{StaticResource ModuleDialogTitleStyle}" Margin="0,2,0,0" />
         </StackPanel>
       </Border>
     </StackPanel>
 
-    <Border Grid.Row="4" Background="White" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-            CornerRadius="14" Padding="14,12,30,12" Margin="0,0,0,12">
+    <Border Grid.Row="4" Style="{StaticResource ModulePageCardStyle}" Padding="14,12,30,12" Margin="0,0,0,12">
       <StackPanel Orientation="Horizontal">
         <Button x:Name="BtnKayitDuzenle" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
                 IsEnabled="False" Click="KayitDuzenle_Click" Content="Düzenle" />
@@ -231,14 +231,25 @@
       </StackPanel>
     </Border>
 
-    <Border Grid.Row="5" Background="White" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-            CornerRadius="14" Padding="1">
+    <Border x:Name="TabloKart" Grid.Row="5" Style="{StaticResource ModuleGridContainerStyle}">
       <Grid>
         <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
           <RowDefinition Height="*" />
           <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-      <DataGrid x:Name="YakitGrid" Grid.Row="0" Style="{StaticResource ModuleDataGridStyle}"
+        <Border Grid.Row="0" Style="{StaticResource ErpTableToolbar}" Margin="0,0,0,0">
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Style="{StaticResource ErpTableToolbarBtn}" Content="Kolonlar" Click="Kolonlar_Click" />
+            <Button Style="{StaticResource ErpTableToolbarBtn}" Content="Grupla" Click="Grupla_Click" />
+            <Button Style="{StaticResource ErpTableToolbarBtn}" Content="Filtre" Click="FiltreOdak_Click" />
+            <Button Style="{StaticResource ErpTableToolbarBtn}" Content="Yoğun" Click="YogunGorunum_Click" />
+            <Button x:Name="BtnTamEkran" Style="{StaticResource ErpTableToolbarBtn}" Content="Tam Ekran" Click="TamEkran_Click" />
+          </StackPanel>
+        </Border>
+      <DataGrid x:Name="YakitGrid" Grid.Row="1" Style="{StaticResource ModuleDataGridStyle}"
+                CanUserReorderColumns="True"
                 AlternatingRowBackground="Transparent"                 LoadingRow="YakitGrid_LoadingRow"
                 SelectionChanged="YakitGrid_SelectionChanged"
                 MouseDoubleClick="YakitGrid_MouseDoubleClick" ScrollViewer.HorizontalScrollBarVisibility="Auto">
@@ -271,7 +282,23 @@
           <DataGridTextColumn Header="Açıklama" Binding="{Binding AciklamaMetin}" Width="*" MinWidth="120" />
         </DataGrid.Columns>
       </DataGrid>
-      <controls:SayfalamaCubugu x:Name="SayfalamaBar" Grid.Row="1" />
+        <Border Grid.Row="2" Style="{StaticResource ErpFooterBar}">
+          <Grid>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock x:Name="TxtGrupBilgi" Style="{StaticResource ErpFooterText}" Visibility="Collapsed" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+              <TextBlock Text="Sayfa boyutu:" Style="{StaticResource ErpFooterText}" Margin="0,0,8,0" />
+              <ComboBox x:Name="CmbSayfaBoyutu" Width="72" Height="28" VerticalContentAlignment="Center"
+                        SelectionChanged="SayfaBoyutuDegisti">
+                <ComboBoxItem Content="25" Tag="25" />
+                <ComboBoxItem Content="50" Tag="50" IsSelected="True" />
+                <ComboBoxItem Content="100" Tag="100" />
+              </ComboBox>
+            </StackPanel>
+          </Grid>
+        </Border>
+      <controls:SayfalamaCubugu x:Name="SayfalamaBar" Grid.Row="3" />
       </Grid>
     </Border>
   </Grid>

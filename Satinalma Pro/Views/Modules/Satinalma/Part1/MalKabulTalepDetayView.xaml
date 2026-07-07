@@ -1,0 +1,40 @@
+<UserControl x:Class="SatinalmaPro.Views.Modules.Satinalma.Part1.MalKabulTalepDetayView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Background="{StaticResource DashBackgroundBrush}">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <Button Style="{StaticResource SatModBackButton}" Click="Geri_Click" Content="← Listeye dön" />
+
+    <Border Grid.Row="1" Style="{StaticResource SatModCard}">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,14">
+          <TextBlock x:Name="TxtBaslik" FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource SatModInkBrush}" />
+          <TextBlock x:Name="TxtOzet" Style="{StaticResource SatModHint}" Margin="0,6,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1">
+          <TextBlock Text="Kabul Edilen Kalemler" Style="{StaticResource SatModSectionTitle}" />
+          <DataGrid x:Name="KalemTablosu" Style="{StaticResource SatModDataGrid}" IsReadOnly="True">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" />
+              <DataGridTextColumn Header="Sipariş" Binding="{Binding SiparisMiktariMetni}" Width="90" />
+              <DataGridTextColumn Header="Kabul" Binding="{Binding KabulMiktarMetni}" Width="90" />
+              <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="*" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding KabulDurumu}" Width="100" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

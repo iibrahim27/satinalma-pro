@@ -70,7 +70,9 @@ public class OnaylananMalzemeSatiri : INotifyPropertyChanged
         string? fisNo = null,
         string? teslimAlan = null,
         string? indirildigiSaha = null,
-        string? aciklama = null) => new()
+        string? aciklama = null,
+        string? tedarikci = null,
+        decimal? birimFiyati = null) => new()
     {
         Tarih = string.IsNullOrWhiteSpace(tarih) ? Tarih : tarih.Trim(),
         FaturaNo = string.IsNullOrWhiteSpace(fisNo)
@@ -80,11 +82,11 @@ public class OnaylananMalzemeSatiri : INotifyPropertyChanged
         MalzemeHizmet = Malzeme,
         Miktar = miktar ?? KabulEdilenMiktar,
         Birim = Birim,
-        BirimFiyati = BirimFiyati,
+        BirimFiyati = birimFiyati ?? BirimFiyati,
         ToplamTutar = miktar.HasValue
-            ? Math.Round(BirimFiyati * (decimal)miktar.Value, 2)
+            ? Math.Round((birimFiyati ?? BirimFiyati) * (decimal)miktar.Value, 2)
             : KabulToplamTutar,
-        Tedarikci = Firma,
+        Tedarikci = string.IsNullOrWhiteSpace(tedarikci) ? Firma : tedarikci.Trim(),
         IndirildigiSaha = indirildigiSaha?.Trim() ?? "",
         TeslimAlan = teslimAlan?.Trim() ?? "",
         Aciklama = string.IsNullOrWhiteSpace(aciklama)

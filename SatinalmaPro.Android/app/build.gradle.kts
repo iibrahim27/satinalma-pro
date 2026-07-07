@@ -21,8 +21,8 @@ android {
         applicationId = "com.metrik.satinalmapro"
         minSdk = 31
         targetSdk = 35
-        versionCode = 80
-        versionName = "2.1.29"
+        versionCode = 95
+        versionName = "2.1.44"
     }
 
     signingConfigs {
@@ -63,6 +63,16 @@ android {
         jvmTarget = "17"
     }
 
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+
+    sourceSets {
+        getByName("androidTest") {
+            java.srcDir("src/test/java")
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -85,6 +95,10 @@ tasks.register("copyFirebaseAssets") {
         val fcm = file("${satinalmaProDir}/fcm-service-account.json")
         if (fcm.exists()) {
             fcm.copyTo(file("${firebaseAssetsDir}/fcm-service-account.json"), overwrite = true)
+        }
+        val firebaseAyarlar = file("${satinalmaProDir}/firebase_ayarlar.json")
+        if (firebaseAyarlar.exists()) {
+            firebaseAyarlar.copyTo(file("${firebaseAssetsDir}/firebase_ayarlar.json"), overwrite = true)
         }
     }
 }
@@ -117,6 +131,8 @@ dependencies {
 
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.30.1")
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -126,4 +142,9 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.2")
 }

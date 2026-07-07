@@ -1,0 +1,71 @@
+<UserControl x:Class="SatinalmaPro.Views.Modules.Satinalma.Part1.SatinalmaTedarikcilerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.modernwpf.com/2019"
+             Background="{StaticResource SatModBgBrush}">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <UniformGrid x:Name="KpiPanel" Grid.Row="0" Rows="1" Columns="4" Margin="0,0,0,16" />
+
+    <Border Grid.Row="1" Style="{StaticResource SatModPremiumCard}">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" MinHeight="320" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+          <TextBlock Text="Tedarikçi Performans" Style="{StaticResource SatModSectionTitle}" VerticalAlignment="Center" />
+          <Grid Width="240" HorizontalAlignment="Right">
+            <TextBox x:Name="TxtArama" Style="{StaticResource FilterBoxStyle}" Height="36"
+                     TextChanged="AramaDegisti"
+                     ui:ControlHelper.PlaceholderText="Firma ara..." />
+            <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                       Foreground="{StaticResource InkMutedBrush}" HorizontalAlignment="Right"
+                       VerticalAlignment="Center" Margin="0,0,12,0" IsHitTestVisible="False" />
+          </Grid>
+        </Grid>
+
+        <Border Grid.Row="1" Background="White" CornerRadius="12" BorderBrush="#E5E7EB" BorderThickness="1">
+          <DataGrid x:Name="TedarikciGrid" Style="{StaticResource SatModPanosuGrid}"
+                    CanUserSortColumns="True" CanUserResizeColumns="True">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="*" MinWidth="160" />
+              <DataGridTextColumn Header="Sipariş" Binding="{Binding ToplamSiparis}" Width="72" />
+              <DataGridTextColumn Header="Toplam Tutar" Binding="{Binding ToplamTutar, StringFormat=N0}" Width="110" />
+              <DataGridTextColumn Header="Zamanında" Binding="{Binding ZamanindaTeslim}" Width="88" />
+              <DataGridTextColumn Header="Eksik" Binding="{Binding EksikTeslim}" Width="68" />
+              <DataGridTextColumn Header="İade" Binding="{Binding Iade}" Width="58" />
+              <DataGridTextColumn Header="Kalite" Binding="{Binding Kalite}" Width="68" />
+              <DataGridTextColumn Header="Ort. Teslim" Binding="{Binding OrtTeslimSuresi}" Width="90" />
+              <DataGridTemplateColumn Header="Performans" Width="100">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <Border CornerRadius="6" Padding="8,3" HorizontalAlignment="Center">
+                      <Border.Style>
+                        <Style TargetType="Border">
+                          <Setter Property="Background" Value="#DCFCE7" />
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding PerformansPuani}" Value="0">
+                              <Setter Property="Background" Value="#F1F5F9" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </Border.Style>
+                      <TextBlock Text="{Binding PerformansPuani}" FontSize="11" FontWeight="SemiBold"
+                                 Foreground="#16A34A" />
+                    </Border>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Border>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

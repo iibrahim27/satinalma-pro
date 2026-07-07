@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.40",
-    "build":  91,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.40/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.40/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.40/SatinalmaPro.apk",
-    "notes":  "- Mal kabul: kategori listesinde yoksa manuel yazarak ekleme\n- Mal kabul: fazla teslimat kabul (miktar otomatik talep/teklifte guncellenir)\n- Mal kabul: Sevkiyati Tamamla — eksik gelen malzeme icin siparis miktarini kabul edilene indirme\n- Mal kabul: sahaya dogrudan indirme (depo giris + cikis, stok hareketlerinde gorunur)\n- Android: ayni mal kabul ozellikleri (dialog, sevkiyat tamamla, alinan malzeme kaydi)",
+    "version":  "2.1.45",
+    "build":  97,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.45/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.45/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.45/SatinalmaPro.apk",
+    "notes":  "- Satinalma/Stok: rol bazli dinamik sekmeler ve enterprise status akisi\n- Talep detay: acil talepte Teklif Isteme gizli; normal akista teklif revize dongusu\n- PurchaseModuleAutomationTest: masaustu + Android E2E otomasyon simulatoru\n- FCM topic abonelikleri ve bildirim akisi iyilestirmeleri\n- Shared Procurement katmani (C# + Kotlin ortak kurallar)",
     "zorunlu":  false
 }

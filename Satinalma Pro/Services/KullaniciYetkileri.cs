@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
+using SatinalmaPro.Shared.Services;
 
 namespace SatinalmaPro.Services;
 
@@ -47,19 +48,60 @@ public static class KullaniciYetkileri
             return false;
 
         var rol = KullaniciRolleri.Normalize(kullanici.Rol);
-        if (rol == KullaniciRolleri.Atolye
-            && modulAdi.Equals("Stok Yönetimi", StringComparison.OrdinalIgnoreCase))
+        var satinalmaModul = modulAdi.Equals("Satınalma", StringComparison.OrdinalIgnoreCase);
+
+        if (satinalmaModul)
+            return SatinalmaModuluYazabilir(kullanici, rol);
+
+        if (modulAdi.Equals("Stok Yönetimi", StringComparison.OrdinalIgnoreCase))
+            return StokYazabilir();
+
+        // Satınalma modülü dışında yalnızca Satınalma rolü (açık yazma izniyle) düzenleyebilir.
+        if (rol != KullaniciRolleri.Satinalma)
             return false;
 
-        var yetki = ModulYetkisiniBul(kullanici, modulAdi);
-        if (yetki is not null)
-            return yetki.Yazma;
+        return ModulYetkisiniBul(kullanici, modulAdi)?.Yazma == true;
+    }
 
-        if (rol == KullaniciRolleri.Sef
-            && modulAdi is "Alınan Malzemeler" or "Agrega" or "Çimento")
+    /// <summary>Okuma var, yazma yok — filtre/arama/rapor kullanılabilir.</summary>
+    public static bool ModulSaltOkunur(string modulAdi) =>
+        ModulOkuyabilir(modulAdi) && !ModulYazabilir(modulAdi);
+
+    public static bool YazmaIslemiEngellendi(string modulAdi)
+    {
+        if (ModulYazabilir(modulAdi))
             return false;
 
-        return KullaniciRolleri.YazabilirMi(kullanici.Rol);
+        MessageBox.Show(
+            "Bu modülde yalnızca görüntüleme yetkiniz var.\nDüzenleme, silme ve kaydetme işlemleri yapılamaz.",
+            UygulamaBilgisi.Ad,
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+        return true;
+    }
+
+    private static bool SatinalmaModuluYazabilir(KullaniciProfili kullanici, string rol)
+    {
+        if (rol == KullaniciRolleri.Satinalma)
+            return true;
+
+        if (rol == KullaniciRolleri.Yonetim)
+            return true;
+
+        var yetki = ModulYetkisiniBul(kullanici, "Satınalma");
+        if (yetki?.Yazma == true)
+            return true;
+
+        return rol is KullaniciRolleri.Sef or KullaniciRolleri.Saha;
+    }
+
+    public static bool RolYazmaAtanabilir(string? rol)
+    {
+        if (!OturumYoneticisi.BulutAktif)
+            return true;
+
+        var r = KullaniciRolleri.Normalize(rol);
+        return KullaniciRolleri.AdminMi(rol) || r == KullaniciRolleri.Satinalma;
     }
 
     public static bool SekmeGorebilir(string modulAdi, string sekmeAdi)
@@ -80,6 +122,12 @@ public static class KullaniciYetkileri
             var hedef = modulAdi.Equals("Satınalma", StringComparison.OrdinalIgnoreCase)
                 ? SatinalmaPro.Shared.Services.MasaustuRolHaritasi.SatinalmaSekmeNormalize(sekmeAdi)
                 : sekmeAdi;
+
+            if (modulAdi.Equals("Satınalma", StringComparison.OrdinalIgnoreCase)
+                && hedef.Equals(MasaustuRolHaritasi.TeklifGirisi, StringComparison.OrdinalIgnoreCase)
+                && !KullaniciRolleri.SatinalmaTeklifGirebilir(kullanici?.Rol))
+                return false;
+
             return yetki.Sekmeler.Any(s =>
             {
                 var ad = modulAdi.Equals("Satınalma", StringComparison.OrdinalIgnoreCase)
@@ -121,6 +169,19 @@ public static class KullaniciYetkileri
             return true;
 
         return SatinalmaPro.Shared.Services.MobilYetkiServisi.StokYazabilir(OturumYoneticisi.AktifKullanici?.Rol);
+    }
+
+    public static bool StokYazmaIslemiEngellendi()
+    {
+        if (StokYazabilir())
+            return false;
+
+        MessageBox.Show(
+            "Stok giriş/çıkış düzenleme yetkiniz yok.\nYalnızca görüntüleme yapabilirsiniz.",
+            UygulamaBilgisi.Ad,
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+        return true;
     }
 
     public static bool SatinalmaSadeceTalepModu()
@@ -252,10 +313,13 @@ public static class KullaniciYetkileri
             if (KullaniciRolleri.AdminMi(kullanici.Rol))
                 return true;
 
-            if (kullanici.ModulYetkileri.Any(y => y.Yazma))
+            var rol = KullaniciRolleri.Normalize(kullanici.Rol);
+            if (rol is KullaniciRolleri.Satinalma or KullaniciRolleri.Yonetim
+                or KullaniciRolleri.Sef or KullaniciRolleri.Saha)
                 return true;
 
-            return KullaniciRolleri.YazabilirMi(kullanici.Rol);
+            return kullanici.ModulYetkileri.Any(y =>
+                y.Yazma && ModulYazabilir(y.Modul));
         }
     }
 
@@ -268,7 +332,7 @@ public static class KullaniciYetkileri
         if (ModulYazabilir(modulAdi))
             return;
 
-        SaltOkunurYap(kok);
+        SaltOkunurModuYardimcisi.Uygula(kok);
     }
 
     public static void SekmeleriUygula(TabControl sekmeler, string modulAdi)
@@ -288,34 +352,6 @@ public static class KullaniciYetkileri
             var ilk = sekmeler.Items.Cast<TabItem>().FirstOrDefault(t => t.Visibility == Visibility.Visible);
             if (ilk is not null)
                 sekmeler.SelectedItem = ilk;
-        }
-    }
-
-    private static void SaltOkunurYap(DependencyObject kok)
-    {
-        for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(kok); i++)
-        {
-            var cocuk = System.Windows.Media.VisualTreeHelper.GetChild(kok, i);
-            switch (cocuk)
-            {
-                case Button btn when btn.Name is not ("BtnCikis" or "BtnHome"):
-                    btn.IsEnabled = false;
-                    break;
-                case TextBox tb:
-                    tb.IsReadOnly = true;
-                    break;
-                case PasswordBox pb:
-                    pb.IsEnabled = false;
-                    break;
-                case ComboBox cb:
-                    cb.IsEnabled = false;
-                    break;
-                case DataGrid grid:
-                    grid.IsReadOnly = true;
-                    break;
-            }
-
-            SaltOkunurYap(cocuk);
         }
     }
 

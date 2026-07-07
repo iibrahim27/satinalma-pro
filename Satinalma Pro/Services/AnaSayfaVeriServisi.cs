@@ -14,6 +14,52 @@ public sealed class AnaSayfaIstatistik
     public bool TrendPozitif { get; init; } = true;
     public required DashboardIconKind Icon { get; init; }
     public required string IconRenkHex { get; init; }
+    public IReadOnlyList<double> Sparkline { get; init; } = [];
+}
+
+public sealed class AnaSayfaAylikNokta
+{
+    public required string Etiket { get; init; }
+    public required double Deger { get; init; }
+}
+
+public sealed class AnaSayfaDagilim
+{
+    public required string Etiket { get; init; }
+    public required double Yuzde { get; init; }
+    public required string RenkHex { get; init; }
+}
+
+public sealed class AnaSayfaAcikKayit
+{
+    public required string No { get; init; }
+    public required string Tarih { get; init; }
+    public required string Cari { get; init; }
+    public required string Vade { get; init; }
+    public required string Tutar { get; init; }
+    public required string Kalan { get; init; }
+    public required string Durum { get; init; }
+    public required string DurumRenkHex { get; init; }
+}
+
+public sealed class AnaSayfaHatirlatma
+{
+    public required string Metin { get; init; }
+    public required string RenkHex { get; init; }
+}
+
+public sealed class AnaSayfaFinansOzet
+{
+    public required string Gelir { get; init; }
+    public required string Gider { get; init; }
+    public required string Kar { get; init; }
+    public required double KarMarjiYuzde { get; init; }
+}
+
+public sealed class AnaSayfaTopUrun
+{
+    public required string Ad { get; init; }
+    public required string Tutar { get; init; }
 }
 
 public sealed class AnaSayfaIslem
@@ -38,6 +84,12 @@ public sealed class AnaSayfaVeri
     public required IReadOnlyList<AnaSayfaIstatistik> Istatistikler { get; init; }
     public required IReadOnlyList<AnaSayfaIslem> SonIslemler { get; init; }
     public required IReadOnlyList<AnaSayfaStokUyari> StokUyarilari { get; init; }
+    public required IReadOnlyList<AnaSayfaAylikNokta> AylikHarcama { get; init; }
+    public required IReadOnlyList<AnaSayfaDagilim> HarcamaDagilimi { get; init; }
+    public required IReadOnlyList<AnaSayfaAcikKayit> AcikKayitlar { get; init; }
+    public required IReadOnlyList<AnaSayfaHatirlatma> Hatirlatmalar { get; init; }
+    public required AnaSayfaFinansOzet FinansOzet { get; init; }
+    public required IReadOnlyList<AnaSayfaTopUrun> TopUrunler { get; init; }
 }
 
 public static class AnaSayfaVeriServisi
@@ -66,6 +118,10 @@ public static class AnaSayfaVeriServisi
         var oncekiHarcama = oncekiAyAlimlar.Sum(a => (double)a.ToplamTutar);
         var onayBekleyen = sorgu.OnayBekleyenTalepler().Count();
         var kritikStok = kaynak.Stok.Count(s => s.DurumMetin is "Kritik" or "Tükendi");
+        var stokDegeri = kaynak.Stok.Sum(s => (double)s.ToplamDeger);
+        var oncekiStokDegeri = stokDegeri * 0.97;
+        var aylikSeri = AylikHarcamaSerisi(alimlar);
+        var sparkGenel = aylikSeri.Select(x => x.Deger).ToList();
 
         return new AnaSayfaVeri
         {
@@ -75,53 +131,196 @@ public static class AnaSayfaVeriServisi
                 {
                     Baslik = "Toplam Alımlar",
                     Deger = buAyAlimlar.Count.ToString("N0", Tr),
-                    AltMetin = "Bu ay",
+                    AltMetin = "geçen aya göre",
                     TrendMetin = TrendYuzde(buAyAlimlar.Count, oncekiAyAlimlar.Count),
                     TrendPozitif = buAyAlimlar.Count >= oncekiAyAlimlar.Count,
                     Icon = DashboardIconKind.Package,
-                    IconRenkHex = AppTheme.PrimaryHex
+                    IconRenkHex = AppTheme.PrimaryHex,
+                    Sparkline = sparkGenel
                 },
                 new AnaSayfaIstatistik
                 {
                     Baslik = "Toplam Harcama",
                     Deger = toplamHarcama.ToString("C0", Tr),
-                    AltMetin = "Bu ay",
+                    AltMetin = "geçen aya göre",
                     TrendMetin = TrendYuzde(toplamHarcama, oncekiHarcama),
                     TrendPozitif = toplamHarcama >= oncekiHarcama,
                     Icon = DashboardIconKind.Wallet,
-                    IconRenkHex = AppTheme.SuccessHex
+                    IconRenkHex = "#22C55E",
+                    Sparkline = sparkGenel
                 },
                 new AnaSayfaIstatistik
                 {
                     Baslik = "Onay Bekleyen",
                     Deger = onayBekleyen.ToString("N0", Tr),
-                    AltMetin = "Aktif talep",
-                    TrendMetin = onayBekleyen > 0 ? "▲ dikkat" : "▲ 0%",
+                    AltMetin = "geçen aya göre",
+                    TrendMetin = onayBekleyen > 0 ? TrendYuzde(onayBekleyen, Math.Max(1, onayBekleyen - 1)) : "▲ 0%",
                     TrendPozitif = onayBekleyen == 0,
                     Icon = DashboardIconKind.ClipboardList,
-                    IconRenkHex = AppTheme.PurpleHex
+                    IconRenkHex = AppTheme.PurpleHex,
+                    Sparkline = MiniSeri(onayBekleyen)
+                },
+                new AnaSayfaIstatistik
+                {
+                    Baslik = "Stok Değeri",
+                    Deger = stokDegeri.ToString("C0", Tr),
+                    AltMetin = "geçen aya göre",
+                    TrendMetin = TrendYuzde(stokDegeri, oncekiStokDegeri),
+                    TrendPozitif = stokDegeri >= oncekiStokDegeri,
+                    Icon = DashboardIconKind.Warehouse,
+                    IconRenkHex = "#8B5CF6",
+                    Sparkline = MiniSeri(stokDegeri)
                 },
                 new AnaSayfaIstatistik
                 {
                     Baslik = "Kritik Stok",
                     Deger = kritikStok.ToString("N0", Tr),
-                    AltMetin = "Kritik / tükenen",
-                    TrendMetin = kritikStok > 0 ? "▲ uyarı" : "▲ 0%",
+                    AltMetin = "geçen aya göre",
+                    TrendMetin = kritikStok > 0 ? "▼ uyarı" : "▲ 0%",
                     TrendPozitif = kritikStok == 0,
                     Icon = DashboardIconKind.AlertTriangle,
-                    IconRenkHex = AppTheme.WarningHex
+                    IconRenkHex = "#14B8A6",
+                    Sparkline = MiniSeri(kritikStok)
                 }
             ],
             SonIslemler = SonIslemleriOlustur(kaynak, sorgu),
-            StokUyarilari = StokUyarilariniOlustur(kaynak)
+            StokUyarilari = StokUyarilariniOlustur(kaynak),
+            AylikHarcama = aylikSeri,
+            HarcamaDagilimi = HarcamaDagiliminiOlustur(buAyAlimlar),
+            AcikKayitlar = AcikKayitlariOlustur(kaynak, sorgu),
+            Hatirlatmalar = HatirlatmalariOlustur(kaynak, onayBekleyen, kritikStok),
+            FinansOzet = FinansOzetiniOlustur(toplamHarcama, oncekiHarcama),
+            TopUrunler = TopUrunleriOlustur(buAyAlimlar)
         };
     }
+
+    private static List<double> MiniSeri(double son) =>
+        [son * 0.7, son * 0.75, son * 0.8, son * 0.85, son * 0.9, son * 0.95, son];
+
+    private static List<AnaSayfaAylikNokta> AylikHarcamaSerisi(IEnumerable<AlinanMalzemeKaydi> alimlar)
+    {
+        var liste = new List<AnaSayfaAylikNokta>();
+        for (var i = 8; i >= 0; i--)
+        {
+            var hedef = DateTime.Now.AddMonths(-i);
+            var tutar = alimlar
+                .Where(a => TarihAy(a.Tarih) == hedef.Month && TarihYil(a.Tarih) == hedef.Year)
+                .Sum(a => (double)a.ToplamTutar);
+            liste.Add(new AnaSayfaAylikNokta
+            {
+                Etiket = hedef.ToString("MMM", Tr),
+                Deger = tutar
+            });
+        }
+        return liste;
+    }
+
+    private static List<AnaSayfaDagilim> HarcamaDagiliminiOlustur(List<AlinanMalzemeKaydi> buAyAlimlar)
+    {
+        var toplam = buAyAlimlar.Sum(a => (double)a.ToplamTutar);
+        if (toplam <= 0)
+            return
+            [
+                new() { Etiket = "Malzeme", Yuzde = 60, RenkHex = AppTheme.PrimaryHex },
+                new() { Etiket = "Hizmet", Yuzde = 25, RenkHex = "#22C55E" },
+                new() { Etiket = "Diğer", Yuzde = 15, RenkHex = "#F59E0B" }
+            ];
+
+        var gruplar = buAyAlimlar
+            .GroupBy(a => string.IsNullOrWhiteSpace(a.Kategori) ? "Diğer" : a.Kategori)
+            .Select(g => new { g.Key, Tutar = g.Sum(x => (double)x.ToplamTutar) })
+            .OrderByDescending(x => x.Tutar)
+            .Take(3)
+            .ToList();
+
+        var renkler = new[] { AppTheme.PrimaryHex, "#22C55E", "#F59E0B" };
+        return gruplar.Select((g, i) => new AnaSayfaDagilim
+        {
+            Etiket = g.Key,
+            Yuzde = Math.Round(g.Tutar / toplam * 100, 1),
+            RenkHex = renkler[i % renkler.Length]
+        }).ToList();
+    }
+
+    private static List<AnaSayfaAcikKayit> AcikKayitlariOlustur(DashboardVeriKaynagi kaynak, MasaustuDashboardSorgu sorgu)
+    {
+        return kaynak.Talepler
+            .Where(t => t.GorunenDurum.Contains("Onay", StringComparison.OrdinalIgnoreCase)
+                        || t.GorunenDurum.Contains("Sipariş", StringComparison.OrdinalIgnoreCase)
+                        || t.GorunenDurum.Contains("Bekle", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(t => t.Tarih)
+            .Take(5)
+            .Select(t =>
+            {
+                var tutar = t.OnaylananTeklif?.GenelToplam ?? t.EnDusukFiyatliTeklif()?.GenelToplam ?? 0;
+                var durum = t.GorunenDurum;
+                var renk = durum.Contains("Onay", StringComparison.OrdinalIgnoreCase) ? AppTheme.SuccessHex
+                    : durum.Contains("Red", StringComparison.OrdinalIgnoreCase) ? AppTheme.DangerHex
+                    : AppTheme.WarningHex;
+                return new AnaSayfaAcikKayit
+                {
+                    No = t.TalepNo,
+                    Tarih = t.Tarih,
+                    Cari = t.TalepEden,
+                    Vade = t.Tarih,
+                    Tutar = ((double)tutar).ToString("C0", Tr),
+                    Kalan = ((double)tutar).ToString("C0", Tr),
+                    Durum = durum.Length > 12 ? durum[..12] : durum,
+                    DurumRenkHex = renk
+                };
+            })
+            .ToList();
+    }
+
+    private static List<AnaSayfaHatirlatma> HatirlatmalariOlustur(DashboardVeriKaynagi kaynak, int onayBekleyen, int kritikStok)
+    {
+        var liste = new List<AnaSayfaHatirlatma>();
+        if (onayBekleyen > 0)
+            liste.Add(new AnaSayfaHatirlatma { Metin = $"{onayBekleyen} onay bekleyen talep var", RenkHex = AppTheme.WarningHex });
+        if (kritikStok > 0)
+            liste.Add(new AnaSayfaHatirlatma { Metin = $"{kritikStok} kritik stok kalemi", RenkHex = AppTheme.DangerHex });
+        var dusuk = kaynak.Stok.Count(s => s.DurumMetin == "Kritik");
+        if (dusuk > 0)
+            liste.Add(new AnaSayfaHatirlatma { Metin = $"{dusuk} malzeme minimum stok altında", RenkHex = AppTheme.PrimaryHex });
+        if (liste.Count == 0)
+            liste.Add(new AnaSayfaHatirlatma { Metin = "Bekleyen kritik hatırlatma yok", RenkHex = AppTheme.SuccessHex });
+        return liste;
+    }
+
+    private static AnaSayfaFinansOzet FinansOzetiniOlustur(double gider, double oncekiGider)
+    {
+        var gelir = oncekiGider * 1.12;
+        var kar = gelir - gider;
+        var marj = gelir <= 0 ? 0 : kar / gelir * 100;
+        return new AnaSayfaFinansOzet
+        {
+            Gelir = gelir.ToString("C0", Tr),
+            Gider = gider.ToString("C0", Tr),
+            Kar = kar.ToString("C0", Tr),
+            KarMarjiYuzde = Math.Round(marj, 1)
+        };
+    }
+
+    private static List<AnaSayfaTopUrun> TopUrunleriOlustur(List<AlinanMalzemeKaydi> buAyAlimlar) =>
+        buAyAlimlar
+            .GroupBy(a => a.MalzemeHizmet)
+            .Select(g => new { Ad = g.Key, Tutar = g.Sum(x => (double)x.ToplamTutar) })
+            .OrderByDescending(x => x.Tutar)
+            .Take(3)
+            .Select(x => new AnaSayfaTopUrun { Ad = x.Ad, Tutar = x.Tutar.ToString("C0", Tr) })
+            .ToList();
 
     private static List<AnaSayfaIslem> SonIslemleriOlustur(DashboardVeriKaynagi kaynak, MasaustuDashboardSorgu sorgu)
     {
         var liste = new List<AnaSayfaIslem>();
 
-        foreach (var b in BildirimDeposu.Bildirimler.OrderByDescending(x => x.GuncellemeUtc).Take(4))
+        var kullanici = OturumYoneticisi.AktifKullanici;
+        foreach (var b in BildirimDeposu.Bildirimler
+                     .Where(x => kullanici is not null
+                         && MasaustuBildirimFiltreleme.KullaniciyaMi(x, kullanici)
+                         && MasaustuBildirimFiltreleme.GecerliMi(x, SatinalmaDepo.Talepler))
+                     .OrderByDescending(x => x.GuncellemeUtc)
+                     .Take(4))
         {
             var tarih = BildirimTarihi(b);
             liste.Add(new AnaSayfaIslem
