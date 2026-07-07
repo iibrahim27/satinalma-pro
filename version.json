@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.39",
-    "build":  90,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.39/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.39/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.39/SatinalmaPro.apk",
-    "notes":  "- Masaüstü Satınalma: Onaylanan Teklifler sekmesi eklendi (liste, detay, PDF)\n- Masaüstü Yönetim: Onaylanan Teklifler sekmesi — onayladığınız teklifleri görüntüleme\n- PDF: onaylayan ad-soyad, e-posta, onay tarihi/saati ve yönetim imza alanı\n- Android: işlem sonrası yanlış yönlendirme düzeltildi (yönetim/satınalma rotaları)\n- Android: geçmiş sekmesi ve liste özetleri (onay, geri gönder, onaylayan)\n- Android: yinelenen bildirim (10x) düzeltmesi — tepsi yalnızca FCM ile",
+    "version":  "2.1.40",
+    "build":  91,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.40/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.40/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.40/SatinalmaPro.apk",
+    "notes":  "- Mal kabul: kategori listesinde yoksa manuel yazarak ekleme\n- Mal kabul: fazla teslimat kabul (miktar otomatik talep/teklifte guncellenir)\n- Mal kabul: Sevkiyati Tamamla — eksik gelen malzeme icin siparis miktarini kabul edilene indirme\n- Mal kabul: sahaya dogrudan indirme (depo giris + cikis, stok hareketlerinde gorunur)\n- Android: ayni mal kabul ozellikleri (dialog, sevkiyat tamamla, alinan malzeme kaydi)",
     "zorunlu":  false
 }
