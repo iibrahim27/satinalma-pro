@@ -1,5 +1,7 @@
 package com.satinalmapro.shared.filter.detail
 
+import com.satinalmapro.shared.filter.ProcurementStatus
+
 enum class PurchaseRequestDetailAction {
     DIRECT_APPROVE,
     REJECT_REQUEST,

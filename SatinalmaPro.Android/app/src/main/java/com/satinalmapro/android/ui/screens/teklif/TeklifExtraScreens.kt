@@ -49,6 +49,7 @@ import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailScreen
 import com.satinalmapro.android.services.SatinalmaPdfHelper
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppCard
+import com.satinalmapro.android.ui.components.SectionTitle
 import com.satinalmapro.android.ui.components.DetailRow
 import com.satinalmapro.android.ui.components.StatusBadge
 import com.satinalmapro.android.ui.screens.talep.TalepListScreen
