@@ -1,0 +1,26 @@
+---
+description: Deploy/yayında her zaman Satınalma Pro + Yönetici + Android üçlüsünü birlikte yayınla
+alwaysApply: true
+---
+
+# Yayın / Deploy üçlü kuralı
+
+Kullanıcı **deploy**, **sürüm yükselt**, **versiyon**, **GitHub yükle**, **yayınla** veya benzeri bir release isteği verdiğinde **üç ürünü birlikte** işle; hiçbirini atlama:
+
+1. **Satınalma Pro** (masaüstü) — `version.json`, `SatinalmaPro_Kurulum.exe`, `SatinalmaPro.zip`, tag `vX.Y.Z`
+2. **Satınalma Yönetici** — `version-yonetici.json`, `SatinalmaYonetici_Kurulum.exe`, `SatinalmaYonetici.zip`, tag `yonetici-vX.Y.Z`
+3. **Android** — APK (`SatinalmaPro.apk`), Pro ile aynı `version` / `versionCode` (Pro paket script’i veya ayrı gradle release)
+
+## Zorunlu sıra
+
+1. Firebase deploy (`.\deploy-firebase.ps1`) — Functions/rules değiştiyse
+2. Üç uygulama için sürüm bump (Pro + Yönetici her zaman; Android versionName/versionCode Pro ile)
+3. Paket derleme (Pro kurulum+zip+apk, Yönetici kurulum+zip)
+4. `version.json` + `version-yonetici.json` commit + `main` push
+5. GitHub Release oluştur/yükle — **Pro ve Yönetici ayrı tag** ile; asset’leri eksiksiz yükle
+
+## Atlanmaz
+
+- Sadece Pro yayınlamak / Yönetici’yi unutmak yasak
+- “Android zaten Pro zip’inde” diye Yönetici’yi atlamak yasak
+- Yayın özeti kullanıcıya üç link/sonuç ile verilir: Pro release, Yönetici release, manifest URL’leri

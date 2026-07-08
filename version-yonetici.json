@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.0.0",
+    "version":  "1.0.1",
     "build":  1,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.0/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.0/SatinalmaYonetici.zip",
-    "notes":  "Lisanslama, platform hesap ayirma, otomatik guncelleme",
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.1/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.1/SatinalmaYonetici.zip",
+    "notes":  "Pro 2.1.48 ile hizali: lisans, platform ayirma, otomatik guncelleme",
     "zorunlu":  false
 }
