@@ -44,3 +44,8 @@ Thumbs.db
 
 # WebView2 cache
 **/*.WebView2/
+
+# Yonetici yayin paketleri
+SatinalmaYonetici/*.zip
+SatinalmaYonetici/*_Kurulum.exe
+

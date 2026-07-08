@@ -84,6 +84,10 @@
           <TextBlock x:Name="GirisHata" Foreground="{StaticResource DangerBrush}"
                      FontSize="12" TextWrapping="Wrap" Margin="0,12,0,0"
                      TextAlignment="Center" Visibility="Collapsed" />
+
+          <TextBlock x:Name="GirisSurum" Text="v1.0.0"
+                     Foreground="#94A3B8" FontSize="11"
+                     HorizontalAlignment="Center" Margin="0,16,0,0" />
         </StackPanel>
       </Border>
     </Grid>
@@ -102,6 +106,9 @@
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
             <Button x:Name="BtnKurulum" Content="Platform admin yap" Style="{StaticResource GhostButtonStyle}"
                     Margin="0,0,8,0" Click="Bootstrap_Click" Visibility="Collapsed" />
+            <Button Content="Firmalardan ayır" Style="{StaticResource GhostButtonStyle}"
+                    Margin="0,0,8,0" Click="PlatformAyir_Click"
+                    ToolTip="Platform hesabınızı tüm firmaların kullanıcı listelerinden çıkarır" />
             <Button Content="Çıkış" Style="{StaticResource GhostButtonStyle}"
                     Width="88" Click="Cikis_Click" />
           </StackPanel>
@@ -162,9 +169,10 @@
                           IsReadOnly="True"
                           SelectionChanged="FirmaGrid_SelectionChanged">
                   <DataGrid.Columns>
-                    <DataGridTextColumn Header="Kod" Binding="{Binding Kod}" Width="90" />
+                    <DataGridTextColumn Header="Kod" Binding="{Binding Kod}" Width="80" />
                     <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="*" />
-                    <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Aktif}" Width="60" />
+                    <DataGridTextColumn Header="Lisans" Binding="{Binding LisansOzeti}" Width="150" />
+                    <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Aktif}" Width="55" />
                   </DataGrid.Columns>
                 </DataGrid>
               </Border>
@@ -186,9 +194,25 @@
                            Height="40" Padding="12,8" FontSize="14" BorderBrush="#CBD5E1" BorderThickness="1"
                            VerticalContentAlignment="Center" Margin="0,0,0,10" />
 
+                  <TextBlock Text="Lisans tipi" Style="{StaticResource FieldLabelStyle}" />
+                  <ComboBox x:Name="FirmaLisansTipi" Foreground="#0F172A" Background="White"
+                            Height="40" Padding="10,6" FontSize="14" BorderBrush="#CBD5E1" BorderThickness="1"
+                            VerticalContentAlignment="Center" Margin="0,0,0,10">
+                    <ComboBoxItem Tag="deneme" Content="30 günlük deneme" IsSelected="True" />
+                    <ComboBoxItem Tag="yillik" Content="Yıllık lisans (365 gün)" />
+                  </ComboBox>
+
+                  <TextBlock x:Name="FirmaLisansDurum" Style="{StaticResource HintTextStyle}"
+                             Text="Yeni firmaya otomatik 30 gün deneme verilir." Margin="0,0,0,10" />
+
                   <CheckBox x:Name="FirmaAktif" Content="Aktif" IsChecked="True" Margin="0,0,0,12" />
-                  <Button Content="Firmayı Kaydet" Style="{StaticResource PrimaryButtonStyle}"
-                          HorizontalAlignment="Left" MinWidth="150" Click="FirmaKaydet_Click" />
+                  <StackPanel Orientation="Horizontal">
+                    <Button Content="Firmayı Kaydet" Style="{StaticResource PrimaryButtonStyle}"
+                            MinWidth="140" Click="FirmaKaydet_Click" Margin="0,0,8,0" />
+                    <Button Content="Lisansı yenile" Style="{StaticResource SecondaryButtonStyle}"
+                            MinWidth="120" Click="LisansYenile_Click"
+                            ToolTip="Bugünden itibaren deneme=30 gün veya yıllık=365 gün yeniden başlatır" />
+                  </StackPanel>
                 </StackPanel>
               </Border>
             </Grid>
@@ -219,7 +243,7 @@
               </DockPanel>
 
               <TextBlock Grid.Row="1" Style="{StaticResource HintTextStyle}"
-                         Text="Müşteri uygulamalarında giriş: kullanıcı adı + şifre. E-posta yalnızca şifre sıfırlama içindir." />
+                         Text="Platform sahibi yalnızca e-posta ile Yönetici uygulamasına girer; firmaya kullanıcı olarak eklenmez. Firma kullanıcılarına ayrı kullanıcı adı verin." />
 
               <Border Grid.Row="2" CornerRadius="12" BorderBrush="{StaticResource LineBrush}"
                       BorderThickness="1" ClipToBounds="True" Margin="0,0,0,14">
@@ -317,9 +341,14 @@
       <Border Grid.Row="2" Background="White" BorderBrush="{StaticResource LineBrush}"
               BorderThickness="0,1,0,0" Padding="20,10">
         <DockPanel>
-          <TextBlock DockPanel.Dock="Right" Text="SatınalmaYonetici · Platform"
-                     Foreground="{StaticResource InkMutedBrush}" FontSize="11"
-                     VerticalAlignment="Center" />
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+            <Button Content="Güncelleme kontrol" Style="{StaticResource LinkButtonStyle}"
+                    Margin="0,0,12,0" Click="GuncellemeKontrol_Click"
+                    ToolTip="Yeni sürüm varsa indirip uygulamayı günceller" />
+            <TextBlock x:Name="AltSurumMetni" Text="v1.0.0"
+                       Foreground="{StaticResource InkMutedBrush}" FontSize="11"
+                       VerticalAlignment="Center" />
+          </StackPanel>
           <TextBlock x:Name="DurumMetni" Text="Hazır"
                      Foreground="{StaticResource InkMutedBrush}" FontSize="12"
                      VerticalAlignment="Center" />

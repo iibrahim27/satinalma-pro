@@ -3,6 +3,7 @@ using System.Windows.Input;
 using SatinalmaPro.Shared.Models;
 using SatinalmaPro.Shared.SaaS;
 using SatinalmaYonetici.Services;
+using YerelBilgi = SatinalmaYonetici.Helpers.UygulamaBilgisi;
 
 namespace SatinalmaYonetici;
 
@@ -14,6 +15,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        SurumMetinleriniGuncelle();
         RolKutusu.ItemsSource = KullaniciRolleri.Tum;
         RolKutusu.SelectedItem = KullaniciRolleri.Saha;
 
@@ -52,10 +54,12 @@ public partial class MainWindow : Window
             GirisHata.Visibility = Visibility.Collapsed;
             await _oturum.GirisYapAsync(GirisEposta.Text, GirisSifre.Password);
 
-            // İlk kurulum: platform admin yoksa otomatik tanımla
+            // İlk kurulum: platform admin yoksa otomatik tanımla; varsa firmalardan ayır
             try
             {
                 await FirmalariYukleAsync(gosterHata: false);
+                // Mevcut admin: yanlışlıkla firmaya eklenmiş kaydı temizle
+                await _oturum.Platform.PlatformHesabiniFirmalardanAyirAsync();
             }
             catch (Exception listeEx) when (YetkiHatasiMi(listeEx))
             {
@@ -142,6 +146,8 @@ public partial class MainWindow : Window
         FirmaKod.Text = _seciliFirma.Kod;
         FirmaAd.Text = _seciliFirma.Ad;
         FirmaAktif.IsChecked = _seciliFirma.Aktif;
+        LisansTipiniSec(_seciliFirma.LisansTipi);
+        FirmaLisansDurum.Text = LisansDurumMetni(_seciliFirma);
         KullaniciBaslik.Text = $"Kullanıcılar — {_seciliFirma.Ad}";
         _ = KullanicilariYukleAsync();
     }
@@ -153,6 +159,8 @@ public partial class MainWindow : Window
         FirmaKod.Text = "";
         FirmaAd.Text = "";
         FirmaAktif.IsChecked = true;
+        LisansTipiniSec(LisansTipleri.Deneme);
+        FirmaLisansDurum.Text = "Yeni firmaya otomatik 30 gün deneme verilir.";
         KullaniciGrid.ItemsSource = null;
         KullaniciBaslik.Text = "Kullanıcılar";
         DurumMetni.Text = "Yeni firma formu hazır.";
@@ -160,22 +168,88 @@ public partial class MainWindow : Window
 
     private async void FirmaKaydet_Click(object sender, RoutedEventArgs e)
     {
+        await FirmaKaydetInternalAsync(lisansYenile: false);
+    }
+
+    private async void LisansYenile_Click(object sender, RoutedEventArgs e)
+    {
+        if (_seciliFirma is null || string.IsNullOrWhiteSpace(_seciliFirma.Id))
+        {
+            MessageBox.Show("Önce bir firma seçin.", "Lisans", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var tip = SeciliLisansTipi();
+        var gun = tip == LisansTipleri.Yillik ? 365 : 30;
+        var onay = MessageBox.Show(
+            $"Lisans bugünden itibaren {gun} gün yenilenecek ({LisansTipleri.GorunenAd(tip)}).\n"
+            + "Süre dolmuşsa firma ve kullanıcılar yeniden aktifleştirilebilir.\n\nDevam edilsin mi?",
+            "Lisansı yenile",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (onay != MessageBoxResult.Yes)
+            return;
+
+        await FirmaKaydetInternalAsync(lisansYenile: true);
+    }
+
+    private async Task FirmaKaydetInternalAsync(bool lisansYenile)
+    {
         try
         {
+            var tip = SeciliLisansTipi();
             var kayit = await _oturum.Platform.FirmaKaydetAsync(new KiracıKaydi
             {
                 Id = _seciliFirma?.Id ?? "",
                 Kod = FirmaKod.Text.Trim(),
                 Ad = FirmaAd.Text.Trim(),
-                Aktif = FirmaAktif.IsChecked == true
-            });
+                Aktif = lisansYenile || FirmaAktif.IsChecked == true,
+                LisansTipi = tip
+            }, lisansYenile);
+
             await FirmalariYukleAsync();
-            DurumMetni.Text = $"Firma kaydedildi: {kayit.Ad}";
+            FirmaLisansDurum.Text = LisansDurumMetni(kayit);
+            DurumMetni.Text = lisansYenile
+                ? $"Lisans yenilendi: {kayit.Ad}"
+                : $"Firma kaydedildi: {kayit.Ad}";
         }
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Firma", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private string SeciliLisansTipi()
+    {
+        if (FirmaLisansTipi.SelectedItem is System.Windows.Controls.ComboBoxItem item &&
+            item.Tag is string tag)
+            return tag;
+        return LisansTipleri.Deneme;
+    }
+
+    private void LisansTipiniSec(string? tip)
+    {
+        var hedef = tip == LisansTipleri.Yillik ? LisansTipleri.Yillik : LisansTipleri.Deneme;
+        foreach (var obj in FirmaLisansTipi.Items)
+        {
+            if (obj is System.Windows.Controls.ComboBoxItem item &&
+                string.Equals(item.Tag as string, hedef, StringComparison.OrdinalIgnoreCase))
+            {
+                FirmaLisansTipi.SelectedItem = item;
+                return;
+            }
+        }
+    }
+
+    private static string LisansDurumMetni(KiracıKaydi f)
+    {
+        if (f.LisansSuresiDoldu || f.LisansKalanGun is <= 0)
+            return "Lisans süresi dolmuş — kullanıcılar giriş yapamaz.";
+
+        var bitis = f.LisansBitis;
+        var kalan = f.LisansKalanGun is null ? "?" : f.LisansKalanGun.Value.ToString();
+        return $"{LisansTipleri.GorunenAd(f.LisansTipi)} · {kalan} gün kaldı"
+               + (string.IsNullOrWhiteSpace(bitis) ? "" : $" · bitiş: {bitis[..Math.Min(10, bitis.Length)]}");
     }
 
     private async Task KullanicilariYukleAsync()
@@ -269,6 +343,14 @@ public partial class MainWindow : Window
         try
         {
             var secili = KullaniciGrid.SelectedItem as PlatformKullaniciKaydi;
+            var ad = KullaniciAdi.Text.Trim();
+            var hata = KullaniciAdiYardimcisi.DogrulaVeyaHata(ad);
+            if (hata is not null)
+            {
+                MessageBox.Show(hata, "Kullanıcı", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             var sifre = string.IsNullOrWhiteSpace(KullaniciSifre.Password) ? null : KullaniciSifre.Password;
             if (secili is null && string.IsNullOrWhiteSpace(sifre))
             {
@@ -321,7 +403,10 @@ public partial class MainWindow : Window
 
             await _oturum.Platform.BootstrapAdminAsync();
             MessageBox.Show(
-                "Platform yöneticisi tanımlandı. Artık firma ve kullanıcı ekleyebilirsiniz.",
+                "Platform yöneticisi tanımlandı.\n\n" +
+                "Bu hesap hiçbir firmaya bağlı değildir.\n" +
+                "Firmalara giriş için ayrı kullanıcı adları oluşturun.\n" +
+                "Rezerve isimler: platform, yonetici, owner…",
                 "Kurulum",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -339,6 +424,62 @@ public partial class MainWindow : Window
             {
                 MessageBox.Show(ex.Message, "Kurulum", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+        }
+    }
+
+    private async void PlatformAyir_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var (users, names) = await _oturum.Platform.PlatformHesabiniFirmalardanAyirAsync();
+            MessageBox.Show(
+                $"Platform hesabı firmalardan ayrıldı.\n\n" +
+                $"Kaldırılan firma kullanıcı kaydı: {users}\n" +
+                $"Kaldırılan kullanıcı adı eşlemesi: {names}\n\n" +
+                "Bundan sonra bu e-posta ile yalnızca Satınalma Yönetici kullanılır.",
+                "Platform hesabı",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            DurumMetni.Text = "Platform hesabı firmalardan ayrıldı.";
+            if (_seciliFirma is not null)
+                await KullanicilariYukleAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Platform hesabı", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void SurumMetinleriniGuncelle()
+    {
+        var metin = YerelBilgi.AltBilgiMetni;
+        if (GirisSurum != null) GirisSurum.Text = metin;
+        if (AltSurumMetni != null) AltSurumMetni.Text = metin;
+    }
+
+    private async void GuncellemeKontrol_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            DurumMetni.Text = "Güncelleme kontrol ediliyor...";
+            var guncellendi = await GuncellemeServisi.KontrolEtVeUygulaAsync(
+                sessiz: false,
+                ilerle: (mesaj, _) => Dispatcher.Invoke(() => DurumMetni.Text = mesaj));
+
+            if (!guncellendi)
+            {
+                DurumMetni.Text = "Uygulama güncel.";
+                MessageBox.Show(
+                    $"Satınalma Yönetici güncel.\n\nSürüm: {YerelBilgi.Versiyon}",
+                    "Güncelleme",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            DurumMetni.Text = "Güncelleme kontrolü başarısız.";
+            MessageBox.Show(ex.Message, "Güncelleme", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 }
