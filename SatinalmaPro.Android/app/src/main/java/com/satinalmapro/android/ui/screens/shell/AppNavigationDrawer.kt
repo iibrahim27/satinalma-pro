@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import com.satinalmapro.android.BuildConfig
 import com.satinalmapro.android.core.model.MenuItem
 import com.satinalmapro.android.core.model.UserProfile
+import com.satinalmapro.android.core.saas.TenantSession
 import com.satinalmapro.android.ui.theme.AppColors
 import com.satinalmapro.android.ui.theme.AppShapes
 
@@ -158,8 +159,15 @@ fun AppNavigationDrawer(
                 Text("Çıkış Yap", fontWeight = FontWeight.SemiBold)
             }
             HorizontalDivider(color = AppColors.Border)
+            val lisansText = TenantSession.license()?.kisaDurumMetni
             Text(
-                text = "Satınalma Pro v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                text = buildString {
+                    append("Satınalma Pro v${BuildConfig.VERSION_NAME}")
+                    if (!lisansText.isNullOrBlank()) {
+                        append(" · ")
+                        append(lisansText)
+                    }
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = AppColors.TextSecondary,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)

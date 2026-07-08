@@ -45,6 +45,25 @@ public static partial class KullaniciAdiYardimcisi
     if (!GecerliDesen().IsMatch(n))
       return "Kullanıcı adı yalnızca küçük harf, rakam, nokta, tire ve alt çizgi içerebilir.";
 
+    if (RezerveMi(n))
+      return "Bu kullanıcı adı platform için rezervedir; firmaya atanamaz.";
+
     return null;
   }
+
+  /// <summary>Platform sahibi / sistem için rezerv isimler — firma kullanıcıları kullanamaz.</summary>
+  public static bool RezerveMi(string? kullaniciAdi)
+  {
+    var n = Normallestir(kullaniciAdi);
+    if (string.IsNullOrEmpty(n)) return false;
+    if (RezerveAdlar.Contains(n)) return true;
+    return n.StartsWith("platform", StringComparison.Ordinal) ||
+           n.StartsWith("yonetici_", StringComparison.Ordinal);
+  }
+
+  private static readonly HashSet<string> RezerveAdlar = new(StringComparer.Ordinal)
+  {
+    "platform", "platformadmin", "platform_admin", "yonetici", "yonetim",
+    "owner", "satinalmayonetici", "satinalma_yonetici", "saas", "root", "system", "sistem"
+  };
 }

@@ -303,6 +303,10 @@ public partial class MainWindow : Window
             temel += $"  ·  {ad} ({k.Rol})";
         }
 
+        var lisans = SatinalmaPro.Shared.SaaS.KiracıOturumu.Lisans;
+        if (lisans is not null)
+            temel += $"  ·  {lisans.KisaDurumMetni}";
+
         TxtAltBilgi.Text = modulde
             ? $"{temel}  ·  Esc / Ctrl+H: Ana Sayfa  ·  F5: Yenile"
             : temel;

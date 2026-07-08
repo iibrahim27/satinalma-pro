@@ -10,4 +10,5 @@ public sealed class SaaSLoginSonucu
   public string? Eposta { get; init; }
   public string? KullaniciAdi { get; init; }
   public int ExpiresIn { get; init; }
+  public KiracıLisansi? Lisans { get; init; }
 }

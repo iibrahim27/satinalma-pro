@@ -21,5 +21,6 @@ export {
   platformListTenantUsers,
   platformSaveTenantUser,
   platformBootstrapAdmin,
+  platformDetachSelf,
   platformImportLegacyUsers,
 } from "./callables/saas";

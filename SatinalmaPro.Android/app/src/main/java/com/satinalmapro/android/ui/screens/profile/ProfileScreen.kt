@@ -88,6 +88,7 @@ import androidx.compose.ui.unit.dp
 import com.satinalmapro.android.BuildConfig
 
 import com.satinalmapro.android.core.roles.KullaniciRolleri
+import com.satinalmapro.android.core.saas.TenantSession
 
 import com.satinalmapro.android.ui.AppViewModel
 
@@ -263,6 +264,15 @@ fun ProfileScreen(viewModel: AppViewModel) {
             color = AppColors.TextSecondary
 
         )
+
+        TenantSession.license()?.kisaDurumMetni?.let { lisans ->
+            Spacer(Modifier.height(4.dp))
+            Text(
+                lisans,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (lisans.contains("doldu", ignoreCase = true)) AppColors.Danger else AppColors.TextSecondary
+            )
+        }
 
         updateMessage?.let {
 

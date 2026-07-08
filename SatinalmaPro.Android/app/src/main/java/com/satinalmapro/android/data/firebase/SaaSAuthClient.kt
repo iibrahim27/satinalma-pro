@@ -1,6 +1,6 @@
 package com.satinalmapro.android.data.firebase
 
-import com.satinalmapro.android.data.firebase.FirebaseConfig
+import com.satinalmapro.android.core.saas.TenantLicense
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -17,7 +17,8 @@ data class SaaSLoginResult(
     val tenantAd: String?,
     val eposta: String?,
     val kullaniciAdi: String?,
-    val expiresIn: Int
+    val expiresIn: Int,
+    val lisans: TenantLicense? = null
 )
 
 class SaaSAuthClient(private val config: FirebaseConfig) {
@@ -44,6 +45,17 @@ class SaaSAuthClient(private val config: FirebaseConfig) {
         }
 
         val result = JSONObject(text).getJSONObject("result")
+        val lisansJson = result.optJSONObject("lisans")
+        val lisans = lisansJson?.let {
+            TenantLicense(
+                tip = it.optString("tip", "deneme"),
+                baslangicUtc = it.optString("baslangicUtc").ifBlank { null },
+                bitisUtc = it.optString("bitisUtc").ifBlank { null },
+                aktif = it.optBoolean("aktif", true),
+                kalanGun = if (it.has("kalanGun") && !it.isNull("kalanGun")) it.optInt("kalanGun") else null,
+                suresiDoldu = it.optBoolean("suresiDoldu", false)
+            )
+        }
         SaaSLoginResult(
             idToken = result.getString("idToken"),
             refreshToken = result.getString("refreshToken"),
@@ -52,7 +64,8 @@ class SaaSAuthClient(private val config: FirebaseConfig) {
             tenantAd = result.optString("tenantAd").ifBlank { null },
             eposta = result.optString("eposta").ifBlank { null },
             kullaniciAdi = result.optString("kullaniciAdi").ifBlank { null },
-            expiresIn = result.optInt("expiresIn", 3600)
+            expiresIn = result.optInt("expiresIn", 3600),
+            lisans = lisans
         )
     }
 
@@ -78,6 +91,8 @@ class SaaSAuthClient(private val config: FirebaseConfig) {
                 "INVALID_LOGIN", "USER_NOT_FOUND" -> "Kullanıcı adı veya şifre hatalı."
                 "USER_INACTIVE" -> "Hesabınız pasif durumda."
                 "TENANT_INACTIVE" -> "Firma hesabı pasif durumda."
+                "LICENSE_EXPIRED" -> "Firma lisans süresi dolmuş. Giriş yapılamaz. Platform yöneticinize başvurun."
+                "PLATFORM_ADMIN_LOGIN" -> "Platform yöneticisi SatınalmaPro'ya firma olarak giriş yapamaz."
                 else -> err?.optString("message") ?: "Giriş başarısız."
             }
         }.getOrDefault("Giriş başarısız.")

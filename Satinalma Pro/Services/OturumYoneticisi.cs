@@ -95,7 +95,7 @@ public static class OturumYoneticisi
 
         var sonuc = await SaaSAuth.GirisYapAsync(kullaniciAdi, sifre, iptal);
         Auth.OturumuSaaSDenUygula(sonuc);
-        KiracıOturumu.Ayarla(sonuc.TenantId, sonuc.TenantAd);
+        KiracıOturumu.Ayarla(sonuc.TenantId, sonuc.TenantAd, sonuc.Lisans);
 
         if (!await ProfiliYukleAsync(iptal))
             throw new InvalidOperationException("Kullanıcı profili bulunamadı. Yöneticinize başvurun.");
@@ -113,15 +113,34 @@ public static class OturumYoneticisi
         {
             var paket = OturumPaketiniOku();
             if (!string.IsNullOrWhiteSpace(paket?.TenantId))
-                KiracıOturumu.Ayarla(paket.TenantId, paket.TenantAd);
+            {
+                var lisans = LisansiPaketten(paket);
+                if (lisans is { SuresiDoldu: true })
+                {
+                    OturumuTemizle();
+                    return false;
+                }
 
-            if (await ProfiliYukleAsync(iptal))
+                KiracıOturumu.Ayarla(paket!.TenantId, paket.TenantAd, lisans);
+            }
+
+            // Eski (SaaS öncesi) oturumlarda tenantId yoksa login ekranına düş.
+            if (string.IsNullOrWhiteSpace(KiracıOturumu.TenantId) &&
+                string.IsNullOrWhiteSpace(paket?.TenantId))
+            {
+                OturumuTemizle();
+            }
+            else if (await ProfiliYukleAsync(iptal) && KiracıOturumu.Aktif)
+            {
                 return true;
+            }
+            else
+            {
+                OturumuTemizle();
+            }
         }
 
-        Auth.OturumuKapat();
-        AktifKullanici = null;
-        KiracıOturumu.Temizle();
+        OturumuTemizle();
 
         var tercih = TercihleriOku();
         var kullaniciAdi = tercih.KullaniciAdi;
@@ -173,12 +192,28 @@ public static class OturumYoneticisi
         }
 
         if (!string.IsNullOrWhiteSpace(profil.TenantId))
-            KiracıOturumu.Ayarla(profil.TenantId);
+            KiracıOturumu.Ayarla(profil.TenantId, KiracıOturumu.TenantAd, KiracıOturumu.Lisans);
+
+        // Firma (kiracı) bilgisi olmayan profille devam edilemez — login gerekir.
+        if (!KiracıOturumu.Aktif)
+        {
+            AktifKullanici = null;
+            return false;
+        }
 
         ProfilOnbellegineKaydet(profil);
         AktifKullanici = profil;
         OturumDegisti?.Invoke();
         return true;
+    }
+
+    /// <summary>Bozuk/eksik oturumu temizler; uygulamayı kapatmaz.</summary>
+    public static void OturumuTemizle()
+    {
+        Auth?.OturumuKapat();
+        AktifKullanici = null;
+        KiracıOturumu.Temizle();
+        OturumDosyasiniSil();
     }
 
     private static bool KotaHatasiMi(Exception ex) =>
@@ -252,7 +287,16 @@ public static class OturumYoneticisi
         if (tercih.BeniHatirla && Auth is not null)
         {
             var paket = OturumPaketiniOku();
-            Auth.OturumuKaydet(OturumDosyasi, beniHatirla: true, paket?.TenantId, paket?.TenantAd, paket?.KullaniciAdi);
+            var lisans = KiracıOturumu.Lisans;
+            Auth.OturumuKaydet(
+                OturumDosyasi,
+                beniHatirla: true,
+                paket?.TenantId,
+                paket?.TenantAd,
+                paket?.KullaniciAdi,
+                lisans?.Tip,
+                lisans?.BitisUtc,
+                lisans?.KalanGun);
         }
         else
         {
@@ -266,9 +310,36 @@ public static class OturumYoneticisi
     private static void OturumDosyasiniGuncelle(bool beniHatirla, string tenantId, string kullaniciAdi)
     {
         if (beniHatirla)
-            Auth?.OturumuKaydet(OturumDosyasi, beniHatirla: true, tenantId, KiracıOturumu.TenantAd, kullaniciAdi);
+        {
+            var lisans = KiracıOturumu.Lisans;
+            Auth?.OturumuKaydet(
+                OturumDosyasi,
+                beniHatirla: true,
+                tenantId,
+                KiracıOturumu.TenantAd,
+                kullaniciAdi,
+                lisans?.Tip,
+                lisans?.BitisUtc,
+                lisans?.KalanGun);
+        }
         else
             OturumDosyasiniSil();
+    }
+
+    private static KiracıLisansi? LisansiPaketten(OturumPaketi? paket)
+    {
+        if (paket?.LisansBitisUtc is null && string.IsNullOrWhiteSpace(paket?.LisansTipi))
+            return null;
+
+        var lisans = new KiracıLisansi
+        {
+            Tip = string.IsNullOrWhiteSpace(paket.LisansTipi) ? LisansTipleri.Deneme : paket.LisansTipi!,
+            BitisUtc = paket.LisansBitisUtc,
+            KalanGun = paket.LisansKalanGun,
+            Aktif = true
+        };
+        lisans.KalanGunHesapla();
+        return lisans;
     }
 
     private static OturumPaketi? OturumPaketiniOku()
@@ -302,6 +373,9 @@ public static class OturumYoneticisi
         public string? TenantId { get; set; }
         public string? TenantAd { get; set; }
         public string? KullaniciAdi { get; set; }
+        public string? LisansTipi { get; set; }
+        public DateTime? LisansBitisUtc { get; set; }
+        public int? LisansKalanGun { get; set; }
         public bool BeniHatirla { get; set; }
     }
 }

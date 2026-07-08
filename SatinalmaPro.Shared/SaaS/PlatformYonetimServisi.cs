@@ -33,6 +33,17 @@ public sealed class PlatformYonetimServisi
   public async Task BootstrapAdminAsync(CancellationToken iptal = default) =>
     await CagirAsync("platformBootstrapAdmin", new { }, iptal);
 
+  /// <summary>Platform sahibini tüm firmaların kullanıcı listelerinden ayırır.</summary>
+  public async Task<(int RemovedUsers, int RemovedUsernames)> PlatformHesabiniFirmalardanAyirAsync(
+    CancellationToken iptal = default)
+  {
+    var sonuc = await CagirAsync("platformDetachSelf", new { }, iptal);
+    return (
+      sonuc.TryGetProperty("removedUsers", out var u) ? u.GetInt32() : 0,
+      sonuc.TryGetProperty("removedUsernames", out var n) ? n.GetInt32() : 0
+    );
+  }
+
   public async Task<(int Imported, int Skipped, int Total)> LegacyKullanicilariAktarAsync(
     string tenantId,
     CancellationToken iptal = default)
@@ -51,14 +62,21 @@ public sealed class PlatformYonetimServisi
     return JsonSerializer.Deserialize<List<KiracıKaydi>>(sonuc.GetRawText(), Json) ?? [];
   }
 
-  public async Task<KiracıKaydi> FirmaKaydetAsync(KiracıKaydi firma, CancellationToken iptal = default)
+  public async Task<KiracıKaydi> FirmaKaydetAsync(
+    KiracıKaydi firma,
+    bool lisansYenile = false,
+    CancellationToken iptal = default)
   {
     var sonuc = await CagirAsync("platformSaveTenant", new
     {
       id = firma.Id,
       kod = firma.Kod,
       ad = firma.Ad,
-      aktif = firma.Aktif
+      aktif = firma.Aktif,
+      lisansTipi = firma.LisansTipi,
+      lisansBaslangic = firma.LisansBaslangic,
+      lisansBitis = firma.LisansBitis,
+      lisansYenile
     }, iptal);
     return JsonSerializer.Deserialize<KiracıKaydi>(sonuc.GetRawText(), Json)
            ?? throw new InvalidOperationException("Firma kaydı okunamadı.");
@@ -162,6 +180,22 @@ public sealed class KiracıKaydi
   public string Kod { get; set; } = "";
   public string Ad { get; set; } = "";
   public bool Aktif { get; set; } = true;
+  public string LisansTipi { get; set; } = LisansTipleri.Deneme;
+  public string? LisansBaslangic { get; set; }
+  public string? LisansBitis { get; set; }
+  public int? LisansKalanGun { get; set; }
+  public bool LisansSuresiDoldu { get; set; }
+
+  public string LisansOzeti
+  {
+    get
+    {
+      if (LisansSuresiDoldu || (LisansKalanGun is <= 0))
+        return "Süresi doldu";
+      var tip = LisansTipleri.GorunenAd(LisansTipi);
+      return LisansKalanGun is null ? tip : $"{tip} · {LisansKalanGun} gün";
+    }
+  }
 }
 
 public sealed class PlatformKullaniciKaydi

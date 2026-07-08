@@ -62,6 +62,12 @@ class FirebaseAuthClient(private val config: FirebaseConfig) {
         .put("uid", uid)
         .put("email", email)
         .put("rememberMe", rememberMe)
+        .put("lisansTip", TenantSession.license()?.tip)
+        .put("lisansBitisUtc", TenantSession.license()?.bitisUtc)
+        .apply {
+            val kalan = TenantSession.license()?.kalanGun
+            if (kalan != null) put("lisansKalanGun", kalan)
+        }
         .toString()
 
     fun clear() {

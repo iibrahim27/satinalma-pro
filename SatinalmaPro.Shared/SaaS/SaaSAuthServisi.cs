@@ -60,7 +60,29 @@ public sealed class SaaSAuthServisi
       TenantAd = sonuc.TryGetProperty("tenantAd", out var ta) ? ta.GetString() : null,
       Eposta = sonuc.TryGetProperty("eposta", out var ep) ? ep.GetString() : null,
       KullaniciAdi = sonuc.TryGetProperty("kullaniciAdi", out var ka) ? ka.GetString() : null,
-      ExpiresIn = sonuc.TryGetProperty("expiresIn", out var ex) ? ex.GetInt32() : 3600
+      ExpiresIn = sonuc.TryGetProperty("expiresIn", out var ex) ? ex.GetInt32() : 3600,
+      Lisans = LisansOku(sonuc)
+    };
+  }
+
+  private static KiracıLisansi? LisansOku(JsonElement sonuc)
+  {
+    if (!sonuc.TryGetProperty("lisans", out var l) || l.ValueKind != JsonValueKind.Object)
+      return null;
+
+    DateTime? ParseUtc(string? s) =>
+      DateTime.TryParse(s, null, System.Globalization.DateTimeStyles.RoundtripKind, out var d)
+        ? d.ToUniversalTime()
+        : null;
+
+    return new KiracıLisansi
+    {
+      Tip = l.TryGetProperty("tip", out var tip) ? tip.GetString() ?? LisansTipleri.Deneme : LisansTipleri.Deneme,
+      BaslangicUtc = ParseUtc(l.TryGetProperty("baslangicUtc", out var b) ? b.GetString() : null),
+      BitisUtc = ParseUtc(l.TryGetProperty("bitisUtc", out var bi) ? bi.GetString() : null),
+      Aktif = !l.TryGetProperty("aktif", out var a) || a.ValueKind != JsonValueKind.False,
+      KalanGun = l.TryGetProperty("kalanGun", out var k) && k.ValueKind == JsonValueKind.Number ? k.GetInt32() : null,
+      SuresiDoldu = l.TryGetProperty("suresiDoldu", out var s) && s.ValueKind == JsonValueKind.True
     };
   }
 
@@ -112,6 +134,9 @@ public sealed class SaaSAuthServisi
     "USER_INACTIVE" => "Hesabınız pasif durumda.",
     "USER_NOT_FOUND" => "Kullanıcı adı veya şifre hatalı.",
     "TENANT_INACTIVE" => "Firma hesabı pasif durumda.",
+    "LICENSE_EXPIRED" => "Firma lisans süresi dolmuş. Giriş yapılamaz. Platform yöneticinize başvurun.",
+    "PLATFORM_ADMIN_LOGIN" => "Platform yöneticisi SatınalmaPro'ya firma olarak giriş yapamaz. Satınalma Yönetici uygulamasını kullanın.",
+    "AUTH_CONFIG_MISSING" => "Sunucu giriş ayarı eksik (WEB_API_KEY). Yöneticiye bildirin.",
     _ when mesaj.Contains("NOT_FOUND", StringComparison.OrdinalIgnoreCase) => "Kullanıcı adı veya şifre hatalı.",
     _ => mesaj
   };

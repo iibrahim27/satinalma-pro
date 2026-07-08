@@ -119,7 +119,15 @@ public sealed class FirebaseAuthServisi
         return _idToken!;
     }
 
-    public void OturumuKaydet(string dosyaYolu, bool beniHatirla = true, string? tenantId = null, string? tenantAd = null, string? kullaniciAdi = null)
+    public void OturumuKaydet(
+        string dosyaYolu,
+        bool beniHatirla = true,
+        string? tenantId = null,
+        string? tenantAd = null,
+        string? kullaniciAdi = null,
+        string? lisansTipi = null,
+        DateTime? lisansBitisUtc = null,
+        int? lisansKalanGun = null)
     {
         if (string.IsNullOrEmpty(_refreshToken))
             return;
@@ -132,6 +140,9 @@ public sealed class FirebaseAuthServisi
             TenantId = tenantId,
             TenantAd = tenantAd,
             KullaniciAdi = kullaniciAdi,
+            LisansTipi = lisansTipi,
+            LisansBitisUtc = lisansBitisUtc,
+            LisansKalanGun = lisansKalanGun,
             BeniHatirla = beniHatirla
         };
         File.WriteAllText(dosyaYolu, JsonSerializer.Serialize(paket, Json));
@@ -267,6 +278,9 @@ public sealed class FirebaseAuthServisi
         public string? TenantId { get; set; }
         public string? TenantAd { get; set; }
         public string? KullaniciAdi { get; set; }
+        public string? LisansTipi { get; set; }
+        public DateTime? LisansBitisUtc { get; set; }
+        public int? LisansKalanGun { get; set; }
         public bool BeniHatirla { get; set; }
     }
 }

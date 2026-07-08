@@ -21,6 +21,7 @@ import com.satinalmapro.android.core.model.CimentoKaydi
 import com.satinalmapro.android.core.model.TalepItem
 import com.satinalmapro.android.core.model.TalepQueue
 import com.satinalmapro.android.core.model.UpdateManifest
+import com.satinalmapro.android.core.saas.TenantLicense
 import com.satinalmapro.android.core.saas.TenantSession
 import com.satinalmapro.android.data.firebase.SaaSAuthClient
 import com.satinalmapro.android.core.NetworkMonitor
@@ -152,7 +153,22 @@ class AppContainer(private val context: Context) {
         return try {
             val obj = JSONObject(json)
             val uid = obj.optString("uid")
-            prefs.getString("saved_tenant_id", null)?.takeIf { it.isNotBlank() }?.let { TenantSession.set(it) }
+            prefs.getString("saved_tenant_id", null)?.takeIf { it.isNotBlank() }?.let { tenantId ->
+                val lisans = if (obj.has("lisansBitisUtc") || obj.has("lisansTip")) {
+                    TenantLicense(
+                        tip = obj.optString("lisansTip", "deneme"),
+                        bitisUtc = obj.optString("lisansBitisUtc").ifBlank { null },
+                        kalanGun = if (obj.has("lisansKalanGun")) obj.optInt("lisansKalanGun") else null,
+                        suresiDoldu = obj.optInt("lisansKalanGun", 1) <= 0
+                    )
+                } else null
+                if (lisans?.suresiDoldu == true) {
+                    auth.clear()
+                    TenantSession.clear()
+                    return false
+                }
+                TenantSession.set(tenantId, license = lisans)
+            }
             loadProfileCache(uid)?.takeIf { it.active }?.let { _user.value = it }
             auth.restoreSession(
                 obj.getString("refreshToken"),
@@ -229,7 +245,7 @@ class AppContainer(private val context: Context) {
             val saas = SaaSAuthClient(config)
             val result = saas.loginWithUsername(username, password)
             auth.applySaaSLogin(result)
-            TenantSession.set(result.tenantId, result.tenantAd)
+            TenantSession.set(result.tenantId, result.tenantAd, result.lisans)
             val email = result.eposta ?: ""
             runCatching { FirebaseAuthBridge.signIn(email, password) }
                 .onFailure { ex -> BildirimLog.w("FCM_TOPIC", "Firebase Auth SDK senkronu atlandı: ${ex.message}") }

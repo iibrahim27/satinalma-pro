@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import {
+  isReservedUsername,
   isValidUsername,
   normalizeUsername,
   signInWithEmailPassword,
@@ -11,6 +12,119 @@ import {
 
 const db = () => admin.firestore();
 
+type LisansTip = "deneme" | "yillik";
+
+type TenantDoc = {
+  id: string;
+  kod?: string;
+  ad?: string;
+  aktif?: boolean;
+  lisansTipi?: string;
+  lisansBaslangic?: admin.firestore.Timestamp | string | Date | null;
+  lisansBitis?: admin.firestore.Timestamp | string | Date | null;
+};
+
+function toDate(value: unknown): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === "string") {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof value === "object" && value !== null && "toDate" in value) {
+    try {
+      return (value as admin.firestore.Timestamp).toDate();
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function addDays(base: Date, days: number): Date {
+  const d = new Date(base.getTime());
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+}
+
+function calcKalanGun(bitis: Date | null): number | null {
+  if (!bitis) return null;
+  const ms = bitis.getTime() - Date.now();
+  return Math.ceil(ms / 86400000);
+}
+
+function lisansOzeti(tenant: TenantDoc) {
+  const tip = (tenant.lisansTipi === "yillik" ? "yillik" : "deneme") as LisansTip;
+  const baslangic = toDate(tenant.lisansBaslangic);
+  const bitis = toDate(tenant.lisansBitis);
+  const kalanGun = calcKalanGun(bitis);
+  // Bitiş tarihi yoksa henüz lisans tanımlanmamış sayılır (expire etme).
+  const suresiDoldu = bitis !== null && kalanGun !== null && kalanGun <= 0;
+  return {
+    tip,
+    baslangicUtc: baslangic?.toISOString() ?? null,
+    bitisUtc: bitis?.toISOString() ?? null,
+    aktif: tenant.aktif !== false && !suresiDoldu,
+    kalanGun,
+    suresiDoldu,
+  };
+}
+
+async function ensureTenantLicense(tenantId: string, tenant: TenantDoc): Promise<TenantDoc> {
+  if (toDate(tenant.lisansBitis)) {
+    return expireTenantIfNeeded(tenantId, tenant);
+  }
+
+  const { baslangic, bitis } = defaultTrialDates();
+  await db().collection("tenants").doc(tenantId).set(
+    {
+      lisansTipi: tenant.lisansTipi === "yillik" ? "yillik" : "deneme",
+      lisansBaslangic: admin.firestore.Timestamp.fromDate(baslangic),
+      lisansBitis: admin.firestore.Timestamp.fromDate(bitis),
+      lisansSuresiDoldu: false,
+      guncelleme: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  return {
+    ...tenant,
+    lisansTipi: tenant.lisansTipi === "yillik" ? "yillik" : "deneme",
+    lisansBaslangic: baslangic,
+    lisansBitis: bitis,
+  };
+}
+
+
+async function expireTenantIfNeeded(tenantId: string, tenant: TenantDoc): Promise<TenantDoc> {
+  const ozet = lisansOzeti(tenant);
+  if (!ozet.suresiDoldu || tenant.aktif === false) return tenant;
+
+  await db().collection("tenants").doc(tenantId).set(
+    {
+      aktif: false,
+      lisansSuresiDoldu: true,
+      guncelleme: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  const users = await db().collection(tenantUsersPath(tenantId)).where("aktif", "==", true).get();
+  const batch = db().batch();
+  for (const doc of users.docs) {
+    batch.set(doc.ref, { aktif: false, lisansPasifeAlindi: true }, { merge: true });
+  }
+  if (!users.empty) await batch.commit();
+
+  return { ...tenant, aktif: false };
+}
+
+function defaultTrialDates() {
+  const baslangic = new Date();
+  const bitis = addDays(baslangic, 30);
+  return { baslangic, bitis };
+}
+
 async function assertPlatformAdmin(uid: string): Promise<void> {
   const doc = await db().collection("platform_admins").doc(uid).get();
   if (!doc.exists || doc.data()?.aktif === false) {
@@ -18,15 +132,89 @@ async function assertPlatformAdmin(uid: string): Promise<void> {
   }
 }
 
-async function readTenant(tenantId: string) {
+async function isPlatformAdminUid(uid: string): Promise<boolean> {
+  if (!uid) return false;
+  const doc = await db().collection("platform_admins").doc(uid).get();
+  return doc.exists && doc.data()?.aktif !== false;
+}
+
+async function platformAdminEpostalSet(): Promise<Set<string>> {
+  const snap = await db().collection("platform_admins").where("aktif", "==", true).get();
+  const set = new Set<string>();
+  for (const d of snap.docs) {
+    const ep = String(d.data().eposta ?? "").trim().toLowerCase();
+    if (ep) set.add(ep);
+  }
+  return set;
+}
+
+/** Platform sahibini tüm firmalardan ve usernames kaydından ayırır. */
+async function detachPlatformAdminFromTenants(uid: string, eposta?: string): Promise<{ removedUsers: number; removedUsernames: number }> {
+  let removedUsers = 0;
+  let removedUsernames = 0;
+  const email = (eposta ?? "").trim().toLowerCase();
+
+  const tenants = await db().collection("tenants").get();
+  for (const t of tenants.docs) {
+    const userRef = db().doc(tenantUserPath(t.id, uid));
+    const userSnap = await userRef.get();
+    if (userSnap.exists) {
+      await userRef.delete();
+      removedUsers++;
+    }
+  }
+
+  const unameSnap = await db().collection("usernames").where("uid", "==", uid).get();
+  for (const d of unameSnap.docs) {
+    await d.ref.delete();
+    removedUsernames++;
+  }
+
+  if (email) {
+    const byEmail = await db().collection("usernames").where("eposta", "==", email).get();
+    for (const d of byEmail.docs) {
+      if (d.data()?.uid === uid || !d.data()?.uid) {
+        await d.ref.delete();
+        removedUsernames++;
+      }
+    }
+  }
+
+  // Platform hesabının tenant claim'i olmamalı
+  try {
+    const user = await admin.auth().getUser(uid);
+    const claims = { ...(user.customClaims ?? {}) };
+    if ("tenantId" in claims) {
+      delete claims.tenantId;
+      await admin.auth().setCustomUserClaims(uid, claims);
+    }
+  } catch {
+    // yoksay
+  }
+
+  return { removedUsers, removedUsernames };
+}
+
+async function readTenant(tenantId: string): Promise<TenantDoc> {
   const doc = await db().collection("tenants").doc(tenantId).get();
   if (!doc.exists) throw new HttpsError("not-found", "Firma bulunamadı.");
-  return { id: doc.id, ...doc.data() } as {
-    id: string;
-    kod?: string;
-    ad?: string;
-    aktif?: boolean;
-  };
+  return { id: doc.id, ...doc.data() } as TenantDoc;
+}
+
+function parseLisansaInput(data: Record<string, unknown> | undefined, existing?: TenantDoc) {
+  const tipRaw = ((data?.lisansTipi as string) ?? existing?.lisansTipi ?? "deneme").trim().toLowerCase();
+  const tip: LisansTip = tipRaw === "yillik" ? "yillik" : "deneme";
+
+  let baslangic = toDate(data?.lisansBaslangic) ?? toDate(existing?.lisansBaslangic);
+  let bitis = toDate(data?.lisansBitis) ?? toDate(existing?.lisansBitis);
+
+  const yenile = data?.lisansYenile === true;
+  if (yenile || !baslangic || !bitis) {
+    baslangic = new Date();
+    bitis = tip === "yillik" ? addDays(baslangic, 365) : addDays(baslangic, 30);
+  }
+
+  return { tip, baslangic, bitis };
 }
 
 async function lookupUsername(username: string) {
@@ -49,9 +237,17 @@ export const loginWithUsername = onCall(async (request) => {
     throw new HttpsError("not-found", "USER_NOT_FOUND");
   }
 
-  const tenant = await readTenant(lookup.tenantId);
-  if (tenant.aktif === false) {
-    throw new HttpsError("failed-precondition", "TENANT_INACTIVE");
+  // Platform sahibi SatınalmaPro / Android ile firma girişi yapamaz.
+  if (await isPlatformAdminUid(lookup.uid)) {
+    throw new HttpsError("failed-precondition", "PLATFORM_ADMIN_LOGIN");
+  }
+
+  let tenant = await readTenant(lookup.tenantId);
+  tenant = await ensureTenantLicense(lookup.tenantId, tenant);
+  const lisans = lisansOzeti(tenant);
+
+  if (lisans.suresiDoldu || tenant.aktif === false) {
+    throw new HttpsError("failed-precondition", "LICENSE_EXPIRED");
   }
 
   const userSnap = await db().doc(tenantUserPath(lookup.tenantId, lookup.uid)).get();
@@ -66,7 +262,20 @@ export const loginWithUsername = onCall(async (request) => {
   let authResult;
   try {
     authResult = await signInWithEmailPassword(webApiKey(), lookup.eposta, password);
-  } catch {
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "";
+    if (msg.includes("WEB_API_KEY") || msg.includes("AUTH_CONFIG")) {
+      console.error("loginWithUsername config error:", msg);
+      throw new HttpsError("failed-precondition", "AUTH_CONFIG_MISSING");
+    }
+    if (
+      msg.includes("EMAIL_NOT_FOUND") ||
+      msg.includes("INVALID_PASSWORD") ||
+      msg.includes("INVALID_LOGIN_CREDENTIALS")
+    ) {
+      throw new HttpsError("unauthenticated", "INVALID_LOGIN");
+    }
+    console.error("loginWithUsername auth error:", msg);
     throw new HttpsError("unauthenticated", "INVALID_LOGIN");
   }
 
@@ -83,6 +292,7 @@ export const loginWithUsername = onCall(async (request) => {
     tenantAd: tenant.ad ?? "",
     eposta: lookup.eposta,
     kullaniciAdi: normalizeUsername(username),
+    lisans,
   };
 });
 
@@ -117,12 +327,24 @@ export const platformListTenants = onCall(async (request) => {
   await assertPlatformAdmin(request.auth.uid);
 
   const snap = await db().collection("tenants").orderBy("ad").get();
-  return snap.docs.map((d) => ({
-    id: d.id,
-    kod: d.data().kod ?? "",
-    ad: d.data().ad ?? "",
-    aktif: d.data().aktif !== false,
-  }));
+  const out = [];
+  for (const d of snap.docs) {
+    let tenant = { id: d.id, ...d.data() } as TenantDoc;
+    tenant = await ensureTenantLicense(d.id, tenant);
+    const lisans = lisansOzeti(tenant);
+    out.push({
+      id: d.id,
+      kod: tenant.kod ?? "",
+      ad: tenant.ad ?? "",
+      aktif: tenant.aktif !== false && !lisans.suresiDoldu,
+      lisansTipi: lisans.tip,
+      lisansBaslangic: lisans.baslangicUtc,
+      lisansBitis: lisans.bitisUtc,
+      lisansKalanGun: lisans.kalanGun,
+      lisansSuresiDoldu: lisans.suresiDoldu,
+    });
+  }
+  return out;
 });
 
 export const platformSaveTenant = onCall(async (request) => {
@@ -132,7 +354,7 @@ export const platformSaveTenant = onCall(async (request) => {
   const id = ((request.data?.id as string) ?? "").trim();
   const kod = ((request.data?.kod as string) ?? "").trim();
   const ad = ((request.data?.ad as string) ?? "").trim();
-  const aktif = request.data?.aktif !== false;
+  const data = (request.data ?? {}) as Record<string, unknown>;
 
   if (!kod || !ad) {
     throw new HttpsError("invalid-argument", "Firma kodu ve adı zorunludur.");
@@ -141,6 +363,11 @@ export const platformSaveTenant = onCall(async (request) => {
   const tenantRef = id
     ? db().collection("tenants").doc(id)
     : db().collection("tenants").doc();
+
+  const existingSnap = await tenantRef.get();
+  const existing = existingSnap.exists
+    ? ({ id: tenantRef.id, ...existingSnap.data() } as TenantDoc)
+    : undefined;
 
   const kodSnap = await db()
     .collection("tenants")
@@ -151,18 +378,63 @@ export const platformSaveTenant = onCall(async (request) => {
     throw new HttpsError("already-exists", "Bu firma kodu zaten kayıtlı.");
   }
 
+  const lisans = parseLisansaInput(data, existing);
+  const lisansYenile = data.lisansYenile === true;
+  const lisansOzetiHesap = lisansOzeti({
+    id: tenantRef.id,
+    lisansTipi: lisans.tip,
+    lisansBaslangic: lisans.baslangic,
+    lisansBitis: lisans.bitis,
+    aktif: true,
+  });
+
+  // Süre dolmuşsa aktifi zorla kapat; yenilemede yeniden aç.
+  const aktif =
+    data.aktif === false
+      ? false
+      : (!lisansOzetiHesap.suresiDoldu && (lisansYenile || data.aktif !== false));
+
   await tenantRef.set(
     {
       kod,
       ad,
       aktif,
+      lisansTipi: lisans.tip,
+      lisansBaslangic: admin.firestore.Timestamp.fromDate(lisans.baslangic),
+      lisansBitis: admin.firestore.Timestamp.fromDate(lisans.bitis),
+      lisansSuresiDoldu: lisansOzetiHesap.suresiDoldu,
       guncelleme: admin.firestore.FieldValue.serverTimestamp(),
       ...(id ? {} : { olusturma: admin.firestore.FieldValue.serverTimestamp() }),
     },
     { merge: true }
   );
 
-  return { id: tenantRef.id, kod, ad, aktif };
+  // Lisans yenilendiğinde süre dolumuyla pasife alınan kullanıcıları geri aç.
+  if (lisansYenile && aktif && !lisansOzetiHesap.suresiDoldu) {
+    const pasifler = await db()
+      .collection(tenantUsersPath(tenantRef.id))
+      .where("lisansPasifeAlindi", "==", true)
+      .get();
+    if (!pasifler.empty) {
+      const batch = db().batch();
+      for (const doc of pasifler.docs) {
+        batch.set(doc.ref, { aktif: true, lisansPasifeAlindi: false }, { merge: true });
+      }
+      await batch.commit();
+    }
+  }
+
+  return {
+    id: tenantRef.id,
+    kod,
+    ad,
+    aktif,
+    lisansTipi: lisans.tip,
+    lisansBaslangic: lisans.baslangic.toISOString(),
+    lisansBitis: lisans.bitis.toISOString(),
+    lisansKalanGun: lisansOzetiHesap.kalanGun,
+    lisansSuresiDoldu: lisansOzetiHesap.suresiDoldu,
+  };
 });
 
 export const platformListTenantUsers = onCall(async (request) => {
@@ -202,8 +474,32 @@ export const platformSaveTenantUser = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Zorunlu alanlar eksik.");
   }
 
+  if (isReservedUsername(kullaniciAdi)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Bu kullanıcı adı platform için rezervedir. Firmaya atanamaz (ör. platform, yonetici)."
+    );
+  }
+
   await readTenant(tenantId);
   const normalized = normalizeUsername(kullaniciAdi);
+  const emailLower = eposta.toLowerCase();
+
+  // Platform sahibi hesabı firmaya kullanıcı olarak eklenemez.
+  if (uid && (await isPlatformAdminUid(uid))) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Platform yöneticisi hiçbir firmaya bağlanamaz. Ayrı bir firma kullanıcısı oluşturun."
+    );
+  }
+
+  const adminEmails = await platformAdminEpostalSet();
+  if (adminEmails.has(emailLower)) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Platform yöneticisi e-postası firmaya atanamaz. Firma için ayrı e-posta kullanın."
+    );
+  }
 
   const unameRef = db().collection("usernames").doc(normalized);
   const existingUname = await unameRef.get();
@@ -257,7 +553,17 @@ export const platformBootstrapAdmin = onCall(async (request) => {
 
   const mevcut = await db().collection("platform_admins").doc(request.auth.uid).get();
   if (mevcut.exists && mevcut.data()?.aktif !== false) {
-    return { ok: true, uid: request.auth.uid, already: true };
+    const epostaMevcut =
+      (request.auth.token.email as string | undefined) ??
+      String(mevcut.data()?.eposta ?? "");
+    const detachMevcut = await detachPlatformAdminFromTenants(request.auth.uid, epostaMevcut);
+    return {
+      ok: true,
+      uid: request.auth.uid,
+      already: true,
+      removedUsers: detachMevcut.removedUsers,
+      removedUsernames: detachMevcut.removedUsernames,
+    };
   }
 
   const snap = await db().collection("platform_admins").where("aktif", "==", true).limit(1).get();
@@ -279,7 +585,26 @@ export const platformBootstrapAdmin = onCall(async (request) => {
     olusturma: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  return { ok: true, uid: request.auth.uid, already: false };
+  // Platform sahibi hiçbir firmaya bağlı olmamalı — varsa ayır.
+  const detach = await detachPlatformAdminFromTenants(request.auth.uid, eposta);
+
+  return {
+    ok: true,
+    uid: request.auth.uid,
+    already: false,
+    removedUsers: detach.removedUsers,
+    removedUsernames: detach.removedUsernames,
+  };
+});
+
+/** Platform sahibini tüm firma kullanıcı listelerinden ayırır (temizlik). */
+export const platformDetachSelf = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Giriş gerekli");
+  await assertPlatformAdmin(request.auth.uid);
+
+  const eposta = (request.auth.token.email as string | undefined) ?? "";
+  const detach = await detachPlatformAdminFromTenants(request.auth.uid, eposta);
+  return { ok: true, ...detach };
 });
 
 /** Eski kök /users koleksiyonundaki aktif kullanıcıları seçili firmaya taşır. */
@@ -297,6 +622,11 @@ export const platformImportLegacyUsers = onCall(async (request) => {
   let skipped = 0;
   const oleyler: string[] = [];
 
+  const adminEmails = await platformAdminEpostalSet();
+  const platformUids = new Set(
+    (await db().collection("platform_admins").where("aktif", "==", true).get()).docs.map((d) => d.id)
+  );
+
   for (const doc of snap.docs) {
     const data = doc.data();
     if (data.aktif === false) {
@@ -304,7 +634,20 @@ export const platformImportLegacyUsers = onCall(async (request) => {
       continue;
     }
 
+    // Platform sahibi firmaya taşınmaz.
+    if (platformUids.has(doc.id)) {
+      skipped++;
+      oleyler.push(`${doc.id}: platform yöneticisi — firma aktarımı atlandı`);
+      continue;
+    }
+
     const eposta = String(data.eposta ?? data.email ?? "").trim().toLowerCase();
+    if (eposta && adminEmails.has(eposta)) {
+      skipped++;
+      oleyler.push(`${eposta}: platform e-postası — firma aktarımı atlandı`);
+      continue;
+    }
+
     const adSoyad = String(data.adSoyad ?? data.displayName ?? eposta).trim();
     const rol = String(data.rol ?? "Saha").trim() || "Saha";
     const saha = String(data.saha ?? "").trim();
@@ -318,6 +661,9 @@ export const platformImportLegacyUsers = onCall(async (request) => {
     }
 
     let normalized = normalizeUsername(usernameRaw);
+    if (isReservedUsername(normalized)) {
+      normalized = normalizeUsername(`firma_${normalized}`);
+    }
     if (!isValidUsername(normalized)) {
       normalized = normalizeUsername(`u_${doc.id.slice(0, 10)}`);
     }

@@ -257,92 +257,120 @@ public partial class App : Application
 
 
     private async Task BaslatAsync(AcilisEkrani splash, bool tepsideBaslat, bool atlaYuklemeAnimasyonu = false)
-
     {
-
         try
-
         {
-
             if (!atlaYuklemeAnimasyonu && await splash.YukleVeBekleAsync())
             {
                 Shutdown();
                 return;
             }
 
-            if (!await splash.OturumAcAsync())
-
+            // Eksik kiracı / bozuk oturumda uygulamayı kapatmak yerine login'e düş.
+            for (var deneme = 0; deneme < 2; deneme++)
             {
+                if (!await splash.OturumAcAsync())
+                {
+                    splash.Kapat();
+                    Shutdown();
+                    return;
+                }
 
-                splash.Kapat();
-
-                Shutdown();
-
-                return;
-
+                try
+                {
+                    await OturumSonrasiHazirlikAsync(splash);
+                    break;
+                }
+                catch (Exception hazirlikEx) when (KiraciOturumuHatasiMi(hazirlikEx) && deneme == 0)
+                {
+                    OturumYoneticisi.OturumuTemizle();
+                    MessageBox.Show(
+                        "Oturum bilgisi eksik veya süresi dolmuş.\nLütfen tekrar giriş yapın.",
+                        UygulamaBilgisi.Ad,
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    // Döngü login ekranını yeniden açacak
+                }
             }
 
-
-
-            await OturumSonrasiHazirlikAsync(splash);
-
-
+            if (!OturumYoneticisi.GirisYapildi || !SatinalmaPro.Shared.SaaS.KiracıOturumu.Aktif)
+            {
+                splash.Kapat();
+                Shutdown();
+                return;
+            }
 
             var main = new MainWindow();
-
             MainWindow = main;
-
             PencereOneGetirDinleyicisi.Bagla(main);
-
             MasaustuTepsiYoneticisi.Bagla(main);
 
-
-
             if (tepsideBaslat)
-
                 MasaustuTepsiYoneticisi.TepsiyeGizle(bildirimGoster: false);
-
             else
-
                 main.Show();
 
-
-
             splash.Kapat();
-
         }
-
         catch (Exception ex)
-
         {
+            if (KiraciOturumuHatasiMi(ex))
+            {
+                OturumYoneticisi.OturumuTemizle();
+                MessageBox.Show(
+                    "Oturum bilgisi eksik veya süresi dolmuş.\nLütfen tekrar giriş yapın.",
+                    UygulamaBilgisi.Ad,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
 
-            MessageBox.Show(
-
-                $"Uygulama başlatılamadı:\n{ex.Message}",
-
-                UygulamaBilgisi.Ad,
-
-                MessageBoxButton.OK,
-
-                MessageBoxImage.Error);
+                try
+                {
+                    if (await splash.OturumAcAsync())
+                    {
+                        await OturumSonrasiHazirlikAsync(splash);
+                        var main = new MainWindow();
+                        MainWindow = main;
+                        PencereOneGetirDinleyicisi.Bagla(main);
+                        MasaustuTepsiYoneticisi.Bagla(main);
+                        if (tepsideBaslat)
+                            MasaustuTepsiYoneticisi.TepsiyeGizle(bildirimGoster: false);
+                        else
+                            main.Show();
+                        splash.Kapat();
+                        return;
+                    }
+                }
+                catch
+                {
+                    // aşağıdaki Shutdown'a düş
+                }
+            }
+            else
+            {
+                MessageBox.Show(
+                    $"Uygulama başlatılamadı:\n{ex.Message}",
+                    UygulamaBilgisi.Ad,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
 
             splash.Kapat();
-
             Shutdown();
-
         }
-
     }
+
+    private static bool KiraciOturumuHatasiMi(Exception ex) =>
+        ex.Message.Contains("Kiracı oturumu", StringComparison.OrdinalIgnoreCase)
+        || ex.Message.Contains("tenant", StringComparison.OrdinalIgnoreCase);
 
 
 
     private static async Task OturumSonrasiHazirlikAsync(AcilisEkrani? splash = null)
-
     {
-
         if (OturumYoneticisi.GirisYapildi)
-
         {
+            if (!SatinalmaPro.Shared.SaaS.KiracıOturumu.Aktif)
+                throw new InvalidOperationException("Kiracı oturumu bulunamadı. Tekrar giriş yapın.");
 
             splash?.SenkronBaslat();
 
