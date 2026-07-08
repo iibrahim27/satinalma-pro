@@ -278,6 +278,12 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         _loginMessage.value = null
     }
 
+    fun rememberedLoginEmail(): String = container.rememberedLoginEmail()
+
+    val isServerConfigured: Boolean get() = container.config.isConfigured
+
+    fun clearRememberedLogin() = container.clearRememberedLogin()
+
     fun forgotPassword(email: String) {
         viewModelScope.launch {
             _loginError.value = null

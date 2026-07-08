@@ -28,8 +28,8 @@ object RoleColors {
             KullaniciRolleri.SATINALMA -> RoleVisual(
                 "Satınalma",
                 "Operasyon ve tedarik merkezi",
-                Color(0xFF2563EB),
-                Color(0xFFEFF6FF)
+                Color(0xFF0F2A5A),
+                Color(0xFFE8EEF7)
             )
             KullaniciRolleri.SEF -> RoleVisual(
                 "Şef",

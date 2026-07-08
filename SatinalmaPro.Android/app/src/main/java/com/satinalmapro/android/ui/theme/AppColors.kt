@@ -5,12 +5,15 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
+/** Kurumsal lacivert (#0F2A5A) tabanlı MD3 renk paleti */
 data class AppColorPalette(
     val Primary: Color,
+    val PrimaryDark: Color,
     val Secondary: Color,
     val PrimaryContainer: Color,
     val Background: Color,
     val Surface: Color,
+    val SurfaceElevated: Color,
     val Border: Color,
     val Success: Color,
     val SuccessContainer: Color,
@@ -22,6 +25,7 @@ data class AppColorPalette(
     val InfoContainer: Color,
     val TextPrimary: Color,
     val TextSecondary: Color,
+    val TextOnPrimary: Color,
     val IconBlue: Color,
     val IconGreen: Color,
     val IconOrange: Color,
@@ -30,46 +34,52 @@ data class AppColorPalette(
 )
 
 val LightAppColors = AppColorPalette(
-    Primary = Color(0xFF2563EB),
-    Secondary = Color(0xFF4F46E5),
-    PrimaryContainer = Color(0xFFEFF6FF),
-    Background = Color(0xFFF7F9FC),
+    Primary = Color(0xFF0F2A5A),
+    PrimaryDark = Color(0xFF0A1F42),
+    Secondary = Color(0xFF1E4A8C),
+    PrimaryContainer = Color(0xFFE8EEF7),
+    Background = Color(0xFFF4F6FA),
     Surface = Color(0xFFFFFFFF),
-    Border = Color(0xFFE2E8F0),
-    Success = Color(0xFF22C55E),
+    SurfaceElevated = Color(0xFFFFFFFF),
+    Border = Color(0xFFE8ECF2),
+    Success = Color(0xFF16A34A),
     SuccessContainer = Color(0xFFDCFCE7),
     Warning = Color(0xFFF59E0B),
     WarningContainer = Color(0xFFFEF3C7),
-    Danger = Color(0xFFEF4444),
+    Danger = Color(0xFFDC2626),
     DangerContainer = Color(0xFFFEE2E2),
-    Info = Color(0xFF0EA5E9),
-    InfoContainer = Color(0xFFE0F2FE),
+    Info = Color(0xFF2563EB),
+    InfoContainer = Color(0xFFEFF6FF),
     TextPrimary = Color(0xFF0F172A),
     TextSecondary = Color(0xFF64748B),
+    TextOnPrimary = Color(0xFFFFFFFF),
     IconBlue = Color(0xFF2563EB),
-    IconGreen = Color(0xFF22C55E),
+    IconGreen = Color(0xFF16A34A),
     IconOrange = Color(0xFFF59E0B),
-    IconRed = Color(0xFFEF4444),
-    IconPurple = Color(0xFF8B5CF6)
+    IconRed = Color(0xFFDC2626),
+    IconPurple = Color(0xFF7C3AED)
 )
 
 val DarkAppColors = AppColorPalette(
-    Primary = Color(0xFF60A5FA),
-    Secondary = Color(0xFF818CF8),
-    PrimaryContainer = Color(0xFF1E3A5F),
-    Background = Color(0xFF0F172A),
-    Surface = Color(0xFF1E293B),
-    Border = Color(0xFF334155),
+    Primary = Color(0xFF5B8DEF),
+    PrimaryDark = Color(0xFF0F2A5A),
+    Secondary = Color(0xFF7AA8F5),
+    PrimaryContainer = Color(0xFF1A3358),
+    Background = Color(0xFF0B1220),
+    Surface = Color(0xFF141D2E),
+    SurfaceElevated = Color(0xFF1A2438),
+    Border = Color(0xFF2A3548),
     Success = Color(0xFF4ADE80),
     SuccessContainer = Color(0xFF14532D),
     Warning = Color(0xFFFBBF24),
     WarningContainer = Color(0xFF78350F),
     Danger = Color(0xFFF87171),
     DangerContainer = Color(0xFF7F1D1D),
-    Info = Color(0xFF38BDF8),
-    InfoContainer = Color(0xFF0C4A6E),
+    Info = Color(0xFF60A5FA),
+    InfoContainer = Color(0xFF1E3A5F),
     TextPrimary = Color(0xFFF1F5F9),
     TextSecondary = Color(0xFF94A3B8),
+    TextOnPrimary = Color(0xFFFFFFFF),
     IconBlue = Color(0xFF60A5FA),
     IconGreen = Color(0xFF4ADE80),
     IconOrange = Color(0xFFFBBF24),
@@ -81,10 +91,12 @@ val LocalAppColors = staticCompositionLocalOf { LightAppColors }
 
 object AppColors {
     val Primary: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Primary
+    val PrimaryDark: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.PrimaryDark
     val Secondary: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Secondary
     val PrimaryContainer: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.PrimaryContainer
     val Background: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Background
     val Surface: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Surface
+    val SurfaceElevated: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.SurfaceElevated
     val Border: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Border
     val Success: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Success
     val SuccessContainer: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.SuccessContainer
@@ -96,6 +108,7 @@ object AppColors {
     val InfoContainer: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.InfoContainer
     val TextPrimary: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.TextPrimary
     val TextSecondary: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.TextSecondary
+    val TextOnPrimary: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.TextOnPrimary
     val IconBlue: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.IconBlue
     val IconGreen: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.IconGreen
     val IconOrange: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.IconOrange

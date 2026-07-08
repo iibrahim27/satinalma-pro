@@ -33,7 +33,7 @@ public static class MasaustuTepsiYoneticisi
         _ikon.DoubleClick += (_, _) => Goster();
     }
 
-    public static void TepsiyeGizle()
+    public static void TepsiyeGizle(bool bildirimGoster = true)
     {
         if (_pencere is null)
             return;
@@ -41,6 +41,9 @@ public static class MasaustuTepsiYoneticisi
         TepsideGizli = true;
         _pencere.ShowInTaskbar = false;
         _pencere.Hide();
+
+        if (!bildirimGoster)
+            return;
 
         _ikon?.ShowBalloonTip(
             2500,

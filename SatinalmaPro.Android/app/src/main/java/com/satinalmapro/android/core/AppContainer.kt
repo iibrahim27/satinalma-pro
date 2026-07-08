@@ -82,6 +82,11 @@ class AppContainer(private val context: Context) {
     )
 
     private val prefs = context.getSharedPreferences("satinalma_pro", Context.MODE_PRIVATE)
+
+    init {
+        ensureLoginCredentialsFresh()
+    }
+
     val config: FirebaseConfig = loadFirebaseConfig(context)
     val auth = FirebaseAuthClient(config)
     val firestore = FirestoreClient(config, auth)
@@ -164,6 +169,18 @@ class AppContainer(private val context: Context) {
 
     fun hasPersistedSession(): Boolean = prefs.contains(KEY_SESSION)
 
+    fun rememberedLoginEmail(): String {
+        if (!prefs.getBoolean(KEY_REMEMBER_ME, false)) return ""
+        return prefs.getString(KEY_SAVED_EMAIL, null)?.trim().orEmpty()
+    }
+
+    fun clearRememberedLogin() {
+        prefs.edit()
+            .putBoolean(KEY_REMEMBER_ME, false)
+            .remove(KEY_SAVED_EMAIL)
+            .apply()
+    }
+
     fun shouldRequireBiometricUnlock(): Boolean {
         if (!hasPersistedSession() || _user.value == null) return false
         if (!isBiometricAvailable()) return false
@@ -199,7 +216,7 @@ class AppContainer(private val context: Context) {
         auth.sendPasswordResetEmail(trimmed)
     }
 
-    suspend fun login(email: String, password: String, @Suppress("UNUSED_PARAMETER") rememberMe: Boolean) {
+    suspend fun login(email: String, password: String, rememberMe: Boolean) {
         if (!NetworkMonitor.isOnline(context)) {
             throw IllegalStateException(NetworkError.translate("Unable to resolve host"))
         }
@@ -211,7 +228,19 @@ class AppContainer(private val context: Context) {
             runCatching { FirebaseAuthBridge.signIn(email, password) }
                 .onFailure { ex -> BildirimLog.w("FCM_TOPIC", "Firebase Auth SDK senkronu atlandı: ${ex.message}") }
             loadProfile(allowCached = false)
-            prefs.edit().putString(KEY_SESSION, auth.sessionJson(true)).apply()
+            if (rememberMe) {
+                prefs.edit()
+                    .putString(KEY_SESSION, auth.sessionJson(true))
+                    .putBoolean(KEY_REMEMBER_ME, true)
+                    .putString(KEY_SAVED_EMAIL, email.trim())
+                    .apply()
+            } else {
+                prefs.edit()
+                    .remove(KEY_SESSION)
+                    .putBoolean(KEY_REMEMBER_ME, false)
+                    .remove(KEY_SAVED_EMAIL)
+                    .apply()
+            }
             registerFcmIfNeeded()
             syncFcmRoleSubscription()
         } catch (e: Exception) {
@@ -1395,11 +1424,46 @@ class AppContainer(private val context: Context) {
         return false
     }
 
+    /** Güncelleme veya yeniden kurulum sonrası oturum ve kayıtlı giriş bilgilerini temizler. */
+    private fun ensureLoginCredentialsFresh() {
+        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        val firstInstallTime = packageInfo.firstInstallTime
+        val storedVersion = prefs.getInt(KEY_STORED_VERSION_CODE, -1)
+        val storedFirstInstall = prefs.getLong(KEY_STORED_FIRST_INSTALL, -1L)
+
+        val versionChanged = storedVersion != -1 && storedVersion != BuildConfig.VERSION_CODE
+        val reinstallDetected = storedFirstInstall != -1L && storedFirstInstall != firstInstallTime
+
+        if (versionChanged || reinstallDetected) {
+            clearLoginPersistence()
+        }
+
+        prefs.edit()
+            .putInt(KEY_STORED_VERSION_CODE, BuildConfig.VERSION_CODE)
+            .putLong(KEY_STORED_FIRST_INSTALL, firstInstallTime)
+            .apply()
+    }
+
+    private fun clearLoginPersistence() {
+        FirebaseAuthBridge.signOut()
+        auth.clear()
+        _user.value = null
+        prefs.edit()
+            .remove(KEY_SESSION)
+            .remove(KEY_SAVED_EMAIL)
+            .putBoolean(KEY_REMEMBER_ME, false)
+            .apply()
+    }
+
     companion object {
         private const val KEY_SESSION = "session_json"
         private const val KEY_PROFILE = "profile_cache"
         private const val KEY_PENDING_APK = "pending_apk_path"
         private const val KEY_SKIPPED_UPDATE_BUILD = "skipped_update_build"
+        private const val KEY_STORED_VERSION_CODE = "stored_version_code"
+        private const val KEY_STORED_FIRST_INSTALL = "stored_first_install_time"
+        private const val KEY_SAVED_EMAIL = "saved_login_email"
+        private const val KEY_REMEMBER_ME = "remember_login"
 
         fun loadFirebaseConfig(context: Context): FirebaseConfig {
             var apiKey = ""

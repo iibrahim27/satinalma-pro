@@ -1,150 +1,421 @@
 using System.Windows;
+
 using SatinalmaPro.Helpers;
+
 using SatinalmaPro.Services;
+
 using SatinalmaPro.Views;
+
+
 
 namespace SatinalmaPro;
 
+
+
 public partial class App : Application
+
 {
+
+    private bool _arkaPlanModu;
+
+
+
     protected override void OnStartup(StartupEventArgs e)
+
     {
+
         if (!TekOrnekKorumasi.IlkOrnekMi(e.Args))
+
         {
+
             if (!TekOrnekKorumasi.ToastAktivasyonuMu(e.Args))
+
             {
+
                 var oneGetirildi = TekOrnekKorumasi.IkinciOrnekSinyaliGonder()
+
                     || TekOrnekKorumasi.MevcutPencereyiOneGetir();
+
                 if (!oneGetirildi && TekOrnekKorumasi.TakiliSurecVarMi())
+
                 {
+
                     var cevap = MessageBox.Show(
+
                         $"{UygulamaBilgisi.Ad} arka planda takılı kalmış görünüyor (pencere yok).\n\n" +
+
                         "Takılı süreci sonlandırıp yeniden açmak ister misiniz?",
+
                         UygulamaBilgisi.Ad,
+
                         MessageBoxButton.YesNo,
+
                         MessageBoxImage.Question);
 
+
+
                     if (cevap == MessageBoxResult.Yes
+
                         && TekOrnekKorumasi.TakiliSureciSonlandir()
+
                         && TekOrnekKorumasi.IlkOrnekMi(e.Args))
+
                     {
+
                         UygulamayiBaslat(e);
+
                         return;
+
                     }
+
                 }
 
+
+
                 Shutdown();
+
                 return;
+
             }
 
+
+
             Shutdown();
+
             return;
+
         }
 
+
+
         UygulamayiBaslat(e);
+
     }
+
+
 
     private void UygulamayiBaslat(StartupEventArgs e)
+
     {
+
+        _arkaPlanModu = TekOrnekKorumasi.ArkaPlanBaslatMi(e.Args);
+
+        GirisHatirlatmaKorumasi.KurulumVeSurumKontrolu(e.Args);
+
+        WindowsOtomatikBaslatma.Etkinlestir();
+
         base.OnStartup(e);
+
         MasaustuActionCenterBildirim.Baslat();
+
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
+
+
         DispatcherUnhandledException += (_, args) =>
+
         {
+
             HataGunlugu.Kaydet(args.Exception, "UI");
+
             MessageBox.Show(
+
                 $"Beklenmeyen bir hata oluştu:\n{args.Exception.Message}\n\nDetaylar hata günlüğüne kaydedildi.",
+
                 UygulamaBilgisi.Ad,
+
                 MessageBoxButton.OK,
+
                 MessageBoxImage.Error);
+
             args.Handled = true;
+
         };
+
+
 
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+
         {
+
             if (args.ExceptionObject is Exception ex)
+
                 HataGunlugu.Kaydet(ex, "AppDomain");
+
         };
 
+
+
+        if (_arkaPlanModu)
+
+        {
+
+            _ = ArkaPlanBaslatAsync();
+
+            return;
+
+        }
+
+
+
         var splash = new AcilisEkrani();
+
         PencereOneGetirDinleyicisi.Bagla(splash);
+
         splash.Show();
-        _ = BaslatAsync(splash);
+
+        _ = BaslatAsync(splash, tepsideBaslat: false);
+
     }
 
-    private async Task BaslatAsync(AcilisEkrani splash)
+
+
+    private async Task ArkaPlanBaslatAsync()
+
     {
+
         try
+
         {
-            if (await splash.YukleVeBekleAsync())
+
+            OturumYoneticisi.Baslat();
+
+
+
+            if (await GuncellemeServisi.KontrolEtVeUygulaAsync(sessiz: true))
+
+            {
+
+                Shutdown();
+
+                return;
+
+            }
+
+
+
+            var girisOk = await OturumYoneticisi.OtomatikGirisDeneAsync();
+
+            if (!girisOk)
+
+            {
+
+                await Dispatcher.InvokeAsync(() =>
+
+                {
+
+                    var splash = new AcilisEkrani();
+
+                    PencereOneGetirDinleyicisi.Bagla(splash);
+
+                    splash.Show();
+
+                    _ = BaslatAsync(splash, tepsideBaslat: true, atlaYuklemeAnimasyonu: true);
+
+                });
+
+                return;
+
+            }
+
+
+
+            await OturumSonrasiHazirlikAsync();
+
+
+
+            await Dispatcher.InvokeAsync(() =>
+
+            {
+
+                var main = new MainWindow();
+
+                MainWindow = main;
+
+                PencereOneGetirDinleyicisi.Bagla(main);
+
+                MasaustuTepsiYoneticisi.Bagla(main);
+
+                MasaustuTepsiYoneticisi.TepsiyeGizle(bildirimGoster: false);
+
+            });
+
+        }
+
+        catch (Exception ex)
+
+        {
+
+            HataGunlugu.Kaydet(ex, "App.ArkaPlanBaslat");
+
+            Shutdown();
+
+        }
+
+    }
+
+
+
+    private async Task BaslatAsync(AcilisEkrani splash, bool tepsideBaslat, bool atlaYuklemeAnimasyonu = false)
+
+    {
+
+        try
+
+        {
+
+            if (!atlaYuklemeAnimasyonu && await splash.YukleVeBekleAsync())
             {
                 Shutdown();
                 return;
             }
 
             if (!await splash.OturumAcAsync())
+
             {
-                splash.Close();
+
+                splash.Kapat();
+
                 Shutdown();
+
                 return;
+
             }
 
-            if (OturumYoneticisi.GirisYapildi)
-            {
-                splash.SenkronBaslat();
-                using var zamanAsimi = new CancellationTokenSource(TimeSpan.FromMinutes(2));
-                var ilerleme = new Progress<(int tamamlanan, int toplam, string adim)>(p =>
-                    splash.SenkronIlerle(p.tamamlanan, p.toplam, p.adim));
 
-                try
-                {
-                    await BulutVeriSenkronu.IkiliSenkronAsync(ilerleme, zamanAsimi.Token);
-                    splash.DurumGuncelle("Veriler yüklendi, uygulama açılıyor...");
-                }
-                catch (OperationCanceledException)
-                {
-                    splash.DurumGuncelle("Bulut senkronu zaman aşımına uğradı. Yerel verilerle devam ediliyor...");
-                }
-                catch (Exception)
-                {
-                    splash.DurumGuncelle("Bulut bağlantısı kurulamadı. Yerel verilerle devam ediliyor...");
-                }
 
-                VeriYukleyici.TumunuYukle();
-                BulutVeriSenkronu.YoklamayiBaslat();
-                BildirimYoneticisi.Baslat();
-            }
-            else
-            {
-                VeriYukleyici.TumunuYukle();
-            }
+            await OturumSonrasiHazirlikAsync(splash);
+
+
 
             var main = new MainWindow();
+
             MainWindow = main;
+
             PencereOneGetirDinleyicisi.Bagla(main);
-            main.Show();
+
             MasaustuTepsiYoneticisi.Bagla(main);
+
+
+
+            if (tepsideBaslat)
+
+                MasaustuTepsiYoneticisi.TepsiyeGizle(bildirimGoster: false);
+
+            else
+
+                main.Show();
+
+
+
             splash.Kapat();
-            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
         }
+
         catch (Exception ex)
+
         {
+
             MessageBox.Show(
+
                 $"Uygulama başlatılamadı:\n{ex.Message}",
+
                 UygulamaBilgisi.Ad,
+
                 MessageBoxButton.OK,
+
                 MessageBoxImage.Error);
+
             splash.Kapat();
+
             Shutdown();
+
         }
+
     }
 
-    protected override void OnExit(ExitEventArgs e)
+
+
+    private static async Task OturumSonrasiHazirlikAsync(AcilisEkrani? splash = null)
+
     {
-        MasaustuTepsiYoneticisi.Temizle();
-        OturumYoneticisi.UygulamaKapanirken();
-        TekOrnekKorumasi.SerbestBirak();
-        base.OnExit(e);
+
+        if (OturumYoneticisi.GirisYapildi)
+
+        {
+
+            splash?.SenkronBaslat();
+
+            using var zamanAsimi = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+
+            var ilerleme = new Progress<(int tamamlanan, int toplam, string adim)>(p =>
+
+                splash?.SenkronIlerle(p.tamamlanan, p.toplam, p.adim));
+
+
+
+            try
+
+            {
+
+                await BulutVeriSenkronu.IkiliSenkronAsync(ilerleme, zamanAsimi.Token);
+
+                splash?.DurumGuncelle("Veriler yüklendi, uygulama açılıyor...");
+
+            }
+
+            catch (OperationCanceledException)
+
+            {
+
+                splash?.DurumGuncelle("Bulut senkronu zaman aşımına uğradı. Yerel verilerle devam ediliyor...");
+
+            }
+
+            catch (Exception)
+
+            {
+
+                splash?.DurumGuncelle("Bulut bağlantısı kurulamadı. Yerel verilerle devam ediliyor...");
+
+            }
+
+
+
+            VeriYukleyici.TumunuYukle();
+
+            BulutVeriSenkronu.YoklamayiBaslat();
+
+            BildirimYoneticisi.Baslat();
+
+        }
+
+        else
+
+        {
+
+            VeriYukleyici.TumunuYukle();
+
+        }
+
     }
+
+
+
+    protected override void OnExit(ExitEventArgs e)
+
+    {
+
+        MasaustuTepsiYoneticisi.Temizle();
+
+        OturumYoneticisi.UygulamaKapanirken();
+
+        TekOrnekKorumasi.SerbestBirak();
+
+        base.OnExit(e);
+
+    }
+
 }
+
+

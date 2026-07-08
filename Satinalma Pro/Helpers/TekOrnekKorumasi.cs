@@ -8,6 +8,7 @@ public static class TekOrnekKorumasi
 {
     private const string MutexAdi = "SatinalmaPro_TekOrnek_Mutex";
     public const string GuncellemeSonrasiArg = "--guncelleme-sonrasi";
+    public const string ArkaPlanBaslatArg = "--arka-plan";
     private const string ToastAktivasyonArg = "-ToastActivated";
     private const int SwRestore = 9;
     private const int SwShow = 5;
@@ -25,6 +26,9 @@ public static class TekOrnekKorumasi
     public static bool GuncellemeSonrasiMi(IEnumerable<string> args) =>
         args.Any(a => a.Equals(GuncellemeSonrasiArg, StringComparison.OrdinalIgnoreCase));
 
+    public static bool ArkaPlanBaslatMi(IEnumerable<string>? args) =>
+        (args ?? []).Any(a => a.Equals(ArkaPlanBaslatArg, StringComparison.OrdinalIgnoreCase));
+
     public static bool ToastAktivasyonuMu(IEnumerable<string>? args) =>
         (args ?? []).Any(a => a.Equals(ToastAktivasyonArg, StringComparison.OrdinalIgnoreCase));
 
@@ -32,7 +36,7 @@ public static class TekOrnekKorumasi
     {
         var argumanlar = args ?? [];
 
-        if (GuncellemeSonrasiMi(argumanlar))
+        if (GuncellemeSonrasiMi(argumanlar) || ArkaPlanBaslatMi(argumanlar))
         {
             for (var deneme = 0; deneme < 60; deneme++)
             {

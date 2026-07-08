@@ -15,6 +15,10 @@ try
     var otomasyonSonuclari = PurchaseModuleAutomationTest.TumSenaryolariCalistir(otomasyonOrtami);
     tumSonuclar.AddRange(otomasyonSonuclari);
 
+    Console.WriteLine("\n=== Kapsam Denetimi (status × rol × sekme) ===\n");
+    tumSonuclar.Add(ProcurementAkisKapsamDenetimi.Calistir());
+    tumSonuclar.Add(ProcurementAkisKapsamDenetimi.PlatformMenuUyumu());
+
     var otomasyonEksik = otomasyonSonuclari.Sum(s => s.Eksikler.Count);
     Console.WriteLine($"\n=== Otomasyon Özet: {otomasyonEksik} eksik ===\n");
 
@@ -46,8 +50,9 @@ try
     var toplamUyari = tumSonuclar.Sum(s => s.Uyarilar.Count);
     Console.WriteLine($"\n=== ÖZET: {toplamEksik} eksik, {toplamUyari} uyarı ===");
     Console.WriteLine($"PurchaseModuleAutomationTest: {(otomasyonEksik == 0 ? "BAŞARILI" : "HATALI")}");
+    Console.WriteLine($"Kapsam denetimi: {(toplamEksik == 0 ? "BAŞARILI" : "HATALI")}");
 
-    Environment.Exit(otomasyonEksik > 0 ? 1 : 0);
+    Environment.Exit(toplamEksik > 0 ? 1 : 0);
 }
 catch (Exception ex)
 {

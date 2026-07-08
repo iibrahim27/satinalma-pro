@@ -184,7 +184,7 @@ private fun DrawerHeader(user: UserProfile?) {
             .statusBarsPadding()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF1D4ED8), Color(0xFF2563EB), Color(0xFF3B82F6))
+                    listOf(AppColors.PrimaryDark, AppColors.Primary)
                 )
             )
             .padding(horizontal = 24.dp, vertical = 28.dp)

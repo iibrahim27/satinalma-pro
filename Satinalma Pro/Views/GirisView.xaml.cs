@@ -1,6 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using SatinalmaPro.Helpers;
 using SatinalmaPro.Services;
 using SatinalmaPro.Shared.Helpers;
 
@@ -8,14 +11,78 @@ namespace SatinalmaPro.Views;
 
 public partial class GirisView : UserControl
 {
+    public static readonly DependencyProperty KartModuProperty =
+        DependencyProperty.Register(nameof(KartModu), typeof(bool), typeof(GirisView),
+            new PropertyMetadata(false, (d, _) => ((GirisView)d).KartModuGuncelle()));
+
+    public bool KartModu
+    {
+        get => (bool)GetValue(KartModuProperty);
+        set => SetValue(KartModuProperty, value);
+    }
+
     public event Action? GirisBasarili;
 
     private bool _tercihYukleniyor;
+    private bool _sifreGosteriliyor;
+
+    private void BtnSifreGoster_Click(object sender, RoutedEventArgs e)
+    {
+        _sifreGosteriliyor = !_sifreGosteriliyor;
+        if (_sifreGosteriliyor)
+        {
+            TxtSifreGoster.Text = TxtSifre.Password;
+            TxtSifre.Visibility = Visibility.Collapsed;
+            TxtSifreGoster.Visibility = Visibility.Visible;
+            BtnSifreGoster.Content = "🙈";
+            TxtSifreGoster.Focus();
+        }
+        else
+        {
+            TxtSifre.Password = TxtSifreGoster.Text;
+            TxtSifreGoster.Visibility = Visibility.Collapsed;
+            TxtSifre.Visibility = Visibility.Visible;
+            BtnSifreGoster.Content = "👁";
+            TxtSifre.Focus();
+        }
+    }
+
+    private string AktifSifre => _sifreGosteriliyor ? TxtSifreGoster.Text : TxtSifre.Password;
+
+    private void SifreAyarla(string sifre)
+    {
+        TxtSifre.Password = sifre;
+        TxtSifreGoster.Text = sifre;
+    }
 
     public GirisView()
     {
         InitializeComponent();
-        Loaded += (_, _) => TercihleriYukle();
+        Loaded += (_, _) =>
+        {
+            KartModuGuncelle();
+            TercihleriYukle();
+            SunucuDurumunuGuncelle();
+            TxtVersiyon.Text = $"Versiyon {Helpers.UygulamaBilgisi.Versiyon}";
+        };
+    }
+
+    private void KartModuGuncelle()
+    {
+        if (PanelKartBaslik is null || PanelTamBaslik is null)
+            return;
+
+        PanelKartBaslik.Visibility = KartModu ? Visibility.Visible : Visibility.Collapsed;
+        PanelTamBaslik.Visibility = KartModu ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void SunucuDurumunuGuncelle()
+    {
+        var aktif = OturumYoneticisi.BulutAktif;
+        TxtSunucuDurum.Text = aktif ? "Sunucu bağlantısı aktif" : "Yerel mod — sunucu yapılandırılmamış";
+        SunucuDurumNokta.Fill = new SolidColorBrush(aktif
+            ? Color.FromRgb(0x16, 0xA3, 0x4A)
+            : Color.FromRgb(0xF5, 0x9E, 0x0B));
     }
 
     public void TercihleriYukle()
@@ -29,16 +96,13 @@ public partial class GirisView : UserControl
 
             if (tercih.BeniHatirla && !string.IsNullOrWhiteSpace(tercih.Eposta))
                 TxtEposta.Text = tercih.Eposta;
+            else
+                TxtEposta.Text = "";
 
             if (tercih.SifremiHatirla)
-            {
-                var kayitliSifre = GirisSifreDeposu.Oku();
-                TxtSifre.Password = kayitliSifre ?? "";
-            }
+                SifreAyarla(GirisSifreDeposu.Oku() ?? "");
             else
-            {
-                TxtSifre.Password = "";
-            }
+                SifreAyarla("");
         }
         finally
         {
@@ -53,10 +117,19 @@ public partial class GirisView : UserControl
         if (_tercihYukleniyor)
             return;
 
+        var beniHatirla = ChkBeniHatirla.IsChecked == true;
+        var sifremiHatirla = ChkSifremiHatirla.IsChecked == true;
+
+        if (!beniHatirla)
+            TxtEposta.Text = "";
+
+        if (!sifremiHatirla)
+            SifreAyarla("");
+
         OturumYoneticisi.TercihKutulariniKaydet(
-            TxtEposta.Text,
-            ChkBeniHatirla.IsChecked == true,
-            ChkSifremiHatirla.IsChecked == true);
+            beniHatirla ? TxtEposta.Text : "",
+            beniHatirla,
+            sifremiHatirla);
     }
 
     private async void Giris_Click(object sender, RoutedEventArgs e)
@@ -80,18 +153,32 @@ public partial class GirisView : UserControl
             var beniHatirla = ChkBeniHatirla.IsChecked == true;
             var sifremiHatirla = ChkSifremiHatirla.IsChecked == true;
             await OturumYoneticisi.GirisYapAsync(
-                TxtEposta.Text, TxtSifre.Password, beniHatirla, sifremiHatirla);
+                TxtEposta.Text, AktifSifre, beniHatirla, sifremiHatirla);
+
+            BtnGiris.Content = "✓";
+            BtnGiris.Background = new SolidColorBrush(Color.FromRgb(0x16, 0xA3, 0x4A));
+            await Task.Delay(450);
             GirisBasarili?.Invoke();
         }
         catch (Exception ex)
         {
             HataGoster(ex.Message);
+            SifreHataVurgula();
         }
         finally
         {
             BtnGiris.IsEnabled = true;
-            BtnGiris.Content = "Giriş Yap";
+            if (BtnGiris.Content?.ToString() != "✓")
+                BtnGiris.Content = "Giriş Yap";
         }
+    }
+
+    private void SifreHataVurgula()
+    {
+        TxtEposta.BorderBrush = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+        TxtSifre.BorderBrush = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+        if (FindResource("KartSallaAnimasyonu") is Storyboard sb)
+            sb.Begin();
     }
 
     private void SifremiUnuttum_Click(object sender, RoutedEventArgs e)
@@ -168,6 +255,8 @@ public partial class GirisView : UserControl
     {
         HataKutusu.Visibility = Visibility.Collapsed;
         BilgiKutusu.Visibility = Visibility.Collapsed;
+        TxtEposta.ClearValue(Border.BorderBrushProperty);
+        TxtSifre.ClearValue(Border.BorderBrushProperty);
     }
 
     private void SifirMesajlariTemizle()

@@ -3,62 +3,74 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Name="Root"
              Width="{Binding IkonBoyutu, ElementName=Root}"
-             Height="{Binding IkonBoyutu, ElementName=Root}">
+             Height="{Binding IkonBoyutu, ElementName=Root}"
+             MouseEnter="Root_MouseEnter"
+             MouseLeave="Root_MouseLeave">
   <UserControl.Resources>
     <Storyboard x:Key="IkonNefesAnimasyonu" RepeatBehavior="Forever">
-      <DoubleAnimation Storyboard.TargetName="IkonOlcek"
-                       Storyboard.TargetProperty="ScaleX"
-                       From="0.92" To="1.06" Duration="0:0:1.15"
-                       AutoReverse="True">
-        <DoubleAnimation.EasingFunction>
-          <SineEase EasingMode="EaseInOut" />
-        </DoubleAnimation.EasingFunction>
+      <DoubleAnimation Storyboard.TargetName="Hale" Storyboard.TargetProperty="Opacity"
+                       From="0.22" To="0.48" Duration="0:0:1.4" AutoReverse="True" />
+    </Storyboard>
+    <Storyboard x:Key="IkonGirisAnimasyonu">
+      <DoubleAnimation Storyboard.TargetName="IkonOlcek" Storyboard.TargetProperty="ScaleX"
+                       From="0.8" To="1" Duration="0:0:0.7">
+        <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
       </DoubleAnimation>
-      <DoubleAnimation Storyboard.TargetName="IkonOlcek"
-                       Storyboard.TargetProperty="ScaleY"
-                       From="0.92" To="1.06" Duration="0:0:1.15"
-                       AutoReverse="True">
-        <DoubleAnimation.EasingFunction>
-          <SineEase EasingMode="EaseInOut" />
-        </DoubleAnimation.EasingFunction>
+      <DoubleAnimation Storyboard.TargetName="IkonOlcek" Storyboard.TargetProperty="ScaleY"
+                       From="0.8" To="1" Duration="0:0:0.7">
+        <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
       </DoubleAnimation>
-      <DoubleAnimation Storyboard.TargetName="Hale"
-                       Storyboard.TargetProperty="Opacity"
-                       From="0.18" To="0.42" Duration="0:0:1.15"
-                       AutoReverse="True" />
-      <DoubleAnimation Storyboard.TargetName="HaleOlcek"
-                       Storyboard.TargetProperty="ScaleX"
-                       From="0.95" To="1.12" Duration="0:0:1.15"
-                       AutoReverse="True" />
-      <DoubleAnimation Storyboard.TargetName="HaleOlcek"
-                       Storyboard.TargetProperty="ScaleY"
-                       From="0.95" To="1.12" Duration="0:0:1.15"
-                       AutoReverse="True" />
+      <DoubleAnimation Storyboard.TargetName="IkonGorsel" Storyboard.TargetProperty="Opacity"
+                       From="0" To="1" Duration="0:0:0.7" />
+      <DoubleAnimation Storyboard.TargetName="NeonHalka" Storyboard.TargetProperty="Opacity"
+                       From="0" To="1" Duration="0:0:0.7" />
     </Storyboard>
   </UserControl.Resources>
-  <UserControl.Triggers>
-    <EventTrigger RoutedEvent="Loaded">
-      <BeginStoryboard Storyboard="{StaticResource IkonNefesAnimasyonu}" />
-    </EventTrigger>
-  </UserControl.Triggers>
 
   <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
-    <Ellipse x:Name="Hale" Fill="{StaticResource DashPrimaryBrush}" Opacity="0.25"
-             Width="{Binding IkonBoyutu, ElementName=Root}"
-             Height="{Binding IkonBoyutu, ElementName=Root}"
-             RenderTransformOrigin="0.5,0.5">
-      <Ellipse.RenderTransform>
-        <ScaleTransform x:Name="HaleOlcek" ScaleX="1" ScaleY="1" />
-      </Ellipse.RenderTransform>
+    <Ellipse x:Name="Hale" Fill="#4F46E5" Opacity="0.3" RenderTransformOrigin="0.5,0.5">
+      <Ellipse.Width>
+        <Binding ElementName="Root" Path="IkonBoyutu" Converter="{StaticResource LoginBoyutCarpanConverter}" ConverterParameter="1.15" />
+      </Ellipse.Width>
+      <Ellipse.Height>
+        <Binding ElementName="Root" Path="IkonBoyutu" Converter="{StaticResource LoginBoyutCarpanConverter}" ConverterParameter="1.15" />
+      </Ellipse.Height>
+      <Ellipse.Effect>
+        <BlurEffect Radius="18" />
+      </Ellipse.Effect>
+    </Ellipse>
+    <Ellipse x:Name="NeonHalka" Opacity="0" StrokeThickness="2.5" RenderTransformOrigin="0.5,0.5">
+      <Ellipse.Width>
+        <Binding ElementName="Root" Path="IkonBoyutu" Converter="{StaticResource LoginBoyutCarpanConverter}" ConverterParameter="1.08" />
+      </Ellipse.Width>
+      <Ellipse.Height>
+        <Binding ElementName="Root" Path="IkonBoyutu" Converter="{StaticResource LoginBoyutCarpanConverter}" ConverterParameter="1.08" />
+      </Ellipse.Height>
+      <Ellipse.Stroke>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+          <GradientStop Color="#4F46E5" Offset="0" />
+          <GradientStop Color="#6D5BFF" Offset="1" />
+        </LinearGradientBrush>
+      </Ellipse.Stroke>
+      <Ellipse.Effect>
+        <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.55" Color="#6D5BFF" />
+      </Ellipse.Effect>
     </Ellipse>
     <Border RenderTransformOrigin="0.5,0.5" CornerRadius="18">
       <Border.RenderTransform>
-        <ScaleTransform x:Name="IkonOlcek" ScaleX="1" ScaleY="1" />
+        <TransformGroup>
+          <ScaleTransform x:Name="IkonOlcek" ScaleX="0.8" ScaleY="0.8" />
+          <RotateTransform x:Name="IkonEgim" Angle="0" />
+        </TransformGroup>
       </Border.RenderTransform>
-      <Image Source="pack://application:,,,/Assets/app.ico"
+      <Image x:Name="IkonGorsel" Source="pack://application:,,,/Assets/app.ico" Opacity="0"
              Width="{Binding IkonBoyutu, ElementName=Root}"
              Height="{Binding IkonBoyutu, ElementName=Root}"
-             Stretch="Uniform" />
+             Stretch="Uniform">
+        <Image.Effect>
+          <DropShadowEffect BlurRadius="12" ShadowDepth="0" Opacity="0.35" Color="#4F46E5" />
+        </Image.Effect>
+      </Image>
     </Border>
   </Grid>
 </UserControl>

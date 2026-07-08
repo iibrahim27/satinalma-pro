@@ -12,6 +12,7 @@
                 <ResourceDictionary Source="Resources/SatinalmaModuleTheme.xaml" />
                 <ResourceDictionary Source="Resources/AyarlarModuleTheme.xaml" />
                 <ResourceDictionary Source="Resources/ErpModuleTheme.xaml" />
+                <ResourceDictionary Source="Resources/LoginTheme.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

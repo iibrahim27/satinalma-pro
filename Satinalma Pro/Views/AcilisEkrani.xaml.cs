@@ -26,7 +26,7 @@ public partial class AcilisEkrani : Window
         PrgTrack.SizeChanged += (_, _) => GuncellePrgGenisligi();
     }
 
-    public Task<bool> OturumAcAsync()
+    public async Task<bool> OturumAcAsync()
     {
         if (!OturumYoneticisi.BulutAktif)
         {
@@ -39,12 +39,15 @@ public partial class AcilisEkrani : Window
                 UygulamaBilgisi.Ad,
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
-            return Task.FromResult(true);
+            return true;
         }
+
+        if (await OturumYoneticisi.OtomatikGirisDeneAsync())
+            return true;
 
         _girisTamam = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         Dispatcher.Invoke(GirisPaneliniGoster);
-        return _girisTamam.Task;
+        return await _girisTamam.Task;
     }
 
     private void GirisPaneliniGoster()

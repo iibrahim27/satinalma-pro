@@ -1,6 +1,5 @@
 package com.satinalmapro.android.ui.screens.login
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,8 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.satinalmapro.android.BuildConfig
-import com.satinalmapro.android.ui.components.AnimatedAppIcon
-import com.satinalmapro.android.ui.components.BottomWaveDecoration
+import com.satinalmapro.android.ui.components.login.LoginBackground
+import com.satinalmapro.android.ui.components.login.LoginHeroIcon
 import com.satinalmapro.android.ui.theme.AppColors
 import com.satinalmapro.android.ui.theme.AppSpacing
 
@@ -40,11 +39,8 @@ private val splashBenefits = listOf(
 
 @Composable
 fun SplashScreen(message: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppColors.Background)
-    ) {
+    Box(Modifier.fillMaxSize()) {
+        LoginBackground()
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -53,13 +49,13 @@ fun SplashScreen(message: String) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            AnimatedAppIcon(size = 96.dp)
+            LoginHeroIcon(size = 96.dp)
             Spacer(Modifier.height(24.dp))
             Text(
                 "Satınalma Pro",
                 style = MaterialTheme.typography.headlineMedium,
                 color = AppColors.TextPrimary,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
             Text(
                 "Kurumsal Satınalma Yönetim Sistemi",
@@ -83,23 +79,14 @@ fun SplashScreen(message: String) {
                             tint = AppColors.Primary,
                             modifier = Modifier.size(22.dp)
                         )
-                        Text(
-                            benefit,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.TextPrimary
-                        )
+                        Text(benefit, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextPrimary)
                     }
                 }
             }
             Spacer(Modifier.height(36.dp))
             CircularProgressIndicator(color = AppColors.Primary)
             Spacer(Modifier.height(12.dp))
-            Text(
-                message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppColors.TextSecondary,
-                textAlign = TextAlign.Center
-            )
+            Text(message, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary, textAlign = TextAlign.Center)
             Spacer(Modifier.height(24.dp))
             Text(
                 "Versiyon ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
@@ -107,6 +94,5 @@ fun SplashScreen(message: String) {
                 color = AppColors.TextSecondary
             )
         }
-        BottomWaveDecoration(modifier = Modifier.align(Alignment.BottomCenter))
     }
 }

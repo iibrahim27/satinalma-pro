@@ -1,6 +1,5 @@
 package com.satinalmapro.android.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,17 +15,21 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -35,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,6 +61,7 @@ import com.satinalmapro.android.ui.theme.AppSizes
 import com.satinalmapro.android.ui.theme.AppSpacing
 import com.satinalmapro.android.ui.theme.RoleColors
 import com.satinalmapro.android.ui.theme.RoleVisual
+import com.satinalmapro.android.ui.theme.heroSearchFieldColors
 
 @Composable
 fun AppMainHeader(
@@ -81,7 +86,7 @@ fun AppMainHeader(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(AppSizes.headerHeight)
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             when {
@@ -100,12 +105,15 @@ fun AppMainHeader(
                 color = AppColors.TextPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.SemiBold
             )
             BadgedBox(
                 badge = {
                     if (notificationCount > 0) {
-                        Badge { Text(if (notificationCount > 99) "99+" else "$notificationCount") }
+                        Badge(containerColor = AppColors.Danger) {
+                            Text(if (notificationCount > 99) "99+" else "$notificationCount")
+                        }
                     }
                 }
             ) {
@@ -120,11 +128,114 @@ fun AppMainHeader(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DashboardHeroHeader(
+    userName: String,
+    role: String?,
+    searchQuery: String,
+    onSearchChange: (String) -> Unit,
+    notificationCount: Int,
+    onMenuClick: () -> Unit,
+    onNotificationClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val visual = RoleColors.forRole(role)
+    val initials = userName.split(' ')
+        .mapNotNull { it.firstOrNull()?.uppercaseChar() }
+        .take(2)
+        .joinToString("")
+        .ifBlank { "SP" }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    listOf(AppColors.PrimaryDark, AppColors.Primary, AppColors.Secondary.copy(alpha = 0.85f))
+                )
+            )
+            .statusBarsPadding()
+            .padding(horizontal = AppSpacing.screenHorizontal)
+            .padding(top = 8.dp, bottom = AppSpacing.heroBottom)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onMenuClick) {
+                    Icon(Icons.Rounded.Menu, contentDescription = "Menü", tint = AppColors.TextOnPrimary)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BadgedBox(
+                        badge = {
+                            if (notificationCount > 0) {
+                                Badge(containerColor = AppColors.Danger) {
+                                    Text(if (notificationCount > 99) "99+" else "$notificationCount")
+                                }
+                            }
+                        }
+                    ) {
+                        IconButton(onClick = onNotificationClick) {
+                            Icon(Icons.Rounded.Notifications, contentDescription = "Bildirimler", tint = AppColors.TextOnPrimary)
+                        }
+                    }
+                    Surface(
+                        onClick = onProfileClick,
+                        shape = CircleShape,
+                        color = AppColors.TextOnPrimary.copy(alpha = 0.18f)
+                    ) {
+                        Box(
+                            modifier = Modifier.size(AppSizes.avatarSize),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(initials, color = AppColors.TextOnPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Hoş geldiniz", style = MaterialTheme.typography.bodyMedium, color = AppColors.TextOnPrimary.copy(alpha = 0.75f))
+                Text(
+                    userName.ifBlank { "Kullanıcı" },
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = AppColors.TextOnPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+                Surface(shape = AppShapes.extraSmall, color = AppColors.TextOnPrimary.copy(alpha = 0.15f)) {
+                    Text(
+                        visual.title,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = AppColors.TextOnPrimary
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Ara...", color = AppColors.TextOnPrimary.copy(alpha = 0.6f)) },
+                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null, tint = AppColors.TextOnPrimary.copy(alpha = 0.75f)) },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                colors = heroSearchFieldColors()
+            )
+        }
+    }
+}
+
 @Composable
 fun AppBottomNavigationBar(
     selectedRoute: String,
     showReports: Boolean,
     showFab: Boolean,
+    notificationCount: Int = 0,
     onHome: () -> Unit,
     onNotifications: () -> Unit,
     onReports: () -> Unit,
@@ -144,14 +255,26 @@ fun AppBottomNavigationBar(
                 selected = selectedRoute == "dashboard" || selectedRoute == "stok-durum",
                 onClick = onHome,
                 icon = { Icon(Icons.Rounded.Home, contentDescription = "Ana Sayfa") },
-                label = { Text("Ana Sayfa") },
+                label = { Text("Ana Sayfa", style = MaterialTheme.typography.labelSmall) },
                 colors = navColors()
             )
             NavigationBarItem(
                 selected = selectedRoute == "bildirimler",
                 onClick = onNotifications,
-                icon = { Icon(Icons.Rounded.Notifications, contentDescription = "Bildirimler") },
-                label = { Text("Bildirim") },
+                icon = {
+                    BadgedBox(
+                        badge = {
+                            if (notificationCount > 0) {
+                                Badge(containerColor = AppColors.Danger) {
+                                    Text(if (notificationCount > 99) "99+" else "$notificationCount")
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Rounded.Notifications, contentDescription = "Bildirimler")
+                    }
+                },
+                label = { Text("Bildirim", style = MaterialTheme.typography.labelSmall) },
                 colors = navColors()
             )
             NavigationBarItem(
@@ -167,7 +290,7 @@ fun AppBottomNavigationBar(
                     selected = selectedRoute == "raporlar",
                     onClick = onReports,
                     icon = { Icon(Icons.Rounded.BarChart, contentDescription = "Raporlar") },
-                    label = { Text("Raporlar") },
+                    label = { Text("Raporlar", style = MaterialTheme.typography.labelSmall) },
                     colors = navColors()
                 )
             } else {
@@ -184,7 +307,7 @@ fun AppBottomNavigationBar(
                 selected = selectedRoute == "profil",
                 onClick = onProfile,
                 icon = { Icon(Icons.Rounded.Person, contentDescription = "Profil") },
-                label = { Text("Profil") },
+                label = { Text("Profil", style = MaterialTheme.typography.labelSmall) },
                 colors = navColors()
             )
         }
@@ -193,15 +316,15 @@ fun AppBottomNavigationBar(
                 onClick = onFabClick,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = (-20).dp)
+                    .offset(y = (-22).dp)
                     .size(AppSizes.fabSize)
                     .shadow(AppElevation.fab, CircleShape),
                 shape = CircleShape,
                 containerColor = AppColors.Primary,
-                contentColor = Color.White,
+                contentColor = AppColors.TextOnPrimary,
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = AppElevation.fab)
             ) {
-                Icon(Icons.Rounded.Add, contentDescription = "Hızlı işlem", modifier = Modifier.size(28.dp))
+                Icon(Icons.Rounded.Add, contentDescription = "Yeni talep", modifier = Modifier.size(28.dp))
             }
         }
     }
@@ -222,51 +345,17 @@ fun DashboardGreetingCard(
     role: String?,
     modifier: Modifier = Modifier
 ) {
-    val visual = RoleColors.forRole(role)
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = AppShapes.medium,
-        color = AppColors.Surface,
-        shadowElevation = AppElevation.card
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(visual.container, AppColors.Surface, AppColors.PrimaryContainer.copy(alpha = 0.35f))
-                    )
-                )
-                .padding(AppSpacing.cardPadding)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(AppSizes.roleIconBox)
-                        .clip(AppShapes.small)
-                        .background(visual.color),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        visual.title.take(1),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Column(Modifier.weight(1f)) {
-                    Text("Hoş Geldiniz", style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
-                    Text(
-                        userName,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = AppColors.TextPrimary,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(visual.subtitle, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
-                }
-            }
-        }
-    }
+    DashboardHeroHeader(
+        userName = userName,
+        role = role,
+        searchQuery = "",
+        onSearchChange = {},
+        notificationCount = 0,
+        onMenuClick = {},
+        onNotificationClick = {},
+        onProfileClick = {},
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -276,17 +365,8 @@ fun RoleSelectionCard(
     selected: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        onClick = onClick ?: {},
-        enabled = onClick != null,
-        shape = AppShapes.small,
-        color = AppColors.Surface,
-        shadowElevation = AppElevation.card,
-        border = androidx.compose.foundation.BorderStroke(1.dp, if (selected) AppColors.Primary else AppColors.Border)
-    ) {
+    val content: @Composable () -> Unit = {
         Row(
-            modifier = Modifier.padding(AppSpacing.cardPadding),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -304,14 +384,14 @@ fun RoleSelectionCard(
                 Text(visual.subtitle, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
             }
             if (selected) {
-                Icon(
-                    Icons.Rounded.CheckCircle,
-                    contentDescription = null,
-                    tint = AppColors.Primary,
-                    modifier = Modifier.size(22.dp)
-                )
+                Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = AppColors.Primary, modifier = Modifier.size(22.dp))
             }
         }
+    }
+    if (onClick != null) {
+        AppCard(modifier = modifier, onClick = onClick, containerColor = if (selected) AppColors.PrimaryContainer else AppColors.Surface, content = { content() })
+    } else {
+        AppCard(modifier = modifier, containerColor = if (selected) AppColors.PrimaryContainer else AppColors.Surface, content = { content() })
     }
 }
 
@@ -335,15 +415,7 @@ fun BottomWaveDecoration(modifier: Modifier = Modifier) {
                 lineTo(0f, h)
                 close()
             }
-            drawPath(path, primary.copy(alpha = 0.12f))
-            val path2 = Path().apply {
-                moveTo(0f, h * 0.55f)
-                cubicTo(w * 0.35f, h * 0.2f, w * 0.65f, h * 0.85f, w, h * 0.45f)
-                lineTo(w, h)
-                lineTo(0f, h)
-                close()
-            }
-            drawPath(path2, primary.copy(alpha = 0.22f))
+            drawPath(path, primary.copy(alpha = 0.10f))
         }
     }
 }
@@ -362,7 +434,7 @@ fun AppPrimaryButton(
             .fillMaxWidth()
             .height(AppSizes.buttonHeight),
         enabled = enabled && !loading,
-        shape = AppShapes.small,
+        shape = AppShapes.medium,
         colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
     ) {
         Text(
@@ -384,8 +456,8 @@ fun DashboardStatCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    AppCard(modifier = modifier, onClick = onClick) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    AppCard(modifier = modifier, onClick = onClick, contentPadding = 16.dp) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(
                 modifier = Modifier
                     .size(AppSizes.iconBox)
@@ -393,14 +465,14 @@ fun DashboardStatCard(
                     .background(iconBg),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = iconFg, modifier = Modifier.size(22.dp))
+                Icon(icon, contentDescription = null, tint = iconFg, modifier = Modifier.size(24.dp))
             }
             Text(title, style = MaterialTheme.typography.labelMedium, color = AppColors.TextSecondary)
             Text(
                 value,
                 style = MaterialTheme.typography.headlineMedium,
                 color = AppColors.TextPrimary,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
             if (subtitle.isNotBlank()) {
                 Text(subtitle, style = MaterialTheme.typography.labelSmall, color = AppColors.TextSecondary)
@@ -418,10 +490,11 @@ fun QuickActionTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    AppCard(modifier = modifier, onClick = onClick) {
+    AppCard(modifier = modifier, onClick = onClick, contentPadding = 16.dp) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
             Box(
                 modifier = Modifier
@@ -430,14 +503,16 @@ fun QuickActionTile(
                     .background(iconBg),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = iconFg, modifier = Modifier.size(22.dp))
+                Icon(icon, contentDescription = null, tint = iconFg, modifier = Modifier.size(24.dp))
             }
             Text(
                 label,
                 style = MaterialTheme.typography.labelMedium,
                 color = AppColors.TextPrimary,
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -451,24 +526,29 @@ fun DashboardActivityRow(
     statusBg: Color,
     statusFg: Color,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    trailing: String? = null
 ) {
-    AppCard(modifier = modifier, onClick = onClick) {
+    AppCard(modifier = modifier, onClick = onClick, contentPadding = 16.dp) {
         Row(
             Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, color = AppColors.TextPrimary)
-                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, color = AppColors.TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                StatusBadge(status, statusBg, statusFg)
             }
-            Surface(shape = AppShapes.extraSmall, color = statusBg) {
-                Text(
-                    status,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = statusFg
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                trailing?.let {
+                    Text(it, style = MaterialTheme.typography.labelSmall, color = AppColors.TextSecondary)
+                }
+                Icon(
+                    Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = AppColors.TextSecondary.copy(alpha = 0.5f),
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }

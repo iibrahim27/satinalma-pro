@@ -95,7 +95,41 @@ public static class OturumYoneticisi
             throw new InvalidOperationException("Kullanıcı profili bulunamadı. Yöneticinize başvurun.");
 
         TercihleriKaydet(eposta, beniHatirla, sifremiHatirla, sifre);
-        OturumDosyasiniSil();
+        OturumDosyasiniGuncelle(beniHatirla);
+    }
+
+    /// <summary>Kayıtlı oturum veya hatırlanan e-posta/şifre ile sessiz giriş dener.</summary>
+    public static async Task<bool> OtomatikGirisDeneAsync(CancellationToken iptal = default)
+    {
+        if (Auth is null || Firestore is null || !BulutAktif)
+            return false;
+
+        if (await Auth.KayitliOturumuDeneAsync(OturumDosyasi, iptal)
+            && await ProfiliYukleAsync(iptal))
+            return true;
+
+        Auth.OturumuKapat();
+        AktifKullanici = null;
+
+        var tercih = TercihleriOku();
+        if (!tercih.BeniHatirla || string.IsNullOrWhiteSpace(tercih.Eposta) || !tercih.SifremiHatirla)
+            return false;
+
+        var sifre = GirisSifreDeposu.Oku();
+        if (string.IsNullOrWhiteSpace(sifre))
+            return false;
+
+        try
+        {
+            await GirisYapAsync(tercih.Eposta, sifre, tercih.BeniHatirla, tercih.SifremiHatirla, iptal);
+            return GirisYapildi;
+        }
+        catch
+        {
+            Auth?.OturumuKapat();
+            AktifKullanici = null;
+            return false;
+        }
     }
 
     public static async Task<bool> ProfiliYukleAsync(CancellationToken iptal = default)
@@ -196,9 +230,25 @@ public static class OturumYoneticisi
     {
         BildirimYoneticisi.Durdur();
         BulutVeriSenkronu.YoklamayiDurdur();
-        Auth?.OturumuKapat();
+
+        var tercih = TercihleriOku();
+        if (tercih.BeniHatirla && Auth is not null)
+            Auth.OturumuKaydet(OturumDosyasi, beniHatirla: true);
+        else
+        {
+            Auth?.OturumuKapat();
+            OturumDosyasiniSil();
+        }
+
         AktifKullanici = null;
-        OturumDosyasiniSil();
+    }
+
+    private static void OturumDosyasiniGuncelle(bool beniHatirla)
+    {
+        if (beniHatirla)
+            Auth?.OturumuKaydet(OturumDosyasi, beniHatirla: true);
+        else
+            OturumDosyasiniSil();
     }
 
     private static void OturumDosyasiniSil()

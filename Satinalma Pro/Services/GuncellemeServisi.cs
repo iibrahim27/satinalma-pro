@@ -25,13 +25,20 @@ public static class GuncellemeServisi
 
     public static async Task<bool> KontrolEtVeUygulaAsync(
         Action<string, double>? ilerle = null,
+        CancellationToken iptal = default) =>
+        await KontrolEtVeUygulaAsync(sessiz: ilerle is null, ilerle, iptal);
+
+    public static async Task<bool> KontrolEtVeUygulaAsync(
+        bool sessiz,
+        Action<string, double>? ilerle = null,
         CancellationToken iptal = default)
     {
+        var ilerleme = sessiz ? null : ilerle;
         var manifestUrl = FirebaseAyarDeposu.Ayarlar.GuncellemeManifestUrl;
         if (string.IsNullOrWhiteSpace(manifestUrl))
             return false;
 
-        ilerle?.Invoke("Sürüm kontrol ediliyor...", 5);
+        ilerleme?.Invoke("Sürüm kontrol ediliyor...", 5);
 
         GuncellemeManifesti manifest;
         try
@@ -44,7 +51,7 @@ public static class GuncellemeServisi
         }
         catch
         {
-            ilerle?.Invoke("Güncelleme sunucusuna ulaşılamadı, devam ediliyor...", 100);
+            ilerleme?.Invoke("Güncelleme sunucusuna ulaşılamadı, devam ediliyor...", 100);
             return false;
         }
 
@@ -55,7 +62,7 @@ public static class GuncellemeServisi
         if (!SharedSurum.GuncellemeGerekli(manifest.Version, manifest.Build, mevcut, 0))
             return false;
 
-        ilerle?.Invoke($"Yeni sürüm bulundu: v{manifest.Version}", 12);
+        ilerleme?.Invoke($"Yeni sürüm bulundu: v{manifest.Version}", 12);
 
         var adresler = IndirmeAdresleri(manifest).ToList();
         for (var i = 0; i < adresler.Count; i++)
@@ -67,10 +74,10 @@ public static class GuncellemeServisi
             {
                 if (tur == IndirmeTuru.KurulumExe)
                 {
-                    ilerle?.Invoke("Kurulum dosyası indiriliyor...", 20);
+                    ilerleme?.Invoke("Kurulum dosyası indiriliyor...", 20);
                     var kurulumYol = Path.Combine(Path.GetTempPath(), $"SatinalmaPro_Kurulum_{manifest.Version}.exe");
-                    await DosyaIndirAsync(url, kurulumYol, ilerle, iptal);
-                    ilerle?.Invoke("Güncelleniyor, lütfen bekleyin...", 92);
+                    await DosyaIndirAsync(url, kurulumYol, ilerleme, iptal);
+                    ilerleme?.Invoke("Güncelleniyor, lütfen bekleyin...", 92);
                     KurulumCalistirVeKapat(kurulumYol);
                     return true;
                 }
@@ -78,15 +85,15 @@ public static class GuncellemeServisi
                 var zipYol = Path.Combine(Path.GetTempPath(), $"SatinalmaPro_{manifest.Version}.zip");
                 var acYol = Path.Combine(Path.GetTempPath(), $"SatinalmaPro_{manifest.Version}");
 
-                ilerle?.Invoke("Güncelleme indiriliyor...", 18);
-                await DosyaIndirAsync(url, zipYol, ilerle, iptal);
+                ilerleme?.Invoke("Güncelleme indiriliyor...", 18);
+                await DosyaIndirAsync(url, zipYol, ilerleme, iptal);
 
-                ilerle?.Invoke("Güncelleme hazırlanıyor...", 82);
+                ilerleme?.Invoke("Güncelleme hazırlanıyor...", 82);
                 if (Directory.Exists(acYol))
                     Directory.Delete(acYol, true);
                 ZipFile.ExtractToDirectory(zipYol, acYol);
 
-                ilerle?.Invoke("Güncelleniyor, lütfen bekleyin...", 92);
+                ilerleme?.Invoke("Güncelleniyor, lütfen bekleyin...", 92);
                 ZipIleGuncelleVeYenidenBaslat(acYol);
                 return true;
             }
@@ -94,12 +101,12 @@ public static class GuncellemeServisi
             {
                 if (sonDeneme)
                 {
-                    ilerle?.Invoke(GuncellemeHataMetni(ex), 100);
+                    ilerleme?.Invoke(GuncellemeHataMetni(ex), 100);
                     await Task.Delay(800, iptal);
                     return false;
                 }
 
-                ilerle?.Invoke("Alternatif indirme deneniyor...", 15);
+                ilerleme?.Invoke("Alternatif indirme deneniyor...", 15);
             }
         }
 

@@ -1,35 +1,31 @@
 package com.satinalmapro.android.ui.screens.talep
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.satinalmapro.android.core.model.TalepItem
 import com.satinalmapro.android.core.model.TalepQueue
+import com.satinalmapro.android.core.roles.TalepDurumEtiketi
 import com.satinalmapro.android.ui.AppViewModel
-import com.satinalmapro.android.ui.components.AppCard
 import com.satinalmapro.android.ui.components.AppEmptyState
 import com.satinalmapro.android.ui.components.AppLoadingState
 import com.satinalmapro.android.ui.components.AppPullRefreshBox
 import com.satinalmapro.android.ui.components.AppSearchField
-import com.satinalmapro.android.ui.components.StatusBadge
+import com.satinalmapro.android.ui.components.ModernListCard
 import com.satinalmapro.android.ui.theme.AppColors
 import com.satinalmapro.android.ui.theme.AppSpacing
-import com.satinalmapro.android.core.roles.TalepDurumEtiketi
+import com.satinalmapro.android.ui.theme.statusFromText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,18 +92,14 @@ private fun TalepItem.matchesSearch(query: String): Boolean {
 
 @Composable
 private fun TalepRow(talep: TalepItem, altMetin: String, onClick: () -> Unit) {
-    AppCard(onClick = onClick) {
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(talep.talepNo.ifBlank { "Talep" }, style = MaterialTheme.typography.titleMedium, color = AppColors.TextPrimary)
-                Text(talep.malzemeOzeti, style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
-                Text(altMetin, style = MaterialTheme.typography.labelMedium, color = AppColors.TextSecondary)
-            }
-            StatusBadge(talep.durum, AppColors.PrimaryContainer, AppColors.Primary)
-        }
-    }
+    ModernListCard(
+        title = talep.talepNo.ifBlank { "Talep" },
+        description = "${talep.malzemeOzeti}\n$altMetin",
+        icon = Icons.Rounded.Description,
+        iconBg = AppColors.PrimaryContainer,
+        iconFg = AppColors.Primary,
+        statusLabel = talep.durum,
+        statusType = statusFromText(talep.durum),
+        onClick = onClick
+    )
 }

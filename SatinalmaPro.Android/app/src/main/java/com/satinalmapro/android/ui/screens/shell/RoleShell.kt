@@ -1,6 +1,7 @@
 package com.satinalmapro.android.ui.screens.shell
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -91,16 +92,18 @@ fun RoleShell(viewModel: AppViewModel) {
         Scaffold(
             containerColor = AppColors.Background,
             topBar = {
-                AppMainHeader(
-                    title = title,
-                    showMenu = isMainTab,
-                    showBack = !isMainTab,
-                    notificationCount = unreadCount,
-                    onMenuClick = { scope.launch { drawerState.open() } },
-                    onBackClick = { viewModel.navigateBack() },
-                    onNotificationClick = { viewModel.navigateFromMenu("bildirimler") },
-                    onProfileClick = { viewModel.navigateFromMenu("profil") }
-                )
+                if (base != "dashboard") {
+                    AppMainHeader(
+                        title = title,
+                        showMenu = isMainTab,
+                        showBack = !isMainTab,
+                        notificationCount = unreadCount,
+                        onMenuClick = { scope.launch { drawerState.open() } },
+                        onBackClick = { viewModel.navigateBack() },
+                        onNotificationClick = { viewModel.navigateFromMenu("bildirimler") },
+                        onProfileClick = { viewModel.navigateFromMenu("profil") }
+                    )
+                }
             },
             bottomBar = {
                 if (isMainTab) {
@@ -108,6 +111,7 @@ fun RoleShell(viewModel: AppViewModel) {
                         selectedRoute = base,
                         showReports = showReports,
                         showFab = showFab,
+                        notificationCount = unreadCount,
                         onHome = { viewModel.navigateFromMenu(homeRoute) },
                         onNotifications = { viewModel.navigateFromMenu("bildirimler") },
                         onReports = { viewModel.navigateFromMenu("raporlar") },
@@ -120,14 +124,24 @@ fun RoleShell(viewModel: AppViewModel) {
             RoleRouteContent(
                 route = route,
                 viewModel = viewModel,
-                modifier = Modifier.padding(padding)
+                onMenuClick = { scope.launch { drawerState.open() } },
+                onNotificationClick = { viewModel.navigateFromMenu("bildirimler") },
+                onProfileClick = { viewModel.navigateFromMenu("profil") },
+                modifier = Modifier.padding(if (base == "dashboard") PaddingValues(bottom = padding.calculateBottomPadding()) else padding)
             )
         }
     }
 }
 
 @Composable
-private fun RoleRouteContent(route: String, viewModel: AppViewModel, modifier: Modifier = Modifier) {
+private fun RoleRouteContent(
+    route: String,
+    viewModel: AppViewModel,
+    onMenuClick: () -> Unit = {},
+    onNotificationClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     val base = route.substringBefore('?')
     val query = route.substringAfter('?', "")
     val talepId = query.substringAfter("id=", "").substringBefore('&').takeIf { it.isNotBlank() }
@@ -136,7 +150,13 @@ private fun RoleRouteContent(route: String, viewModel: AppViewModel, modifier: M
 
     Box(modifier = modifier.fillMaxSize()) {
         when (base) {
-            "dashboard" -> HomeScreen(viewModel = viewModel, modifier = Modifier.fillMaxSize())
+            "dashboard" -> HomeScreen(
+                viewModel = viewModel,
+                onMenuClick = onMenuClick,
+                onNotificationClick = onNotificationClick,
+                onProfileClick = onProfileClick,
+                modifier = Modifier.fillMaxSize()
+            )
             "talep-duzenle" -> if (talepId != null) NewRequestScreen(viewModel, editTalepId = talepId) else HomeScreen(viewModel = viewModel, modifier = Modifier.fillMaxSize())
             "yeni-talep" -> NewRequestScreen(viewModel = viewModel)
             "onaylanan-malzemeler" -> MaterialsScreen(viewModel = viewModel, initialSection = section)
