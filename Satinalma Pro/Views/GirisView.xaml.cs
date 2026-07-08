@@ -6,6 +6,7 @@ using System.Windows.Media.Animation;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Services;
 using SatinalmaPro.Shared.Helpers;
+using SatinalmaPro.Shared.SaaS;
 
 namespace SatinalmaPro.Views;
 
@@ -94,8 +95,8 @@ public partial class GirisView : UserControl
             ChkBeniHatirla.IsChecked = tercih.BeniHatirla;
             ChkSifremiHatirla.IsChecked = tercih.SifremiHatirla;
 
-            if (tercih.BeniHatirla && !string.IsNullOrWhiteSpace(tercih.Eposta))
-                TxtEposta.Text = tercih.Eposta;
+            if (tercih.BeniHatirla && !string.IsNullOrWhiteSpace(tercih.KullaniciAdi))
+                TxtEposta.Text = tercih.KullaniciAdi;
             else
                 TxtEposta.Text = "";
 
@@ -215,7 +216,7 @@ public partial class GirisView : UserControl
 
         if (string.IsNullOrWhiteSpace(eposta))
         {
-            SifirHataGoster("E-posta adresi girin.");
+            SifirHataGoster("Kullanıcı adı girin.");
             return;
         }
 
@@ -226,7 +227,7 @@ public partial class GirisView : UserControl
         {
             await OturumYoneticisi.SifreSifirlamaEpostasiGonderAsync(eposta);
             SifirBilgiGoster(
-                "Sıfırlama bağlantısı e-posta adresinize gönderildi.\nGelen kutunuzu ve spam klasörünü kontrol edin.");
+                "Sıfırlama bağlantısı kayıtlı e-posta adresinize gönderildi.\nGelen kutunuzu ve spam klasörünü kontrol edin.");
         }
         catch (Exception ex)
         {

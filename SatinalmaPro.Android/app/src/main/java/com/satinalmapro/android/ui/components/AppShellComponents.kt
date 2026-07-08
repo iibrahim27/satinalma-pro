@@ -242,91 +242,55 @@ fun AppBottomNavigationBar(
     onProfile: () -> Unit,
     onFabClick: () -> Unit
 ) {
-    Box(
+    NavigationBar(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
+            .navigationBarsPadding(),
+        containerColor = AppColors.Surface,
+        tonalElevation = AppElevation.header
     ) {
-        NavigationBar(
-            containerColor = AppColors.Surface,
-            tonalElevation = AppElevation.card
-        ) {
-            NavigationBarItem(
-                selected = selectedRoute == "dashboard" || selectedRoute == "stok-durum",
-                onClick = onHome,
-                icon = { Icon(Icons.Rounded.Home, contentDescription = "Ana Sayfa") },
-                label = { Text("Ana Sayfa", style = MaterialTheme.typography.labelSmall) },
-                colors = navColors()
-            )
-            NavigationBarItem(
-                selected = selectedRoute == "bildirimler",
-                onClick = onNotifications,
-                icon = {
-                    BadgedBox(
-                        badge = {
-                            if (notificationCount > 0) {
-                                Badge(containerColor = AppColors.Danger) {
-                                    Text(if (notificationCount > 99) "99+" else "$notificationCount")
-                                }
+        NavigationBarItem(
+            selected = selectedRoute == "dashboard" || selectedRoute == "stok-durum",
+            onClick = onHome,
+            icon = { Icon(Icons.Rounded.Home, contentDescription = "Ana Sayfa") },
+            label = { Text("Ana Sayfa", style = MaterialTheme.typography.labelSmall) },
+            colors = navColors()
+        )
+        NavigationBarItem(
+            selected = selectedRoute == "bildirimler",
+            onClick = onNotifications,
+            icon = {
+                BadgedBox(
+                    badge = {
+                        if (notificationCount > 0) {
+                            Badge(containerColor = AppColors.Danger) {
+                                Text(if (notificationCount > 99) "99+" else "$notificationCount")
                             }
                         }
-                    ) {
-                        Icon(Icons.Rounded.Notifications, contentDescription = "Bildirimler")
                     }
-                },
-                label = { Text("Bildirim", style = MaterialTheme.typography.labelSmall) },
-                colors = navColors()
-            )
+                ) {
+                    Icon(Icons.Rounded.Notifications, contentDescription = "Bildirimler")
+                }
+            },
+            label = { Text("Bildirim", style = MaterialTheme.typography.labelSmall) },
+            colors = navColors()
+        )
+        if (showReports) {
             NavigationBarItem(
-                selected = false,
-                onClick = {},
-                enabled = false,
-                icon = { Spacer(Modifier.size(24.dp)) },
-                label = { Text("") },
-                colors = navColors()
-            )
-            if (showReports) {
-                NavigationBarItem(
-                    selected = selectedRoute == "raporlar",
-                    onClick = onReports,
-                    icon = { Icon(Icons.Rounded.BarChart, contentDescription = "Raporlar") },
-                    label = { Text("Raporlar", style = MaterialTheme.typography.labelSmall) },
-                    colors = navColors()
-                )
-            } else {
-                NavigationBarItem(
-                    selected = false,
-                    onClick = {},
-                    enabled = false,
-                    icon = { Spacer(Modifier.size(24.dp)) },
-                    label = { Text("") },
-                    colors = navColors()
-                )
-            }
-            NavigationBarItem(
-                selected = selectedRoute == "profil",
-                onClick = onProfile,
-                icon = { Icon(Icons.Rounded.Person, contentDescription = "Profil") },
-                label = { Text("Profil", style = MaterialTheme.typography.labelSmall) },
+                selected = selectedRoute == "raporlar",
+                onClick = onReports,
+                icon = { Icon(Icons.Rounded.BarChart, contentDescription = "Raporlar") },
+                label = { Text("Raporlar", style = MaterialTheme.typography.labelSmall) },
                 colors = navColors()
             )
         }
-        if (showFab) {
-            FloatingActionButton(
-                onClick = onFabClick,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-22).dp)
-                    .size(AppSizes.fabSize)
-                    .shadow(AppElevation.fab, CircleShape),
-                shape = CircleShape,
-                containerColor = AppColors.Primary,
-                contentColor = AppColors.TextOnPrimary,
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = AppElevation.fab)
-            ) {
-                Icon(Icons.Rounded.Add, contentDescription = "Yeni talep", modifier = Modifier.size(28.dp))
-            }
-        }
+        NavigationBarItem(
+            selected = selectedRoute == "profil",
+            onClick = onProfile,
+            icon = { Icon(Icons.Rounded.Person, contentDescription = "Profil") },
+            label = { Text("Profil", style = MaterialTheme.typography.labelSmall) },
+            colors = navColors()
+        )
     }
 }
 

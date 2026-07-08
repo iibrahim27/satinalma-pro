@@ -72,10 +72,10 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
             }
         };
 
-        SatinalmaDepo.TaleplerGuncellendi += NavRozetleriniGuncelle;
+        SatinalmaDepo.TaleplerGuncellendi += IcerikYenile;
         Unloaded += (_, _) =>
         {
-            SatinalmaDepo.TaleplerGuncellendi -= NavRozetleriniGuncelle;
+            SatinalmaDepo.TaleplerGuncellendi -= IcerikYenile;
             OturumYoneticisi.OturumDegisti -= OturumDegistiIsle;
         };
 
@@ -107,16 +107,25 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
         });
     }
 
-    public void KisayolYenile()
+    public void KisayolYenile() => IcerikYenile();
+
+    private void IcerikYenile()
     {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(IcerikYenile, DispatcherPriority.Background);
+            return;
+        }
+
         NavRozetleriniGuncelle();
+
         if (_panosu is not null && IcerikAlani.Content == _panosu)
             PanoYenilemeyiPlanla();
         if (_iade is not null && IcerikAlani.Content == _iade)
             _iade.Yenile();
         if (_tedarikciler is not null && IcerikAlani.Content == _tedarikciler)
             _tedarikciler.Yenile();
-        if (_liste is not null && IcerikAlani.Content == _liste)
+        if (_liste is not null && IcerikAlani.Content == _liste && SatinalmaPart1Menusu.ListeRoute(_aktifRoute))
             _liste.Yenile();
         if (_onaylananListe is not null && IcerikAlani.Content == _onaylananListe)
             _onaylananListe.Yenile();
@@ -410,14 +419,14 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
                 RouteAc(route, id);
             }
         };
-        pano.Degisti += NavRozetleriniGuncelle;
+        pano.Degisti += IcerikYenile;
         return pano;
     }
 
     private TalepFormView OlusturTalepForm()
     {
         var form = new TalepFormView();
-        form.Degisti += NavRozetleriniGuncelle;
+        form.Degisti += IcerikYenile;
         form.KapatIstendi += ListeyeDon;
         return form;
     }
@@ -433,7 +442,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
     {
         var liste = new OnaylananTalepListesiView();
         liste.TalepSecildi += OnaylananTalepSecildi;
-        liste.Degisti += NavRozetleriniGuncelle;
+        liste.Degisti += IcerikYenile;
         return liste;
     }
 
@@ -448,7 +457,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
     {
         var detay = new OnaylananTalepDetayView();
         detay.Geri += ListeyeDon;
-        detay.Degisti += NavRozetleriniGuncelle;
+        detay.Degisti += IcerikYenile;
         return detay;
     }
 
@@ -472,7 +481,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
     {
         var detay = new SiparisVerilenTalepDetayView();
         detay.Geri += ListeyeDon;
-        detay.Degisti += NavRozetleriniGuncelle;
+        detay.Degisti += IcerikYenile;
         return detay;
     }
 
@@ -573,7 +582,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
     {
         var view = new TeklifGirisView();
         view.Geri += ListeyeDon;
-        view.Degisti += NavRozetleriniGuncelle;
+        view.Degisti += IcerikYenile;
         view.Yonlendir += route => RouteAc(route, null);
         return view;
     }
@@ -582,7 +591,8 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
     {
         var detay = new GelenTalepDetayView();
         detay.Geri += ListeyeDon;
-        detay.Degisti += NavRozetleriniGuncelle;
+        detay.Degisti += IcerikYenile;
+        detay.Yonlendir += route => RouteAc(route, null);
         return detay;
     }
 

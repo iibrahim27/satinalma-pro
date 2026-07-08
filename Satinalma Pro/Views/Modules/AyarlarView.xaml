@@ -45,7 +45,7 @@
         <StackPanel VerticalAlignment="Center">
           <TextBlock Text="Ayarlar" FontSize="24" FontWeight="SemiBold"
                      Foreground="{StaticResource InkBrush}" />
-          <TextBlock Text="Sistem yapılandırması, kullanıcı yönetimi ve uygulama tercihleri"
+          <TextBlock Text="Sistem yapılandırması ve uygulama tercihleri"
                      Style="{StaticResource AyarSectionDesc}" Margin="0,2,0,0" />
         </StackPanel>
       </StackPanel>
@@ -232,42 +232,6 @@
                     </Border>
                   </StackPanel>
                 </Grid>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-
-          <!-- KULLANICILAR -->
-          <StackPanel x:Name="PanelKullanicilar" Visibility="Collapsed">
-            <Border Style="{StaticResource AyarCard}">
-              <StackPanel>
-                <TextBlock Text="Kullanıcı Yönetimi" Style="{StaticResource AyarSectionTitle}" />
-                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,20"
-                           Text="Firebase bulut girişi aktifken kullanıcı hesapları, roller ve modül erişimleri buradan yönetilir. Yerel modda bu özellik devre dışıdır." />
-                <Button x:Name="BtnKullaniciYonetimi" Style="{StaticResource AyarSaveButton}"
-                        Content="Kullanıcı Yönetimini Aç" HorizontalAlignment="Left"
-                        Click="KullaniciYonetimi_Click" Visibility="Collapsed" />
-              </StackPanel>
-            </Border>
-          </StackPanel>
-
-          <!-- YETKİLENDİRME -->
-          <StackPanel x:Name="PanelYetkilendirme" Visibility="Collapsed">
-            <Border Style="{StaticResource AyarCard}">
-              <StackPanel>
-                <TextBlock Text="Yetkilendirme" Style="{StaticResource AyarSectionTitle}" />
-                <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,16"
-                           Text="Kullanıcı rolleri (Admin, Yönetim, Şef, Satınalma, Saha) modül ve sekme erişimlerini belirler. Rol atamaları Kullanıcı Yönetimi ekranından yapılır." />
-                <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1"
-                        CornerRadius="10" Padding="16,14">
-                  <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="18"
-                               Foreground="{StaticResource AyarPrimaryBrush}"
-                               VerticalAlignment="Center" Margin="0,0,12,0" />
-                    <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#1E40AF"
-                               VerticalAlignment="Center"
-                               Text="Rol ve yetki değişiklikleri için Kullanıcılar bölümündeki yönetim ekranını kullanın." />
-                  </StackPanel>
-                </Border>
               </StackPanel>
             </Border>
           </StackPanel>

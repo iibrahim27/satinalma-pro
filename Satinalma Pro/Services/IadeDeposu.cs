@@ -25,7 +25,7 @@ public static class IadeDeposu
         if (OturumYoneticisi.GirisYapildi && OturumYoneticisi.Firestore is not null)
         {
             var json = await OturumYoneticisi.Firestore
-                .BelgeJsonOkuAsync(FirestoreYollari.IadeKayitlari, iptal);
+                .BelgeJsonOkuAsync(FirestoreYollari.IadeKayitlari(), iptal);
             if (!string.IsNullOrWhiteSpace(json))
             {
                 KayitlariUygula(json);
@@ -63,7 +63,7 @@ public static class IadeDeposu
 
         var json = JsonSerializer.Serialize(Kayitlar, Json);
         await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
-            FirestoreYollari.IadeKayitlari,
+            FirestoreYollari.IadeKayitlari(),
             json,
             OturumYoneticisi.Auth?.Uid,
             iptal);

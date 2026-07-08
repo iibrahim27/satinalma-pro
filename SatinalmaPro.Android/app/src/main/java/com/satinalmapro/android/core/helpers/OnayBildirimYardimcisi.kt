@@ -14,7 +14,6 @@ object OnayBildirimYardimcisi {
         val hedefler = mutableListOf<Pair<String?, String?>>()
         if (satinalmaOnayladi(onaylayanRol)) {
             if (!olusturanUid.isNullOrBlank()) hedefler.add(null to olusturanUid)
-            hedefler.add(KullaniciRolleri.YONETIM to null)
             return hedefler
         }
         if (!olusturanUid.isNullOrBlank()) hedefler.add(null to olusturanUid)

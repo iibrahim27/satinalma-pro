@@ -3,20 +3,20 @@ package com.satinalmapro.android.ui.theme
 import androidx.compose.ui.unit.dp
 
 object AppSpacing {
-    val screenHorizontal = 20.dp
-    val screenVertical = 16.dp
-    val cardPadding = 20.dp
-    val cardGap = 14.dp
-    val sectionGap = 20.dp
-    val itemGap = 12.dp
-    val heroBottom = 24.dp
+    val screenHorizontal = 18.dp
+    val screenVertical = 14.dp
+    val cardPadding = 18.dp
+    val cardGap = 12.dp
+    val sectionGap = 18.dp
+    val itemGap = 10.dp
+    val heroBottom = 22.dp
 }
 
 object AppElevation {
-    val card = 2.dp
-    val cardHover = 4.dp
-    val fab = 8.dp
-    val header = 0.dp
+    val card = 0.dp
+    val cardHover = 2.dp
+    val fab = 6.dp
+    val header = 1.dp
 }
 
 object AppSizes {

@@ -1,8 +1,6 @@
 package com.satinalmapro.android.ui.screens.settings
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,24 +11,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,10 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.satinalmapro.android.core.model.ManagedUser
-import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppCard
 import com.satinalmapro.android.ui.components.AppDetailTabRow
@@ -56,7 +41,6 @@ import com.satinalmapro.android.ui.theme.AppSpacing
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(viewModel: AppViewModel) {
-    val users by viewModel.settingsUsers.collectAsState()
     val birimler by viewModel.malzemeBirimleri.collectAsState()
     val kategoriler by viewModel.malzemeKategorileri.collectAsState()
     val loading by viewModel.loading.collectAsState()
@@ -68,7 +52,7 @@ fun SettingsScreen(viewModel: AppViewModel) {
 
     Column(Modifier.fillMaxSize()) {
         AppDetailTabRow(
-            tabs = listOf("Kullanıcılar", "Birim Terimleri", "Kategoriler"),
+            tabs = listOf("Birim Terimleri", "Kategoriler"),
             selectedIndex = tab,
             onTabSelected = { tab = it }
         )
@@ -91,8 +75,7 @@ fun SettingsScreen(viewModel: AppViewModel) {
         }
 
         when (tab) {
-            0 -> UsersTab(users, loading, viewModel)
-            1 -> TermListTab(
+            0 -> TermListTab(
                 title = "Malzeme birim terimleri",
                 hint = "Yeni birim",
                 items = birimler,
@@ -100,7 +83,7 @@ fun SettingsScreen(viewModel: AppViewModel) {
                 onAdd = viewModel::addBirim,
                 onRemove = viewModel::removeBirim
             )
-            2 -> TermListTab(
+            else -> TermListTab(
                 title = "Malzeme kategorileri",
                 hint = "Yeni kategori",
                 items = kategoriler,
@@ -108,192 +91,6 @@ fun SettingsScreen(viewModel: AppViewModel) {
                 onAdd = viewModel::addKategori,
                 onRemove = viewModel::removeKategori
             )
-        }
-    }
-}
-
-@Composable
-private fun UsersTab(users: List<ManagedUser>, loading: Boolean, viewModel: AppViewModel) {
-    var selected by remember { mutableStateOf<ManagedUser?>(null) }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var fullName by remember { mutableStateOf("") }
-    var role by remember { mutableStateOf(KullaniciRolleri.SATINALMA) }
-    var site by remember { mutableStateOf("") }
-    var active by remember { mutableStateOf(true) }
-    var creatingNew by remember { mutableStateOf(true) }
-
-    fun resetForm(forNew: Boolean) {
-        creatingNew = forNew
-        selected = null
-        email = ""
-        password = ""
-        fullName = ""
-        role = KullaniciRolleri.SATINALMA
-        site = ""
-        active = true
-    }
-
-    fun fillForm(user: ManagedUser) {
-        creatingNew = false
-        selected = user
-        email = user.email
-        password = ""
-        fullName = user.fullName
-        role = user.role
-        site = user.site
-        active = user.active
-    }
-
-    Column(Modifier.fillMaxSize()) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("${users.size} kullanıcı", style = MaterialTheme.typography.bodyMedium, color = AppColors.TextSecondary)
-            Row {
-                IconButton(onClick = { viewModel.loadSettings() }) {
-                    Icon(Icons.Rounded.Refresh, contentDescription = "Yenile")
-                }
-                OutlinedButton(onClick = { resetForm(true) }) {
-                    Text("Yeni")
-                }
-            }
-        }
-
-        LazyColumn(
-            modifier = Modifier.weight(1f).padding(horizontal = AppSpacing.screenHorizontal),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(users, key = { it.uid }) { user ->
-                AppCard(onClick = { fillForm(user) }) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(user.fullName, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
-                            Text(user.email, style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
-                            Text(
-                                "${user.role}${user.site.takeIf { it.isNotBlank() }?.let { " · $it" } ?: ""}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = AppColors.TextSecondary
-                            )
-                        }
-                        Text(
-                            if (user.active) "Aktif" else "Pasif",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (user.active) AppColors.Primary else AppColors.Danger
-                        )
-                    }
-                }
-            }
-        }
-
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(AppSpacing.screenHorizontal)
-        ) {
-            Text(
-                if (creatingNew) "Yeni kullanıcı" else "Kullanıcı düzenle",
-                style = MaterialTheme.typography.titleMedium,
-                color = AppColors.TextPrimary
-            )
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("E-posta") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = creatingNew,
-                singleLine = true
-            )
-            Spacer(Modifier.height(8.dp))
-            if (creatingNew) {
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Şifre (en az 6 karakter)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                Spacer(Modifier.height(8.dp))
-            }
-            OutlinedTextField(
-                value = fullName,
-                onValueChange = { fullName = it },
-                label = { Text("Ad Soyad") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            Spacer(Modifier.height(8.dp))
-            RolePicker(role = role, onRoleChange = { role = it })
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = site,
-                onValueChange = { site = it },
-                label = { Text("Şantiye / Saha") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Aktif hesap", color = AppColors.TextPrimary)
-                Switch(checked = active, onCheckedChange = { active = it })
-            }
-            Spacer(Modifier.height(12.dp))
-            Button(
-                onClick = {
-                    if (creatingNew) {
-                        viewModel.createUser(email, password, fullName, role, site, active) {
-                            resetForm(true)
-                        }
-                    } else {
-                        val uid = selected?.uid ?: return@Button
-                        viewModel.saveUser(
-                            ManagedUser(uid, email.trim(), fullName.trim(), role, active, site.trim())
-                        ) { resetForm(true) }
-                    }
-                },
-                enabled = !loading,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (creatingNew) "Kullanıcı Oluştur" else "Değişiklikleri Kaydet")
-            }
-        }
-    }
-}
-
-@Composable
-private fun RolePicker(role: String, onRoleChange: (String) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        OutlinedTextField(
-            value = role,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Rol") },
-            modifier = Modifier.fillMaxWidth().clickable { expanded = true },
-            singleLine = true
-        )
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            KullaniciRolleri.TUM.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option) },
-                    onClick = {
-                        onRoleChange(option)
-                        expanded = false
-                    }
-                )
-            }
         }
     }
 }

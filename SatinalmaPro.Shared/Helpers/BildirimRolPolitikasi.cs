@@ -1,0 +1,138 @@
+using SatinalmaPro.Shared.Models;
+
+namespace SatinalmaPro.Shared.Helpers;
+
+/// <summary>
+/// Rol × bildirim tipi matrisi — masaüstü, mobil ve Android aynı kuralları kullanır.
+/// Yönetim yalnızca: sahadan gelen talep (YonetimeGonderildi) ve teklif onayı (TeklifOnayda).
+/// </summary>
+public static class BildirimRolPolitikasi
+{
+    public static bool IslemYapanKendisiMi(BildirimKaydi bildirim, KullaniciProfili? kullanici) =>
+        kullanici is not null
+        && !string.IsNullOrWhiteSpace(bildirim.OlusturanUid)
+        && bildirim.OlusturanUid == kullanici.Uid;
+
+    /// <summary>WhatsApp/Instagram kuralı: işlemi yapan kişiye kayıt/push oluşturulmaz.</summary>
+    public static bool KayitGonderilmeli(string? hedefRol, string? hedefUid, string? islemYapanUid)
+    {
+        if (string.IsNullOrWhiteSpace(islemYapanUid))
+            return !string.IsNullOrWhiteSpace(hedefRol) || !string.IsNullOrWhiteSpace(hedefUid);
+
+        if (!string.IsNullOrWhiteSpace(hedefUid)
+            && string.Equals(hedefUid, islemYapanUid, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return !string.IsNullOrWhiteSpace(hedefRol) || !string.IsNullOrWhiteSpace(hedefUid);
+    }
+
+    public static bool KayitGonderilmeli(BildirimKaydi bildirim) =>
+        KayitGonderilmeli(bildirim.HedefRol, bildirim.HedefUid, bildirim.OlusturanUid);
+
+    /// <summary>Admin tüm akış bildirimlerini görür.</summary>
+    public static bool RolTipGorebilirMi(string? rol, string tip)
+    {
+        if (KullaniciRolleri.AdminMi(rol))
+            return true;
+
+        var r = KullaniciRolleri.Normalize(rol);
+        tip = NormalizeTip(tip);
+
+        return tip switch
+        {
+            BildirimTipleri.YonetimeGonderildi =>
+                r == KullaniciRolleri.Yonetim,
+            BildirimTipleri.TeklifOnayda =>
+                r == KullaniciRolleri.Yonetim,
+            BildirimTipleri.TeklifIstendi or BildirimTipleri.TeklifDuzeltmeIstendi =>
+                r == KullaniciRolleri.Satinalma,
+            BildirimTipleri.Onaylandi =>
+                r == KullaniciRolleri.Satinalma,
+            BildirimTipleri.Reddedildi =>
+                r == KullaniciRolleri.Satinalma,
+            BildirimTipleri.SiparisOlusturuldu =>
+                r is KullaniciRolleri.Satinalma or KullaniciRolleri.Depo or KullaniciRolleri.Atolye,
+            BildirimTipleri.MalKabulEdildi =>
+                r == KullaniciRolleri.Satinalma,
+            _ => false
+        };
+    }
+
+    public static bool KullaniciyaMi(BildirimKaydi bildirim, KullaniciProfili? kullanici)
+    {
+        if (kullanici is null)
+            return false;
+
+        // İşlemi yapan kişi kendi aksiyonunun bildirimini asla almaz.
+        if (IslemYapanKendisiMi(bildirim, kullanici))
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(bildirim.HedefUid))
+            return bildirim.HedefUid == kullanici.Uid;
+
+        if (!string.IsNullOrWhiteSpace(bildirim.InboxDocId))
+            return RolTipGorebilirMi(kullanici.Rol, bildirim.Tip);
+
+        if (KullaniciRolleri.AdminMi(kullanici.Rol))
+            return true;
+
+        if (!string.IsNullOrWhiteSpace(bildirim.HedefRol))
+        {
+            var rol = KullaniciRolleri.Normalize(kullanici.Rol);
+            return KullaniciRolleri.Normalize(bildirim.HedefRol) == rol
+                && RolTipGorebilirMi(rol, bildirim.Tip);
+        }
+
+        return false;
+    }
+
+    public static IEnumerable<(string? HedefRol, string? HedefUid)> YonetimeGonderildiHedefleri() =>
+    [
+        (KullaniciRolleri.Yonetim, null)
+    ];
+
+    public static IEnumerable<(string? HedefRol, string? HedefUid)> ReddedildiHedefleri(
+        string? talepOlusturanUid,
+        string? islemYapanUid)
+    {
+        yield return (KullaniciRolleri.Satinalma, null);
+        if (!string.IsNullOrWhiteSpace(talepOlusturanUid)
+            && !string.Equals(talepOlusturanUid, islemYapanUid, StringComparison.OrdinalIgnoreCase))
+            yield return (null, talepOlusturanUid);
+    }
+
+    public static IEnumerable<(string? HedefRol, string? HedefUid)> SiparisOlusturulduHedefleri(
+        string? talepOlusturanUid,
+        string? islemYapanUid)
+    {
+        yield return (KullaniciRolleri.Satinalma, null);
+        yield return (KullaniciRolleri.Depo, null);
+        yield return (KullaniciRolleri.Atolye, null);
+        if (!string.IsNullOrWhiteSpace(talepOlusturanUid)
+            && !string.Equals(talepOlusturanUid, islemYapanUid, StringComparison.OrdinalIgnoreCase))
+            yield return (null, talepOlusturanUid);
+    }
+
+    public static IEnumerable<(string? HedefRol, string? HedefUid)> MalKabulEdildiHedefleri(
+        string? talepOlusturanUid,
+        string? islemYapanUid)
+    {
+        yield return (KullaniciRolleri.Satinalma, null);
+        if (!string.IsNullOrWhiteSpace(talepOlusturanUid)
+            && !string.Equals(talepOlusturanUid, islemYapanUid, StringComparison.OrdinalIgnoreCase))
+            yield return (null, talepOlusturanUid);
+    }
+
+    public static string NormalizeTip(string tip) => tip.Trim().ToLowerInvariant() switch
+    {
+        "yonetimegonderildi" => BildirimTipleri.YonetimeGonderildi,
+        "teklifistendi" => BildirimTipleri.TeklifIstendi,
+        "teklifonayda" => BildirimTipleri.TeklifOnayda,
+        "teklifduzeltmeistendi" => BildirimTipleri.TeklifDuzeltmeIstendi,
+        "onaylandi" => BildirimTipleri.Onaylandi,
+        "reddedildi" => BildirimTipleri.Reddedildi,
+        "siparisolusturuldu" => BildirimTipleri.SiparisOlusturuldu,
+        "malkabuledildi" => BildirimTipleri.MalKabulEdildi,
+        _ => tip.Trim().ToLowerInvariant()
+    };
+}

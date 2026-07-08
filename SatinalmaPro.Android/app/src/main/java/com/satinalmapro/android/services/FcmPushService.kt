@@ -106,6 +106,10 @@ class FcmPushService(
         hatalar: MutableList<String>
     ): List<PushTarget> {
         if (!record.hedefUid.isNullOrBlank()) {
+            if (record.hedefUid.equals(olusturanUid, ignoreCase = true)) {
+                uyarilar.add("İşlemi yapan kişiye bildirim gönderilmez: ${record.hedefUid}")
+                return emptyList()
+            }
             val user = try {
                 firestore.readUserAdmin(adminToken, record.hedefUid)
             } catch (ex: Exception) {

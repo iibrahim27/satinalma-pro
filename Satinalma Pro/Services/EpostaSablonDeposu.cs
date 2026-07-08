@@ -1,11 +1,13 @@
 using System.Text.Json;
 using SatinalmaPro.Models;
 
+using SatinalmaPro.Shared;
+
 namespace SatinalmaPro.Services;
 
 public static class EpostaSablonDeposu
 {
-    private const string BelgeYolu = "veri/eposta_sablonlari";
+    private static string BelgeYolu => FirestoreYollari.EpostaSablonlari();
 
     private static readonly JsonSerializerOptions Json = new()
     {

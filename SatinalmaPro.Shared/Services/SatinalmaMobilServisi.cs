@@ -94,10 +94,10 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         await TalepKaydetAsync(talep, iptal);
 
         await _bildirimler.CokluEkleAsync(
-        [
-            BildirimKaydiOlustur(BildirimTipleri.YonetimeGonderildi, talep, hedefRol: KullaniciRolleri.Yonetim),
-            BildirimKaydiOlustur(BildirimTipleri.YonetimeGonderildi, talep, hedefRol: KullaniciRolleri.Satinalma)
-        ], iptal);
+            BildirimRolPolitikasi.YonetimeGonderildiHedefleri()
+                .Select(h => BildirimKaydiOlustur(BildirimTipleri.YonetimeGonderildi, talep, h.HedefRol, h.HedefUid))
+                .ToList(),
+            iptal);
     }
 
     public async Task YonetimAcilOnaylaAsync(SatinalmaTalep talep, CancellationToken iptal = default)
@@ -176,7 +176,12 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
 
         try
         {
-            await _bildirimler.EkleAsync(BildirimKaydiOlustur(BildirimTipleri.Reddedildi, talep, hedefUid: talep.OlusturanUid, ek: gerekce), iptal);
+            var actorUid = _depo.AktifKullanici?.Uid;
+            await _bildirimler.CokluEkleAsync(
+                BildirimRolPolitikasi.ReddedildiHedefleri(talep.OlusturanUid, actorUid)
+                    .Select(h => BildirimKaydiOlustur(BildirimTipleri.Reddedildi, talep, h.HedefRol, h.HedefUid, ek: gerekce))
+                    .ToList(),
+                iptal);
         }
         catch
         {
@@ -640,14 +645,12 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
 
         await TalepKaydetAsync(talep, iptal);
         var ozet = $"{kalem.Malzeme} · {miktar:N2} {kalem.Birim}";
-        var malKabulKayitlari = new List<BildirimKaydi>
-        {
-            BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, hedefRol: KullaniciRolleri.Satinalma, ek: ozet),
-            BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, hedefRol: KullaniciRolleri.Depo, ek: ozet)
-        };
-        if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
-            malKabulKayitlari.Add(BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, hedefUid: talep.OlusturanUid, ek: ozet));
-        await _bildirimler.CokluEkleAsync(malKabulKayitlari, iptal);
+        var actorUid = _depo.AktifKullanici?.Uid;
+        await _bildirimler.CokluEkleAsync(
+            BildirimRolPolitikasi.MalKabulEdildiHedefleri(talep.OlusturanUid, actorUid)
+                .Select(h => BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, h.HedefRol, h.HedefUid, ek: ozet))
+                .ToList(),
+            iptal);
     }
 
     public async Task SiparisTamamlaAsync(Guid talepId, Guid kalemId, CancellationToken iptal = default)
@@ -694,13 +697,12 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         talep.Durum = SatinalmaTalepDurumlari.SiparisOlusturuldu;
         await TalepKaydetAsync(talep, iptal);
         var ek = $"Sipariş No: {talep.SiparisNo}";
-        var siparisKayitlari = new List<BildirimKaydi>
-        {
-            BildirimKaydiOlustur(BildirimTipleri.SiparisOlusturuldu, talep, hedefRol: KullaniciRolleri.Satinalma, ek: ek)
-        };
-        if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
-            siparisKayitlari.Add(BildirimKaydiOlustur(BildirimTipleri.SiparisOlusturuldu, talep, hedefUid: talep.OlusturanUid, ek: ek));
-        await _bildirimler.CokluEkleAsync(siparisKayitlari, iptal);
+        var actorUid = _depo.AktifKullanici?.Uid;
+        await _bildirimler.CokluEkleAsync(
+            BildirimRolPolitikasi.SiparisOlusturulduHedefleri(talep.OlusturanUid, actorUid)
+                .Select(h => BildirimKaydiOlustur(BildirimTipleri.SiparisOlusturuldu, talep, h.HedefRol, h.HedefUid, ek: ek))
+                .ToList(),
+            iptal);
     }
 
     public bool StogaDahaOnceAktarildi(OnaylananMalzemeSatiri satir)
@@ -765,14 +767,12 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
 
         var talep = _depo.Talepler.First(t => t.Id == satir.TalepId);
         var ek = $"{satir.Malzeme} · {miktar:N2} {satir.Birim} stoğa aktarıldı";
-        var stokKayitlari = new List<BildirimKaydi>
-        {
-            BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, hedefRol: KullaniciRolleri.Satinalma, ek: ek),
-            BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, hedefRol: KullaniciRolleri.Depo, ek: ek)
-        };
-        if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
-            stokKayitlari.Add(BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, hedefUid: talep.OlusturanUid, ek: ek));
-        await _bildirimler.CokluEkleAsync(stokKayitlari, iptal);
+        var actorUid = _depo.AktifKullanici?.Uid;
+        await _bildirimler.CokluEkleAsync(
+            BildirimRolPolitikasi.MalKabulEdildiHedefleri(talep.OlusturanUid, actorUid)
+                .Select(h => BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, h.HedefRol, h.HedefUid, ek: ek))
+                .ToList(),
+            iptal);
     }
 
     private List<BildirimKaydi> OnaylandiKayitlari(SatinalmaTalep talep, string? firmaAdi = null)

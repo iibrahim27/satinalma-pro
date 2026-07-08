@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SatinalmaPro.Shared;
 using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Models;
 
@@ -104,7 +105,7 @@ public sealed class FirestoreVeriServisi
     public async Task<KullaniciProfili?> KullaniciOkuAsync(string uid, CancellationToken iptal = default)
     {
         var token = await _auth.GecerliTokenAlAsync(iptal);
-        using var istek = new HttpRequestMessage(HttpMethod.Get, $"{Kok}/users/{uid}");
+        using var istek = new HttpRequestMessage(HttpMethod.Get, $"{Kok}/{FirestoreYollari.User(uid)}");
         istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var yanit = await Http.SendAsync(istek, iptal);
@@ -131,7 +132,7 @@ public sealed class FirestoreVeriServisi
         };
 
         using var patch = new HttpRequestMessage(HttpMethod.Patch,
-            $"{Kok}/users/{uid}?updateMask.fieldPaths=fcmToken")
+            $"{Kok}/{FirestoreYollari.User(uid)}?updateMask.fieldPaths=fcmToken")
         {
             Content = new StringContent(JsonSerializer.Serialize(govde), Encoding.UTF8, "application/json")
         };
@@ -149,7 +150,7 @@ public sealed class FirestoreVeriServisi
     public async Task<List<KullaniciProfili>> TumKullanicilariOkuAsync(CancellationToken iptal = default)
     {
         var token = await _auth.GecerliTokenAlAsync(iptal);
-        using var istek = new HttpRequestMessage(HttpMethod.Get, $"{Kok}/users");
+        using var istek = new HttpRequestMessage(HttpMethod.Get, $"{Kok}/{FirestoreYollari.Users()}");
         istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var yanit = await Http.SendAsync(istek, iptal);
@@ -176,7 +177,7 @@ public sealed class FirestoreVeriServisi
     {
         var token = await _auth.GecerliTokenAlAsync(iptal);
         using var istek = new HttpRequestMessage(HttpMethod.Get,
-            $"{Kok}/users/{uid}/notification_inbox?pageSize={limit}");
+            $"{Kok}/{FirestoreYollari.UserNotificationInbox(uid)}?pageSize={limit}");
         istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var yanit = await Http.SendAsync(istek, iptal);
@@ -216,7 +217,7 @@ public sealed class FirestoreVeriServisi
         };
 
         using var patch = new HttpRequestMessage(HttpMethod.Patch,
-            $"{Kok}/users/{uid}/notification_inbox/{inboxDocId}?updateMask.fieldPaths=isRead&updateMask.fieldPaths=readAt")
+            $"{Kok}/{FirestoreYollari.UserNotificationInbox(uid)}/{inboxDocId}?updateMask.fieldPaths=isRead&updateMask.fieldPaths=readAt")
         {
             Content = new StringContent(JsonSerializer.Serialize(govde), Encoding.UTF8, "application/json")
         };

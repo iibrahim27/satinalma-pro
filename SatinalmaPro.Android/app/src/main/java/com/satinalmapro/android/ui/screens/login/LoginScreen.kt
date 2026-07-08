@@ -167,6 +167,7 @@ fun LoginScreen(viewModel: AppViewModel) {
                             .fillMaxWidth()
                             .onFocusChanged { usernameFocused = it.isFocused },
                         label = { Text("Kullanıcı Adı") },
+                        placeholder = { Text("kullanici.adi") },
                         singleLine = true,
                         shape = AppShapes.medium,
                         colors = loginFieldColors(usernameFocused, fieldError),

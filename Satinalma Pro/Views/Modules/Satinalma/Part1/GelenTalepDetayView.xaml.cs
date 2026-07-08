@@ -24,6 +24,8 @@ public partial class GelenTalepDetayView : UserControl
 
     public event Action? Degisti;
 
+    public event Action<string>? Yonlendir;
+
 
 
     private SatinalmaTalep? _talep;
@@ -243,7 +245,21 @@ public partial class GelenTalepDetayView : UserControl
 
             Degisti?.Invoke();
 
-            Geri?.Invoke();
+            var hedefRoute = action switch
+            {
+                PurchaseRequestDetailAction.RejectRequest => SatinalmaPart1Menusu.YonetimRedVerilen,
+                PurchaseRequestDetailAction.DirectApprove => SatinalmaPart1Menusu.YonetimDirekOnaylanan,
+                PurchaseRequestDetailAction.StartQuoteProcess =>
+                    KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol) == KullaniciRolleri.Satinalma
+                        ? SatinalmaPart1Menusu.SatinalmaTeklifIstenen
+                        : SatinalmaPart1Menusu.YonetimTeklifBekleyen,
+                _ => null
+            };
+
+            if (!string.IsNullOrWhiteSpace(hedefRoute))
+                Yonlendir?.Invoke(hedefRoute);
+            else
+                Geri?.Invoke();
 
         }
 

@@ -3,6 +3,7 @@ package com.satinalmapro.android.data.repository
 import com.satinalmapro.android.core.JsonConfig
 import com.google.gson.reflect.TypeToken
 import com.satinalmapro.android.core.helpers.BildirimMantikAnahtari
+import com.satinalmapro.android.core.helpers.BildirimRolPolitikasi
 import com.satinalmapro.android.core.helpers.BildirimTekillestirme
 import com.satinalmapro.android.core.model.AppNotification
 import com.satinalmapro.android.core.model.BildirimRecord
@@ -36,11 +37,12 @@ class BildirimRepository(
     }
 
     suspend fun ekle(records: List<BildirimRecord>) {
-        if (records.isEmpty()) return
+        val filtered = records.filter { BildirimRolPolitikasi.kayitGonderilmeli(it) }
+        if (filtered.isEmpty()) return
         val uid = auth.uid ?: throw IllegalStateException("Oturum gerekli")
         val list = loadAll().toMutableList()
         val pushed = mutableListOf<BildirimRecord>()
-        records.forEach { incoming ->
+        filtered.forEach { incoming ->
             val stamped = incoming.copy(
                 id = incoming.id.ifBlank { UUID.randomUUID().toString() },
                 guncellemeUtc = if (incoming.guncellemeUtc > 0) incoming.guncellemeUtc else System.currentTimeMillis()
@@ -72,7 +74,7 @@ class BildirimRepository(
         val tekille = BildirimTekillestirme.tekille(list)
         firestore.writeDocumentJson("veri/bildirimler", gson.toJson(tekille), uid)
         val olusturanUid = auth.uid.orEmpty()
-        BildirimLog.i("BILDIRIM", "Kaydedildi: ${records.size} kayıt, push kuyruğu: ${pushed.size}")
+        BildirimLog.i("BILDIRIM", "Kaydedildi: ${filtered.size} kayıt, push kuyruğu: ${pushed.size}")
         for (saved in pushed) {
             if (fcmPush == null) {
                 BildirimLog.w("BILDIRIM", "FCM servisi yok — yalnızca uygulama içi kayıt tip=${saved.tip}")
@@ -385,27 +387,8 @@ class BildirimRepository(
         ekle(records)
     }
 
-    fun kullaniciyaMi(record: BildirimRecord, user: UserProfile?): Boolean {
-        if (user == null) return false
-
-        if (!record.hedefUid.isNullOrBlank()) {
-            return record.hedefUid.equals(user.uid, ignoreCase = true)
-        }
-
-        val creatorSelf = record.olusturanUid.isNotBlank() &&
-            record.olusturanUid.equals(user.uid, ignoreCase = true)
-        if (creatorSelf) return false
-
-        if (!record.inboxDocId.isNullOrBlank()) return true
-
-        if (KullaniciRolleri.isAdmin(user.role)) {
-            return !record.hedefRol.isNullOrBlank()
-        }
-        if (!record.hedefRol.isNullOrBlank()) {
-            return KullaniciRolleri.normalize(record.hedefRol) == KullaniciRolleri.normalize(user.role)
-        }
-        return false
-    }
+    fun kullaniciyaMi(record: BildirimRecord, user: UserProfile?): Boolean =
+        BildirimRolPolitikasi.kullaniciyaMi(record, user)
 
     fun appNotificationKullaniciyaMi(item: AppNotification, user: UserProfile?): Boolean =
         kullaniciyaMi(
@@ -430,7 +413,7 @@ class BildirimRepository(
         val talepId = record.talepId?.trim().orEmpty()
         if (talepId.isBlank()) return false
 
-        val talep = talepler.firstOrNull { it.id.equals(talepId, true) } ?: return false
+        val talep = talepler.firstOrNull { it.id.equals(talepId, true) } ?: return true
         return when (tip) {
             BildirimTipleri.YONETIME_GONDERILDI ->
                 TalepKuyrugu.yonetimTalepler(talep) ||

@@ -291,7 +291,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             _loading.value = true
             runCatching { container.sendPasswordResetEmail(email) }
                 .onSuccess {
-                    _loginMessage.value = "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Gelen kutunuzu ve spam klasörünü kontrol edin."
+                    _loginMessage.value = "Sıfırlama bağlantısı kayıtlı e-posta adresinize gönderildi. Gelen kutunuzu ve spam klasörünü kontrol edin."
                 }
                 .onFailure { _loginError.value = NetworkError.translate(it.message) }
             _loading.value = false

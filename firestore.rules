@@ -74,6 +74,30 @@ service cloud.firestore {
         && request.auth.token.admin == true;
     }
 
+    function isPlatformAdmin() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/platform_admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/platform_admins/$(request.auth.uid)).data.aktif != false;
+    }
+
+    function belongsToTenant(tenantId) {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/tenants/$(tenantId)/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/tenants/$(tenantId)/users/$(request.auth.uid)).data.aktif != false;
+    }
+
+    function tenantUserDoc(tenantId) {
+      return get(/databases/$(database)/documents/tenants/$(tenantId)/users/$(request.auth.uid)).data;
+    }
+
+    function tenantUserRole(tenantId) {
+      return tenantUserDoc(tenantId).rol;
+    }
+
+    function isTenantActiveUser(tenantId) {
+      return belongsToTenant(tenantId);
+    }
+
     function onlyChangedFields(allowedFields) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedFields);
     }
@@ -335,6 +359,50 @@ service cloud.firestore {
     match /sla_tracking/{docId} {
       allow read: if isAdmin() || isProcurement() || isManagement();
       allow write: if isCloudFunction() || isAdmin();
+    }
+
+    // ─── SaaS tenants ────────────────────────────────────────────────────
+
+    match /platform_admins/{uid} {
+      allow read: if isOwner(uid) || isPlatformAdmin();
+      allow write: if isPlatformAdmin();
+    }
+
+    match /tenants/{tenantId} {
+      allow read: if isPlatformAdmin() || belongsToTenant(tenantId);
+      allow write: if isPlatformAdmin();
+
+      match /users/{uid} {
+        allow read: if isPlatformAdmin()
+          || (belongsToTenant(tenantId) && (request.auth.uid == uid || tenantUserRole(tenantId) == 'Admin'))
+          || (belongsToTenant(tenantId) && tenantUserRole(tenantId) == 'Yönetim'
+              && resource.data.rol in ['Şef', 'Saha', 'Atölye', 'Depo', 'Satınalma']);
+        allow create, update, delete: if isPlatformAdmin();
+        allow update: if belongsToTenant(tenantId) && request.auth.uid == uid
+          && onlyChangedFields(['fcmToken', 'fcmUpdatedAt', 'adSoyad']);
+
+        match /notification_inbox/{notificationId} {
+          allow read: if belongsToTenant(tenantId) && request.auth.uid == uid;
+          allow create, delete: if isCloudFunction() || isPlatformAdmin();
+          allow update: if belongsToTenant(tenantId) && request.auth.uid == uid
+            && onlyChangedFields([
+              'isRead', 'readAt', 'isArchived', 'archivedAt',
+              'isStarred', 'actedAt', 'dismissedAt', 'localState'
+            ]);
+        }
+      }
+
+      match /procurement_requests/{requestId} {
+        allow read, write: if isTenantActiveUser(tenantId);
+      }
+
+      match /veri/{docId} {
+        allow read, write: if isTenantActiveUser(tenantId);
+      }
+    }
+
+    match /usernames/{username} {
+      allow read, write: if false;
     }
 
     // ─── legacy veri/* (backward compatibility) ──────────────────────────

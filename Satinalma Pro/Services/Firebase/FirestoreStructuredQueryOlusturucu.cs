@@ -6,7 +6,7 @@ namespace SatinalmaPro.Services.Firebase;
 /// <summary>Firestore REST <c>:runQuery</c> gövdesi oluşturur.</summary>
 internal static class FirestoreStructuredQueryOlusturucu
 {
-    public static object Olustur(FirestoreFilterSpec spec, int limit = 500)
+    public static object StructuredQuery(FirestoreFilterSpec spec, int limit = 500)
     {
         var filtreler = new List<object>();
 
@@ -72,8 +72,11 @@ internal static class FirestoreStructuredQueryOlusturucu
         if (orderBy.Length > 0)
             structuredQuery["orderBy"] = orderBy;
 
-        return new { structuredQuery };
+        return structuredQuery;
     }
+
+    public static object Olustur(FirestoreFilterSpec spec, int limit = 500) =>
+        new { structuredQuery = StructuredQuery(spec, limit) };
 
     public static string JsonOlustur(FirestoreFilterSpec spec, int limit = 500) =>
         JsonSerializer.Serialize(Olustur(spec, limit));

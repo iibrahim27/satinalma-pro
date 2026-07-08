@@ -121,6 +121,7 @@ public static class SatinalmaDepo
 
         KaydetAyarlar();
         BulutVeriSenkronu.Planla("satinalma_talepler");
+        TaleplerGuncellendi?.Invoke();
     }
 
     public static void KaydetAyarlar()

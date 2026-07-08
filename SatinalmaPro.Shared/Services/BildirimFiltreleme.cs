@@ -6,46 +6,18 @@ namespace SatinalmaPro.Shared.Services;
 public static class BildirimFiltreleme
 {
     public static bool KendiIslemindenMi(BildirimKaydi bildirim, KullaniciProfili? kullanici) =>
-        kullanici is not null
-        && !string.IsNullOrWhiteSpace(bildirim.OlusturanUid)
-        && bildirim.OlusturanUid == kullanici.Uid
-        && (string.IsNullOrWhiteSpace(bildirim.HedefUid) || bildirim.HedefUid != kullanici.Uid);
+        BildirimRolPolitikasi.IslemYapanKendisiMi(bildirim, kullanici);
 
-    public static bool KullaniciyaMi(BildirimKaydi bildirim, KullaniciProfili? kullanici)
-    {
-        if (kullanici is null)
-            return false;
-
-        if (!string.IsNullOrWhiteSpace(bildirim.HedefUid))
-            return bildirim.HedefUid == kullanici.Uid;
-
-        if (KendiIslemindenMi(bildirim, kullanici))
-            return false;
-
-        if (!string.IsNullOrWhiteSpace(bildirim.InboxDocId))
-            return true;
-
-        if (KullaniciRolleri.AdminMi(kullanici.Rol))
-        {
-            return !string.IsNullOrWhiteSpace(bildirim.HedefRol);
-        }
-
-        if (!string.IsNullOrWhiteSpace(bildirim.HedefRol))
-        {
-            var rol = KullaniciRolleri.Normalize(kullanici.Rol);
-            return KullaniciRolleri.Normalize(bildirim.HedefRol) == rol;
-        }
-
-        return false;
-    }
+    public static bool KullaniciyaMi(BildirimKaydi bildirim, KullaniciProfili? kullanici) =>
+        BildirimRolPolitikasi.KullaniciyaMi(bildirim, kullanici);
 
     public static IEnumerable<BildirimKaydi> KullaniciBildirimleri(
         IEnumerable<BildirimKaydi> kaynak,
         KullaniciProfili? kullanici) =>
         kaynak.Where(b => KullaniciyaMi(b, kullanici));
 
-  public static bool TalepBaglantiliMi(string tip) =>
-        NormalizeTip(tip) is BildirimTipleri.YonetimeGonderildi
+    public static bool TalepBaglantiliMi(string tip) =>
+        BildirimRolPolitikasi.NormalizeTip(tip) is BildirimTipleri.YonetimeGonderildi
             or BildirimTipleri.TeklifIstendi
             or BildirimTipleri.TeklifOnayda
             or BildirimTipleri.TeklifDuzeltmeIstendi
@@ -54,25 +26,12 @@ public static class BildirimFiltreleme
             or BildirimTipleri.SiparisOlusturuldu
             or BildirimTipleri.MalKabulEdildi;
 
-    private static string NormalizeTip(string tip) => tip.Trim().ToLowerInvariant() switch
-    {
-        "yonetimegonderildi" => BildirimTipleri.YonetimeGonderildi,
-        "teklifistendi" => BildirimTipleri.TeklifIstendi,
-        "teklifonayda" => BildirimTipleri.TeklifOnayda,
-        "teklifduzeltmeistendi" => BildirimTipleri.TeklifDuzeltmeIstendi,
-        "onaylandi" => BildirimTipleri.Onaylandi,
-        "reddedildi" => BildirimTipleri.Reddedildi,
-        "siparisolusturuldu" => BildirimTipleri.SiparisOlusturuldu,
-        "malkabuledildi" => BildirimTipleri.MalKabulEdildi,
-        _ => tip.Trim().ToLowerInvariant()
-    };
-
     /// <summary>
     /// İşlem tamamlandıysa veya talep artık bu bildirimi gerektirmiyorsa geçersiz sayılır.
     /// </summary>
     public static bool GecerliMi(BildirimKaydi bildirim, IEnumerable<SatinalmaTalep> talepler)
     {
-        var tip = NormalizeTip(bildirim.Tip);
+        var tip = BildirimRolPolitikasi.NormalizeTip(bildirim.Tip);
         if (!TalepBaglantiliMi(tip))
         {
             if (string.IsNullOrWhiteSpace(tip) && bildirim.TalepId is null)
@@ -85,11 +44,12 @@ public static class BildirimFiltreleme
 
         var talep = talepler.FirstOrDefault(t => t.Id == tid);
         if (talep is null)
-            return false;
+            return true;
         return tip switch
         {
             BildirimTipleri.YonetimeGonderildi =>
                 SatinalmaTalepKuyrugu.YonetimTalepler(talep)
+                || SatinalmaTalepKuyrugu.OnayBekleyen(talep)
                 || talep.Durum == SatinalmaTalepDurumlari.Hazirlaniyor,
             BildirimTipleri.TeklifIstendi =>
                 !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep)
@@ -126,15 +86,14 @@ public static class BildirimFiltreleme
         IEnumerable<SatinalmaTalep> talepler) =>
         KullaniciyaMi(bildirim, kullanici) &&
         !bildirim.Okundu &&
-        GecerliMi(bildirim, talepler) &&
-        bildirim.OlusturanUid != kullanici?.Uid;
+        GecerliMi(bildirim, talepler);
 
     /// <summary>
     /// Onay bekleyen teklif bildirimleri temizleme sırasında korunur.
     /// </summary>
     public static bool Temizlenmemeli(BildirimKaydi bildirim, IEnumerable<SatinalmaTalep> talepler)
     {
-        if (NormalizeTip(bildirim.Tip) != BildirimTipleri.TeklifOnayda)
+        if (BildirimRolPolitikasi.NormalizeTip(bildirim.Tip) != BildirimTipleri.TeklifOnayda)
             return false;
 
         if (bildirim.TalepId is not { } tid)

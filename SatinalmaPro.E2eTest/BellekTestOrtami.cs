@@ -141,7 +141,6 @@ public sealed class BellekTestOrtami
         Kaydet(talep);
         SetUser(saha);
         BildirimEkle(BildirimTipleri.YonetimeGonderildi, talep, hedefRol: KullaniciRolleri.Yonetim);
-        BildirimEkle(BildirimTipleri.YonetimeGonderildi, talep, hedefRol: KullaniciRolleri.Satinalma);
         return talep;
     }
 

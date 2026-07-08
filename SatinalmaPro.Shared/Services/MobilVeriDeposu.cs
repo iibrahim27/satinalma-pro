@@ -122,7 +122,7 @@ public sealed class MobilVeriDeposu
 
     public async Task TalepleriYukleAsync(CancellationToken iptal = default)
     {
-        var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaTalepler, iptal);
+        var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaTalepler(), iptal);
         if (string.IsNullOrWhiteSpace(json))
         {
             SilinenTalepleriTemizle();
@@ -166,8 +166,8 @@ public sealed class MobilVeriDeposu
         {
             try
             {
-                var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaTalepler, iptal);
-                var bulutAyarJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaAyarlar, iptal);
+                var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaTalepler(), iptal);
+                var bulutAyarJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaAyarlar(), iptal);
                 if (!string.IsNullOrWhiteSpace(bulutAyarJson))
                 {
                     var bulutAyarlar = JsonSerializer.Deserialize<SatinalmaAyarlar>(bulutAyarJson, Json);
@@ -198,7 +198,7 @@ public sealed class MobilVeriDeposu
                 await AyarlariKaydetAsync(iptal);
 
             var json = JsonSerializer.Serialize(Talepler, Json);
-            await _firestore.BelgeJsonYazAsync(FirestoreYollari.SatinalmaTalepler, json, _auth.Uid, iptal);
+            await _firestore.BelgeJsonYazAsync(FirestoreYollari.SatinalmaTalepler(), json, _auth.Uid, iptal);
         }
         finally
         {
@@ -220,7 +220,7 @@ public sealed class MobilVeriDeposu
 
     public async Task AyarlariYukleAsync(CancellationToken iptal = default)
     {
-        var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaAyarlar, iptal);
+        var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaAyarlar(), iptal);
         if (string.IsNullOrWhiteSpace(json))
             return;
 
@@ -234,7 +234,7 @@ public sealed class MobilVeriDeposu
         string? bulutJson = null;
         try
         {
-            bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaAyarlar, iptal);
+            bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.SatinalmaAyarlar(), iptal);
             if (!string.IsNullOrWhiteSpace(bulutJson))
             {
                 var bulutAyarlar = JsonSerializer.Deserialize<SatinalmaAyarlar>(bulutJson, Json);
@@ -248,12 +248,12 @@ public sealed class MobilVeriDeposu
         }
 
         var json = SatinalmaAyarlarSenkronYardimcisi.MobilGuncellemesiniUygula(bulutJson, Ayarlar, Json);
-        await _firestore.BelgeJsonYazAsync(FirestoreYollari.SatinalmaAyarlar, json, _auth.Uid, iptal);
+        await _firestore.BelgeJsonYazAsync(FirestoreYollari.SatinalmaAyarlar(), json, _auth.Uid, iptal);
     }
 
     public async Task StokYukleAsync(CancellationToken iptal = default)
     {
-        var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Stok, iptal);
+        var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Stok(), iptal);
         Stok.Clear();
         if (string.IsNullOrWhiteSpace(json))
             return;
@@ -264,7 +264,7 @@ public sealed class MobilVeriDeposu
     {
         try
         {
-            var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Stok, iptal);
+            var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Stok(), iptal);
             if (!string.IsNullOrWhiteSpace(bulutJson))
             {
                 var bulut = JsonSerializer.Deserialize<List<StokKaydi>>(bulutJson, Json) ?? [];
@@ -279,12 +279,12 @@ public sealed class MobilVeriDeposu
         }
 
         var json = JsonSerializer.Serialize(Stok, Json);
-        await _firestore.BelgeJsonYazAsync(FirestoreYollari.Stok, json, _auth.Uid, iptal);
+        await _firestore.BelgeJsonYazAsync(FirestoreYollari.Stok(), json, _auth.Uid, iptal);
     }
 
     public async Task StokHareketYukleAsync(CancellationToken iptal = default)
     {
-        var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.StokHareket, iptal);
+        var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.StokHareket(), iptal);
         StokHareketleri.Clear();
         if (string.IsNullOrWhiteSpace(json))
             return;
@@ -295,7 +295,7 @@ public sealed class MobilVeriDeposu
     {
         try
         {
-            var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.StokHareket, iptal);
+            var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.StokHareket(), iptal);
             if (!string.IsNullOrWhiteSpace(bulutJson))
             {
                 var bulut = JsonSerializer.Deserialize<List<StokHareketKaydi>>(bulutJson, Json) ?? [];
@@ -310,12 +310,12 @@ public sealed class MobilVeriDeposu
         }
 
         var json = JsonSerializer.Serialize(StokHareketleri, Json);
-        await _firestore.BelgeJsonYazAsync(FirestoreYollari.StokHareket, json, _auth.Uid, iptal);
+        await _firestore.BelgeJsonYazAsync(FirestoreYollari.StokHareket(), json, _auth.Uid, iptal);
     }
 
     public async Task BildirimleriYukleAsync(CancellationToken iptal = default)
     {
-        var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Bildirimler, iptal);
+        var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Bildirimler(), iptal);
         var bulut = BildirimleriOku(json);
         var birlesik = BildirimBirlestirme.Birlestir(Bildirimler, bulut);
         Bildirimler.Clear();
@@ -327,14 +327,14 @@ public sealed class MobilVeriDeposu
         await BildirimBulutYazmaKilidi.WaitAsync(iptal);
         try
         {
-            var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Bildirimler, iptal);
+            var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Bildirimler(), iptal);
             var bulut = BildirimleriOku(bulutJson);
             var birlesik = BildirimBirlestirme.Birlestir(Bildirimler, bulut);
             Bildirimler.Clear();
             Bildirimler.AddRange(birlesik);
 
             var json = JsonSerializer.Serialize(Bildirimler, Json);
-            await _firestore.BelgeJsonYazAsync(FirestoreYollari.Bildirimler, json, _auth.Uid, iptal);
+            await _firestore.BelgeJsonYazAsync(FirestoreYollari.Bildirimler(), json, _auth.Uid, iptal);
         }
         finally
         {
@@ -353,7 +353,7 @@ public sealed class MobilVeriDeposu
     public async Task AlinanMalzemeleriYukleAsync(CancellationToken iptal = default)
     {
         AlinanMalzemeAdlari.Clear();
-        var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.AlinanMalzemeler, iptal);
+        var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.AlinanMalzemeler(), iptal);
         if (string.IsNullOrWhiteSpace(json))
             return;
 

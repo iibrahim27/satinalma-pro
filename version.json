@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.46",
-    "build":  98,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.46/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.46/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.46/SatinalmaPro.apk",
-    "notes":  "- Masaustu: Windows baslangicinda tepsi modu, sessiz guncelleme, otomatik giris\n- Masaustu + Android: premium login ekrani (Fluent/MD3)\n- Android: kurumsal MD3 tasarim, dashboard hero, bildirim kartlari\n- Guncellemede giris bilgileri korunur; E2E rol/akis/sekme testleri gecti",
+    "version":  "2.1.47",
+    "build":  100,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.47/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.47/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.47/SatinalmaPro.apk",
+    "notes":  "SaaS multi-tenant: kullanici adi girisi, SatinalmaYonetici, kiraci izolasyonu",
     "zorunlu":  false
 }

@@ -3,6 +3,7 @@ using System.Text.Json;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services.Firebase;
 using SatinalmaPro.Shared.Helpers;
+using SatinalmaPro.Shared.SaaS;
 
 namespace SatinalmaPro.Services;
 
@@ -19,6 +20,7 @@ public static class OturumYoneticisi
 
     public static FirebaseAuthServisi? Auth { get; private set; }
     public static FirestoreVeriServisi? Firestore { get; private set; }
+    public static SaaSAuthServisi? SaaSAuth { get; private set; }
     public static KullaniciProfili? AktifKullanici { get; private set; }
 
     public static bool BulutAktif => FirebaseAyarDeposu.Ayarlar.Yapilandirildi;
@@ -34,6 +36,7 @@ public static class OturumYoneticisi
 
         Auth = new FirebaseAuthServisi(FirebaseAyarDeposu.Ayarlar);
         Firestore = new FirestoreVeriServisi(FirebaseAyarDeposu.Ayarlar, Auth);
+        SaaSAuth = new SaaSAuthServisi(FirebaseAyarDeposu.Ayarlar.ProjectId);
     }
 
     public static GirisTercihleri TercihleriOku()
@@ -52,11 +55,11 @@ public static class OturumYoneticisi
         }
     }
 
-    public static void TercihKutulariniKaydet(string eposta, bool beniHatirla, bool sifremiHatirla)
+    public static void TercihKutulariniKaydet(string kullaniciAdi, bool beniHatirla, bool sifremiHatirla)
     {
         SatinalmaProKlasor.Olustur();
         var tercih = new GirisTercihleri(
-            beniHatirla ? eposta.Trim() : "",
+            beniHatirla ? kullaniciAdi.Trim() : "",
             beniHatirla,
             sifremiHatirla);
         File.WriteAllText(TercihDosyasi, JsonSerializer.Serialize(tercih, JsonSecenekleri));
@@ -65,11 +68,11 @@ public static class OturumYoneticisi
             GirisSifreDeposu.Sil();
     }
 
-    public static void TercihleriKaydet(string eposta, bool beniHatirla, bool sifremiHatirla, string? sifre)
+    public static void TercihleriKaydet(string kullaniciAdi, bool beniHatirla, bool sifremiHatirla, string? sifre)
     {
         SatinalmaProKlasor.Olustur();
         var tercih = new GirisTercihleri(
-            beniHatirla ? eposta.Trim() : "",
+            beniHatirla ? kullaniciAdi.Trim() : "",
             beniHatirla,
             sifremiHatirla);
         File.WriteAllText(TercihDosyasi, JsonSerializer.Serialize(tercih, JsonSecenekleri));
@@ -81,38 +84,48 @@ public static class OturumYoneticisi
     }
 
     public static async Task GirisYapAsync(
-        string eposta,
+        string kullaniciAdi,
         string sifre,
         bool beniHatirla,
         bool sifremiHatirla = false,
         CancellationToken iptal = default)
     {
-        if (Auth is null || Firestore is null)
+        if (Auth is null || Firestore is null || SaaSAuth is null)
             throw new InvalidOperationException("Firebase yapılandırılmamış.");
 
-        await Auth.GirisYapAsync(eposta, sifre, iptal);
+        var sonuc = await SaaSAuth.GirisYapAsync(kullaniciAdi, sifre, iptal);
+        Auth.OturumuSaaSDenUygula(sonuc);
+        KiracıOturumu.Ayarla(sonuc.TenantId, sonuc.TenantAd);
+
         if (!await ProfiliYukleAsync(iptal))
             throw new InvalidOperationException("Kullanıcı profili bulunamadı. Yöneticinize başvurun.");
 
-        TercihleriKaydet(eposta, beniHatirla, sifremiHatirla, sifre);
-        OturumDosyasiniGuncelle(beniHatirla);
+        TercihleriKaydet(kullaniciAdi, beniHatirla, sifremiHatirla, sifre);
+        OturumDosyasiniGuncelle(beniHatirla, sonuc.TenantId, sonuc.KullaniciAdi ?? kullaniciAdi);
     }
 
-    /// <summary>Kayıtlı oturum veya hatırlanan e-posta/şifre ile sessiz giriş dener.</summary>
     public static async Task<bool> OtomatikGirisDeneAsync(CancellationToken iptal = default)
     {
-        if (Auth is null || Firestore is null || !BulutAktif)
+        if (Auth is null || Firestore is null || SaaSAuth is null || !BulutAktif)
             return false;
 
-        if (await Auth.KayitliOturumuDeneAsync(OturumDosyasi, iptal)
-            && await ProfiliYukleAsync(iptal))
-            return true;
+        if (await Auth.KayitliOturumuDeneAsync(OturumDosyasi, iptal))
+        {
+            var paket = OturumPaketiniOku();
+            if (!string.IsNullOrWhiteSpace(paket?.TenantId))
+                KiracıOturumu.Ayarla(paket.TenantId, paket.TenantAd);
+
+            if (await ProfiliYukleAsync(iptal))
+                return true;
+        }
 
         Auth.OturumuKapat();
         AktifKullanici = null;
+        KiracıOturumu.Temizle();
 
         var tercih = TercihleriOku();
-        if (!tercih.BeniHatirla || string.IsNullOrWhiteSpace(tercih.Eposta) || !tercih.SifremiHatirla)
+        var kullaniciAdi = tercih.KullaniciAdi;
+        if (!tercih.BeniHatirla || string.IsNullOrWhiteSpace(kullaniciAdi) || !tercih.SifremiHatirla)
             return false;
 
         var sifre = GirisSifreDeposu.Oku();
@@ -121,13 +134,14 @@ public static class OturumYoneticisi
 
         try
         {
-            await GirisYapAsync(tercih.Eposta, sifre, tercih.BeniHatirla, tercih.SifremiHatirla, iptal);
+            await GirisYapAsync(kullaniciAdi, sifre, tercih.BeniHatirla, tercih.SifremiHatirla, iptal);
             return GirisYapildi;
         }
         catch
         {
             Auth?.OturumuKapat();
             AktifKullanici = null;
+            KiracıOturumu.Temizle();
             return false;
         }
     }
@@ -157,6 +171,9 @@ public static class OturumYoneticisi
             AktifKullanici = null;
             return false;
         }
+
+        if (!string.IsNullOrWhiteSpace(profil.TenantId))
+            KiracıOturumu.Ayarla(profil.TenantId);
 
         ProfilOnbellegineKaydet(profil);
         AktifKullanici = profil;
@@ -197,12 +214,12 @@ public static class OturumYoneticisi
         }
     }
 
-    public static async Task SifreSifirlamaEpostasiGonderAsync(string eposta, CancellationToken iptal = default)
+    public static async Task SifreSifirlamaEpostasiGonderAsync(string kullaniciAdi, CancellationToken iptal = default)
     {
-        if (Auth is null)
+        if (SaaSAuth is null)
             throw new InvalidOperationException("Firebase yapılandırılmamış.");
 
-        await Auth.SifreSifirlamaEpostasiGonderAsync(eposta, iptal);
+        await SaaSAuth.SifreSifirlaAsync(kullaniciAdi, iptal);
     }
 
     public static void CikisYap()
@@ -210,11 +227,11 @@ public static class OturumYoneticisi
         BildirimYoneticisi.Durdur();
         Auth?.OturumuKapat();
         AktifKullanici = null;
+        KiracıOturumu.Temizle();
         OturumDosyasiniSil();
         OturumDegisti?.Invoke();
     }
 
-    /// <summary>Kayıtlı e-posta / şifre hatırlatma dosyalarını siler.</summary>
     public static void GirisHatirlatmasiniTemizle()
     {
         OturumDosyasiniSil();
@@ -233,7 +250,10 @@ public static class OturumYoneticisi
 
         var tercih = TercihleriOku();
         if (tercih.BeniHatirla && Auth is not null)
-            Auth.OturumuKaydet(OturumDosyasi, beniHatirla: true);
+        {
+            var paket = OturumPaketiniOku();
+            Auth.OturumuKaydet(OturumDosyasi, beniHatirla: true, paket?.TenantId, paket?.TenantAd, paket?.KullaniciAdi);
+        }
         else
         {
             Auth?.OturumuKapat();
@@ -243,12 +263,27 @@ public static class OturumYoneticisi
         AktifKullanici = null;
     }
 
-    private static void OturumDosyasiniGuncelle(bool beniHatirla)
+    private static void OturumDosyasiniGuncelle(bool beniHatirla, string tenantId, string kullaniciAdi)
     {
         if (beniHatirla)
-            Auth?.OturumuKaydet(OturumDosyasi, beniHatirla: true);
+            Auth?.OturumuKaydet(OturumDosyasi, beniHatirla: true, tenantId, KiracıOturumu.TenantAd, kullaniciAdi);
         else
             OturumDosyasiniSil();
+    }
+
+    private static OturumPaketi? OturumPaketiniOku()
+    {
+        if (!File.Exists(OturumDosyasi))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<OturumPaketi>(File.ReadAllText(OturumDosyasi), JsonSecenekleri);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static void OturumDosyasiniSil()
@@ -258,19 +293,38 @@ public static class OturumYoneticisi
 
         try { File.Delete(OturumDosyasi); } catch { /* yoksay */ }
     }
+
+    private sealed class OturumPaketi
+    {
+        public string? RefreshToken { get; set; }
+        public string? Uid { get; set; }
+        public string? Eposta { get; set; }
+        public string? TenantId { get; set; }
+        public string? TenantAd { get; set; }
+        public string? KullaniciAdi { get; set; }
+        public bool BeniHatirla { get; set; }
+    }
 }
 
 public sealed class GirisTercihleri
 {
-    public string Eposta { get; set; } = "";
+    public string KullaniciAdi { get; set; } = "";
+
+    [Obsolete("KullaniciAdi kullanın.")]
+    public string Eposta
+    {
+        get => KullaniciAdi;
+        set => KullaniciAdi = value;
+    }
+
     public bool BeniHatirla { get; set; }
     public bool SifremiHatirla { get; set; }
 
     public GirisTercihleri() { }
 
-    public GirisTercihleri(string eposta, bool beniHatirla, bool sifremiHatirla = false)
+    public GirisTercihleri(string kullaniciAdi, bool beniHatirla, bool sifremiHatirla = false)
     {
-        Eposta = eposta;
+        KullaniciAdi = kullaniciAdi;
         BeniHatirla = beniHatirla;
         SifremiHatirla = sifremiHatirla;
     }

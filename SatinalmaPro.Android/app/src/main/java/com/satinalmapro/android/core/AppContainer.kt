@@ -21,7 +21,8 @@ import com.satinalmapro.android.core.model.CimentoKaydi
 import com.satinalmapro.android.core.model.TalepItem
 import com.satinalmapro.android.core.model.TalepQueue
 import com.satinalmapro.android.core.model.UpdateManifest
-import com.satinalmapro.android.core.NetworkError
+import com.satinalmapro.android.core.saas.TenantSession
+import com.satinalmapro.android.data.firebase.SaaSAuthClient
 import com.satinalmapro.android.core.NetworkMonitor
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.core.roles.OnaylananMalzemeOlusturucu
@@ -151,6 +152,7 @@ class AppContainer(private val context: Context) {
         return try {
             val obj = JSONObject(json)
             val uid = obj.optString("uid")
+            prefs.getString("saved_tenant_id", null)?.takeIf { it.isNotBlank() }?.let { TenantSession.set(it) }
             loadProfileCache(uid)?.takeIf { it.active }?.let { _user.value = it }
             auth.restoreSession(
                 obj.getString("refreshToken"),
@@ -202,21 +204,21 @@ class AppContainer(private val context: Context) {
         prefs.edit().putString(KEY_SESSION, auth.sessionJson(true)).apply()
     }
 
-    suspend fun sendPasswordResetEmail(email: String) {
+    suspend fun sendPasswordResetEmail(username: String) {
         if (!NetworkMonitor.isOnline(context)) {
             throw IllegalStateException(NetworkError.translate("Unable to resolve host"))
         }
         if (!config.isConfigured) {
             throw IllegalStateException("Firebase ayarları yapılandırılmamış.")
         }
-        val trimmed = email.trim()
-        if (trimmed.isBlank() || !trimmed.contains("@")) {
-            throw IllegalStateException("Geçerli bir e-posta adresi girin")
+        val trimmed = username.trim()
+        if (trimmed.isBlank()) {
+            throw IllegalStateException("Kullanıcı adı girin")
         }
-        auth.sendPasswordResetEmail(trimmed)
+        SaaSAuthClient(config).passwordResetByUsername(trimmed)
     }
 
-    suspend fun login(email: String, password: String, rememberMe: Boolean) {
+    suspend fun login(username: String, password: String, rememberMe: Boolean) {
         if (!NetworkMonitor.isOnline(context)) {
             throw IllegalStateException(NetworkError.translate("Unable to resolve host"))
         }
@@ -224,7 +226,11 @@ class AppContainer(private val context: Context) {
             throw IllegalStateException("Firebase ayarları yapılandırılmamış.")
         }
         try {
-            auth.signIn(email, password)
+            val saas = SaaSAuthClient(config)
+            val result = saas.loginWithUsername(username, password)
+            auth.applySaaSLogin(result)
+            TenantSession.set(result.tenantId, result.tenantAd)
+            val email = result.eposta ?: ""
             runCatching { FirebaseAuthBridge.signIn(email, password) }
                 .onFailure { ex -> BildirimLog.w("FCM_TOPIC", "Firebase Auth SDK senkronu atlandı: ${ex.message}") }
             loadProfile(allowCached = false)
@@ -232,19 +238,22 @@ class AppContainer(private val context: Context) {
                 prefs.edit()
                     .putString(KEY_SESSION, auth.sessionJson(true))
                     .putBoolean(KEY_REMEMBER_ME, true)
-                    .putString(KEY_SAVED_EMAIL, email.trim())
+                    .putString(KEY_SAVED_EMAIL, username.trim())
+                    .putString("saved_tenant_id", result.tenantId)
                     .apply()
             } else {
                 prefs.edit()
                     .remove(KEY_SESSION)
                     .putBoolean(KEY_REMEMBER_ME, false)
                     .remove(KEY_SAVED_EMAIL)
+                    .remove("saved_tenant_id")
                     .apply()
             }
             registerFcmIfNeeded()
             syncFcmRoleSubscription()
         } catch (e: Exception) {
             auth.clear()
+            TenantSession.clear()
             prefs.edit().remove(KEY_SESSION).apply()
             throw if (e is IllegalStateException) e else IllegalStateException(NetworkError.translate(e.message))
         }
@@ -255,6 +264,7 @@ class AppContainer(private val context: Context) {
         FcmSubscriptionHelper(context).unsubscribeAllRoleTopics()
         FirebaseAuthBridge.signOut()
         auth.clear()
+        TenantSession.clear()
         _user.value = null
         _materialNames.value = emptyList()
         _notifications.value = emptyList()

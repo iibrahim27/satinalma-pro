@@ -1,6 +1,7 @@
 package com.satinalmapro.android.data.firebase
 
 import com.satinalmapro.android.BuildConfig
+import com.satinalmapro.android.core.saas.TenantSession
 import com.satinalmapro.android.core.NetworkError
 import java.io.File
 import java.net.UnknownHostException
@@ -136,6 +137,14 @@ class FirebaseAuthClient(private val config: FirebaseConfig) {
         tokenExpiryMs = System.currentTimeMillis() + (expiresIn - 60) * 1000
     }
 
+    fun applySaaSLogin(result: SaaSLoginResult) {
+        idToken = result.idToken
+        refreshToken = result.refreshToken
+        uid = result.uid
+        email = result.eposta
+        tokenExpiryMs = System.currentTimeMillis() + (result.expiresIn - 60) * 1000L
+    }
+
     private fun applyAuthResponse(response: String) {
         val json = JSONObject(response)
         idToken = json.getString("idToken")
@@ -152,14 +161,16 @@ class FirestoreClient(
     private val auth: FirebaseAuthClient
 ) {
     private val root get() = "https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents"
+    private fun tenantRoot() = "$root/tenants/${TenantSession.requireTenantId()}"
+    private fun userDoc(uid: String) = "${tenantRoot()}/users/$uid"
 
     suspend fun readUser(uid: String): JSONObject? {
-        val response = HttpClients.get("$root/users/$uid", auth.validToken())
+        val response = HttpClients.get(userDoc(uid), auth.validToken())
         return if (response.isBlank()) null else JSONObject(response).optJSONObject("fields")
     }
 
     suspend fun listUsers(): List<JSONObject> {
-        val response = HttpClients.get("$root/users", auth.validToken())
+        val response = HttpClients.get("${tenantRoot()}/users", auth.validToken())
         if (response.isBlank()) return emptyList()
         val docs = JSONObject(response).optJSONArray("documents") ?: return emptyList()
         return buildList {
@@ -181,25 +192,28 @@ class FirestoreClient(
         return if (response.isBlank()) null else JSONObject(response).optJSONObject("fields")
     }
 
+    private fun inboxRoot(uid: String) = "${userDoc(uid)}/notification_inbox"
+
     suspend fun updateFcmToken(uid: String, token: String?) {
         val body = JSONObject()
             .put("fields", JSONObject().put("fcmToken", JSONObject().put("stringValue", token ?: "")))
         HttpClients.patch(
-            "$root/users/$uid?updateMask.fieldPaths=fcmToken",
+            "${userDoc(uid)}?updateMask.fieldPaths=fcmToken",
             body.toString(),
             auth.validToken()
         )
     }
 
     suspend fun readDocumentJson(path: String): String? {
-        val response = HttpClients.get("$root/$path", auth.validToken())
+        val tenantPath = if (path.startsWith("tenants/")) path else "${tenantRoot()}/$path"
+        val response = HttpClients.get("$root/$tenantPath", auth.validToken())
         if (response.isBlank()) return null
         val fields = JSONObject(response).optJSONObject("fields") ?: return null
         return fields.optJSONObject("json")?.optString("stringValue")
     }
 
     suspend fun readInbox(uid: String, limit: Int = 100): List<JSONObject> {
-        val response = HttpClients.get("$root/users/$uid/notification_inbox?pageSize=$limit", auth.validToken())
+        val response = HttpClients.get("${inboxRoot(uid)}?pageSize=$limit", auth.validToken())
         if (response.isBlank()) return emptyList()
         val docs = JSONObject(response).optJSONArray("documents") ?: return emptyList()
         return buildList {
@@ -250,20 +264,21 @@ class FirestoreClient(
             ))
         val body = JSONObject().put("fields", fields).toString()
         HttpClients.postJsonAuthorized(
-            "$root/users/$uid/notification_inbox?documentId=${java.net.URLEncoder.encode(docId, Charsets.UTF_8.name())}",
+            "${inboxRoot(uid)}?documentId=${java.net.URLEncoder.encode(docId, Charsets.UTF_8.name())}",
             body,
             adminToken
         )
     }
 
     suspend fun writeDocumentJson(path: String, json: String, updatedBy: String) {
+        val tenantPath = if (path.startsWith("tenants/")) path else "${tenantRoot()}/$path"
         val body = JSONObject()
             .put("fields", JSONObject()
                 .put("json", JSONObject().put("stringValue", json))
                 .put("updatedAt", JSONObject().put("stringValue", java.time.Instant.now().toString()))
                 .put("updatedBy", JSONObject().put("stringValue", updatedBy)))
         HttpClients.patch(
-            "$root/$path?updateMask.fieldPaths=json&updateMask.fieldPaths=updatedAt&updateMask.fieldPaths=updatedBy",
+            "$root/$tenantPath?updateMask.fieldPaths=json&updateMask.fieldPaths=updatedAt&updateMask.fieldPaths=updatedBy",
             body.toString(),
             auth.validToken()
         )
@@ -276,7 +291,7 @@ class FirestoreClient(
                 .put("isRead", JSONObject().put("booleanValue", true))
                 .put("readAt", JSONObject().put("timestampValue", now)))
         HttpClients.patch(
-            "$root/users/$uid/notification_inbox/$docId?updateMask.fieldPaths=isRead&updateMask.fieldPaths=readAt",
+            "${inboxRoot(uid)}/$docId?updateMask.fieldPaths=isRead&updateMask.fieldPaths=readAt",
             body.toString(),
             auth.validToken()
         )
@@ -291,7 +306,7 @@ class FirestoreClient(
                 .put("dismissedAt", JSONObject().put("timestampValue", now))
                 .put("archivedAt", JSONObject().put("timestampValue", now)))
         HttpClients.patch(
-            "$root/users/$uid/notification_inbox/$docId" +
+            "${inboxRoot(uid)}/$docId" +
                 "?updateMask.fieldPaths=isRead&updateMask.fieldPaths=isArchived" +
                 "&updateMask.fieldPaths=dismissedAt&updateMask.fieldPaths=archivedAt",
             body.toString(),
@@ -301,7 +316,7 @@ class FirestoreClient(
 
     suspend fun deleteInboxDocument(uid: String, docId: String) {
         HttpClients.delete(
-            "$root/users/$uid/notification_inbox/$docId",
+            "${inboxRoot(uid)}/$docId",
             auth.validToken()
         )
     }

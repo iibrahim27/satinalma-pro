@@ -8,7 +8,7 @@ Proje kökünde PowerShell:
 .\deploy-firebase.ps1
 ```
 
-İlk çalıştırmada tarayıcıda Google/Firebase hesabınızla giriş yapmanız istenir.
+Betik önce mevcut Firebase oturumunu dener; yoksa `Satinalma Pro\fcm-service-account.json` ile service account kullanır (Cursor/CI gibi etkileşimsiz ortamlar için). Service account yoksa ve terminal etkileşimliyse `firebase login` açılır.
 
 Alternatif: Service account ile yalnızca kurallar (IAM'de Firebase Rules Admin gerekir):
 
@@ -21,7 +21,7 @@ node scripts/deploy-rules.mjs
 ## Ön koşullar
 
 1. [Firebase CLI](https://firebase.google.com/docs/cli): `npm install -g firebase-tools`
-2. Giriş: `firebase login`
+2. Kimlik: `Satinalma Pro\fcm-service-account.json` (önerilen) veya `firebase login`
 3. Proje ID: `Satinalma Pro/firebase_ayarlar.json` → `projectId`
 
 ## İlk kurulum
@@ -42,7 +42,7 @@ cd ..
 # Yalnızca kurallar ve indeksler (üretim öncesi test önerilir)
 firebase deploy --only firestore:rules,firestore:indexes,storage
 
-# Cloud Functions (Node 20)
+# Cloud Functions (Node 24)
 firebase deploy --only functions
 
 # Tam deploy

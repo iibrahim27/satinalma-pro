@@ -79,6 +79,9 @@ public sealed class FcmPushServisi
     {
         if (!string.IsNullOrWhiteSpace(bildirim.HedefUid))
         {
+            if (string.Equals(bildirim.HedefUid, bildirim.OlusturanUid, StringComparison.OrdinalIgnoreCase))
+                return [];
+
             var profil = await _firestore.KullaniciOkuAsync(bildirim.HedefUid, iptal);
             if (string.IsNullOrWhiteSpace(profil?.FcmToken))
                 return [];

@@ -59,6 +59,22 @@ public static class BildirimYoneticisi
             ToastGoster(bildirim, ilkGosterim: true);
     }
 
+    public static async Task CokluEkleAsync(IReadOnlyList<BildirimKaydi> bildirimler, CancellationToken iptal = default)
+    {
+        if (bildirimler.Count == 0)
+            return;
+
+        await BildirimDeposu.CokluEkleAsync(bildirimler, iptal);
+        BildirimlerDegisti?.Invoke();
+
+        var kullanici = OturumYoneticisi.AktifKullanici;
+        if (kullanici is null)
+            return;
+
+        foreach (var bildirim in bildirimler.Where(b => ToastGosterilmeli(b, kullanici)))
+            ToastGoster(bildirim, ilkGosterim: true);
+    }
+
     public static async Task OkunduIsaretleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
     {
         bildirim.Okundu = true;

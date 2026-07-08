@@ -58,8 +58,8 @@ async function main() {
     const code = e.response?.data?.error?.code ?? e.code;
     if (code === 403 || code === "PERMISSION_DENIED") {
       console.error("\nService account deploy yetkisi yok.");
-      console.error("Çözüm: proje kökünde deploy-firebase.ps1 çalıştırın (firebase login gerekir).");
-      console.error("Firebase Console > IAM > service account'a 'Firebase Rules Admin' rolü de eklenebilir.");
+      console.error("Çözüm: GOOGLE_APPLICATION_CREDENTIALS=Satinalma Pro\\fcm-service-account.json ile deploy-firebase.ps1 çalıştırın.");
+      console.error("Firebase Console > IAM > service account'a 'Firebase Rules Admin' veya 'Editor' rolü ekleyin.");
     }
     throw e;
   }

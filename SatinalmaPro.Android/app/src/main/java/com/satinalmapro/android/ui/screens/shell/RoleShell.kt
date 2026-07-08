@@ -1,8 +1,9 @@
 package com.satinalmapro.android.ui.screens.shell
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -19,6 +20,7 @@ import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.LocalFragmentActivity
 import com.satinalmapro.android.ui.components.AppBottomNavigationBar
 import com.satinalmapro.android.ui.components.AppMainHeader
+import com.satinalmapro.android.ui.components.ModuleTabStrip
 import com.satinalmapro.android.ui.screens.home.HomeScreen
 import com.satinalmapro.android.ui.screens.materials.MaterialsScreen
 import com.satinalmapro.android.ui.screens.notifications.NotificationsScreen
@@ -56,7 +58,7 @@ fun RoleShell(viewModel: AppViewModel) {
     val title = menus.firstOrNull { it.route == base }?.title ?: "Satınalma Pro"
     val unreadCount = notifications.count { !it.read }
     val role = user?.role
-    val showFab = KullaniciRolleri.canCreateRequest(role)
+    val showFab = false
     val showReports = viewModel.canAccess("raporlar")
     val homeRoute = RolNavigasyon.defaultRoute(role)
 
@@ -121,14 +123,28 @@ fun RoleShell(viewModel: AppViewModel) {
                 }
             }
         ) { padding ->
-            RoleRouteContent(
-                route = route,
-                viewModel = viewModel,
-                onMenuClick = { scope.launch { drawerState.open() } },
-                onNotificationClick = { viewModel.navigateFromMenu("bildirimler") },
-                onProfileClick = { viewModel.navigateFromMenu("profil") },
-                modifier = Modifier.padding(if (base == "dashboard") PaddingValues(bottom = padding.calculateBottomPadding()) else padding)
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(if (base == "dashboard") PaddingValues(bottom = padding.calculateBottomPadding()) else padding)
+            ) {
+                if (!isMainTab && ShellRoutes.isModuleTabRoute(base)) {
+                    ModuleTabStrip(
+                        menus = menus,
+                        selectedRoute = base,
+                        menuBadges = menuBadges,
+                        onSelect = { viewModel.navigateFromMenu(it) }
+                    )
+                }
+                RoleRouteContent(
+                    route = route,
+                    viewModel = viewModel,
+                    onMenuClick = { scope.launch { drawerState.open() } },
+                    onNotificationClick = { viewModel.navigateFromMenu("bildirimler") },
+                    onProfileClick = { viewModel.navigateFromMenu("profil") },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 }

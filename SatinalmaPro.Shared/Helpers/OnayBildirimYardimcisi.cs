@@ -16,7 +16,6 @@ public static class OnayBildirimYardimcisi
             if (!string.IsNullOrWhiteSpace(olusturanUid))
                 yield return (null, olusturanUid);
 
-            yield return (KullaniciRolleri.Yonetim, null);
             yield break;
         }
 

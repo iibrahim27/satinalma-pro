@@ -3,11 +3,13 @@ using System.Text.Json;
 using System.Windows;
 using SatinalmaPro.Models;
 
+using SatinalmaPro.Shared;
+
 namespace SatinalmaPro.Services;
 
 public static class MedyaBulutSenkronu
 {
-    private const string BelgeYolu = "veri/medya";
+    private static string BelgeYolu => FirestoreYollari.Medya();
 
     private static readonly JsonSerializerOptions Json = new()
     {

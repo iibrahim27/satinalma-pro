@@ -40,9 +40,9 @@ public static class E2eAkisTestleri
             "Yönetime YonetimeGonderildi bildirimi oluştu",
             "Yönetime bildirim gitmedi");
 
-        sonuc.Bekle(ortam.KullaniciBildirimleri(BellekTestOrtami.Satinalma).Any(b => b.Tip == BildirimTipleri.YonetimeGonderildi),
-            "Satınalmaya YonetimeGonderildi bildirimi oluştu",
-            "Satınalmaya gelen talep bildirimi yok");
+        sonuc.Bekle(!ortam.KullaniciBildirimleri(BellekTestOrtami.Satinalma).Any(b => b.Tip == BildirimTipleri.YonetimeGonderildi),
+            "Satınalmaya YonetimeGonderildi bildirimi gitmedi (yönetim işi)",
+            "Satınalmaya gereksiz gelen talep bildirimi gitti");
 
         var yonetimRoute = BildirimRotaServisi.HedefRoute(
             ortam.Bildirimler.First(b => b.Tip == BildirimTipleri.YonetimeGonderildi && b.HedefRol == KullaniciRolleri.Yonetim),

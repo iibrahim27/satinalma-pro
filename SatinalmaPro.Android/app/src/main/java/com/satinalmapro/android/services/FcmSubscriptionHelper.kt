@@ -6,16 +6,12 @@ import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
-import com.satinalmapro.shared.model.User
+import com.satinalmapro.android.core.saas.TenantFcmTopics
+import com.satinalmapro.android.core.saas.TenantSession
 import com.satinalmapro.shared.model.UserRole
 
 /**
- * Giriş yapmış kullanıcının Firestore rolüne göre FCM topic aboneliğini yönetir.
- *
- * Çağrı noktaları:
- * - [MainActivity.onCreate] — uygulama her açıldığında
- * - Başarılı login sonrası — [syncRoleTopicSubscription]
- * - Logout öncesi — [unsubscribeAllRoleTopics]
+ * Giriş yapmış kullanıcının Firestore rolüne göre kiracıya özel FCM topic aboneliğini yönetir.
  */
 class FcmSubscriptionHelper(private val context: Context) {
 
@@ -24,9 +20,6 @@ class FcmSubscriptionHelper(private val context: Context) {
     private val messaging: FirebaseMessaging = FirebaseMessaging.getInstance()
     private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    /**
-     * Firebase Auth oturumunu kontrol eder, Firestore'dan rolü okur ve ilgili FCM topic'ine abone olur.
-     */
     fun syncRoleTopicSubscription(showSuccessToast: Boolean = true) {
         val currentUser = auth.currentUser
         if (currentUser == null) {
@@ -34,15 +27,21 @@ class FcmSubscriptionHelper(private val context: Context) {
             return
         }
 
-        val uid = currentUser.uid
-        Log.d(TAG, "Rol okunuyor: users/$uid")
+        val tenantId = runCatching { TenantSession.requireTenantId() }.getOrNull()
+        if (tenantId.isNullOrBlank()) {
+            Log.w(TAG, "FCM abonelik atlandı: tenantId yok")
+            return
+        }
 
-        firestore.collection(User.COLLECTION)
-            .document(uid)
+        val uid = currentUser.uid
+        val userPath = "tenants/$tenantId/users/$uid"
+        Log.d(TAG, "Rol okunuyor: $userPath")
+
+        firestore.document(userPath)
             .get()
             .addOnSuccessListener { snapshot ->
                 if (!snapshot.exists()) {
-                    Log.e(TAG, "Kullanıcı belgesi bulunamadı: users/$uid")
+                    Log.e(TAG, "Kullanıcı belgesi bulunamadı: $userPath")
                     return@addOnSuccessListener
                 }
 
@@ -51,7 +50,7 @@ class FcmSubscriptionHelper(private val context: Context) {
                     ?: ""
 
                 if (roleRaw.isBlank()) {
-                    Log.e(TAG, "Kullanıcı belgesinde rol alanı boş: users/$uid")
+                    Log.e(TAG, "Kullanıcı belgesinde rol alanı boş: $userPath")
                     return@addOnSuccessListener
                 }
 
@@ -61,28 +60,26 @@ class FcmSubscriptionHelper(private val context: Context) {
                     return@addOnSuccessListener
                 }
 
-                Log.i(TAG, "Rol okundu: ${userRole.displayName} → topic=${userRole.fcmTopic}")
-                subscribeToRoleTopic(userRole, showSuccessToast)
+                val topic = TenantFcmTopics.forRole(userRole, tenantId)
+                Log.i(TAG, "Rol okundu: ${userRole.displayName} → topic=$topic")
+                subscribeToRoleTopic(tenantId, topic, userRole, showSuccessToast)
             }
             .addOnFailureListener { error ->
-                Log.e(TAG, "Firestore rol okuma hatası uid=$uid", error)
+                Log.e(TAG, "Firestore rol okuma hatası uid=$uid tenant=$tenantId", error)
             }
     }
 
-    /**
-     * Önce diğer rol topic'lerinden çıkar, ardından hedef role abone olur.
-     */
-    private fun subscribeToRoleTopic(userRole: UserRole, showSuccessToast: Boolean) {
-        val topic = userRole.fcmTopic
-
-        unsubscribeOtherRoleTopics(keepTopic = topic) {
+    private fun subscribeToRoleTopic(
+        tenantId: String,
+        topic: String,
+        userRole: UserRole,
+        showSuccessToast: Boolean
+    ) {
+        unsubscribeOtherRoleTopics(tenantId, keepTopic = topic) {
             messaging.subscribeToTopic(topic)
                 .addOnSuccessListener {
-                    prefs.edit().putString(KEY_LAST_TOPIC, topic).apply()
-                    Log.i(
-                        TAG,
-                        "FCM topic aboneliği başarılı: topic=$topic rol=${userRole.displayName}"
-                    )
+                    prefs.edit().putString(KEY_LAST_TOPIC, topic).putString(KEY_LAST_TENANT, tenantId).apply()
+                    Log.i(TAG, "FCM topic aboneliği başarılı: topic=$topic rol=${userRole.displayName}")
                     if (showSuccessToast) {
                         val message = "Bildirim kanalına başarıyla bağlanıldı: ${userRole.displayName}"
                         Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT).show()
@@ -94,15 +91,15 @@ class FcmSubscriptionHelper(private val context: Context) {
         }
     }
 
-    /**
-     * Oturum kapanırken tüm rol topic aboneliklerini kaldırır.
-     */
     fun unsubscribeAllRoleTopics() {
-        val topics = UserRole.allTopics.toMutableSet()
+        val topics = mutableSetOf<String>()
         prefs.getString(KEY_LAST_TOPIC, null)?.let { topics.add(it) }
+        prefs.getString(KEY_LAST_TENANT, null)?.let { tenantId ->
+            topics.addAll(TenantFcmTopics.allForTenant(tenantId))
+        }
 
         if (topics.isEmpty()) {
-            prefs.edit().remove(KEY_LAST_TOPIC).apply()
+            prefs.edit().remove(KEY_LAST_TOPIC).remove(KEY_LAST_TENANT).apply()
             return
         }
 
@@ -117,14 +114,14 @@ class FcmSubscriptionHelper(private val context: Context) {
                     }
                     remaining -= 1
                     if (remaining == 0) {
-                        prefs.edit().remove(KEY_LAST_TOPIC).apply()
+                        prefs.edit().remove(KEY_LAST_TOPIC).remove(KEY_LAST_TENANT).apply()
                     }
                 }
         }
     }
 
-    private fun unsubscribeOtherRoleTopics(keepTopic: String, onComplete: () -> Unit) {
-        val topicsToRemove = UserRole.allTopics.filter { it != keepTopic }
+    private fun unsubscribeOtherRoleTopics(tenantId: String, keepTopic: String, onComplete: () -> Unit) {
+        val topicsToRemove = TenantFcmTopics.allForTenant(tenantId).filter { it != keepTopic }
         if (topicsToRemove.isEmpty()) {
             onComplete()
             return
@@ -146,6 +143,7 @@ class FcmSubscriptionHelper(private val context: Context) {
         private const val TAG = "FcmSubscriptionHelper"
         private const val PREFS_NAME = "fcm_subscription"
         private const val KEY_LAST_TOPIC = "last_role_topic"
+        private const val KEY_LAST_TENANT = "last_tenant_id"
         private const val FIELD_ROL = "rol"
         private const val FIELD_ROLE = "role"
     }

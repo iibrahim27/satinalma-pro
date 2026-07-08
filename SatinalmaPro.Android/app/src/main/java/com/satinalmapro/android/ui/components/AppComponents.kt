@@ -3,6 +3,7 @@ package com.satinalmapro.android.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.dp
 import com.satinalmapro.android.ui.theme.AppColors
 import com.satinalmapro.android.ui.theme.AppElevation
 import com.satinalmapro.android.ui.theme.AppShapes
@@ -44,6 +46,7 @@ fun AppCard(
     val colors = CardDefaults.cardColors(containerColor = containerColor)
     val elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.card)
     val shape = AppShapes.medium
+    val border = BorderStroke(1.dp, AppColors.Border)
     val wrapped: @Composable ColumnScope.() -> Unit = {
         Column(Modifier.padding(contentPadding), content = content)
     }
@@ -54,6 +57,7 @@ fun AppCard(
             shape = shape,
             colors = colors,
             elevation = elevation,
+            border = border,
             content = wrapped
         )
     } else {
@@ -62,6 +66,7 @@ fun AppCard(
             shape = shape,
             colors = colors,
             elevation = elevation,
+            border = border,
             content = wrapped
         )
     }

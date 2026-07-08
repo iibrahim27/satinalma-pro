@@ -251,6 +251,9 @@ public static class BildirimDeposu
 
     public static async Task<bool> EkleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
     {
+        if (!BildirimRolPolitikasi.KayitGonderilmeli(bildirim.HedefRol, bildirim.HedefUid, bildirim.OlusturanUid))
+            return false;
+
         bildirim.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         await YukleAsync(zorla: true, iptal);
 
@@ -277,10 +280,13 @@ public static class BildirimDeposu
 
     public static async Task CokluEkleAsync(IReadOnlyList<BildirimKaydi> bildirimler, CancellationToken iptal = default)
     {
-        if (bildirimler.Count == 0)
+        var gecerli = bildirimler
+            .Where(b => BildirimRolPolitikasi.KayitGonderilmeli(b.HedefRol, b.HedefUid, b.OlusturanUid))
+            .ToList();
+        if (gecerli.Count == 0)
             return;
 
-        foreach (var b in bildirimler)
+        foreach (var b in gecerli)
             b.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         await YukleAsync(zorla: true, iptal);
@@ -288,7 +294,7 @@ public static class BildirimDeposu
         var yeniKayitlar = new List<BildirimKaydi>();
         lock (Bildirimler)
         {
-            foreach (var b in bildirimler)
+            foreach (var b in gecerli)
             {
                 var mevcut = MevcutOkunmamis(b);
                 if (mevcut is not null)

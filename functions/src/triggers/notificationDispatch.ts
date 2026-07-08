@@ -8,11 +8,12 @@ export const onNotificationDispatchCreate = onDocumentCreated(
     if (!data || data.status !== "pending") return;
 
     const uid = data.uid as string;
+    const tenantId = data.tenantId as string | undefined;
     const title = data.title as string;
     const body = data.body as string;
     const payload = (data.data ?? {}) as Record<string, string>;
 
-    const sent = await sendFcmToUser(uid, title, body, payload);
+    const sent = await sendFcmToUser(uid, title, body, payload, tenantId);
     await event.data?.ref.update({
       status: sent ? "sent" : "failed",
       sentAt: new Date(),

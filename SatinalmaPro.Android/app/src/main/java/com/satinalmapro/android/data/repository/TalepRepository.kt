@@ -8,6 +8,7 @@ import com.satinalmapro.android.core.model.SatinalmaAyarlar
 import com.satinalmapro.android.core.model.TeklifFiyat
 import com.satinalmapro.android.core.model.TeklifItem
 import com.satinalmapro.android.core.helpers.BildirimLog
+import com.satinalmapro.android.core.helpers.BildirimRolPolitikasi
 import com.satinalmapro.android.core.helpers.OnayBildirimYardimcisi
 import com.satinalmapro.android.core.model.BildirimTipleri
 import com.satinalmapro.android.core.model.OnaylananMalzemeSatiri
@@ -133,10 +134,7 @@ class TalepRepository(
                 BildirimTipleri.YONETIME_GONDERILDI,
                 talep,
                 user,
-                listOf(
-                    KullaniciRolleri.YONETIM to null,
-                    KullaniciRolleri.SATINALMA to null
-                )
+                BildirimRolPolitikasi.yonetimeGonderildiHedefleri()
             )
         }.onFailure { BildirimLog.e("TALEP", "Yeni talep bildirimi gönderilemedi", it) }
         return talep
@@ -445,7 +443,13 @@ class TalepRepository(
                 throw IllegalStateException("Red yetkiniz yok")
             talep.copy(durum = TalepDurumlari.REDDEDILDI, redGerekcesi = gerekce.trim())
         }
-        bildirimler?.talepBildirimleri(BildirimTipleri.REDDEDILDI, result, user, hedefUid = result.olusturanUid, ek = gerekce)
+        bildirimler?.talepBildirimleriToplu(
+            BildirimTipleri.REDDEDILDI,
+            result,
+            user,
+            BildirimRolPolitikasi.reddedildiHedefleri(result.olusturanUid, user.uid),
+            ek = gerekce
+        )
         return result
     }
 
@@ -613,10 +617,12 @@ class TalepRepository(
         }
         saveAyarlar(ayarlar)
 
-        bildirimler?.talepBildirimleri(BildirimTipleri.SIPARIS_OLUSTURULDU, result, user, hedefRol = KullaniciRolleri.SATINALMA)
-        if (result.olusturanUid.isNotBlank()) {
-            bildirimler?.talepBildirimleri(BildirimTipleri.SIPARIS_OLUSTURULDU, result, user, hedefUid = result.olusturanUid)
-        }
+        bildirimler?.talepBildirimleriToplu(
+            BildirimTipleri.SIPARIS_OLUSTURULDU,
+            result,
+            user,
+            BildirimRolPolitikasi.siparisOlusturulduHedefleri(result.olusturanUid, user.uid)
+        )
         return result
     }
 
@@ -694,11 +700,13 @@ class TalepRepository(
             guncel.copy(kalemler = kalemler)
         }
         val ozet = "${satir.malzeme} · ${"%.2f".format(miktar)} ${satir.birim}"
-        bildirimler?.talepBildirimleri(BildirimTipleri.MAL_KABUL_EDILDI, result, user, hedefRol = KullaniciRolleri.SATINALMA, ek = ozet)
-        bildirimler?.talepBildirimleri(BildirimTipleri.MAL_KABUL_EDILDI, result, user, hedefRol = KullaniciRolleri.DEPO, ek = ozet)
-        if (result.olusturanUid.isNotBlank()) {
-            bildirimler?.talepBildirimleri(BildirimTipleri.MAL_KABUL_EDILDI, result, user, hedefUid = result.olusturanUid, ek = ozet)
-        }
+        bildirimler?.talepBildirimleriToplu(
+            BildirimTipleri.MAL_KABUL_EDILDI,
+            result,
+            user,
+            BildirimRolPolitikasi.malKabulEdildiHedefleri(result.olusturanUid, user.uid),
+            ek = ozet
+        )
         return result
     }
 
@@ -802,10 +810,7 @@ class TalepRepository(
                     BildirimTipleri.YONETIME_GONDERILDI,
                     result,
                     user,
-                    listOf(
-                        KullaniciRolleri.YONETIM to null,
-                        KullaniciRolleri.SATINALMA to null
-                    )
+                    BildirimRolPolitikasi.yonetimeGonderildiHedefleri()
                 )
             }
         }
@@ -854,9 +859,12 @@ class TalepRepository(
             }
             PurchaseRequestDetailAction.REJECT_REQUEST,
             PurchaseRequestDetailAction.REJECT_ENTIRE_REQUEST ->
-                bildirimler?.talepBildirimleri(
-                    BildirimTipleri.REDDEDILDI, result, user,
-                    hedefUid = result.olusturanUid, ek = note.orEmpty()
+                bildirimler?.talepBildirimleriToplu(
+                    BildirimTipleri.REDDEDILDI,
+                    result,
+                    user,
+                    BildirimRolPolitikasi.reddedildiHedefleri(result.olusturanUid, user.uid),
+                    ek = note.orEmpty()
                 )
             PurchaseRequestDetailAction.SEND_QUOTES_FOR_REVISION ->
                 bildirimler?.talepBildirimleri(

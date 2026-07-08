@@ -101,6 +101,7 @@ public static class SatinalmaPart1Servisi
         SatinalmaDepo.TalepNoAtaIfNeeded(talep);
         KalemleriTemizle(talep);
         talep.Durum = SatinalmaTalepDurumlari.ImzaSurecinde;
+        talep.Status = SatinalmaPro.Shared.Procurement.ProcurementStatus.Submitted;
         SatinalmaTalepYardimcisi.Dokun(talep);
         TalepEkle(talep);
         await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);

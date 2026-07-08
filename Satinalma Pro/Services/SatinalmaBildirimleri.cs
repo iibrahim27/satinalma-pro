@@ -81,21 +81,12 @@ public static class SatinalmaBildirimleri
 
 
     public static Task YonetimeGonderildiAsync(SatinalmaTalep talep)
-
     {
-
         var (baslik, mesaj) = Metin(SharedBildirimTipleri.YonetimeGonderildi, talep);
-
-        return BildirimDeposu.CokluEkleAsync(
-
-        [
-
-            Kayit(talep, SharedBildirimTipleri.YonetimeGonderildi, baslik, mesaj, hedefRol: KullaniciRolleri.Yonetim),
-
-            Kayit(talep, SharedBildirimTipleri.YonetimeGonderildi, baslik, mesaj, hedefRol: KullaniciRolleri.Satinalma)
-
-        ]);
-
+        return BildirimYoneticisi.CokluEkleAsync(
+            BildirimRolPolitikasi.YonetimeGonderildiHedefleri()
+                .Select(h => Kayit(talep, SharedBildirimTipleri.YonetimeGonderildi, baslik, mesaj, h.HedefRol, h.HedefUid))
+                .ToList());
     }
 
 
@@ -173,69 +164,38 @@ public static class SatinalmaBildirimleri
 
 
     public static Task ReddedildiAsync(SatinalmaTalep talep, string gerekce)
-
     {
-
         var (baslik, mesaj) = Metin(SharedBildirimTipleri.Reddedildi, talep, ek: gerekce);
-
-        return BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.Reddedildi, baslik, mesaj, hedefUid: talep.OlusturanUid));
-
+        var actorUid = Olusturan().uid;
+        return BildirimYoneticisi.CokluEkleAsync(
+            BildirimRolPolitikasi.ReddedildiHedefleri(talep.OlusturanUid, actorUid)
+                .Select(h => Kayit(talep, SharedBildirimTipleri.Reddedildi, baslik, mesaj, h.HedefRol, h.HedefUid))
+                .ToList());
     }
 
 
 
     public static Task SiparisOlusturulduAsync(SatinalmaTalep talep)
-
     {
-
         var ek = string.IsNullOrWhiteSpace(talep.SiparisNo) ? null : $"Sipariş No: {talep.SiparisNo}";
-
         var (baslik, mesaj) = Metin(SharedBildirimTipleri.SiparisOlusturuldu, talep, ek: ek);
-
-        var kayitlar = new List<BildirimKaydi>
-
-        {
-
-            Kayit(talep, SharedBildirimTipleri.SiparisOlusturuldu, baslik, mesaj, hedefRol: KullaniciRolleri.Satinalma)
-
-        };
-
-        if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
-
-            kayitlar.Add(Kayit(talep, SharedBildirimTipleri.SiparisOlusturuldu, baslik, mesaj, hedefUid: talep.OlusturanUid));
-
-
-
-        return BildirimDeposu.CokluEkleAsync(kayitlar);
-
+        var actorUid = Olusturan().uid;
+        return BildirimYoneticisi.CokluEkleAsync(
+            BildirimRolPolitikasi.SiparisOlusturulduHedefleri(talep.OlusturanUid, actorUid)
+                .Select(h => Kayit(talep, SharedBildirimTipleri.SiparisOlusturuldu, baslik, mesaj, h.HedefRol, h.HedefUid))
+                .ToList());
     }
 
 
 
     public static Task MalKabulEdildiAsync(SatinalmaTalep talep, string? malzemeOzeti = null)
-
     {
-
         var (baslik, mesaj) = Metin(SharedBildirimTipleri.MalKabulEdildi, talep, ek: malzemeOzeti);
-
-        var kayitlar = new List<BildirimKaydi>
-
-        {
-
-            Kayit(talep, SharedBildirimTipleri.MalKabulEdildi, baslik, mesaj, hedefRol: KullaniciRolleri.Satinalma),
-
-            Kayit(talep, SharedBildirimTipleri.MalKabulEdildi, baslik, mesaj, hedefRol: KullaniciRolleri.Depo)
-
-        };
-
-        if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
-
-            kayitlar.Add(Kayit(talep, SharedBildirimTipleri.MalKabulEdildi, baslik, mesaj, hedefUid: talep.OlusturanUid));
-
-
-
-        return BildirimDeposu.CokluEkleAsync(kayitlar);
-
+        var actorUid = Olusturan().uid;
+        return BildirimYoneticisi.CokluEkleAsync(
+            BildirimRolPolitikasi.MalKabulEdildiHedefleri(talep.OlusturanUid, actorUid)
+                .Select(h => Kayit(talep, SharedBildirimTipleri.MalKabulEdildi, baslik, mesaj, h.HedefRol, h.HedefUid))
+                .ToList());
     }
 
 }

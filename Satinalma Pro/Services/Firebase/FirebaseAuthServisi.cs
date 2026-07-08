@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using SatinalmaPro.Models;
+using SatinalmaPro.Shared.SaaS;
 
 namespace SatinalmaPro.Services.Firebase;
 
@@ -118,7 +119,7 @@ public sealed class FirebaseAuthServisi
         return _idToken!;
     }
 
-    public void OturumuKaydet(string dosyaYolu, bool beniHatirla = true)
+    public void OturumuKaydet(string dosyaYolu, bool beniHatirla = true, string? tenantId = null, string? tenantAd = null, string? kullaniciAdi = null)
     {
         if (string.IsNullOrEmpty(_refreshToken))
             return;
@@ -128,6 +129,9 @@ public sealed class FirebaseAuthServisi
             RefreshToken = _refreshToken,
             Uid = Uid,
             Eposta = Eposta,
+            TenantId = tenantId,
+            TenantAd = tenantAd,
+            KullaniciAdi = kullaniciAdi,
             BeniHatirla = beniHatirla
         };
         File.WriteAllText(dosyaYolu, JsonSerializer.Serialize(paket, Json));
@@ -163,6 +167,24 @@ public sealed class FirebaseAuthServisi
         _tokenBitis = DateTime.MinValue;
         Uid = null;
         Eposta = null;
+    }
+
+    public void OturumuSaaSDenUygula(SaaSLoginSonucu sonuc)
+    {
+        _idToken = sonuc.IdToken;
+        _refreshToken = sonuc.RefreshToken;
+        Uid = sonuc.Uid;
+        Eposta = sonuc.Eposta;
+        _tokenBitis = DateTime.UtcNow.AddSeconds(sonuc.ExpiresIn - 60);
+    }
+
+    public void RefreshTokenAyarla(string refreshToken, string? uid, string? eposta)
+    {
+        _refreshToken = refreshToken;
+        Uid = uid;
+        Eposta = eposta;
+        _idToken = null;
+        _tokenBitis = DateTime.MinValue;
     }
 
     private async Task<JsonElement> KimlikIstegiAsync(string url, object govde, CancellationToken iptal)
@@ -242,6 +264,9 @@ public sealed class FirebaseAuthServisi
         public string? RefreshToken { get; set; }
         public string? Uid { get; set; }
         public string? Eposta { get; set; }
+        public string? TenantId { get; set; }
+        public string? TenantAd { get; set; }
+        public string? KullaniciAdi { get; set; }
         public bool BeniHatirla { get; set; }
     }
 }

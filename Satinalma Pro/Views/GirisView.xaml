@@ -47,7 +47,7 @@
 
       <TextBlock Text="Kullanıcı Adı" Style="{StaticResource LoginFieldLabelStyle}" />
       <TextBox x:Name="TxtEposta" Style="{StaticResource LoginTextBoxStyle}" Margin="0,0,0,14"
-               ui:ControlHelper.PlaceholderText="ornek@firma.com" KeyDown="GirisAlani_KeyDown" />
+               ui:ControlHelper.PlaceholderText="kullanici.adi" KeyDown="GirisAlani_KeyDown" />
 
       <TextBlock Text="Şifre" Style="{StaticResource LoginFieldLabelStyle}" />
       <Grid Margin="0,0,0,8">

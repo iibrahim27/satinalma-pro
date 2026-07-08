@@ -35,15 +35,12 @@ public partial class AyarlarView : UserControl
     [
         new("genel", "Genel", "\uE713", "Genel"),
         new("firma", "Firma Bilgileri", "\uE821", "Genel"),
-        new("kullanicilar", "Kullanıcılar", "\uE77B", "Genel"),
-        new("yetkilendirme", "Yetkilendirme", "\uE72E", "Genel"),
         new("satinalma", "Satınalma", "\uE719", "Satınalma"),
         new("stok", "Stok", "\uE7B8", "Malzeme Kategorileri"),
         new("filo", "Araç Filo", "\uE804", "Araç Filo"),
         new("akaryakit", "Akaryakıt", "\uE909", "Genel"),
         new("raporlar", "Raporlar", "\uE9F9", "Genel"),
         new("bildirimler", "Bildirimler", "\uE7ED", "Genel"),
-        new("bulut", "Bulut", "\uE753", "Genel"),
         new("veritabani", "Veritabanı", "\uE968", "Veri Dosyaları"),
         new("yedekleme", "Yedekleme", "\uE8B7", "Yedekleme"),
         new("loglar", "Loglar", "\uE8A1", "Genel"),
@@ -59,7 +56,6 @@ public partial class AyarlarView : UserControl
         KategoriListesi.ItemsSource = _malzemeKategorileri;
         BirimListesi.ItemsSource = _malzemeBirimleri;
         TxtVeriKlasoru.Text = SatinalmaProKlasor.Yol;
-        BulutPaneliniGuncelle();
         AyarlariYukle();
         VeriDurumlariniYenile();
         KpiKartlariniGuncelle();
@@ -76,15 +72,12 @@ public partial class AyarlarView : UserControl
     {
         _paneller["genel"] = PanelGenel;
         _paneller["firma"] = PanelFirma;
-        _paneller["kullanicilar"] = PanelKullanicilar;
-        _paneller["yetkilendirme"] = PanelYetkilendirme;
         _paneller["satinalma"] = PanelSatinalma;
         _paneller["stok"] = PanelStok;
         _paneller["filo"] = PanelFilo;
         _paneller["akaryakit"] = PanelAkaryakit;
         _paneller["raporlar"] = PanelRaporlar;
         _paneller["bildirimler"] = PanelBildirimler;
-        _paneller["bulut"] = PanelBulut;
         _paneller["veritabani"] = PanelVeritabani;
         _paneller["yedekleme"] = PanelYedekleme;
         _paneller["loglar"] = PanelLoglar;
@@ -882,9 +875,6 @@ public partial class AyarlarView : UserControl
         TxtGuncellemeDurum.Text = guncellemeMetni;
         TxtGuncellemeDurum2.Text = guncellemeMetni;
 
-        BtnKullaniciYonetimi.Visibility = KullaniciYetkileri.AdminMi && OturumYoneticisi.BulutAktif
-            ? Visibility.Visible
-            : Visibility.Collapsed;
         BtnBulutaYukle.Visibility = KullaniciYetkileri.AdminMi && OturumYoneticisi.BulutAktif
             ? Visibility.Visible
             : Visibility.Collapsed;
@@ -966,12 +956,6 @@ public partial class AyarlarView : UserControl
         {
             BtnBulutaYukle.IsEnabled = true;
         }
-    }
-
-    private void KullaniciYonetimi_Click(object sender, RoutedEventArgs e)
-    {
-        var pencere = new KullaniciYonetimWindow { Owner = Window.GetWindow(this) };
-        pencere.ShowDialog();
     }
 
     private void FirebaseKurulum_Click(object sender, RoutedEventArgs e) =>

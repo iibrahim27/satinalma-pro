@@ -66,7 +66,13 @@ public static class ProcurementTalepSorguServisi
             if (eslesen.Count == 0)
                 return bellek;
 
-            return DesktopRoleTabManager.FilterAndSort(route, eslesen, rol, uid);
+            var birlesik = bellek
+                .Concat(eslesen)
+                .GroupBy(t => t.Id)
+                .Select(g => g.First())
+                .ToList();
+
+            return DesktopRoleTabManager.FilterAndSort(route, birlesik, rol, uid);
         }
         catch (Exception ex)
         {

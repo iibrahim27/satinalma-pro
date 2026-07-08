@@ -3,6 +3,8 @@ namespace SatinalmaPro.Shared.Models;
 public class KullaniciProfili
 {
     public string Uid { get; set; } = "";
+    public string TenantId { get; set; } = "";
+    public string KullaniciAdi { get; set; } = "";
     public string Eposta { get; set; } = "";
     public string AdSoyad { get; set; } = "";
     public string Rol { get; set; } = KullaniciRolleri.Saha;
