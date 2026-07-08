@@ -9,6 +9,7 @@
     <AssemblyName>SatinalmaYonetici</AssemblyName>
     <Product>Satınalma Yönetici</Product>
     <RootNamespace>SatinalmaYonetici</RootNamespace>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +18,7 @@
 
   <ItemGroup>
     <None Include="..\Satinalma Pro\firebase_ayarlar.json" Link="firebase_ayarlar.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\Satinalma Pro\firebase_ayarlar.json')" />
+    <Resource Include="Assets\app.ico" />
   </ItemGroup>
 
 </Project>
