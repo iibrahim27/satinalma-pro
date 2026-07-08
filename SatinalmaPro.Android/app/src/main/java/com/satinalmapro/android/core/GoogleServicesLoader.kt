@@ -42,12 +42,9 @@ object GoogleServicesLoader {
     }
 
     private fun fallbackOptions(apiKey: String, projectId: String): FirebaseOptions? {
-        if (apiKey.isBlank() || projectId.isBlank()) return null
-        return FirebaseOptions.Builder()
-            .setApplicationId("1:000000000000:android:0000000000000000000000")
-            .setProjectId(projectId)
-            .setApiKey(apiKey)
-            .build()
+        // Sahte mobilesdk_app_id ile init FCM/Auth SDK'da çökme üretir.
+        // google-services.json yoksa Firebase SDK başlatma; REST API auth yeterli.
+        return null
     }
 
     /** google-services.json içinden projectId ve apiKey okur (firebase_ayarlar.json yoksa). */

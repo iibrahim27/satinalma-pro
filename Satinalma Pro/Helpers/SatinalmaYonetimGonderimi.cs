@@ -1,6 +1,7 @@
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
 using SatinalmaPro.Shared.Helpers;
+using SatinalmaPro.Shared.Procurement;
 
 namespace SatinalmaPro.Helpers;
 
@@ -44,6 +45,7 @@ public static class SatinalmaYonetimGonderimi
         if (teklifVar)
         {
             talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
+            talep.Status = ProcurementStatus.ManagementQuoteReview;
             SatinalmaTalepYardimcisi.Dokun(talep);
             await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
 
@@ -64,6 +66,7 @@ public static class SatinalmaYonetimGonderimi
             SatinalmaTalepYardimcisi.KayitOncesiHazirla(talep);
 
         talep.Durum = SatinalmaTalepDurumlari.ImzaSurecinde;
+        talep.Status = ProcurementStatus.Submitted;
         SatinalmaTalepYardimcisi.Dokun(talep);
         await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
 

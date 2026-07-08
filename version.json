@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.48",
-    "build":  101,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.48/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.48/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.48/SatinalmaPro.apk",
-    "notes":  "Lisanslama, platform hesabi ayirma, eksik kiraci oturumunda login ekranina yonlendirme",
+    "version":  "2.1.49",
+    "build":  102,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.49/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.49/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.49/SatinalmaPro.apk",
+    "notes":  "Android Firebase acilis duzeltmesi, Firestore URL ve sekme filtresi, durum senkronu; Yonetici kullanici ve firma silme",
     "zorunlu":  false
 }

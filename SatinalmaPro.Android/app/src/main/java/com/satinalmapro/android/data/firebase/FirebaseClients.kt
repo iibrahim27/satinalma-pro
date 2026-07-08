@@ -170,6 +170,23 @@ class FirestoreClient(
     private fun tenantRoot() = "$root/tenants/${TenantSession.requireTenantId()}"
     private fun userDoc(uid: String) = "${tenantRoot()}/users/$uid"
 
+    /** Relative `veri/...` / `tenants/...` → absolute Firestore document URL (çift kökleme yok). */
+    private fun documentUrl(path: String): String {
+        val trimmed = path.trim().trimStart('/')
+        if (trimmed.startsWith("http://", ignoreCase = true) ||
+            trimmed.startsWith("https://", ignoreCase = true)
+        ) {
+            return trimmed
+        }
+        // Zaten tenantRoot() ile üretilmiş absolute path
+        if (trimmed.startsWith(root)) return trimmed
+        val relative = when {
+            trimmed.startsWith("tenants/") -> trimmed
+            else -> "tenants/${TenantSession.requireTenantId()}/$trimmed"
+        }
+        return "$root/$relative"
+    }
+
     suspend fun readUser(uid: String): JSONObject? {
         val response = HttpClients.get(userDoc(uid), auth.validToken())
         return if (response.isBlank()) null else JSONObject(response).optJSONObject("fields")
@@ -211,8 +228,7 @@ class FirestoreClient(
     }
 
     suspend fun readDocumentJson(path: String): String? {
-        val tenantPath = if (path.startsWith("tenants/")) path else "${tenantRoot()}/$path"
-        val response = HttpClients.get("$root/$tenantPath", auth.validToken())
+        val response = HttpClients.get(documentUrl(path), auth.validToken())
         if (response.isBlank()) return null
         val fields = JSONObject(response).optJSONObject("fields") ?: return null
         return fields.optJSONObject("json")?.optString("stringValue")
@@ -277,14 +293,13 @@ class FirestoreClient(
     }
 
     suspend fun writeDocumentJson(path: String, json: String, updatedBy: String) {
-        val tenantPath = if (path.startsWith("tenants/")) path else "${tenantRoot()}/$path"
         val body = JSONObject()
             .put("fields", JSONObject()
                 .put("json", JSONObject().put("stringValue", json))
                 .put("updatedAt", JSONObject().put("stringValue", java.time.Instant.now().toString()))
                 .put("updatedBy", JSONObject().put("stringValue", updatedBy)))
         HttpClients.patch(
-            "$root/$tenantPath?updateMask.fieldPaths=json&updateMask.fieldPaths=updatedAt&updateMask.fieldPaths=updatedBy",
+            "${documentUrl(path)}?updateMask.fieldPaths=json&updateMask.fieldPaths=updatedAt&updateMask.fieldPaths=updatedBy",
             body.toString(),
             auth.validToken()
         )
@@ -355,11 +370,11 @@ class FirestoreClient(
             .put("saha", JSONObject().put("stringValue", user.site))
         val body = JSONObject().put("fields", fields).toString()
         val token = auth.validToken()
-        val patchUrl = "$root/users/${user.uid}?updateMask.fieldPaths=eposta&updateMask.fieldPaths=adSoyad&updateMask.fieldPaths=rol&updateMask.fieldPaths=aktif&updateMask.fieldPaths=saha"
+        val patchUrl = "${userDoc(user.uid)}?updateMask.fieldPaths=eposta&updateMask.fieldPaths=adSoyad&updateMask.fieldPaths=rol&updateMask.fieldPaths=aktif&updateMask.fieldPaths=saha"
         val patchResult = runCatching { HttpClients.patch(patchUrl, body, token) }.getOrDefault("")
         if (patchResult.isNotBlank()) return
         HttpClients.postJsonAuthorized(
-            "$root/users?documentId=${user.uid}",
+            "${tenantRoot()}/users?documentId=${user.uid}",
             body,
             token
         )

@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using SatinalmaPro.Shared.Models;
 using SatinalmaPro.Shared.SaaS;
@@ -193,6 +194,66 @@ public partial class MainWindow : Window
         await FirmaKaydetInternalAsync(lisansYenile: true);
     }
 
+    private async void FirmaSil_Click(object sender, RoutedEventArgs e)
+    {
+        if (_seciliFirma is null || string.IsNullOrWhiteSpace(_seciliFirma.Id))
+        {
+            MessageBox.Show("Önce silinecek firmayı seçin.", "Firma sil",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var kod = _seciliFirma.Kod.Trim();
+        if (string.IsNullOrWhiteSpace(kod))
+        {
+            MessageBox.Show("Firma kodu tanımlı değil. Önce firmayı kaydedin.", "Firma sil",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var uyari = MessageBox.Show(
+            $"«{_seciliFirma.Ad}» firması ve tüm verisi (kullanıcılar, talepler, siparişler) kalıcı olarak silinecek.\n\n" +
+            "Bu işlem geri alınamaz.\n\nDevam etmek için bir sonraki adımda firma kodunu yazmanız istenecek.\n\nDevam edilsin mi?",
+            "Firmayı sil",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (uyari != MessageBoxResult.Yes)
+            return;
+
+        var onayKodu = MetinGir(
+            "Firmayı sil — onay",
+            $"Kalıcı silme için firma kodunu yazın: {kod}",
+            "");
+        if (onayKodu is null)
+            return;
+
+        if (!string.Equals(onayKodu.Trim(), kod, StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show("Onay kodu firma kodu ile eşleşmiyor. Silme iptal edildi.", "Firma sil",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            var silinenKullanici = await _oturum.Platform.FirmaSilAsync(_seciliFirma.Id, onayKodu.Trim());
+            _seciliFirma = null;
+            FirmaGrid.SelectedItem = null;
+            YeniFirma_Click(sender, e);
+            await FirmalariYukleAsync();
+            DurumMetni.Text = $"Firma silindi ({silinenKullanici} kullanıcı kaldırıldı).";
+            MessageBox.Show(
+                $"Firma ve tüm verisi silindi.\n\nKaldırılan kullanıcı: {silinenKullanici}",
+                "Firma sil",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Firma sil", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
     private async Task FirmaKaydetInternalAsync(bool lisansYenile)
     {
         try
@@ -382,6 +443,49 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void KullaniciSil_Click(object sender, RoutedEventArgs e)
+    {
+        if (_seciliFirma is null || string.IsNullOrWhiteSpace(_seciliFirma.Id))
+        {
+            MessageBox.Show("Önce bir firma seçin.", "Kullanıcı sil",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (KullaniciGrid.SelectedItem is not PlatformKullaniciKaydi secili ||
+            string.IsNullOrWhiteSpace(secili.Uid))
+        {
+            MessageBox.Show("Önce silinecek kullanıcıyı listeden seçin.", "Kullanıcı sil",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var etiket = string.IsNullOrWhiteSpace(secili.KullaniciAdi)
+            ? secili.AdSoyad
+            : secili.KullaniciAdi;
+
+        var onay = MessageBox.Show(
+            $"«{etiket}» kullanıcısı kalıcı olarak silinecek.\n\n" +
+            "Firebase Auth hesabı ve kullanıcı adı eşlemesi de kaldırılır.\n\nDevam edilsin mi?",
+            "Kullanıcıyı sil",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (onay != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            await _oturum.Platform.KullaniciSilAsync(_seciliFirma.Id, secili.Uid);
+            YeniKullanici_Click(sender, e);
+            await KullanicilariYukleAsync();
+            DurumMetni.Text = $"Kullanıcı silindi: {etiket}";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Kullanıcı sil", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
     private async void Bootstrap_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -481,5 +585,75 @@ public partial class MainWindow : Window
             DurumMetni.Text = "Güncelleme kontrolü başarısız.";
             MessageBox.Show(ex.Message, "Güncelleme", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private static string? MetinGir(string baslik, string aciklama, string varsayilan)
+    {
+        var dlg = new Window
+        {
+            Title = baslik,
+            Width = 440,
+            Height = 210,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            ResizeMode = ResizeMode.NoResize,
+            Background = System.Windows.Media.Brushes.White
+        };
+
+        var kutu = new TextBox
+        {
+            Text = varsayilan,
+            Height = 36,
+            Padding = new Thickness(10, 6, 10, 6),
+            FontSize = 14,
+            VerticalContentAlignment = VerticalAlignment.Center
+        };
+
+        var tamam = false;
+        string? sonuc = null;
+
+        var panel = new StackPanel { Margin = new Thickness(20) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = aciklama,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 12)
+        });
+        panel.Children.Add(kutu);
+
+        var btnRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 16, 0, 0)
+        };
+
+        var iptalBtn = new Button { Content = "İptal", MinWidth = 88, Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(12, 6, 12, 6) };
+        iptalBtn.Click += (_, _) => dlg.Close();
+
+        var okBtn = new Button { Content = "Sil", MinWidth = 88, Padding = new Thickness(12, 6, 12, 6), IsDefault = true };
+        okBtn.Click += (_, _) =>
+        {
+            tamam = true;
+            sonuc = kutu.Text;
+            dlg.Close();
+        };
+
+        btnRow.Children.Add(iptalBtn);
+        btnRow.Children.Add(okBtn);
+        panel.Children.Add(btnRow);
+        dlg.Content = panel;
+
+        kutu.KeyDown += (_, ke) =>
+        {
+            if (ke.Key == Key.Enter)
+            {
+                tamam = true;
+                sonuc = kutu.Text;
+                dlg.Close();
+            }
+        };
+
+        dlg.ShowDialog();
+        return tamam ? sonuc : null;
     }
 }

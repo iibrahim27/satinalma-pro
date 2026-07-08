@@ -210,8 +210,11 @@
                     <Button Content="Firmayı Kaydet" Style="{StaticResource PrimaryButtonStyle}"
                             MinWidth="140" Click="FirmaKaydet_Click" Margin="0,0,8,0" />
                     <Button Content="Lisansı yenile" Style="{StaticResource SecondaryButtonStyle}"
-                            MinWidth="120" Click="LisansYenile_Click"
+                            MinWidth="120" Click="LisansYenile_Click" Margin="0,0,8,0"
                             ToolTip="Bugünden itibaren deneme=30 gün veya yıllık=365 gün yeniden başlatır" />
+                    <Button Content="Firmayı Sil" Style="{StaticResource DangerButtonStyle}"
+                            MinWidth="110" Click="FirmaSil_Click"
+                            ToolTip="Firmayı ve tüm verisini kalıcı olarak siler (geri alınamaz)" />
                   </StackPanel>
                 </StackPanel>
               </Border>
@@ -325,10 +328,15 @@
 
                     <CheckBox Grid.Row="3" Grid.Column="0" x:Name="KullaniciAktif"
                               Content="Aktif" IsChecked="True" VerticalAlignment="Center" />
-                    <Button Grid.Row="3" Grid.Column="2" Content="Kullanıcıyı Kaydet"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            HorizontalAlignment="Right" MinWidth="160"
-                            Click="KullaniciKaydet_Click" />
+                    <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal"
+                                HorizontalAlignment="Right">
+                      <Button Content="Kullanıcıyı Sil" Style="{StaticResource DangerButtonStyle}"
+                              MinWidth="130" Margin="0,0,8,0" Click="KullaniciSil_Click"
+                              ToolTip="Seçili kullanıcıyı kalıcı olarak siler" />
+                      <Button Content="Kullanıcıyı Kaydet"
+                              Style="{StaticResource PrimaryButtonStyle}"
+                              MinWidth="160" Click="KullaniciKaydet_Click" />
+                    </StackPanel>
                   </Grid>
                 </StackPanel>
               </Border>

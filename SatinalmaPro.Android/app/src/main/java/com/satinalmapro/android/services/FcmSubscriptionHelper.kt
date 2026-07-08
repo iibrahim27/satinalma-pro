@@ -3,6 +3,7 @@ package com.satinalmapro.android.services
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
@@ -15,19 +16,27 @@ import com.satinalmapro.shared.model.UserRole
  */
 class FcmSubscriptionHelper(private val context: Context) {
 
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
-    private val messaging: FirebaseMessaging = FirebaseMessaging.getInstance()
     private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+    private fun firebaseReady(): Boolean =
+        runCatching { FirebaseApp.getApps(context.applicationContext).isNotEmpty() }.getOrDefault(false)
+
     fun syncRoleTopicSubscription(showSuccessToast: Boolean = true) {
+        if (!firebaseReady()) {
+            Log.w(TAG, "FCM abonelik atlandı: FirebaseApp hazır değil")
+            return
+        }
+
+        val auth = runCatching { FirebaseAuth.getInstance() }.getOrNull() ?: return
+        val firestore = runCatching { FirebaseFirestore.getInstance() }.getOrNull() ?: return
+
         val currentUser = auth.currentUser
         if (currentUser == null) {
             Log.w(TAG, "FCM abonelik atlandı: Firebase Auth oturumu yok")
             return
         }
 
-        val tenantId = runCatching { TenantSession.requireTenantId() }.getOrNull()
+        val tenantId = TenantSession.tenantId()?.takeIf { it.isNotBlank() }
         if (tenantId.isNullOrBlank()) {
             Log.w(TAG, "FCM abonelik atlandı: tenantId yok")
             return
@@ -69,12 +78,16 @@ class FcmSubscriptionHelper(private val context: Context) {
             }
     }
 
+    private fun messagingOrNull(): FirebaseMessaging? =
+        runCatching { FirebaseMessaging.getInstance() }.getOrNull()
+
     private fun subscribeToRoleTopic(
         tenantId: String,
         topic: String,
         userRole: UserRole,
         showSuccessToast: Boolean
     ) {
+        val messaging = messagingOrNull() ?: return
         unsubscribeOtherRoleTopics(tenantId, keepTopic = topic) {
             messaging.subscribeToTopic(topic)
                 .addOnSuccessListener {
@@ -92,13 +105,19 @@ class FcmSubscriptionHelper(private val context: Context) {
     }
 
     fun unsubscribeAllRoleTopics() {
+        if (!firebaseReady()) {
+            prefs.edit().remove(KEY_LAST_TOPIC).remove(KEY_LAST_TENANT).apply()
+            return
+        }
+
+        val messaging = messagingOrNull()
         val topics = mutableSetOf<String>()
         prefs.getString(KEY_LAST_TOPIC, null)?.let { topics.add(it) }
         prefs.getString(KEY_LAST_TENANT, null)?.let { tenantId ->
             topics.addAll(TenantFcmTopics.allForTenant(tenantId))
         }
 
-        if (topics.isEmpty()) {
+        if (messaging == null || topics.isEmpty()) {
             prefs.edit().remove(KEY_LAST_TOPIC).remove(KEY_LAST_TENANT).apply()
             return
         }
@@ -121,8 +140,9 @@ class FcmSubscriptionHelper(private val context: Context) {
     }
 
     private fun unsubscribeOtherRoleTopics(tenantId: String, keepTopic: String, onComplete: () -> Unit) {
+        val messaging = messagingOrNull()
         val topicsToRemove = TenantFcmTopics.allForTenant(tenantId).filter { it != keepTopic }
-        if (topicsToRemove.isEmpty()) {
+        if (messaging == null || topicsToRemove.isEmpty()) {
             onComplete()
             return
         }

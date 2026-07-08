@@ -153,22 +153,27 @@ class AppContainer(private val context: Context) {
         return try {
             val obj = JSONObject(json)
             val uid = obj.optString("uid")
-            prefs.getString("saved_tenant_id", null)?.takeIf { it.isNotBlank() }?.let { tenantId ->
-                val lisans = if (obj.has("lisansBitisUtc") || obj.has("lisansTip")) {
-                    TenantLicense(
-                        tip = obj.optString("lisansTip", "deneme"),
-                        bitisUtc = obj.optString("lisansBitisUtc").ifBlank { null },
-                        kalanGun = if (obj.has("lisansKalanGun")) obj.optInt("lisansKalanGun") else null,
-                        suresiDoldu = obj.optInt("lisansKalanGun", 1) <= 0
-                    )
-                } else null
-                if (lisans?.suresiDoldu == true) {
-                    auth.clear()
-                    TenantSession.clear()
-                    return false
-                }
-                TenantSession.set(tenantId, license = lisans)
+            val tenantId = prefs.getString("saved_tenant_id", null)?.takeIf { it.isNotBlank() }
+            if (tenantId.isNullOrBlank()) {
+                // SaaS öncesi / bozuk oturum — giriş ekranına düş.
+                clearBrokenSession()
+                return false
             }
+
+            val lisans = if (obj.has("lisansBitisUtc") || obj.has("lisansTip")) {
+                TenantLicense(
+                    tip = obj.optString("lisansTip", "deneme"),
+                    bitisUtc = obj.optString("lisansBitisUtc").ifBlank { null },
+                    kalanGun = if (obj.has("lisansKalanGun")) obj.optInt("lisansKalanGun") else null,
+                    suresiDoldu = obj.optInt("lisansKalanGun", 1) <= 0
+                )
+            } else null
+            if (lisans?.suresiDoldu == true) {
+                clearBrokenSession()
+                return false
+            }
+            TenantSession.set(tenantId, license = lisans)
+
             loadProfileCache(uid)?.takeIf { it.active }?.let { _user.value = it }
             auth.restoreSession(
                 obj.getString("refreshToken"),
@@ -176,13 +181,27 @@ class AppContainer(private val context: Context) {
                 obj.optString("email").ifBlank { null }
             )
             loadProfile(allowCached = true)
-            registerFcmIfNeeded()
-            syncFcmRoleSubscription(showSuccessToast = false)
+            // FCM token/topic splash'ı bloklamasın — arka planda dene.
+            CoroutineScope(Dispatchers.IO).launch {
+                runCatching { registerFcmIfNeeded() }
+                runCatching { syncFcmRoleSubscription(showSuccessToast = false) }
+            }
             true
         } catch (_: Exception) {
-            auth.clear()
+            clearBrokenSession()
             false
         }
+    }
+
+    private fun clearBrokenSession() {
+        runCatching { FirebaseAuthBridge.signOut() }
+        auth.clear()
+        TenantSession.clear()
+        _user.value = null
+        prefs.edit()
+            .remove(KEY_SESSION)
+            .remove("saved_tenant_id")
+            .apply()
     }
 
     fun hasPersistedSession(): Boolean = prefs.contains(KEY_SESSION)
@@ -277,8 +296,8 @@ class AppContainer(private val context: Context) {
 
     fun logout() {
         val uid = auth.uid
-        FcmSubscriptionHelper(context).unsubscribeAllRoleTopics()
-        FirebaseAuthBridge.signOut()
+        runCatching { FcmSubscriptionHelper(context).unsubscribeAllRoleTopics() }
+        runCatching { FirebaseAuthBridge.signOut() }
         auth.clear()
         TenantSession.clear()
         _user.value = null
@@ -292,7 +311,7 @@ class AppContainer(private val context: Context) {
         _alinanMalzemeKayitlari.value = emptyList()
         _uygulamaAyarlar.value = UygulamaAyarlar()
         _settingsUsers.value = emptyList()
-        prefs.edit().remove(KEY_SESSION).apply()
+        prefs.edit().remove(KEY_SESSION).remove("saved_tenant_id").apply()
         unregisterFcm(uid)
     }
 
@@ -1076,7 +1095,15 @@ class AppContainer(private val context: Context) {
 
     private suspend fun loadTalepler() {
         _talepler.value = runCatching {
-            talepler.loadTalepler().also { offlineCache.saveTalepler(it) }
+            val loaded = talepler.loadTalepler()
+            // Boş bulut sonucu geçerli offline cache'i silmesin (URL/geçici hata).
+            if (loaded.isEmpty()) {
+                val cached = offlineCache.loadTalepler()
+                if (cached.isNotEmpty()) cached else loaded
+            } else {
+                offlineCache.saveTalepler(loaded)
+                loaded
+            }
         }.getOrElse { offlineCache.loadTalepler() }
     }
 
@@ -1407,19 +1434,40 @@ class AppContainer(private val context: Context) {
     }
 
     fun syncFcmRoleSubscription(showSuccessToast: Boolean = true) {
+        if (TenantSession.tenantId().isNullOrBlank()) {
+            BildirimLog.w("FCM_TOPIC", "tenantId yok — topic aboneliği atlandı")
+            return
+        }
         if (!FirebaseAuthBridge.hasMatchingSession(auth.uid)) {
             BildirimLog.w("FCM_TOPIC", "Firebase Auth SDK oturumu yok — topic aboneliği atlandı")
             return
         }
-        FcmSubscriptionHelper(context).syncRoleTopicSubscription(showSuccessToast)
+        runCatching {
+            FcmSubscriptionHelper(context).syncRoleTopicSubscription(showSuccessToast)
+        }.onFailure { ex ->
+            BildirimLog.e("FCM_TOPIC", "Topic aboneliği başarısız", ex)
+        }
     }
 
     private suspend fun registerFcmIfNeeded() {
         val uid = auth.uid ?: return
+        if (com.google.firebase.FirebaseApp.getApps(context).isEmpty()) {
+            BildirimLog.w("FCM_TOKEN", "FirebaseApp yok — token kaydı atlandı")
+            return
+        }
         try {
             val pending = prefs.getString(MyFirebaseMessagingService.KEY_PENDING_FCM_TOKEN, null)
             val token = pending?.takeIf { it.isNotBlank() }
-                ?: com.google.firebase.messaging.FirebaseMessaging.getInstance().token.awaitTask()
+                ?: run {
+                    // Token alınamazsa splash/login asla bloklanmasın.
+                    kotlinx.coroutines.withTimeoutOrNull(8_000) {
+                        com.google.firebase.messaging.FirebaseMessaging.getInstance().token.awaitTask()
+                    }
+                }
+            if (token.isNullOrBlank()) {
+                BildirimLog.w("FCM_TOKEN", "Token alınamadı/zaman aşımı uid=$uid")
+                return
+            }
             firestore.updateFcmToken(uid, token)
             prefs.edit().remove(MyFirebaseMessagingService.KEY_PENDING_FCM_TOKEN).apply()
             BildirimLog.i("FCM_TOKEN", "Kayıt tamam uid=$uid token=${token.take(12)}…")
@@ -1452,30 +1500,36 @@ class AppContainer(private val context: Context) {
 
     /** Güncelleme veya yeniden kurulum sonrası oturum ve kayıtlı giriş bilgilerini temizler. */
     private fun ensureLoginCredentialsFresh() {
-        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-        val firstInstallTime = packageInfo.firstInstallTime
-        val storedVersion = prefs.getInt(KEY_STORED_VERSION_CODE, -1)
-        val storedFirstInstall = prefs.getLong(KEY_STORED_FIRST_INSTALL, -1L)
+        runCatching {
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            val firstInstallTime = packageInfo.firstInstallTime
+            val storedVersion = prefs.getInt(KEY_STORED_VERSION_CODE, -1)
+            val storedFirstInstall = prefs.getLong(KEY_STORED_FIRST_INSTALL, -1L)
 
-        val versionChanged = storedVersion != -1 && storedVersion != BuildConfig.VERSION_CODE
-        val reinstallDetected = storedFirstInstall != -1L && storedFirstInstall != firstInstallTime
+            val versionChanged = storedVersion != -1 && storedVersion != BuildConfig.VERSION_CODE
+            val reinstallDetected = storedFirstInstall != -1L && storedFirstInstall != firstInstallTime
 
-        if (versionChanged || reinstallDetected) {
-            clearLoginPersistence()
+            if (versionChanged || reinstallDetected) {
+                clearLoginPersistence()
+            }
+
+            prefs.edit()
+                .putInt(KEY_STORED_VERSION_CODE, BuildConfig.VERSION_CODE)
+                .putLong(KEY_STORED_FIRST_INSTALL, firstInstallTime)
+                .apply()
+        }.onFailure {
+            BildirimLog.e("SESSION", "Versiyon kontrolü atlandı", it)
         }
-
-        prefs.edit()
-            .putInt(KEY_STORED_VERSION_CODE, BuildConfig.VERSION_CODE)
-            .putLong(KEY_STORED_FIRST_INSTALL, firstInstallTime)
-            .apply()
     }
 
     private fun clearLoginPersistence() {
-        FirebaseAuthBridge.signOut()
+        runCatching { FirebaseAuthBridge.signOut() }
         auth.clear()
+        TenantSession.clear()
         _user.value = null
         prefs.edit()
             .remove(KEY_SESSION)
+            .remove("saved_tenant_id")
             .remove(KEY_SAVED_EMAIL)
             .putBoolean(KEY_REMEMBER_ME, false)
             .apply()

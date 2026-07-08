@@ -171,10 +171,13 @@ public static class SatinalmaDepo
                 talepNoAtandi = true;
             }
             KalemOnaylariniGocEt(talep);
+            ProcurementTalepAdapter.StatusSenkronizeEt(talep);
             Talepler.Add(talep);
         }
 
         var kaydet = talepNoAtandi;
+        if (ProcurementTalepAdapter.StatusSenkronizeEt(Talepler))
+            kaydet = true;
         if (SatinalmaTalepYardimcisi.DurumlariniNormalizeEt(Talepler))
             kaydet = true;
         else if (SatinalmaTalepYardimcisi.TaslaklariNormalizeEt(Talepler, silBosTaslaklari: false))

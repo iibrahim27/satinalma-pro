@@ -713,3 +713,97 @@ export const platformImportLegacyUsers = onCall(async (request) => {
 
   return { imported, skipped, total: snap.size, uyarilar: oleyler.slice(0, 20) };
 });
+
+async function deleteTenantUserRecord(
+  tenantId: string,
+  uid: string
+): Promise<{ uid: string; kullaniciAdi?: string }> {
+  if (!uid) throw new HttpsError("invalid-argument", "uid gerekli");
+  if (await isPlatformAdminUid(uid)) {
+    throw new HttpsError("failed-precondition", "Platform yöneticisi silinemez.");
+  }
+
+  const userRef = db().doc(tenantUserPath(tenantId, uid));
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) {
+    throw new HttpsError("not-found", "Kullanıcı bulunamadı.");
+  }
+
+  const data = userSnap.data() ?? {};
+  const kullaniciAdi = String(data.kullaniciAdi ?? "").trim();
+
+  const unameSnap = await db().collection("usernames").where("uid", "==", uid).get();
+  for (const d of unameSnap.docs) {
+    await d.ref.delete();
+  }
+  if (kullaniciAdi) {
+    const key = normalizeUsername(kullaniciAdi);
+    const unameDoc = await db().collection("usernames").doc(key).get();
+    if (unameDoc.exists && unameDoc.data()?.uid === uid) {
+      await unameDoc.ref.delete();
+    }
+  }
+
+  await db().recursiveDelete(userRef);
+
+  try {
+    const user = await admin.auth().getUser(uid);
+    const claims = { ...(user.customClaims ?? {}) };
+    if (claims.tenantId === tenantId) {
+      delete claims.tenantId;
+      await admin.auth().setCustomUserClaims(uid, claims);
+    }
+    await admin.auth().deleteUser(uid);
+  } catch (e: unknown) {
+    const code = (e as { code?: string }).code;
+    if (code !== "auth/user-not-found") throw e;
+  }
+
+  return { uid, kullaniciAdi: kullaniciAdi || undefined };
+}
+
+/** Firma kullanıcısını kalıcı olarak siler (Firestore + Auth + kullanıcı adı). */
+export const platformDeleteTenantUser = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Giriş gerekli");
+  await assertPlatformAdmin(request.auth.uid);
+
+  const tenantId = ((request.data?.tenantId as string) ?? "").trim();
+  const uid = ((request.data?.uid as string) ?? "").trim();
+  if (!tenantId || !uid) {
+    throw new HttpsError("invalid-argument", "tenantId ve uid gerekli");
+  }
+
+  await readTenant(tenantId);
+  const result = await deleteTenantUserRecord(tenantId, uid);
+  return { ok: true, ...result };
+});
+
+/** Firmayı ve tüm verisini kalıcı olarak siler. Onay kodu firma kodu ile eşleşmeli. */
+export const platformDeleteTenant = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Giriş gerekli");
+  await assertPlatformAdmin(request.auth.uid);
+
+  const tenantId = ((request.data?.tenantId as string) ?? "").trim();
+  const confirmKod = ((request.data?.confirmKod as string) ?? "").trim();
+  if (!tenantId || !confirmKod) {
+    throw new HttpsError("invalid-argument", "tenantId ve onay kodu gerekli");
+  }
+
+  const tenant = await readTenant(tenantId);
+  const kod = String(tenant.kod ?? "").trim();
+  if (!kod || kod.toLowerCase() !== confirmKod.toLowerCase()) {
+    throw new HttpsError("failed-precondition", "Onay kodu firma kodu ile eşleşmiyor.");
+  }
+
+  const usersSnap = await db().collection(tenantUsersPath(tenantId)).get();
+  let deletedUsers = 0;
+  for (const doc of usersSnap.docs) {
+    await deleteTenantUserRecord(tenantId, doc.id);
+    deletedUsers++;
+  }
+
+  const tenantRef = db().collection("tenants").doc(tenantId);
+  await db().recursiveDelete(tenantRef);
+
+  return { ok: true, tenantId, deletedUsers };
+});

@@ -23,4 +23,6 @@ export {
   platformBootstrapAdmin,
   platformDetachSelf,
   platformImportLegacyUsers,
+  platformDeleteTenantUser,
+  platformDeleteTenant,
 } from "./callables/saas";

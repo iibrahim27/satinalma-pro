@@ -16,7 +16,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import com.satinalmapro.android.core.helpers.BildirimLog
-import com.satinalmapro.android.services.FcmSubscriptionHelper
 import com.satinalmapro.android.services.LocalNotificationHelper
 import com.satinalmapro.android.ui.AppRoot
 import com.satinalmapro.android.ui.LocalFragmentActivity
@@ -34,7 +33,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestNotificationPermission()
-        FcmSubscriptionHelper(this).syncRoleTopicSubscription()
+        // FCM aboneliği oturum geri yüklemeden sonra AppContainer üzerinden yapılır;
+        // burada Firebase hazır olmayabilir / kiracı oturumu yoktur.
         consumeNotificationIntent(intent)
         setContent {
             CompositionLocalProvider(LocalFragmentActivity provides this) {

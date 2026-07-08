@@ -89,6 +89,7 @@ public static class SatinalmaTeklifDegerlendirmeYardimcisi
             talep.YonetimOnerilenTeklifId = oneri.Id;
 
         talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
+        talep.Status = SatinalmaPro.Shared.Procurement.ProcurementStatus.ManagementQuoteReview;
         talep.TeklifDuzeltmeNotu = "";
         SatinalmaTalepYardimcisi.Dokun(talep);
     }
@@ -103,7 +104,10 @@ public static class SatinalmaTeklifDegerlendirmeYardimcisi
                 or SatinalmaTalepDurumlari.Hazirlaniyor
                 or SatinalmaTalepDurumlari.ImzaSurecinde
             && SatinalmaTalepYardimcisi.GercekTeklifVar(talep))
+        {
             talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
+            talep.Status = SatinalmaPro.Shared.Procurement.ProcurementStatus.Comparison;
+        }
 
         SatinalmaDepo.TeklifDegisikligiIsle(talep);
         SatinalmaTeklif oneri;

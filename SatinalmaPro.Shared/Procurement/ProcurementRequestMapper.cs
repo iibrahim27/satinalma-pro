@@ -19,13 +19,15 @@ public static class ProcurementRequestMapper
 
 /// <summary>
 /// Legacy <see cref="SatinalmaTalep.Durum"/> + teklif durumundan enterprise status türetir.
-/// Firestore <c>status</c> alanı varsa önceliklidir.
+/// Sekme filtreleri için <see cref="SatinalmaTalep.Durum"/> kaynağıdır; eski/stale
+/// <c>status</c> alanı (ör. quote_requested kalmışken Durum=Karşılaştırma) yok sayılır.
 /// </summary>
 public static class ProcurementStatusResolver
 {
     public static string Resolve(SatinalmaTalep talep)
     {
-        if (!string.IsNullOrWhiteSpace(talep.Status))
+        // Durum boşsa (nadir) kayıtlı Status'e düş.
+        if (string.IsNullOrWhiteSpace(talep.Durum) && !string.IsNullOrWhiteSpace(talep.Status))
             return ProcurementStatus.Normalize(talep.Status);
 
         if (talep.Durum == SatinalmaTalepDurumlari.Taslak)
@@ -35,7 +37,7 @@ public static class ProcurementStatusResolver
             return ProcurementStatus.Rejected;
 
         if (talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu)
-            return ProcurementStatus.Ordered;
+            return MalKabulTamamlandi(talep) ? ProcurementStatus.Completed : ProcurementStatus.Ordered;
 
         if (talep.Durum == SatinalmaTalepDurumlari.Onaylandi)
             return ProcurementStatus.Approved;
@@ -55,16 +57,38 @@ public static class ProcurementStatusResolver
             && !talep.HerhangiKalemOnayli)
             return ProcurementStatus.ManagementQuoteReview;
 
+        // Kalem/teklif onayı yapılmış ama Durum güncellenmemiş kayıtlar.
+        if (talep.Durum == SatinalmaTalepDurumlari.YonetimOnayinda
+            && (talep.HerhangiKalemOnayli || talep.TeklifsizYonetimOnayi || talep.YonetimOnayKilitli))
+            return ProcurementStatus.Approved;
+
         if (talep.Durum is SatinalmaTalepDurumlari.Hazirlaniyor
             or SatinalmaTalepDurumlari.ImzaSurecinde
             or SatinalmaTalepDurumlari.YonetimOnayinda)
             return ProcurementStatus.Submitted;
 
-        if (talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu
-            && MalKabulTamamlandi(talep))
-            return ProcurementStatus.Completed;
-
         return ProcurementStatus.Normalize(talep.Durum);
+    }
+
+    /// <summary>
+    /// Durum'dan türetilen Status'ü talep üzerine yazar.
+    /// Eski kayıtların sekmelerde kaybolmasını önler; buluta bir sonraki kayıtta yansır.
+    /// </summary>
+    public static bool SenkronizeEt(SatinalmaTalep talep)
+    {
+        var dogru = Resolve(talep);
+        if (string.Equals(talep.Status, dogru, StringComparison.OrdinalIgnoreCase))
+            return false;
+        talep.Status = dogru;
+        return true;
+    }
+
+    public static bool SenkronizeEt(IEnumerable<SatinalmaTalep> talepler)
+    {
+        var degisti = false;
+        foreach (var t in talepler)
+            degisti |= SenkronizeEt(t);
+        return degisti;
     }
 
     private static bool MalKabulTamamlandi(SatinalmaTalep talep)

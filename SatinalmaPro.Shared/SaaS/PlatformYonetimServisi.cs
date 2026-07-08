@@ -110,6 +110,17 @@ public sealed class PlatformYonetimServisi
            ?? throw new InvalidOperationException("Kullanıcı kaydı okunamadı.");
   }
 
+  public async Task KullaniciSilAsync(string tenantId, string uid, CancellationToken iptal = default)
+  {
+    await CagirAsync("platformDeleteTenantUser", new { tenantId, uid }, iptal);
+  }
+
+  public async Task<int> FirmaSilAsync(string tenantId, string confirmKod, CancellationToken iptal = default)
+  {
+    var sonuc = await CagirAsync("platformDeleteTenant", new { tenantId, confirmKod }, iptal);
+    return sonuc.TryGetProperty("deletedUsers", out var u) ? u.GetInt32() : 0;
+  }
+
   private async Task<JsonElement> CagirAsync(string ad, object data, CancellationToken iptal)
   {
     var token = _tokenAl is not null

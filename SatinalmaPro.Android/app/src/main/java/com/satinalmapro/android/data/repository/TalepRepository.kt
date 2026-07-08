@@ -28,6 +28,7 @@ import com.satinalmapro.shared.filter.ProcurementStatus
 import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailAction
 import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailMutation
 import com.satinalmapro.shared.filter.resolvedEnterprisePriority
+import com.satinalmapro.shared.filter.resolvedEnterpriseStatus
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -42,13 +43,34 @@ class TalepRepository(
     private val listType = object : TypeToken<List<TalepItem>>() {}.type
     private val ayarType = object : TypeToken<SatinalmaAyarlar>() {}.type
 
+    /** Durum kaynağından enterprise status senkronu — stale Status sekmeleri boşaltmasın. */
+    private fun TalepItem.withSyncedStatus(): TalepItem {
+        val dogru = resolvedEnterpriseStatus()
+        return if (status.equals(dogru, ignoreCase = true)) this else copy(status = dogru)
+    }
+
+    private fun syncStatuses(list: List<TalepItem>): Pair<List<TalepItem>, Boolean> {
+        var degisti = false
+        val synced = list.map { talep ->
+            val guncel = talep.withSyncedStatus()
+            if (guncel.status != talep.status) degisti = true
+            guncel
+        }
+        return synced to degisti
+    }
+
     suspend fun loadTalepler(): List<TalepItem> {
         val ayarlar = loadAyarlar()
         val silinen = ayarlar.silinenTalepIdleri.map { it.lowercase() }.toSet()
         val json = firestore.readDocumentJson("veri/satinalma_talepler") ?: return emptyList()
-        val list = runCatching { gson.fromJson<List<TalepItem>>(json, listType) ?: emptyList() }.getOrDefault(emptyList())
-        return if (silinen.isEmpty()) list
-        else list.filterNot { silinen.contains(it.id.lowercase()) }
+        val raw = runCatching { gson.fromJson<List<TalepItem>>(json, listType) ?: emptyList() }.getOrDefault(emptyList())
+        val filtered = if (silinen.isEmpty()) raw
+        else raw.filterNot { silinen.contains(it.id.lowercase()) }
+        val (synced, degisti) = syncStatuses(filtered)
+        if (degisti && auth.uid != null) {
+            runCatching { saveTalepler(synced) }
+        }
+        return synced
     }
 
     suspend fun loadAyarlar(): SatinalmaAyarlar {
@@ -58,7 +80,8 @@ class TalepRepository(
 
     suspend fun saveTalepler(talepler: List<TalepItem>) {
         val uid = auth.uid ?: throw IllegalStateException("Oturum gerekli")
-        val json = gson.toJson(talepler)
+        val (synced, _) = syncStatuses(talepler)
+        val json = gson.toJson(synced)
         firestore.writeDocumentJson("veri/satinalma_talepler", json, uid)
     }
 
@@ -121,6 +144,7 @@ class TalepRepository(
             olusturanUid = user.uid,
             olusturanRol = user.role,
             durum = TalepDurumlari.IMZA,
+            status = ProcurementStatus.SUBMITTED,
             guncellemeUtc = System.currentTimeMillis(),
             kalemler = parsed
         )
@@ -224,7 +248,9 @@ class TalepRepository(
         val list = loadTalepler().toMutableList()
         val index = list.indexOfFirst { it.id.equals(talepId, true) }
         if (index < 0) throw IllegalArgumentException("Talep bulunamadı")
-        val updated = transform(list[index]).copy(guncellemeUtc = System.currentTimeMillis())
+        val updated = transform(list[index])
+            .copy(guncellemeUtc = System.currentTimeMillis())
+            .withSyncedStatus()
         list[index] = updated
         saveTalepler(list)
         return updated

@@ -216,7 +216,12 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun startSplash() {
         viewModelScope.launch {
             _splashMessage.value = "Yükleniyor..."
-            val restored = runCatching { container.restoreSession() }.getOrDefault(false)
+            // Ağ/FCM takılırsa uygulama "açılmıyor" gibi görünmesin.
+            val restored = runCatching {
+                kotlinx.coroutines.withTimeoutOrNull(12_000) {
+                    container.restoreSession()
+                } ?: false
+            }.getOrDefault(false)
             if (restored) {
                 applyPostLoginNavigation()
                 if (container.shouldRequireBiometricUnlock()) {

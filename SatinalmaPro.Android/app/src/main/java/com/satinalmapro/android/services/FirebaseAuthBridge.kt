@@ -20,9 +20,12 @@ object FirebaseAuthBridge {
             throw IllegalArgumentException("E-posta veya şifre boş olamaz")
         }
 
+        val auth = runCatching { FirebaseAuth.getInstance() }.getOrElse { error ->
+            throw IllegalStateException("Firebase Auth hazır değil", error)
+        }
+
         suspendCancellableCoroutine { continuation ->
-            FirebaseAuth.getInstance()
-                .signInWithEmailAndPassword(trimmedEmail, password)
+            auth.signInWithEmailAndPassword(trimmedEmail, password)
                 .addOnSuccessListener { result ->
                     val uid = result.user?.uid.orEmpty()
                     Log.i(TAG, "Firebase Auth SDK oturumu açıldı uid=$uid")
@@ -44,10 +47,12 @@ object FirebaseAuthBridge {
         }
     }
 
-    fun currentUid(): String? = FirebaseAuth.getInstance().currentUser?.uid
+    fun currentUid(): String? =
+        runCatching { FirebaseAuth.getInstance().currentUser?.uid }.getOrNull()
 
     fun hasMatchingSession(expectedUid: String?): Boolean {
         if (expectedUid.isNullOrBlank()) return false
-        return FirebaseAuth.getInstance().currentUser?.uid == expectedUid
+        return runCatching { FirebaseAuth.getInstance().currentUser?.uid == expectedUid }
+            .getOrDefault(false)
     }
 }

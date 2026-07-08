@@ -85,6 +85,7 @@ public static class SatinalmaSiparisIslemleri
             talep.SiparisNo = SatinalmaDepo.SiparisNoAl(talep, anaId);
 
         talep.Durum = SatinalmaTalepDurumlari.SiparisOlusturuldu;
+        talep.Status = ProcurementStatus.Ordered;
         SatinalmaTalepYardimcisi.Dokun(talep);
         SatinalmaDepo.Kaydet();
     }

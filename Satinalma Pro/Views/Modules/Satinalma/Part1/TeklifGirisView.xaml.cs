@@ -374,7 +374,10 @@ public partial class TeklifGirisView : UserControl
             && talep.Durum is SatinalmaTalepDurumlari.TeklifGirisi
                 or SatinalmaTalepDurumlari.Hazirlaniyor
                 or SatinalmaTalepDurumlari.ImzaSurecinde)
+        {
             talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
+            talep.Status = SatinalmaPro.Shared.Procurement.ProcurementStatus.Comparison;
+        }
 
         SatinalmaDepo.TeklifDegisikligiIsle(talep);
         await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
