@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.47",
-    "build":  100,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.47/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.47/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.47/SatinalmaPro.apk",
-    "notes":  "SaaS multi-tenant: kullanici adi girisi, SatinalmaYonetici, kiraci izolasyonu",
+    "version":  "2.1.48",
+    "build":  101,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.48/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.48/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.48/SatinalmaPro.apk",
+    "notes":  "Lisanslama, platform hesabi ayirma, eksik kiraci oturumunda login ekranina yonlendirme",
     "zorunlu":  false
 }
