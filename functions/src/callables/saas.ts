@@ -292,6 +292,10 @@ export const loginWithUsername = onCall(async (request) => {
     tenantAd: tenant.ad ?? "",
     eposta: lookup.eposta,
     kullaniciAdi: normalizeUsername(username),
+    adSoyad: String(user.adSoyad ?? user.fullName ?? "").trim(),
+    rol: String(user.rol ?? user.role ?? "Saha").trim() || "Saha",
+    saha: String(user.saha ?? user.site ?? "").trim(),
+    aktif: user.aktif !== false,
     lisans,
   };
 });

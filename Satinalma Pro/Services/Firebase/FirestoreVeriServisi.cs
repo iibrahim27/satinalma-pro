@@ -118,8 +118,9 @@ public sealed class FirestoreVeriServisi
         if (yanit.IsSuccessStatusCode)
             return;
 
-        // İlk kayıt
-        using var olustur = new HttpRequestMessage(HttpMethod.Post, $"{Kok}/{yol.Split('/')[0]}?documentId={yol.Split('/')[1]}")
+        // Nested yol: tenants/{id}/veri/{doc} — yalnızca son segment documentId, üst yol parent.
+        var (parentPath, documentId) = FirestoreBelgeYoluAyir(yol);
+        using var olustur = new HttpRequestMessage(HttpMethod.Post, $"{Kok}/{parentPath}?documentId={Uri.EscapeDataString(documentId)}")
         {
             Content = new StringContent(JsonSerializer.Serialize(govde), Encoding.UTF8, "application/json")
         };
@@ -128,6 +129,20 @@ public sealed class FirestoreVeriServisi
         var metin = await yanit.Content.ReadAsStringAsync(iptal);
         if (!yanit.IsSuccessStatusCode)
             throw new InvalidOperationException(FirestoreHataMesaji(metin));
+    }
+
+    /// <summary>
+    /// tenants/TID/veri/satinalma_talepler → parent=tenants/TID/veri, id=satinalma_talepler
+    /// (Eski Split[0]/Split[1] hatası tenant belgesinin üzerine yazıyordu.)
+    /// </summary>
+    internal static (string ParentPath, string DocumentId) FirestoreBelgeYoluAyir(string yol)
+    {
+        var parcalar = yol.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parcalar.Length < 2)
+            throw new ArgumentException($"Geçersiz Firestore yolu: {yol}");
+        var documentId = parcalar[^1];
+        var parentPath = string.Join('/', parcalar.Take(parcalar.Length - 1));
+        return (parentPath, documentId);
     }
 
     public async Task<KullaniciProfili?> KullaniciOkuAsync(string uid, CancellationToken iptal = default)

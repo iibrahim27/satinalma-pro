@@ -1,4 +1,4 @@
-package com.satinalmapro.android.ui.screens.teklif
+package com.satinalmapro.android.ui.procurement
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,7 +52,7 @@ import com.satinalmapro.android.ui.components.AppCard
 import com.satinalmapro.android.ui.components.SectionTitle
 import com.satinalmapro.android.ui.components.DetailRow
 import com.satinalmapro.android.ui.components.StatusBadge
-import com.satinalmapro.android.ui.screens.talep.TalepListScreen
+import com.satinalmapro.android.ui.procurement.TalepListScreen
 import com.satinalmapro.android.ui.components.AppPrimaryButton
 import com.satinalmapro.android.ui.components.AppScreenContent
 import com.satinalmapro.android.ui.theme.AppColors

@@ -164,14 +164,14 @@ public static class MasaustuRolHaritasi
             return
             [
                 "Alınan Malzemeler", "Stok Yönetimi", "Agrega", "Çimento", "Akaryakıt Takip",
-                "Araç Filo Takip", "Finansman Raporlama", "Satınalma", "Raporlamalar", "Ayarlar"
+                "Araç Filo Takip", "Finansman Raporlama", "Satınalma", "Raporlamalar"
             ];
 
         if (rol == KullaniciRolleri.Satinalma)
             return
             [
                 "Alınan Malzemeler", "Stok Yönetimi", "Agrega", "Çimento", "Akaryakıt Takip",
-                "Araç Filo Takip", "Finansman Raporlama", "Satınalma", "Raporlamalar"
+                "Araç Filo Takip", "Finansman Raporlama", "Satınalma", "Raporlamalar", "Ayarlar"
             ];
 
         if (rol == KullaniciRolleri.Yonetim)

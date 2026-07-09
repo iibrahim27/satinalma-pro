@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.0.2",
-    "build":  2,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.2/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.2/SatinalmaYonetici.zip",
-    "notes":  "Kullanici ve firma kalici silme, platform yonetim iyilestirmeleri",
+    "version":  "1.0.3",
+    "build":  3,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.3/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.3/SatinalmaYonetici.zip",
+    "notes":  "Kiraci izolasyonu ve platform yonetim surumu",
     "zorunlu":  false
 }

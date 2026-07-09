@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
+using SatinalmaPro.Shared.SaaS;
 
 namespace SatinalmaPro.Services;
 
@@ -20,15 +21,49 @@ public static class FinansmanVeriDeposu
 
     private static bool _yuklendi;
     private static bool _yukleniyor;
+    private static bool _abonelikKuruldu;
+    private static string? _yuklenenTenantId;
+
+    private static string YerelYol()
+    {
+        var tid = KiracıOturumu.TenantId;
+        var ad = string.IsNullOrWhiteSpace(tid)
+            ? "finansman_gelir.json"
+            : $"finansman_gelir_{tid}.json";
+        return SatinalmaProKlasor.DosyaYolu(ad);
+    }
+
+    /// <summary>Firma değişiminde finansman bellek verisini temizler.</summary>
+    public static void KiraciDegisti()
+    {
+        _yuklendi = false;
+        _yuklenenTenantId = null;
+        _yukleniyor = true;
+        try
+        {
+            Gelirler.Clear();
+        }
+        finally
+        {
+            _yukleniyor = false;
+        }
+    }
 
     public static void Yukle()
     {
-        if (_yuklendi) return;
+        var tid = KiracıOturumu.TenantId;
+        if (_yuklendi && string.Equals(_yuklenenTenantId, tid, StringComparison.Ordinal))
+            return;
+
+        if (_yuklendi && !string.Equals(_yuklenenTenantId, tid, StringComparison.Ordinal))
+            KiraciDegisti();
+
         _yuklendi = true;
+        _yuklenenTenantId = tid;
         _yukleniyor = true;
 
         SatinalmaProKlasor.Olustur();
-        var yol = SatinalmaProKlasor.DosyaYolu("finansman_gelir.json");
+        var yol = YerelYol();
 
         if (File.Exists(yol))
         {
@@ -56,14 +91,18 @@ public static class FinansmanVeriDeposu
             OrnekVeri();
 
         _yukleniyor = false;
-        Gelirler.CollectionChanged += (_, _) =>
+        if (!_abonelikKuruldu)
         {
-            if (!_yukleniyor)
+            _abonelikKuruldu = true;
+            Gelirler.CollectionChanged += (_, _) =>
             {
-                ErtelenmisKayit.Planla("finansman", Kaydet);
-                BulutVeriSenkronu.Planla("finansman");
-            }
-        };
+                if (!_yukleniyor)
+                {
+                    ErtelenmisKayit.Planla("finansman", Kaydet);
+                    BulutVeriSenkronu.Planla("finansman");
+                }
+            };
+        }
     }
 
     public static void GelirleriYukle(string json)
@@ -82,8 +121,12 @@ public static class FinansmanVeriDeposu
         }
     }
 
-    public static void Kaydet() =>
-        JsonYaz("finansman_gelir.json", Gelirler.ToList());
+    public static void Kaydet()
+    {
+        SatinalmaProKlasor.Olustur();
+        var json = JsonSerializer.Serialize(Gelirler.ToList(), JsonSecenekleri);
+        File.WriteAllText(YerelYol(), json);
+    }
 
     public static void Sifirla()
     {
@@ -101,16 +144,8 @@ public static class FinansmanVeriDeposu
 
     public static void YenidenYukle()
     {
-        _yuklendi = false;
-        Gelirler.Clear();
+        KiraciDegisti();
         Yukle();
-    }
-
-    private static void JsonYaz(string dosyaAdi, List<FinansmanGelirKaydi> liste)
-    {
-        SatinalmaProKlasor.Olustur();
-        var json = JsonSerializer.Serialize(liste, JsonSecenekleri);
-        File.WriteAllText(SatinalmaProKlasor.DosyaYolu(dosyaAdi), json);
     }
 
     private static void OrnekVeri()

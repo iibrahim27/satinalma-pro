@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models.SatinalmaMerkezi;
 using SatinalmaPro.Shared;
+using SatinalmaPro.Shared.SaaS;
 
 namespace SatinalmaPro.Services;
 
@@ -17,6 +18,9 @@ public static class IadeDeposu
     };
 
     public static List<IadeKayit> Kayitlar { get; } = [];
+
+    /// <summary>Firma değişiminde iade bellek verisini temizler.</summary>
+    public static void KiraciDegisti() => Kayitlar.Clear();
 
     public static async Task YukleAsync(CancellationToken iptal = default)
     {
@@ -132,7 +136,14 @@ public static class IadeDeposu
         await File.WriteAllTextAsync(YerelDosyaYolu(), json, iptal);
     }
 
-    private static string YerelDosyaYolu() => SatinalmaProKlasor.DosyaYolu("iade_kayitlari.json");
+    private static string YerelDosyaYolu()
+    {
+        var tid = KiracıOturumu.TenantId;
+        var ad = string.IsNullOrWhiteSpace(tid)
+            ? "iade_kayitlari.json"
+            : $"iade_kayitlari_{tid}.json";
+        return SatinalmaProKlasor.DosyaYolu(ad);
+    }
 }
 
 public sealed class IadeKayit

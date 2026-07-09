@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
+using SatinalmaPro.Shared.SaaS;
 
 namespace SatinalmaPro.Services;
 
@@ -11,8 +12,19 @@ public static class SatinalmaDepo
 {
     private static readonly string Klasor = SatinalmaProKlasor.Yol;
 
-    private static readonly string TalepDosyasi = SatinalmaProKlasor.DosyaYolu("satinalma_talepler.json");
-    private static readonly string AyarDosyasi = SatinalmaProKlasor.DosyaYolu("satinalma_ayarlar.json");
+    private static string TalepDosyasi =>
+        SatinalmaProKlasor.DosyaYolu(KiraciDosyaAdi("satinalma_talepler.json"));
+
+    private static string AyarDosyasi =>
+        SatinalmaProKlasor.DosyaYolu(KiraciDosyaAdi("satinalma_ayarlar.json"));
+
+    private static string KiraciDosyaAdi(string dosyaAdi)
+    {
+        var tid = KiracıOturumu.TenantId;
+        if (string.IsNullOrWhiteSpace(tid))
+            return dosyaAdi; // oturum yokken legacy dosya (boş liste)
+        return $"{Path.GetFileNameWithoutExtension(dosyaAdi)}_{tid}{Path.GetExtension(dosyaAdi)}";
+    }
 
     private static readonly JsonSerializerOptions JsonSecenekleri = new()
     {
@@ -28,13 +40,26 @@ public static class SatinalmaDepo
     public static Guid? KorunanBosTaslakId { get; set; }
 
     private static bool _yuklendi;
+    private static string? _yuklenenTenantId;
 
     /// <summary>Bulut senkronu veya toplu yükleme sonrası UI listesini yenilemek için.</summary>
     public static event Action? TaleplerGuncellendi;
 
+    /// <summary>Firma değişiminde bellek + disk izolasyonu.</summary>
+    public static void KiraciDegisti()
+    {
+        _yuklendi = false;
+        _yuklenenTenantId = null;
+        Talepler.Clear();
+        Ayarlar = SatinalmaAyarlar.VarsayilanOlustur();
+        KorunanBosTaslakId = null;
+        TaleplerGuncellendi?.Invoke();
+    }
+
     public static void YenidenYukle()
     {
         _yuklendi = false;
+        _yuklenenTenantId = null;
         Talepler.Clear();
         Yukle();
     }
@@ -56,10 +81,19 @@ public static class SatinalmaDepo
 
     public static void Yukle()
     {
-        if (_yuklendi)
+        var tid = KiracıOturumu.TenantId;
+        if (_yuklendi && string.Equals(_yuklenenTenantId, tid, StringComparison.Ordinal))
             return;
 
+        // Firma değiştiyse önceki firmanın bellek verisini at.
+        if (_yuklendi && !string.Equals(_yuklenenTenantId, tid, StringComparison.Ordinal))
+        {
+            Talepler.Clear();
+            Ayarlar = SatinalmaAyarlar.VarsayilanOlustur();
+        }
+
         _yuklendi = true;
+        _yuklenenTenantId = tid;
         Directory.CreateDirectory(Klasor);
 
         if (File.Exists(AyarDosyasi))

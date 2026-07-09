@@ -405,13 +405,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // ─── legacy veri/* (backward compatibility) ──────────────────────────
+    // ─── legacy veri/* — SaaS sonrası kapalı (çapraz firma sızıntısı) ─────
 
     match /veri/{docId} {
-      allow read: if isActiveUser();
-      allow write: if isActiveUser()
-        && (isAdmin() || isProcurement() || isWarehouse()
-            || isManagement() || isFieldRole());
+      allow read, write: if false;
     }
   }
 }

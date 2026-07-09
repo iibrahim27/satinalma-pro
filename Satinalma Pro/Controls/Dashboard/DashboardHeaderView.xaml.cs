@@ -22,13 +22,25 @@ public partial class DashboardHeaderView : UserControl
         BtnBildirim.Visibility = OturumYoneticisi.GirisYapildi ? Visibility.Visible : Visibility.Collapsed;
         BadgeBildirim.Visibility = sayi > 0 ? Visibility.Visible : Visibility.Collapsed;
         TxtBadgeSayi.Text = sayi > 99 ? "99+" : sayi.ToString();
+        AyarlarButonunuGuncelle();
+    }
+
+    public void AyarlarButonunuGuncelle()
+    {
+        BtnAyarlar.Visibility = KullaniciYetkileri.ModulGorebilir("Ayarlar")
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private void BtnBildirim_Click(object sender, RoutedEventArgs e) =>
         BildirimTiklandi?.Invoke(this, EventArgs.Empty);
 
-    private void BtnAyarlar_Click(object sender, RoutedEventArgs e) =>
+    private void BtnAyarlar_Click(object sender, RoutedEventArgs e)
+    {
+        if (!KullaniciYetkileri.ModulGorebilir("Ayarlar"))
+            return;
         AyarlarTiklandi?.Invoke(this, EventArgs.Empty);
+    }
 
     private void BtnTema_Click(object sender, RoutedEventArgs e)
     {

@@ -10,10 +10,10 @@ object GoogleServicesLoader {
             context.assets.open("google-services.json").bufferedReader().use { it.readText() }
         }.getOrNull() ?: return fallbackOptions(fallbackApiKey, fallbackProjectId)
 
-        return parse(json) ?: fallbackOptions(fallbackApiKey, fallbackProjectId)
+        return parse(json, fallbackApiKey) ?: fallbackOptions(fallbackApiKey, fallbackProjectId)
     }
 
-    private fun parse(json: String): FirebaseOptions? {
+    private fun parse(json: String, preferredApiKey: String): FirebaseOptions? {
         return try {
             val root = JSONObject(json.trim().removePrefix("\uFEFF"))
             val projectInfo = root.optJSONObject("project_info") ?: return null
@@ -26,7 +26,9 @@ object GoogleServicesLoader {
                 val appId = clientInfo.optString("mobilesdk_app_id")
                 val packageName = clientInfo.optJSONObject("android_client_info")?.optString("package_name").orEmpty()
                 if (packageName != "com.metrik.satinalmapro") continue
-                val apiKey = client.optJSONArray("api_key")?.optJSONObject(0)?.optString("current_key").orEmpty()
+                val gsKey = client.optJSONArray("api_key")?.optJSONObject(0)?.optString("current_key").orEmpty()
+                // REST (firebase_ayarlar) ile SDK aynı apiKey kullansın — aksi halde token/FCM ayrışır.
+                val apiKey = preferredApiKey.takeIf { it.isNotBlank() } ?: gsKey
                 if (appId.isBlank() || apiKey.isBlank() || projectId.isBlank()) continue
                 return FirebaseOptions.Builder()
                     .setApplicationId(appId)

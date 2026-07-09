@@ -2,12 +2,22 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using SatinalmaPro.Models;
+using SatinalmaPro.Shared.SaaS;
 
 namespace SatinalmaPro.Services;
 
 public static class UygulamaAyarDeposu
 {
-    private static readonly string Dosya = SatinalmaProKlasor.DosyaYolu("uygulama_ayarlar.json");
+    private static string Dosya =>
+        SatinalmaProKlasor.DosyaYolu(KiraciDosyaAdi("uygulama_ayarlar.json"));
+
+    private static string KiraciDosyaAdi(string dosyaAdi)
+    {
+        var tid = KiracıOturumu.TenantId;
+        if (string.IsNullOrWhiteSpace(tid))
+            return dosyaAdi;
+        return $"{Path.GetFileNameWithoutExtension(dosyaAdi)}_{tid}{Path.GetExtension(dosyaAdi)}";
+    }
 
     private static readonly JsonSerializerOptions JsonSecenekleri = new()
     {
@@ -18,11 +28,27 @@ public static class UygulamaAyarDeposu
 
     public static UygulamaAyarlar Ayarlar { get; private set; } = new();
     private static bool _yuklendi;
+    private static string? _yuklenenTenantId;
+
+    /// <summary>Firma değişiminde eski firmanın ayarlarını bellekten temizler.</summary>
+    public static void KiraciDegisti()
+    {
+        _yuklendi = false;
+        _yuklenenTenantId = null;
+        Ayarlar = new UygulamaAyarlar();
+    }
 
     public static void Yukle()
     {
-        if (_yuklendi) return;
+        var tid = KiracıOturumu.TenantId;
+        if (_yuklendi && string.Equals(_yuklenenTenantId, tid, StringComparison.Ordinal))
+            return;
+
+        if (_yuklendi && !string.Equals(_yuklenenTenantId, tid, StringComparison.Ordinal))
+            Ayarlar = new UygulamaAyarlar();
+
         _yuklendi = true;
+        _yuklenenTenantId = tid;
         SatinalmaProKlasor.Olustur();
         SatinalmaProLogoDeposu.Olustur();
 
@@ -37,6 +63,17 @@ public static class UygulamaAyarDeposu
             {
                 Ayarlar = new UygulamaAyarlar();
             }
+        }
+        else
+        {
+            Ayarlar = new UygulamaAyarlar();
+        }
+
+        // Oturumdaki kiracı adı varsa ayarlara yansıt (sol alt / PDF başlığı).
+        if (!string.IsNullOrWhiteSpace(KiracıOturumu.TenantAd) &&
+            string.IsNullOrWhiteSpace(Ayarlar.FirmaAdi))
+        {
+            Ayarlar.FirmaAdi = KiracıOturumu.TenantAd!;
         }
 
         SatinalmaFirmaBilgileriniGocEt();
@@ -98,6 +135,12 @@ public static class UygulamaAyarDeposu
         try
         {
             Ayarlar = JsonSerializer.Deserialize<UygulamaAyarlar>(json, JsonSecenekleri) ?? new UygulamaAyarlar();
+            // Buluttan gelen boş firma adını oturum adıyla doldur.
+            if (string.IsNullOrWhiteSpace(Ayarlar.FirmaAdi) &&
+                !string.IsNullOrWhiteSpace(KiracıOturumu.TenantAd))
+            {
+                Ayarlar.FirmaAdi = KiracıOturumu.TenantAd!;
+            }
             SatinalmaProKlasor.Olustur();
             File.WriteAllText(Dosya, JsonSerializer.Serialize(Ayarlar, JsonSecenekleri));
         }
@@ -147,6 +190,7 @@ public static class UygulamaAyarDeposu
     public static void YenidenYukle()
     {
         _yuklendi = false;
+        _yuklenenTenantId = null;
         Yukle();
     }
 }

@@ -1,4 +1,4 @@
-package com.satinalmapro.android.ui.components
+package com.satinalmapro.android.ui.procurement
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column

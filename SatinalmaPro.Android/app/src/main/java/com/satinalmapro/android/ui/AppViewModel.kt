@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.fragment.app.FragmentActivity
 import com.satinalmapro.android.security.BiometricAuthHelper
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -31,6 +32,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 
 class AppViewModel(private val container: AppContainer) : ViewModel() {
+    /** Şifre ile giriş yapıldıysa bu oturumda biyometrik kilidi atla. */
+    private var passwordSessionUnlocked = false
+    private var splashJob: Job? = null
+    private var loginInProgress = false
     val user = container.user
     val notifications = container.notifications
     val materialNames = container.materialNames
@@ -214,33 +219,84 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun siparisBekleyenMalzemeler(): StateFlow<List<OnaylananMalzemeSatiri>> = siparisBekleyenFlow
 
     fun startSplash() {
-        viewModelScope.launch {
+        // Zaten giriş yapılmışsa veya splash bitmişse tekrar restore etme.
+        if (_isLoggedIn.value || passwordSessionUnlocked || loginInProgress) {
+            _splashDone.value = true
+            _needsBiometricUnlock.value = false
+            if (container.hasActiveSession()) _isLoggedIn.value = true
+            return
+        }
+        if (_splashDone.value) {
+            if (container.hasActiveSession()) {
+                _needsBiometricUnlock.value = false
+                _isLoggedIn.value = true
+            }
+            return
+        }
+        splashJob?.cancel()
+        splashJob = viewModelScope.launch {
             _splashMessage.value = "Yükleniyor..."
-            // Ağ/FCM takılırsa uygulama "açılmıyor" gibi görünmesin.
-            val restored = runCatching {
+            val restored = try {
                 kotlinx.coroutines.withTimeoutOrNull(12_000) {
                     container.restoreSession()
-                } ?: false
-            }.getOrDefault(false)
-            if (restored) {
-                applyPostLoginNavigation()
-                if (container.shouldRequireBiometricUnlock()) {
-                    _needsBiometricUnlock.value = true
-                    _isLoggedIn.value = false
-                } else {
+                } ?: container.hasActiveSession()
+            } catch (_: kotlinx.coroutines.CancellationException) {
+                // Login splash'ı iptal etti — oturumu düşürme.
+                return@launch
+            } catch (_: Exception) {
+                container.hasActiveSession()
+            }
+
+            // Login yarışını kazanmış olabilir; asla geri alma.
+            if (_isLoggedIn.value || passwordSessionUnlocked || loginInProgress) {
+                _splashDone.value = true
+                _needsBiometricUnlock.value = false
+                if (container.hasActiveSession() || passwordSessionUnlocked) {
                     _isLoggedIn.value = true
                 }
-            } else {
-                _isLoggedIn.value = false
-                _needsBiometricUnlock.value = false
+                return@launch
             }
+
+            when {
+                restored || container.hasActiveSession() -> {
+                    applyPostLoginNavigation()
+                    val lockBiometric = container.shouldRequireBiometricUnlock() &&
+                        !passwordSessionUnlocked &&
+                        !loginInProgress &&
+                        !_isLoggedIn.value
+                    if (lockBiometric) {
+                        _needsBiometricUnlock.value = true
+                        // Tekrar kontrol — login arada bitmiş olabilir.
+                        if (!passwordSessionUnlocked && !loginInProgress && !_isLoggedIn.value) {
+                            _isLoggedIn.value = false
+                        }
+                    } else {
+                        _needsBiometricUnlock.value = false
+                        _isLoggedIn.value = true
+                        biometricUnlockedAt = System.currentTimeMillis()
+                    }
+                }
+                else -> {
+                    if (!_isLoggedIn.value && !passwordSessionUnlocked && !loginInProgress) {
+                        _needsBiometricUnlock.value = false
+                        _isLoggedIn.value = false
+                    }
+                }
+            }
+
+            // Son güvenlik: login başarısını splash ezmesin.
+            if (passwordSessionUnlocked || loginInProgress) {
+                _needsBiometricUnlock.value = false
+                _isLoggedIn.value = true
+            }
+
             container.pendingRoute?.let { route ->
                 navigateFromNotification(route, container.pendingNotificationId)
                 container.pendingRoute = null
                 container.pendingNotificationId = null
             }
             _splashDone.value = true
-            if (restored) {
+            if (_isLoggedIn.value) {
                 startPostLoginSync()
             }
         }
@@ -258,23 +314,41 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             _loginError.value = null
             _loginMessage.value = null
             _loading.value = true
+            loginInProgress = true
+            // Splash restore yarışını iptal et — aksi halde giriş sonrası isLoggedIn=false yazar.
+            splashJob?.cancel()
+            splashJob = null
             runCatching {
                 container.login(email, password, rememberMe)
             }.onSuccess {
+                passwordSessionUnlocked = true
+                _splashDone.value = true
+                _needsBiometricUnlock.value = false
+                _isLoggedIn.value = true
+                biometricUnlockedAt = System.currentTimeMillis()
+                appPausedAt = 0L
                 applyPostLoginNavigation()
-                if (container.shouldRequireBiometricUnlock()) {
-                    _needsBiometricUnlock.value = true
-                    _isLoggedIn.value = false
-                } else {
-                    _needsBiometricUnlock.value = false
-                    _isLoggedIn.value = true
-                }
                 consumePendingNotificationRoute()
                 startPostLoginSync()
             }.onFailure {
                 _loginError.value = NetworkError.translate(it.message)
+                // Başarısız login'de splash'ı tekrar açma; kullanıcı login ekranında kalsın.
+                _splashDone.value = true
             }
+            loginInProgress = false
             _loading.value = false
+        }
+    }
+
+    /** Bellekte profil varken UI'nın login'e düşmesini engeller. */
+    fun ensureLoggedInFromSession() {
+        if (loginInProgress) return
+        if ((_isLoggedIn.value || passwordSessionUnlocked || container.hasActiveSession()) &&
+            !_needsBiometricUnlock.value
+        ) {
+            _splashDone.value = true
+            _isLoggedIn.value = true
+            if (_currentRoute.value == null) applyPostLoginNavigation()
         }
     }
 
@@ -344,6 +418,8 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun logout() {
+        passwordSessionUnlocked = false
+        loginInProgress = false
         container.logout()
         _isLoggedIn.value = false
         _needsBiometricUnlock.value = false
@@ -369,9 +445,6 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun navigateBack(): Boolean {
-        if (KullaniciRolleri.isAtolyeOnly(container.user.value?.role)) {
-            return false
-        }
         if (routeHistory.isNotEmpty()) {
             _currentRoute.value = routeHistory.removeLast()
             return true
@@ -425,7 +498,11 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    private var backgroundRefreshStarted = false
+
     fun startBackgroundRefresh() {
+        if (backgroundRefreshStarted) return
+        backgroundRefreshStarted = true
         viewModelScope.launch {
             while (true) {
                 val delayMs = if (foreground) 2_000L else 12_000L
@@ -453,24 +530,45 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun onAppResume() {
         foreground = true
         viewModelScope.launch {
-            if (container.hasPersistedSession() && container.user.value != null) {
-                val pauseDuration = if (appPausedAt > 0L) {
-                    System.currentTimeMillis() - appPausedAt
-                } else {
-                    Long.MAX_VALUE
+            // Şifre ile açılmış oturumda biyometrik kilidi tamamen atla (izin diyaloğu / recreate atmasın).
+            if (passwordSessionUnlocked || loginInProgress) {
+                if (container.hasActiveSession()) {
+                    _needsBiometricUnlock.value = false
+                    _isLoggedIn.value = true
                 }
-                val sinceUnlock = System.currentTimeMillis() - biometricUnlockedAt
-                val shouldLock = container.shouldRequireBiometricUnlock() &&
-                    pauseDuration >= 3_000 &&
-                    sinceUnlock >= 30_000
-                if (shouldLock) {
-                    _needsBiometricUnlock.value = true
-                    _isLoggedIn.value = false
-                }
-                runCatching { container.refreshNotifications() }
                 if (_isLoggedIn.value) {
+                    runCatching { container.refreshNotifications() }
                     runCatching { container.syncData() }
                 }
+                return@launch
+            }
+
+            if (!container.hasActiveSession() && !container.hasPersistedSession()) return@launch
+            if (container.user.value == null) return@launch
+
+            val pauseDuration = if (appPausedAt > 0L) {
+                System.currentTimeMillis() - appPausedAt
+            } else {
+                0L
+            }
+            val sinceUnlock = if (biometricUnlockedAt > 0L) {
+                System.currentTimeMillis() - biometricUnlockedAt
+            } else {
+                Long.MAX_VALUE
+            }
+            val shouldLock = container.shouldRequireBiometricUnlock() &&
+                _isLoggedIn.value &&
+                !_needsBiometricUnlock.value &&
+                pauseDuration >= 30_000 &&
+                sinceUnlock >= 30_000
+            if (shouldLock) {
+                _needsBiometricUnlock.value = true
+                _isLoggedIn.value = false
+                return@launch
+            }
+            runCatching { container.refreshNotifications() }
+            if (_isLoggedIn.value) {
+                runCatching { container.syncData() }
             }
         }
     }
@@ -690,7 +788,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun malKabulVeDepoyaKaydet(
         talepId: String,
         kalemId: String,
-        form: com.satinalmapro.android.ui.components.MalKabulFormSonuc,
+        form: com.satinalmapro.android.ui.procurement.MalKabulFormSonuc,
         onSuccess: () -> Unit
     ) {
         val m = form.miktar.replace(',', '.').toDoubleOrNull()

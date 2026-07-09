@@ -17,11 +17,11 @@ import com.satinalmapro.android.core.roles.TalepDurumlari
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.AppViewModelFactory
 import com.satinalmapro.android.ui.LocalFragmentActivity
-import com.satinalmapro.android.ui.screens.login.LoginScreen
-import com.satinalmapro.android.ui.screens.login.SplashScreen
-import com.satinalmapro.android.ui.screens.talep.TalepDetayScreen
-import com.satinalmapro.android.ui.theme.AppColors
-import com.satinalmapro.android.ui.theme.SatinalmaProTheme
+import com.satinalmapro.android.ui.auth.LoginScreen
+import com.satinalmapro.android.ui.auth.SplashScreen
+import com.satinalmapro.android.ui.procurement.TalepDetayScreen
+import com.satinalmapro.android.ui.theme.MetrikColors
+import com.satinalmapro.android.ui.theme.MetrikTheme
 
 /**
  * FCM bildirim tıklamalarından açılan talep detay ekranı.
@@ -62,9 +62,9 @@ class TalepDetayActivity : AppCompatActivity() {
                 }
             }
 
-            SatinalmaProTheme {
+            MetrikTheme {
                 CompositionLocalProvider(LocalFragmentActivity provides this) {
-                    Surface(modifier = Modifier.fillMaxSize(), color = AppColors.Background) {
+                    Surface(modifier = Modifier.fillMaxSize(), color = MetrikColors.Background) {
                         when {
                             !splashDone -> SplashScreen(splashMessage)
                             !isLoggedIn -> LoginScreen(viewModel)

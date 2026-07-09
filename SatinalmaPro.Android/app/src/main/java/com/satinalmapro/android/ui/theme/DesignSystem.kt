@@ -2,30 +2,42 @@ package com.satinalmapro.android.ui.theme
 
 import androidx.compose.ui.unit.dp
 
-object AppSpacing {
-    val screenHorizontal = 18.dp
-    val screenVertical = 14.dp
-    val cardPadding = 18.dp
-    val cardGap = 12.dp
-    val sectionGap = 18.dp
-    val itemGap = 10.dp
-    val heroBottom = 22.dp
+object MetrikSpace {
+    val xs = 4.dp
+    val sm = 8.dp
+    val md = 12.dp
+    val lg = 16.dp
+    val xl = 24.dp
+    val xxl = 32.dp
+    val screen = 20.dp
+    val strip = 10.dp
 }
 
-object AppElevation {
-    val card = 0.dp
-    val cardHover = 2.dp
-    val fab = 6.dp
-    val header = 1.dp
+object AppSpacing {
+    val xs = MetrikSpace.xs
+    val sm = MetrikSpace.sm
+    val md = MetrikSpace.md
+    val lg = MetrikSpace.lg
+    val xl = MetrikSpace.xl
+    val xxl = MetrikSpace.xxl
+    val screenPadding = MetrikSpace.screen
+    val screenHorizontal = MetrikSpace.screen
+    val screenVertical = MetrikSpace.md
+    val cardGap = MetrikSpace.md
+    val cardPadding = MetrikSpace.lg
+    val sectionGap = MetrikSpace.xl
 }
 
 object AppSizes {
-    val headerHeight = 56.dp
-    val fabSize = 56.dp
-    val buttonHeight = 52.dp
-    val iconBox = 48.dp
-    val iconBoxLarge = 52.dp
-    val roleIconBox = 52.dp
-    val avatarSize = 44.dp
-    val avatarLarge = 52.dp
+    val iconSm = 18.dp
+    val iconMd = 22.dp
+    val iconLg = 28.dp
+    val topBar = 56.dp
+    val queueChipHeight = 36.dp
+}
+
+object AppElevation {
+    val none = 0.dp
+    val low = 1.dp
+    val card = 0.dp
 }

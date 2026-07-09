@@ -19,6 +19,10 @@ public static class KullaniciYetkileri
         if (kullanici is null || !kullanici.Aktif)
             return false;
 
+        // Ayarlar yalnızca Satınalma rolüne açık (Admin dahil diğer roller göremez).
+        if (modulAdi.Equals("Ayarlar", StringComparison.OrdinalIgnoreCase))
+            return KullaniciRolleri.Normalize(kullanici.Rol) == KullaniciRolleri.Satinalma;
+
         if (KullaniciRolleri.AdminMi(kullanici.Rol))
             return true;
 
@@ -40,6 +44,9 @@ public static class KullaniciYetkileri
         var kullanici = OturumYoneticisi.AktifKullanici;
         if (kullanici is null || !kullanici.Aktif)
             return false;
+
+        if (modulAdi.Equals("Ayarlar", StringComparison.OrdinalIgnoreCase))
+            return KullaniciRolleri.Normalize(kullanici.Rol) == KullaniciRolleri.Satinalma;
 
         if (KullaniciRolleri.AdminMi(kullanici.Rol))
             return true;

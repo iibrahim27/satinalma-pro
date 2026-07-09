@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Models;
+using SatinalmaPro.Shared.SaaS;
 using SatinalmaPro.Shared.Services.Firebase;
 
 namespace SatinalmaPro.Shared.Services;
@@ -423,9 +424,17 @@ public sealed class MobilVeriDeposu
             teklif.Fiyatlar ??= [];
     }
 
-    private static string OnbellekYolu =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SatinalmaPro", "mobil_onbellek.json");
+    private static string OnbellekYolu
+    {
+        get
+        {
+            var tid = KiracıOturumu.TenantId ?? "none";
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "SatinalmaPro",
+                $"mobil_onbellek_{tid}.json");
+        }
+    }
 
     private async Task YerelOnbellegeKaydetAsync()
     {

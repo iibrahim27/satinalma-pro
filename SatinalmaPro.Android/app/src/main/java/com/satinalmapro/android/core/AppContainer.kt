@@ -148,16 +148,36 @@ class AppContainer(private val context: Context) {
     private var lastNotifCleanupMs = 0L
     private val notifCleanupIntervalMs = 3 * 60 * 1000L
 
+    /** Bellekte geçerli oturum var mı (Activity yeniden oluşsa bile). */
+    fun hasActiveSession(): Boolean =
+        !auth.uid.isNullOrBlank() &&
+            !TenantSession.tenantId().isNullOrBlank() &&
+            _user.value?.active == true
+
     suspend fun restoreSession(): Boolean {
+        // Zaten giriş yapılmışsa (login sonrası Activity recreate) tekrar restore etme.
+        if (hasActiveSession()) return true
+
         val json = prefs.getString(KEY_SESSION, null) ?: return false
         return try {
             val obj = JSONObject(json)
             val uid = obj.optString("uid")
             val tenantId = prefs.getString("saved_tenant_id", null)?.takeIf { it.isNotBlank() }
+                ?: obj.optString("tenantId").takeIf { it.isNotBlank() }
             if (tenantId.isNullOrBlank()) {
                 // SaaS öncesi / bozuk oturum — giriş ekranına düş.
                 clearBrokenSession()
                 return false
+            }
+            // Eski oturumlarda tenant yalnızca session_json içinde olabilir.
+            if (prefs.getString("saved_tenant_id", null).isNullOrBlank()) {
+                prefs.edit().putString("saved_tenant_id", tenantId).apply()
+            }
+
+            // Firma değişiminde / restore öncesi eski bellek verisini temizle.
+            // Login yarışındaysa (uid zaten set) bellek temizleme — login profilini silme.
+            if (auth.uid.isNullOrBlank() || auth.uid != uid) {
+                clearInMemoryTenantData()
             }
 
             val lisans = if (obj.has("lisansBitisUtc") || obj.has("lisansTip")) {
@@ -172,7 +192,10 @@ class AppContainer(private val context: Context) {
                 clearBrokenSession()
                 return false
             }
-            TenantSession.set(tenantId, license = lisans)
+            val tenantAd = obj.optString("tenantAd").ifBlank {
+                prefs.getString("saved_tenant_ad", null)
+            }?.ifBlank { null }
+            TenantSession.set(tenantId, tenantAd, lisans)
 
             loadProfileCache(uid)?.takeIf { it.active }?.let { _user.value = it }
             auth.restoreSession(
@@ -180,14 +203,28 @@ class AppContainer(private val context: Context) {
                 uid.ifBlank { null },
                 obj.optString("email").ifBlank { null }
             )
-            loadProfile(allowCached = true)
+            // Profil okunamazsa cache ile devam et; oturumu silme.
+            runCatching { loadProfile(allowCached = true) }
+                .onFailure { ex ->
+                    BildirimLog.w("SESSION", "restore profil hatası (cache ile devam): ${ex.message}")
+                    if (_user.value == null) {
+                        loadProfileCache(uid)?.takeIf { it.active }?.let { _user.value = it }
+                    }
+                    if (_user.value == null) throw ex
+                }
             // FCM token/topic splash'ı bloklamasın — arka planda dene.
             CoroutineScope(Dispatchers.IO).launch {
                 runCatching { registerFcmIfNeeded() }
                 runCatching { syncFcmRoleSubscription(showSuccessToast = false) }
             }
             true
-        } catch (_: Exception) {
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // Timeout/iptal oturumu silmemeli — aksi halde login sonrası kick-out olur.
+            throw e
+        } catch (e: Exception) {
+            BildirimLog.e("SESSION", "restoreSession başarısız", e)
+            // Bellekte profil varsa oturumu koru (geçici ağ hatası).
+            if (hasActiveSession()) return true
             clearBrokenSession()
             false
         }
@@ -197,7 +234,8 @@ class AppContainer(private val context: Context) {
         runCatching { FirebaseAuthBridge.signOut() }
         auth.clear()
         TenantSession.clear()
-        _user.value = null
+        clearInMemoryTenantData()
+        offlineCache.clearAll()
         prefs.edit()
             .remove(KEY_SESSION)
             .remove("saved_tenant_id")
@@ -263,33 +301,71 @@ class AppContainer(private val context: Context) {
         try {
             val saas = SaaSAuthClient(config)
             val result = saas.loginWithUsername(username, password)
-            auth.applySaaSLogin(result)
-            TenantSession.set(result.tenantId, result.tenantAd, result.lisans)
-            val email = result.eposta ?: ""
-            runCatching { FirebaseAuthBridge.signIn(email, password) }
-                .onFailure { ex -> BildirimLog.w("FCM_TOPIC", "Firebase Auth SDK senkronu atlandı: ${ex.message}") }
-            loadProfile(allowCached = false)
-            if (rememberMe) {
-                prefs.edit()
-                    .putString(KEY_SESSION, auth.sessionJson(true))
-                    .putBoolean(KEY_REMEMBER_ME, true)
-                    .putString(KEY_SAVED_EMAIL, username.trim())
-                    .putString("saved_tenant_id", result.tenantId)
-                    .apply()
-            } else {
-                prefs.edit()
-                    .remove(KEY_SESSION)
-                    .putBoolean(KEY_REMEMBER_ME, false)
-                    .remove(KEY_SAVED_EMAIL)
-                    .remove("saved_tenant_id")
-                    .apply()
+            if (!result.aktif) {
+                throw IllegalStateException("Hesabınız pasif durumda")
             }
-            registerFcmIfNeeded()
-            syncFcmRoleSubscription()
+            auth.applySaaSLogin(result)
+            // Firma değişiminde eski kiracı verisini bellekten ve diskten temizle.
+            clearInMemoryTenantData()
+            offlineCache.clearAll()
+            prefs.edit().remove(KEY_PROFILE).apply()
+            TenantSession.set(result.tenantId, result.tenantAd, result.lisans)
+
+            // Profil: Firestore okunamazsa login yanıtındaki alanlarla devam et (oturumu silme).
+            runCatching { loadProfile(allowCached = false) }
+                .onFailure { ex ->
+                    BildirimLog.w("SESSION", "Profil Firestore okunamadı, login profili kullanılıyor: ${ex.message}")
+                    val profile = UserProfile(
+                        uid = result.uid,
+                        email = result.eposta.orEmpty(),
+                        fullName = result.adSoyad?.ifBlank { null }
+                            ?: result.kullaniciAdi
+                            ?: result.eposta.orEmpty(),
+                        role = KullaniciRolleri.normalize(result.rol ?: KullaniciRolleri.SAHA),
+                        active = true,
+                        site = result.saha?.ifBlank { null },
+                        phone = null
+                    )
+                    saveProfileCache(profile)
+                    _user.value = profile
+                }
+
+            // Oturumu her zaman kaydet; "Beni hatırla" yalnızca kullanıcı adı ön doldurmayı etkiler.
+            prefs.edit()
+                .putString(KEY_SESSION, auth.sessionJson(true))
+                .putString("saved_tenant_id", result.tenantId)
+                .putString("saved_tenant_ad", result.tenantAd.orEmpty())
+                .putBoolean(KEY_REMEMBER_ME, rememberMe)
+                .apply {
+                    if (rememberMe) putString(KEY_SAVED_EMAIL, username.trim())
+                    else remove(KEY_SAVED_EMAIL)
+                }
+                .apply()
+
+            // Firma adını uygulama ayarlarına yansıt (PDF / UI).
+            val mevcut = _uygulamaAyarlar.value
+            if (!result.tenantAd.isNullOrBlank() &&
+                mevcut.firmaAdi.isBlank()
+            ) {
+                _uygulamaAyarlar.value = mevcut.copy(firmaAdi = result.tenantAd)
+            }
+
+            val email = result.eposta ?: ""
+            // FCM/SDK senkronu giriş ekranını asla bloklamasın.
+            CoroutineScope(Dispatchers.IO).launch {
+                runCatching { FirebaseAuthBridge.signIn(email, password) }
+                    .onFailure { ex ->
+                        BildirimLog.w("FCM_TOPIC", "Firebase Auth SDK senkronu atlandı: ${ex.message}")
+                    }
+                runCatching { registerFcmIfNeeded() }
+                runCatching { syncFcmRoleSubscription(showSuccessToast = false) }
+            }
         } catch (e: Exception) {
             auth.clear()
             TenantSession.clear()
-            prefs.edit().remove(KEY_SESSION).apply()
+            clearInMemoryTenantData()
+            offlineCache.clearAll()
+            prefs.edit().remove(KEY_SESSION).remove("saved_tenant_id").remove(KEY_PROFILE).apply()
             throw if (e is IllegalStateException) e else IllegalStateException(NetworkError.translate(e.message))
         }
     }
@@ -300,6 +376,14 @@ class AppContainer(private val context: Context) {
         runCatching { FirebaseAuthBridge.signOut() }
         auth.clear()
         TenantSession.clear()
+        clearInMemoryTenantData()
+        offlineCache.clearAll()
+        prefs.edit().remove(KEY_SESSION).remove("saved_tenant_id").apply()
+        unregisterFcm(uid)
+    }
+
+    /** Bellekteki talep/stok/bildirim vb. — firma değişiminde çapraz sızıntıyı önler. */
+    private fun clearInMemoryTenantData() {
         _user.value = null
         _materialNames.value = emptyList()
         _notifications.value = emptyList()
@@ -310,9 +394,8 @@ class AppContainer(private val context: Context) {
         _cimento.value = emptyList()
         _alinanMalzemeKayitlari.value = emptyList()
         _uygulamaAyarlar.value = UygulamaAyarlar()
+        _satinalmaAyarlar.value = SatinalmaAyarlar()
         _settingsUsers.value = emptyList()
-        prefs.edit().remove(KEY_SESSION).remove("saved_tenant_id").apply()
-        unregisterFcm(uid)
     }
 
     private fun unregisterFcm(uid: String?) {
@@ -342,7 +425,12 @@ class AppContainer(private val context: Context) {
 
     suspend fun loadUygulamaAyarlar() {
         val ayarlar = settingsRepo.loadSettings()
-        _uygulamaAyarlar.value = ayarlar
+        val firma = ayarlar.firmaAdi.ifBlank { TenantSession.tenantName().orEmpty() }
+        _uygulamaAyarlar.value = if (firma.isNotBlank() && ayarlar.firmaAdi.isBlank()) {
+            ayarlar.copy(firmaAdi = firma)
+        } else {
+            ayarlar
+        }
         if (KullaniciRolleri.isAdmin(_user.value?.role)) {
             _settingsUsers.value = settingsRepo.loadUsers(::parseUserFields)
         }
@@ -386,7 +474,7 @@ class AppContainer(private val context: Context) {
     }
 
     private suspend fun reloadTalepler() {
-        _talepler.value = talepler.loadTalepler()
+        loadTalepler()
     }
 
     private suspend fun loadStok() {
@@ -1094,17 +1182,18 @@ class AppContainer(private val context: Context) {
     }
 
     private suspend fun loadTalepler() {
+        val tenantId = TenantSession.tenantId().orEmpty()
         _talepler.value = runCatching {
             val loaded = talepler.loadTalepler()
-            // Boş bulut sonucu geçerli offline cache'i silmesin (URL/geçici hata).
-            if (loaded.isEmpty()) {
-                val cached = offlineCache.loadTalepler()
-                if (cached.isNotEmpty()) cached else loaded
-            } else {
-                offlineCache.saveTalepler(loaded)
-                loaded
+            if (tenantId.isNotBlank()) {
+                // Yalnızca bu kiracıya ait önbelleğe yaz; boş bulut = boş liste (başka firma cache'i yok).
+                offlineCache.saveTalepler(tenantId, loaded)
             }
-        }.getOrElse { offlineCache.loadTalepler() }
+            loaded
+        }.getOrElse { ex ->
+            BildirimLog.w("SESSION", "Talepler buluttan okunamadı, kiracı cache deneniyor: ${ex.message}")
+            if (tenantId.isBlank()) emptyList() else offlineCache.loadTalepler(tenantId)
+        }
     }
 
     fun materialSuggestions(query: String): List<String> =
@@ -1526,11 +1615,13 @@ class AppContainer(private val context: Context) {
         runCatching { FirebaseAuthBridge.signOut() }
         auth.clear()
         TenantSession.clear()
-        _user.value = null
+        clearInMemoryTenantData()
+        offlineCache.clearAll()
         prefs.edit()
             .remove(KEY_SESSION)
             .remove("saved_tenant_id")
             .remove(KEY_SAVED_EMAIL)
+            .remove(KEY_PROFILE)
             .putBoolean(KEY_REMEMBER_ME, false)
             .apply()
     }

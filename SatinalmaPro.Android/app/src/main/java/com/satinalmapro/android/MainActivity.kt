@@ -21,8 +21,8 @@ import com.satinalmapro.android.ui.AppRoot
 import com.satinalmapro.android.ui.LocalFragmentActivity
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.AppViewModelFactory
-import com.satinalmapro.android.ui.theme.AppColors
-import com.satinalmapro.android.ui.theme.SatinalmaProTheme
+import com.satinalmapro.android.ui.theme.MetrikColors
+import com.satinalmapro.android.ui.theme.MetrikTheme
 
 class MainActivity : AppCompatActivity() {
     private val viewModel: AppViewModel by viewModels {
@@ -32,14 +32,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        requestNotificationPermission()
-        // FCM aboneliği oturum geri yüklemeden sonra AppContainer üzerinden yapılır;
-        // burada Firebase hazır olmayabilir / kiracı oturumu yoktur.
+        // Bildirim izni girişten SONRA istenir — aksi halde izin diyaloğu Activity'yi
+        // pause edip splash/login yarışına sokabiliyor.
         consumeNotificationIntent(intent)
         setContent {
             CompositionLocalProvider(LocalFragmentActivity provides this) {
-                SatinalmaProTheme {
-                    Surface(modifier = Modifier.fillMaxSize(), color = AppColors.Background) {
+                MetrikTheme {
+                    Surface(modifier = Modifier.fillMaxSize(), color = MetrikColors.Background) {
                         AppRoot(viewModel)
                     }
                 }
@@ -139,6 +138,9 @@ class MainActivity : AppCompatActivity() {
             REQUEST_NOTIFICATIONS
         )
     }
+
+    /** Login sonrası çağrılır — açılışta istemek oturumu bozuyordu. */
+    fun requestNotificationPermissionAfterLogin() = requestNotificationPermission()
 
     companion object {
         const val REQUEST_NOTIFICATIONS = 1001

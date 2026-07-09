@@ -1,4 +1,4 @@
-package com.satinalmapro.android.ui.screens.profile
+package com.satinalmapro.android.ui.procurement
 
 
 
@@ -235,7 +235,7 @@ fun ProfileScreen(viewModel: AppViewModel) {
 
         Spacer(Modifier.height(16.dp))
 
-        if (KullaniciRolleri.isAdmin(profile.role)) {
+        if (KullaniciRolleri.normalize(profile.role) == KullaniciRolleri.SATINALMA) {
 
             AppCard(onClick = { viewModel.navigateFromMenu("ayarlar") }) {
 

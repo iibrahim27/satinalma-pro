@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.49",
-    "build":  102,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.49/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.49/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.49/SatinalmaPro.apk",
-    "notes":  "Android Firebase acilis duzeltmesi, Firestore URL ve sekme filtresi, durum senkronu; Yonetici kullanici ve firma silme",
+    "version":  "2.1.50",
+    "build":  104,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.50/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.50/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.50/SatinalmaPro.apk",
+    "notes":  "Kiraci izolasyonu tum moduller, Ayarlar sadece Satinalma, Android Satinalma-only yeni arayuz",
     "zorunlu":  false
 }

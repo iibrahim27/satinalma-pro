@@ -297,6 +297,11 @@ public partial class MainWindow : Window
     private void AltBilgiyiGuncelle(bool modulde)
     {
         var temel = UygulamaBilgisi.AltBilgiMetni;
+        var firma = SatinalmaPro.Shared.SaaS.KiracıOturumu.TenantAd
+            ?? UygulamaAyarDeposu.Ayarlar.FirmaAdi;
+        if (!string.IsNullOrWhiteSpace(firma))
+            temel += $"  ·  {firma.Trim()}";
+
         if (OturumYoneticisi.GirisYapildi && OturumYoneticisi.AktifKullanici is { } k)
         {
             var ad = string.IsNullOrWhiteSpace(k.AdSoyad) ? k.Eposta : k.AdSoyad;

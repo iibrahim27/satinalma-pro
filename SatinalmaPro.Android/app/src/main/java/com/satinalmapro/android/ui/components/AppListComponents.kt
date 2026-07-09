@@ -37,7 +37,9 @@ fun AppSearchField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppSpacing.screenPadding, vertical = AppSpacing.sm),
         placeholder = { Text(placeholder) },
         leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = "Ara") },
         singleLine = true,

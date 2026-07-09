@@ -1,4 +1,4 @@
-package com.satinalmapro.android.ui.screens.materials
+package com.satinalmapro.android.ui.procurement
 
 
 
@@ -78,7 +78,7 @@ import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.ui.AppViewModel
 
 import com.satinalmapro.android.ui.components.AppCard
-import com.satinalmapro.android.ui.components.MalKabulDialog
+import com.satinalmapro.android.ui.procurement.MalKabulDialog
 
 import com.satinalmapro.android.ui.components.StatusBadge
 

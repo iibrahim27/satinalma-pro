@@ -17,6 +17,10 @@ data class SaaSLoginResult(
     val tenantAd: String?,
     val eposta: String?,
     val kullaniciAdi: String?,
+    val adSoyad: String?,
+    val rol: String?,
+    val saha: String?,
+    val aktif: Boolean,
     val expiresIn: Int,
     val lisans: TenantLicense? = null
 )
@@ -64,6 +68,10 @@ class SaaSAuthClient(private val config: FirebaseConfig) {
             tenantAd = result.optString("tenantAd").ifBlank { null },
             eposta = result.optString("eposta").ifBlank { null },
             kullaniciAdi = result.optString("kullaniciAdi").ifBlank { null },
+            adSoyad = result.optString("adSoyad").ifBlank { null },
+            rol = result.optString("rol").ifBlank { null },
+            saha = result.optString("saha").ifBlank { null },
+            aktif = result.optBoolean("aktif", true),
             expiresIn = result.optInt("expiresIn", 3600),
             lisans = lisans
         )

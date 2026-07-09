@@ -1,4 +1,4 @@
-package com.satinalmapro.android.ui.screens.teklif
+package com.satinalmapro.android.ui.procurement
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

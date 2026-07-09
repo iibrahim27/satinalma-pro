@@ -76,10 +76,6 @@ public sealed class FirestoreVeriServisi
             }
         };
 
-        var parcalar = yol.Split('/');
-        var koleksiyon = parcalar[0];
-        var belgeId = parcalar.Length > 1 ? parcalar[1] : parcalar[0];
-
         using var patch = new HttpRequestMessage(HttpMethod.Patch,
             $"{Kok}/{yol}?updateMask.fieldPaths=json&updateMask.fieldPaths=updatedAt&updateMask.fieldPaths=updatedBy")
         {
@@ -91,7 +87,9 @@ public sealed class FirestoreVeriServisi
         if (yanit.IsSuccessStatusCode)
             return;
 
-        using var olustur = new HttpRequestMessage(HttpMethod.Post, $"{Kok}/{koleksiyon}?documentId={belgeId}")
+        // Nested yol: tenants/{id}/veri/{doc} — son segment documentId, üst yol parent.
+        var (parentPath, documentId) = BelgeYoluAyir(yol);
+        using var olustur = new HttpRequestMessage(HttpMethod.Post, $"{Kok}/{parentPath}?documentId={Uri.EscapeDataString(documentId)}")
         {
             Content = new StringContent(JsonSerializer.Serialize(govde), Encoding.UTF8, "application/json")
         };
@@ -100,6 +98,17 @@ public sealed class FirestoreVeriServisi
         var metin = await yanit.Content.ReadAsStringAsync(iptal);
         if (!yanit.IsSuccessStatusCode)
             throw new InvalidOperationException(FirestoreHataMesaji(metin));
+    }
+
+    /// <summary>
+    /// tenants/TID/veri/satinalma_talepler → parent=tenants/TID/veri, id=satinalma_talepler
+    /// </summary>
+    internal static (string ParentPath, string DocumentId) BelgeYoluAyir(string yol)
+    {
+        var parcalar = yol.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parcalar.Length < 2)
+            throw new ArgumentException($"Geçersiz Firestore yolu: {yol}");
+        return (string.Join('/', parcalar.Take(parcalar.Length - 1)), parcalar[^1]);
     }
 
     public async Task<KullaniciProfili?> KullaniciOkuAsync(string uid, CancellationToken iptal = default)

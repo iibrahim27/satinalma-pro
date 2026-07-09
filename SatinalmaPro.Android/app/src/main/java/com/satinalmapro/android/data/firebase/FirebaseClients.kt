@@ -62,6 +62,8 @@ class FirebaseAuthClient(private val config: FirebaseConfig) {
         .put("uid", uid)
         .put("email", email)
         .put("rememberMe", rememberMe)
+        .put("tenantId", TenantSession.tenantId())
+        .put("tenantAd", TenantSession.tenantName())
         .put("lisansTip", TenantSession.license()?.tip)
         .put("lisansBitisUtc", TenantSession.license()?.bitisUtc)
         .apply {
@@ -179,12 +181,30 @@ class FirestoreClient(
             return trimmed
         }
         // Zaten tenantRoot() ile üretilmiş absolute path
-        if (trimmed.startsWith(root)) return trimmed
+        if (trimmed.startsWith(root)) {
+            assertTenantPath(trimmed.removePrefix("$root/"))
+            return trimmed
+        }
         val relative = when {
-            trimmed.startsWith("tenants/") -> trimmed
+            trimmed.startsWith("tenants/") -> {
+                assertTenantPath(trimmed)
+                trimmed
+            }
             else -> "tenants/${TenantSession.requireTenantId()}/$trimmed"
         }
         return "$root/$relative"
+    }
+
+    /** Başka kiracının yoluna yazma/okuma engeli. */
+    private fun assertTenantPath(relative: String) {
+        val expected = TenantSession.requireTenantId()
+        val parts = relative.trimStart('/').split('/')
+        if (parts.size >= 2 && parts[0] == "tenants") {
+            val pathTenant = parts[1]
+            if (pathTenant.isNotBlank() && pathTenant != expected) {
+                throw IllegalStateException("Kiracı izolasyon ihlali: beklenen=$expected yol=$pathTenant")
+            }
+        }
     }
 
     suspend fun readUser(uid: String): JSONObject? {
@@ -298,10 +318,29 @@ class FirestoreClient(
                 .put("json", JSONObject().put("stringValue", json))
                 .put("updatedAt", JSONObject().put("stringValue", java.time.Instant.now().toString()))
                 .put("updatedBy", JSONObject().put("stringValue", updatedBy)))
-        HttpClients.patch(
-            "${documentUrl(path)}?updateMask.fieldPaths=json&updateMask.fieldPaths=updatedAt&updateMask.fieldPaths=updatedBy",
-            body.toString(),
-            auth.validToken()
+            .toString()
+        val url = documentUrl(path)
+        val token = auth.validToken()
+        // 404 = belge yok → create; boş string başarı sayılmamalı.
+        val patchOk = runCatching {
+            HttpClients.patch(
+                "$url?updateMask.fieldPaths=json&updateMask.fieldPaths=updatedAt&updateMask.fieldPaths=updatedBy",
+                body,
+                token,
+                treat404AsEmpty = false
+            )
+        }.isSuccess
+        if (patchOk) return
+
+        val relative = url.removePrefix("$root/").trim('/')
+        val slash = relative.lastIndexOf('/')
+        if (slash <= 0) throw IllegalStateException("Geçersiz Firestore yolu: $relative")
+        val parent = relative.substring(0, slash)
+        val docId = relative.substring(slash + 1)
+        HttpClients.postJsonAuthorized(
+            "$root/$parent?documentId=${java.net.URLEncoder.encode(docId, Charsets.UTF_8.name())}",
+            body,
+            token
         )
     }
 
@@ -439,15 +478,16 @@ object HttpClients {
         executeRequest { requestBuilder(url).post(form).build() }
     }
 
-    suspend fun patch(url: String, json: String, token: String): String = withContext(Dispatchers.IO) {
-        val body = json.toRequestBodyJson()
-        executeRequest {
-            requestBuilder(url)
-                .patch(body)
-                .addHeader("Authorization", "Bearer $token")
-                .build()
+    suspend fun patch(url: String, json: String, token: String, treat404AsEmpty: Boolean = true): String =
+        withContext(Dispatchers.IO) {
+            val body = json.toRequestBodyJson()
+            executeRequest(treat404AsEmpty = treat404AsEmpty) {
+                requestBuilder(url)
+                    .patch(body)
+                    .addHeader("Authorization", "Bearer $token")
+                    .build()
+            }
         }
-    }
 
     suspend fun postJsonAuthorized(url: String, json: String, token: String): String =
         withContext(Dispatchers.IO) {
@@ -469,10 +509,13 @@ object HttpClients {
         }
     }
 
-    private inline fun executeRequest(build: () -> okhttp3.Request): String {
+    private inline fun executeRequest(
+        treat404AsEmpty: Boolean = true,
+        build: () -> okhttp3.Request
+    ): String {
         try {
             client.newCall(build()).execute().use { response ->
-                if (response.code == 404) return ""
+                if (response.code == 404 && treat404AsEmpty) return ""
                 val text = response.body?.string() ?: ""
                 if (!response.isSuccessful) {
                     throw IllegalStateException(parseFirebaseError(text.ifBlank { "HTTP ${response.code}" }))

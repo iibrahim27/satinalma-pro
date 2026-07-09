@@ -1,4 +1,4 @@
-package com.satinalmapro.android.ui.screens.notifications
+package com.satinalmapro.android.ui.procurement
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -114,7 +114,7 @@ private fun NotificationCard(item: AppNotification, onClick: () -> Unit) {
     val icon = when (statusType) {
         StatusType.Approved -> Icons.Rounded.CheckCircle
         StatusType.Rejected -> Icons.Rounded.Cancel
-        StatusType.Pending -> Icons.Rounded.Schedule
+        StatusType.Pending, StatusType.Warning -> Icons.Rounded.Schedule
         StatusType.Info -> Icons.Rounded.Info
     }
 

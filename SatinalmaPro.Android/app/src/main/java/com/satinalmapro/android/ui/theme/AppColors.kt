@@ -5,113 +5,142 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-/** Kurumsal lacivert (#0F2A5A) tabanlı MD3 renk paleti */
-data class AppColorPalette(
+/** Açık endüstriyel Satınalma paneli — petrol mavisi + bakır aksan. */
+data class MetrikPalette(
     val Primary: Color,
     val PrimaryDark: Color,
-    val Secondary: Color,
-    val PrimaryContainer: Color,
+    val Accent: Color,
+    val AccentMuted: Color,
     val Background: Color,
     val Surface: Color,
-    val SurfaceElevated: Color,
+    val SurfaceMuted: Color,
     val Border: Color,
+    val Divider: Color,
     val Success: Color,
-    val SuccessContainer: Color,
+    val SuccessMuted: Color,
     val Warning: Color,
-    val WarningContainer: Color,
+    val WarningMuted: Color,
     val Danger: Color,
-    val DangerContainer: Color,
+    val DangerMuted: Color,
     val Info: Color,
-    val InfoContainer: Color,
+    val InfoMuted: Color,
     val TextPrimary: Color,
     val TextSecondary: Color,
+    val TextTertiary: Color,
     val TextOnPrimary: Color,
-    val IconBlue: Color,
-    val IconGreen: Color,
-    val IconOrange: Color,
-    val IconRed: Color,
-    val IconPurple: Color
+    val TextOnAccent: Color
 )
 
-val LightAppColors = AppColorPalette(
-    Primary = Color(0xFF0F2A5A),
-    PrimaryDark = Color(0xFF081A38),
-    Secondary = Color(0xFF1B4D8C),
-    PrimaryContainer = Color(0xFFEEF2F8),
-    Background = Color(0xFFF5F7FB),
-    Surface = Color(0xFFFFFFFF),
-    SurfaceElevated = Color(0xFFFAFBFD),
-    Border = Color(0xFFDCE3ED),
-    Success = Color(0xFF16A34A),
-    SuccessContainer = Color(0xFFDCFCE7),
-    Warning = Color(0xFFF59E0B),
-    WarningContainer = Color(0xFFFEF3C7),
-    Danger = Color(0xFFDC2626),
-    DangerContainer = Color(0xFFFEE2E2),
-    Info = Color(0xFF2563EB),
-    InfoContainer = Color(0xFFEFF6FF),
-    TextPrimary = Color(0xFF0F172A),
-    TextSecondary = Color(0xFF64748B),
-    TextOnPrimary = Color(0xFFFFFFFF),
-    IconBlue = Color(0xFF2563EB),
-    IconGreen = Color(0xFF16A34A),
-    IconOrange = Color(0xFFF59E0B),
-    IconRed = Color(0xFFDC2626),
-    IconPurple = Color(0xFF7C3AED)
+val MetrikLight = MetrikPalette(
+    Primary = Color(0xFF0B3A53),
+    PrimaryDark = Color(0xFF072A3C),
+    Accent = Color(0xFFC45C26),
+    AccentMuted = Color(0xFFF3E0D6),
+    Background = Color(0xFFEEF1F4),
+    Surface = Color(0xFFF7F8FA),
+    SurfaceMuted = Color(0xFFE4E8ED),
+    Border = Color(0xFFC9D1D9),
+    Divider = Color(0xFFD5DBE2),
+    Success = Color(0xFF1F7A4C),
+    SuccessMuted = Color(0xFFD8EDE3),
+    Warning = Color(0xFFB7791F),
+    WarningMuted = Color(0xFFF5EBD4),
+    Danger = Color(0xFFB42318),
+    DangerMuted = Color(0xFFF5D6D3),
+    Info = Color(0xFF1D5C8A),
+    InfoMuted = Color(0xFFD6E6F0),
+    TextPrimary = Color(0xFF15202B),
+    TextSecondary = Color(0xFF5B6B78),
+    TextTertiary = Color(0xFF8795A1),
+    TextOnPrimary = Color(0xFFF7F8FA),
+    TextOnAccent = Color(0xFFFFF8F4)
 )
 
-val DarkAppColors = AppColorPalette(
-    Primary = Color(0xFF5B8DEF),
-    PrimaryDark = Color(0xFF0F2A5A),
-    Secondary = Color(0xFF7AA8F5),
-    PrimaryContainer = Color(0xFF1A3358),
-    Background = Color(0xFF0B1220),
-    Surface = Color(0xFF141D2E),
-    SurfaceElevated = Color(0xFF1A2438),
-    Border = Color(0xFF2A3548),
-    Success = Color(0xFF4ADE80),
-    SuccessContainer = Color(0xFF14532D),
-    Warning = Color(0xFFFBBF24),
-    WarningContainer = Color(0xFF78350F),
-    Danger = Color(0xFFF87171),
-    DangerContainer = Color(0xFF7F1D1D),
-    Info = Color(0xFF60A5FA),
-    InfoContainer = Color(0xFF1E3A5F),
-    TextPrimary = Color(0xFFF1F5F9),
-    TextSecondary = Color(0xFF94A3B8),
-    TextOnPrimary = Color(0xFFFFFFFF),
-    IconBlue = Color(0xFF60A5FA),
-    IconGreen = Color(0xFF4ADE80),
-    IconOrange = Color(0xFFFBBF24),
-    IconRed = Color(0xFFF87171),
-    IconPurple = Color(0xFFA78BFA)
-)
+/** DemoData ve eski sabit renk erişimi için. */
+object LightAppColors {
+    val Primary = MetrikLight.Primary
+    val PrimaryDark = MetrikLight.PrimaryDark
+    val Secondary = MetrikLight.Accent
+    val PrimaryContainer = MetrikLight.SurfaceMuted
+    val Background = MetrikLight.Background
+    val Surface = MetrikLight.Surface
+    val Border = MetrikLight.Border
+    val Success = MetrikLight.Success
+    val SuccessContainer = MetrikLight.SuccessMuted
+    val Warning = MetrikLight.Warning
+    val WarningContainer = MetrikLight.WarningMuted
+    val Danger = MetrikLight.Danger
+    val DangerContainer = MetrikLight.DangerMuted
+    val Info = MetrikLight.Info
+    val InfoContainer = MetrikLight.InfoMuted
+    val TextPrimary = MetrikLight.TextPrimary
+    val TextSecondary = MetrikLight.TextSecondary
+    val TextOnPrimary = MetrikLight.TextOnPrimary
+    val IconBlue = MetrikLight.Info
+    val IconGreen = MetrikLight.Success
+    val IconOrange = MetrikLight.Accent
+    val IconRed = MetrikLight.Danger
+    val IconPurple = MetrikLight.Primary
+}
 
-val LocalAppColors = staticCompositionLocalOf { LightAppColors }
+val DarkAppColors = LightAppColors
+
+val LocalMetrikColors = staticCompositionLocalOf { MetrikLight }
+val LocalAppColors = LocalMetrikColors
+
+object MetrikColors {
+    val current: MetrikPalette
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalMetrikColors.current
+
+    val Primary: Color @Composable @ReadOnlyComposable get() = current.Primary
+    val PrimaryDark: Color @Composable @ReadOnlyComposable get() = current.PrimaryDark
+    val Accent: Color @Composable @ReadOnlyComposable get() = current.Accent
+    val AccentMuted: Color @Composable @ReadOnlyComposable get() = current.AccentMuted
+    val Background: Color @Composable @ReadOnlyComposable get() = current.Background
+    val Surface: Color @Composable @ReadOnlyComposable get() = current.Surface
+    val SurfaceMuted: Color @Composable @ReadOnlyComposable get() = current.SurfaceMuted
+    val Border: Color @Composable @ReadOnlyComposable get() = current.Border
+    val Divider: Color @Composable @ReadOnlyComposable get() = current.Divider
+    val Success: Color @Composable @ReadOnlyComposable get() = current.Success
+    val SuccessMuted: Color @Composable @ReadOnlyComposable get() = current.SuccessMuted
+    val Warning: Color @Composable @ReadOnlyComposable get() = current.Warning
+    val WarningMuted: Color @Composable @ReadOnlyComposable get() = current.WarningMuted
+    val Danger: Color @Composable @ReadOnlyComposable get() = current.Danger
+    val DangerMuted: Color @Composable @ReadOnlyComposable get() = current.DangerMuted
+    val Info: Color @Composable @ReadOnlyComposable get() = current.Info
+    val InfoMuted: Color @Composable @ReadOnlyComposable get() = current.InfoMuted
+    val TextPrimary: Color @Composable @ReadOnlyComposable get() = current.TextPrimary
+    val TextSecondary: Color @Composable @ReadOnlyComposable get() = current.TextSecondary
+    val TextTertiary: Color @Composable @ReadOnlyComposable get() = current.TextTertiary
+    val TextOnPrimary: Color @Composable @ReadOnlyComposable get() = current.TextOnPrimary
+    val TextOnAccent: Color @Composable @ReadOnlyComposable get() = current.TextOnAccent
+}
 
 object AppColors {
-    val Primary: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Primary
-    val PrimaryDark: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.PrimaryDark
-    val Secondary: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Secondary
-    val PrimaryContainer: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.PrimaryContainer
-    val Background: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Background
-    val Surface: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Surface
-    val SurfaceElevated: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.SurfaceElevated
-    val Border: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Border
-    val Success: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Success
-    val SuccessContainer: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.SuccessContainer
-    val Warning: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Warning
-    val WarningContainer: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.WarningContainer
-    val Danger: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Danger
-    val DangerContainer: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.DangerContainer
-    val Info: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.Info
-    val InfoContainer: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.InfoContainer
-    val TextPrimary: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.TextPrimary
-    val TextSecondary: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.TextSecondary
-    val TextOnPrimary: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.TextOnPrimary
-    val IconBlue: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.IconBlue
-    val IconGreen: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.IconGreen
-    val IconOrange: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.IconOrange
-    val IconRed: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.IconRed
-    val IconPurple: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.IconPurple
+    val Primary: Color @Composable @ReadOnlyComposable get() = MetrikColors.Primary
+    val PrimaryDark: Color @Composable @ReadOnlyComposable get() = MetrikColors.PrimaryDark
+    val Secondary: Color @Composable @ReadOnlyComposable get() = MetrikColors.Accent
+    val PrimaryContainer: Color @Composable @ReadOnlyComposable get() = MetrikColors.SurfaceMuted
+    val Background: Color @Composable @ReadOnlyComposable get() = MetrikColors.Background
+    val Surface: Color @Composable @ReadOnlyComposable get() = MetrikColors.Surface
+    val SurfaceElevated: Color @Composable @ReadOnlyComposable get() = MetrikColors.Surface
+    val Border: Color @Composable @ReadOnlyComposable get() = MetrikColors.Border
+    val Success: Color @Composable @ReadOnlyComposable get() = MetrikColors.Success
+    val SuccessContainer: Color @Composable @ReadOnlyComposable get() = MetrikColors.SuccessMuted
+    val Warning: Color @Composable @ReadOnlyComposable get() = MetrikColors.Warning
+    val WarningContainer: Color @Composable @ReadOnlyComposable get() = MetrikColors.WarningMuted
+    val Danger: Color @Composable @ReadOnlyComposable get() = MetrikColors.Danger
+    val DangerContainer: Color @Composable @ReadOnlyComposable get() = MetrikColors.DangerMuted
+    val Info: Color @Composable @ReadOnlyComposable get() = MetrikColors.Info
+    val InfoContainer: Color @Composable @ReadOnlyComposable get() = MetrikColors.InfoMuted
+    val TextPrimary: Color @Composable @ReadOnlyComposable get() = MetrikColors.TextPrimary
+    val TextSecondary: Color @Composable @ReadOnlyComposable get() = MetrikColors.TextSecondary
+    val TextOnPrimary: Color @Composable @ReadOnlyComposable get() = MetrikColors.TextOnPrimary
+    val IconBlue: Color @Composable @ReadOnlyComposable get() = MetrikColors.Info
+    val IconGreen: Color @Composable @ReadOnlyComposable get() = MetrikColors.Success
+    val IconOrange: Color @Composable @ReadOnlyComposable get() = MetrikColors.Accent
+    val IconRed: Color @Composable @ReadOnlyComposable get() = MetrikColors.Danger
+    val IconPurple: Color @Composable @ReadOnlyComposable get() = MetrikColors.Primary
 }

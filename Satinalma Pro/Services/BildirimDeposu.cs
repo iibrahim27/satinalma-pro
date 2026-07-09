@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services.Firebase;
+using SatinalmaPro.Shared;
 using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Services;
 using SharedBildirim = SatinalmaPro.Shared.Models.BildirimKaydi;
@@ -14,7 +15,7 @@ namespace SatinalmaPro.Services;
 
 public static class BildirimDeposu
 {
-    private const string FirestoreYol = "veri/bildirimler";
+    private static string FirestoreYol => FirestoreYollari.Bildirimler();
 
     private static readonly JsonSerializerOptions Json = new()
     {

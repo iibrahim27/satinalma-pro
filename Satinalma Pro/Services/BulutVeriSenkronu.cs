@@ -523,21 +523,33 @@ public static class BulutVeriSenkronu
         ["uygulama_ayarlar"] = "veri/uygulama_ayarlar"
     };
 
-    private static string YerelDosyaYolu(string anahtar) => anahtar switch
+    private static string YerelDosyaYolu(string anahtar)
     {
-        "malzeme" => SatinalmaProKlasor.DosyaYolu("alinan_malzemeler.json"),
-        "stok" => SatinalmaProKlasor.DosyaYolu("stok.json"),
-        "stok_hareket" => SatinalmaProKlasor.DosyaYolu("stok_hareketleri.json"),
-        "agrega" => SatinalmaProKlasor.DosyaYolu("agrega.json"),
-        "cimento" => SatinalmaProKlasor.DosyaYolu("cimento.json"),
-        "akaryakit" => SatinalmaProKlasor.DosyaYolu("akaryakit.json"),
-        "filo" => SatinalmaProKlasor.DosyaYolu("filo.json"),
-        "satinalma_talepler" => SatinalmaProKlasor.DosyaYolu("satinalma_talepler.json"),
-        "satinalma_ayarlar" => SatinalmaProKlasor.DosyaYolu("satinalma_ayarlar.json"),
-        "finansman" => SatinalmaProKlasor.DosyaYolu("finansman_gelir.json"),
-        "uygulama_ayarlar" => SatinalmaProKlasor.DosyaYolu("uygulama_ayarlar.json"),
-        _ => SatinalmaProKlasor.DosyaYolu($"{anahtar}.json")
-    };
+        var tid = KiracıOturumu.TenantId;
+        string Dosya(string ad)
+        {
+            if (string.IsNullOrWhiteSpace(tid))
+                return SatinalmaProKlasor.DosyaYolu(ad);
+            var ad2 = $"{Path.GetFileNameWithoutExtension(ad)}_{tid}{Path.GetExtension(ad)}";
+            return SatinalmaProKlasor.DosyaYolu(ad2);
+        }
+
+        return anahtar switch
+        {
+            "malzeme" => Dosya("alinan_malzemeler.json"),
+            "stok" => Dosya("stok.json"),
+            "stok_hareket" => Dosya("stok_hareketleri.json"),
+            "agrega" => Dosya("agrega.json"),
+            "cimento" => Dosya("cimento.json"),
+            "akaryakit" => Dosya("akaryakit.json"),
+            "filo" => Dosya("filo.json"),
+            "satinalma_talepler" => Dosya("satinalma_talepler.json"),
+            "satinalma_ayarlar" => Dosya("satinalma_ayarlar.json"),
+            "finansman" => Dosya("finansman_gelir.json"),
+            "uygulama_ayarlar" => Dosya("uygulama_ayarlar.json"),
+            _ => Dosya($"{anahtar}.json")
+        };
+    }
 
     /// <summary>Bulut verisi uygulandıktan sonra birleşik bellek durumunu diske yazar.</summary>
     private static void YerelBirlesikDurumuKaydet(string anahtar)

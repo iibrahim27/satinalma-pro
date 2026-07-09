@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
+using SatinalmaPro.Shared.SaaS;
 
 namespace SatinalmaPro.Services;
 
@@ -28,15 +29,60 @@ public static class ModulVeriDeposu
 
     private static bool _yuklendi;
     private static bool _yukleniyor;
+    private static bool _abonelikKuruldu;
+    private static string? _yuklenenTenantId;
+
+    private static string KiraciDosyaAdi(string dosyaAdi)
+    {
+        var tid = KiracıOturumu.TenantId;
+        if (string.IsNullOrWhiteSpace(tid))
+            return dosyaAdi;
+        return $"{Path.GetFileNameWithoutExtension(dosyaAdi)}_{tid}{Path.GetExtension(dosyaAdi)}";
+    }
+
+    private static string YerelYol(string dosyaAdi) =>
+        SatinalmaProKlasor.DosyaYolu(KiraciDosyaAdi(dosyaAdi));
 
     public static void BeginBatch() => ErtelenmisKayit.BeginBatch();
 
     public static void EndBatch() => ErtelenmisKayit.EndBatch();
 
+    /// <summary>Firma değişiminde tüm modül bellek verisini temizler.</summary>
+    public static void KiraciDegisti()
+    {
+        _yuklendi = false;
+        _yuklenenTenantId = null;
+        _yukleniyor = true;
+        try
+        {
+            AlinanMalzemeler.Clear();
+            Stok.Clear();
+            StokHareketleri.Clear();
+            Agrega.Clear();
+            Cimento.Clear();
+            Akaryakit.Clear();
+            FiloAraclari.Clear();
+            FiloGiderleri.Clear();
+            FiloZimmetleri.Clear();
+        }
+        finally
+        {
+            _yukleniyor = false;
+        }
+        MalzemeAdiOneriServisi.OnbellekSifirla();
+    }
+
     public static void Yukle()
     {
-        if (_yuklendi) return;
+        var tid = KiracıOturumu.TenantId;
+        if (_yuklendi && string.Equals(_yuklenenTenantId, tid, StringComparison.Ordinal))
+            return;
+
+        if (_yuklendi && !string.Equals(_yuklenenTenantId, tid, StringComparison.Ordinal))
+            KiraciDegisti();
+
         _yuklendi = true;
+        _yuklenenTenantId = tid;
         _yukleniyor = true;
 
         SatinalmaProKlasor.Olustur();
@@ -51,15 +97,19 @@ public static class ModulVeriDeposu
         MalzemeKategoriDeposu.KayitlardanSenkronizeEt();
 
         _yukleniyor = false;
-        AlinanMalzemeler.CollectionChanged += (_, _) => OtomatikKaydet("malzeme", KaydetAlinanMalzemeler);
-        Stok.CollectionChanged += (_, _) => OtomatikKaydet("stok", KaydetStok);
-        StokHareketleri.CollectionChanged += (_, _) => OtomatikKaydet("stok_hareket", KaydetStokHareketleri);
-        Agrega.CollectionChanged += (_, _) => OtomatikKaydet("agrega", KaydetAgrega);
-        Cimento.CollectionChanged += (_, _) => OtomatikKaydet("cimento", KaydetCimento);
-        Akaryakit.CollectionChanged += (_, _) => OtomatikKaydet("akaryakit", KaydetAkaryakit);
-        FiloAraclari.CollectionChanged += (_, _) => OtomatikKaydet("filo", KaydetFilo);
-        FiloGiderleri.CollectionChanged += (_, _) => OtomatikKaydet("filo", KaydetFilo);
-        FiloZimmetleri.CollectionChanged += (_, _) => OtomatikKaydet("filo", KaydetFilo);
+        if (!_abonelikKuruldu)
+        {
+            _abonelikKuruldu = true;
+            AlinanMalzemeler.CollectionChanged += (_, _) => OtomatikKaydet("malzeme", KaydetAlinanMalzemeler);
+            Stok.CollectionChanged += (_, _) => OtomatikKaydet("stok", KaydetStok);
+            StokHareketleri.CollectionChanged += (_, _) => OtomatikKaydet("stok_hareket", KaydetStokHareketleri);
+            Agrega.CollectionChanged += (_, _) => OtomatikKaydet("agrega", KaydetAgrega);
+            Cimento.CollectionChanged += (_, _) => OtomatikKaydet("cimento", KaydetCimento);
+            Akaryakit.CollectionChanged += (_, _) => OtomatikKaydet("akaryakit", KaydetAkaryakit);
+            FiloAraclari.CollectionChanged += (_, _) => OtomatikKaydet("filo", KaydetFilo);
+            FiloGiderleri.CollectionChanged += (_, _) => OtomatikKaydet("filo", KaydetFilo);
+            FiloZimmetleri.CollectionChanged += (_, _) => OtomatikKaydet("filo", KaydetFilo);
+        }
     }
 
     public static void KaydetAlinanMalzemeler()
@@ -97,18 +147,7 @@ public static class ModulVeriDeposu
 
     public static void YenidenYukle()
     {
-        _yuklendi = false;
-        _yukleniyor = true;
-        AlinanMalzemeler.Clear();
-        Stok.Clear();
-        StokHareketleri.Clear();
-        Agrega.Clear();
-        Cimento.Clear();
-        Akaryakit.Clear();
-        FiloAraclari.Clear();
-        FiloGiderleri.Clear();
-        FiloZimmetleri.Clear();
-        _yukleniyor = false;
+        KiraciDegisti();
         Yukle();
     }
 
@@ -188,7 +227,7 @@ public static class ModulVeriDeposu
     private static void JsonOku<T>(ObservableCollection<T> koleksiyon, string dosyaAdi, Action ornekVeri)
     {
         koleksiyon.Clear();
-        var yol = SatinalmaProKlasor.DosyaYolu(dosyaAdi);
+        var yol = YerelYol(dosyaAdi);
         if (!File.Exists(yol))
         {
             if (!OturumYoneticisi.BulutAktif)
@@ -221,7 +260,7 @@ public static class ModulVeriDeposu
     {
         SatinalmaProKlasor.Olustur();
         var json = JsonSerializer.Serialize(veri, JsonSecenekleri);
-        File.WriteAllText(SatinalmaProKlasor.DosyaYolu(dosyaAdi), json);
+        File.WriteAllText(YerelYol(dosyaAdi), json);
     }
 
     private static void FiloOku()
@@ -229,7 +268,7 @@ public static class ModulVeriDeposu
         FiloAraclari.Clear();
         FiloGiderleri.Clear();
         FiloZimmetleri.Clear();
-        var yol = SatinalmaProKlasor.DosyaYolu("filo.json");
+        var yol = YerelYol("filo.json");
         if (!File.Exists(yol))
         {
             if (!OturumYoneticisi.BulutAktif)

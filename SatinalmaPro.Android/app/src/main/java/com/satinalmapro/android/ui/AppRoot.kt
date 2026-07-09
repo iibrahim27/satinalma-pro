@@ -1,30 +1,23 @@
 package com.satinalmapro.android.ui
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.satinalmapro.android.core.roles.KullaniciRolleri
+import com.satinalmapro.android.MainActivity
+import com.satinalmapro.android.ui.auth.BiometricUnlockScreen
+import com.satinalmapro.android.ui.auth.LoginScreen
+import com.satinalmapro.android.ui.auth.SplashScreen
 import com.satinalmapro.android.ui.components.UpdateDialog
-import com.satinalmapro.android.ui.screens.login.BiometricUnlockScreen
-import com.satinalmapro.android.ui.screens.login.LoginScreen
-import com.satinalmapro.android.ui.screens.shell.AtolyeShell
-import com.satinalmapro.android.ui.screens.shell.RoleShell
-import com.satinalmapro.android.ui.screens.login.SplashScreen
-import com.satinalmapro.android.ui.theme.AppColors
+import com.satinalmapro.android.ui.shell.ProcurementShell
+import com.satinalmapro.android.ui.theme.MetrikColors
+import kotlinx.coroutines.delay
 
 @Composable
 fun AppRoot(viewModel: AppViewModel) {
@@ -38,23 +31,32 @@ fun AppRoot(viewModel: AppViewModel) {
     val updateMessage by viewModel.updateMessage.collectAsState()
     val updateError by viewModel.updateError.collectAsState()
     val user by viewModel.user.collectAsState()
-    val isAtolye = KullaniciRolleri.isAtolyeOnly(user?.role)
+    val activity = LocalFragmentActivity.current
 
-    LaunchedEffect(Unit) {
-        viewModel.startSplash()
-        viewModel.startBackgroundRefresh()
+    val showApp = isLoggedIn || (user != null && !needsBiometricUnlock)
+
+    LaunchedEffect(Unit) { viewModel.startSplash() }
+    LaunchedEffect(showApp) { if (showApp) viewModel.startBackgroundRefresh() }
+    LaunchedEffect(user, isLoggedIn, needsBiometricUnlock) {
+        if (user != null && !isLoggedIn && !needsBiometricUnlock) {
+            viewModel.ensureLoggedInFromSession()
+        }
+    }
+    LaunchedEffect(showApp) {
+        if (!showApp) return@LaunchedEffect
+        delay(800)
+        (activity as? MainActivity)?.requestNotificationPermissionAfterLogin()
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         when {
-            !splashDone -> SplashScreen(splashMessage)
+            showApp -> ProcurementShell(viewModel)
             needsBiometricUnlock -> BiometricUnlockScreen(viewModel)
-            !isLoggedIn -> LoginScreen(viewModel)
-            isAtolye -> AtolyeShell(viewModel)
-            else -> RoleShell(viewModel)
+            !splashDone -> SplashScreen(splashMessage)
+            else -> LoginScreen(viewModel)
         }
 
-        if (isLoggedIn && showUpdateDialog && pendingUpdate != null) {
+        if (showApp && showUpdateDialog && pendingUpdate != null) {
             UpdateDialog(
                 manifest = pendingUpdate!!,
                 progress = updateProgress,
@@ -63,19 +65,16 @@ fun AppRoot(viewModel: AppViewModel) {
                 onUpdate = { viewModel.startUpdateDownload() },
                 onDismiss = { viewModel.dismissUpdateDialog() }
             )
-        } else if (isLoggedIn && showUpdateDialog && pendingUpdate == null) {
+        } else if (showApp && showUpdateDialog && pendingUpdate == null) {
             AlertDialog(
                 onDismissRequest = { viewModel.dismissUpdateDialog() },
                 title = {
-                    Text(
-                        if (updateError != null) "Güncelleme hatası"
-                        else "Güncelleme kontrolü"
-                    )
+                    Text(if (updateError != null) "Güncelleme hatası" else "Güncelleme kontrolü")
                 },
                 text = {
                     Text(
                         updateError ?: updateMessage ?: "Güncelleme kontrol ediliyor...",
-                        color = if (updateError != null) AppColors.Danger else AppColors.TextPrimary
+                        color = if (updateError != null) MetrikColors.Danger else MetrikColors.TextPrimary
                     )
                 },
                 confirmButton = {
@@ -85,4 +84,3 @@ fun AppRoot(viewModel: AppViewModel) {
         }
     }
 }
-

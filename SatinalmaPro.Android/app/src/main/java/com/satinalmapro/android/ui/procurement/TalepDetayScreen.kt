@@ -1,4 +1,4 @@
-package com.satinalmapro.android.ui.screens.talep
+package com.satinalmapro.android.ui.procurement
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,7 +45,7 @@ import com.satinalmapro.android.services.SatinalmaPdfHelper
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppCard
 import com.satinalmapro.android.ui.components.DetailRow
-import com.satinalmapro.android.ui.components.MalKabulDialog
+import com.satinalmapro.android.ui.procurement.MalKabulDialog
 import com.satinalmapro.android.ui.components.StatusBadge
 import androidx.compose.runtime.mutableIntStateOf
 import com.satinalmapro.android.ui.components.AppDetailTabRow

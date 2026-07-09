@@ -95,6 +95,13 @@ public static class OturumYoneticisi
 
         var sonuc = await SaaSAuth.GirisYapAsync(kullaniciAdi, sifre, iptal);
         Auth.OturumuSaaSDenUygula(sonuc);
+        // Firma değişiminde eski yerel talep/ayar/modül verisini bellekten temizle.
+        SatinalmaDepo.KiraciDegisti();
+        UygulamaAyarDeposu.KiraciDegisti();
+        ModulVeriDeposu.KiraciDegisti();
+        FinansmanVeriDeposu.KiraciDegisti();
+        IadeDeposu.KiraciDegisti();
+        BildirimDeposu.Sil(_ => true);
         KiracıOturumu.Ayarla(sonuc.TenantId, sonuc.TenantAd, sonuc.Lisans);
 
         if (!await ProfiliYukleAsync(iptal))
@@ -102,6 +109,11 @@ public static class OturumYoneticisi
 
         TercihleriKaydet(kullaniciAdi, beniHatirla, sifremiHatirla, sifre);
         OturumDosyasiniGuncelle(beniHatirla, sonuc.TenantId, sonuc.KullaniciAdi ?? kullaniciAdi);
+        // Yeni kiracıya ait yerel dosyayı yükle (boş olabilir).
+        SatinalmaDepo.YenidenYukle();
+        UygulamaAyarDeposu.YenidenYukle();
+        ModulVeriDeposu.YenidenYukle();
+        FinansmanVeriDeposu.YenidenYukle();
     }
 
     public static async Task<bool> OtomatikGirisDeneAsync(CancellationToken iptal = default)
@@ -213,6 +225,11 @@ public static class OturumYoneticisi
         Auth?.OturumuKapat();
         AktifKullanici = null;
         KiracıOturumu.Temizle();
+        SatinalmaDepo.KiraciDegisti();
+        UygulamaAyarDeposu.KiraciDegisti();
+        ModulVeriDeposu.KiraciDegisti();
+        FinansmanVeriDeposu.KiraciDegisti();
+        IadeDeposu.KiraciDegisti();
         OturumDosyasiniSil();
     }
 
