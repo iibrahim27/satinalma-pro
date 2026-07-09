@@ -42,10 +42,12 @@ fun AppRoot(viewModel: AppViewModel) {
             viewModel.ensureLoggedInFromSession()
         }
     }
+
+    // Bildirim izni: giriş sonrası kısa gecikmeyle iste (tray uyarıları için zorunlu).
     LaunchedEffect(showApp) {
         if (!showApp) return@LaunchedEffect
-        delay(800)
-        (activity as? MainActivity)?.requestNotificationPermissionAfterLogin()
+        delay(1_500)
+        runCatching { (activity as? MainActivity)?.requestNotificationPermissionAfterLogin() }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -57,14 +59,17 @@ fun AppRoot(viewModel: AppViewModel) {
         }
 
         if (showApp && showUpdateDialog && pendingUpdate != null) {
-            UpdateDialog(
-                manifest = pendingUpdate!!,
-                progress = updateProgress,
-                message = updateMessage,
-                error = updateError,
-                onUpdate = { viewModel.startUpdateDownload() },
-                onDismiss = { viewModel.dismissUpdateDialog() }
-            )
+            val manifest = pendingUpdate
+            if (manifest != null) {
+                UpdateDialog(
+                    manifest = manifest,
+                    progress = updateProgress,
+                    message = updateMessage,
+                    error = updateError,
+                    onUpdate = { viewModel.startUpdateDownload() },
+                    onDismiss = { viewModel.dismissUpdateDialog() }
+                )
+            }
         } else if (showApp && showUpdateDialog && pendingUpdate == null) {
             AlertDialog(
                 onDismissRequest = { viewModel.dismissUpdateDialog() },

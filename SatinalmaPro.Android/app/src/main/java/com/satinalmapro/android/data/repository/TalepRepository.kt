@@ -4,18 +4,19 @@ import com.satinalmapro.android.core.JsonConfig
 import com.google.gson.reflect.TypeToken
 import com.satinalmapro.android.core.model.DashboardActivity
 import com.satinalmapro.android.core.model.DashboardCard
+import com.satinalmapro.android.core.model.ImzaAyari
+import com.satinalmapro.android.core.model.OnaylananMalzemeSatiri
 import com.satinalmapro.android.core.model.SatinalmaAyarlar
+import com.satinalmapro.android.core.model.TalepItem
+import com.satinalmapro.android.core.model.TalepKalem
+import com.satinalmapro.android.core.model.TalepQueue
 import com.satinalmapro.android.core.model.TeklifFiyat
 import com.satinalmapro.android.core.model.TeklifItem
+import com.satinalmapro.android.core.model.UserProfile
 import com.satinalmapro.android.core.helpers.BildirimLog
 import com.satinalmapro.android.core.helpers.BildirimRolPolitikasi
 import com.satinalmapro.android.core.helpers.OnayBildirimYardimcisi
 import com.satinalmapro.android.core.model.BildirimTipleri
-import com.satinalmapro.android.core.model.OnaylananMalzemeSatiri
-import com.satinalmapro.android.core.model.TalepItem
-import com.satinalmapro.android.core.model.TalepKalem
-import com.satinalmapro.android.core.model.TalepQueue
-import com.satinalmapro.android.core.model.UserProfile
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.core.roles.TalepDurumlari
 import com.satinalmapro.android.core.roles.MalKabulYardimcisi
@@ -60,22 +61,36 @@ class TalepRepository(
     }
 
     suspend fun loadTalepler(): List<TalepItem> {
-        val ayarlar = loadAyarlar()
-        val silinen = ayarlar.silinenTalepIdleri.map { it.lowercase() }.toSet()
-        val json = firestore.readDocumentJson("veri/satinalma_talepler") ?: return emptyList()
-        val raw = runCatching { gson.fromJson<List<TalepItem>>(json, listType) ?: emptyList() }.getOrDefault(emptyList())
-        val filtered = if (silinen.isEmpty()) raw
-        else raw.filterNot { silinen.contains(it.id.lowercase()) }
-        val (synced, degisti) = syncStatuses(filtered)
-        if (degisti && auth.uid != null) {
-            runCatching { saveTalepler(synced) }
+        return runCatching {
+            val ayarlar = loadAyarlar()
+            val silinen = runCatching {
+                ayarlar.silinenTalepIdleri.map { it.lowercase() }.toSet()
+            }.getOrDefault(emptySet())
+            val json = firestore.readDocumentJson("veri/satinalma_talepler") ?: return@runCatching emptyList()
+            val raw = runCatching {
+                gson.fromJson<List<TalepItem?>>(json, listType) ?: emptyList()
+            }.getOrDefault(emptyList())
+            val normalized = raw.mapNotNull { item ->
+                runCatching { item?.normalized() }.getOrNull()
+            }
+            val filtered = if (silinen.isEmpty()) normalized
+            else normalized.filterNot { silinen.contains(it.id.lowercase()) }
+            val (synced, degisti) = syncStatuses(filtered)
+            if (degisti && auth.uid != null) {
+                runCatching { saveTalepler(synced) }
+            }
+            synced
+        }.getOrElse { ex ->
+            BildirimLog.e("TALEP", "loadTalepler başarısız", ex)
+            emptyList()
         }
-        return synced
     }
 
     suspend fun loadAyarlar(): SatinalmaAyarlar {
         val json = firestore.readDocumentJson("veri/satinalma_ayarlar") ?: return SatinalmaAyarlar()
-        return runCatching { gson.fromJson(json, ayarType) ?: SatinalmaAyarlar() }.getOrDefault(SatinalmaAyarlar())
+        return runCatching {
+            gson.fromJson(json, ayarType) ?: SatinalmaAyarlar()
+        }.getOrDefault(SatinalmaAyarlar())
     }
 
     suspend fun saveTalepler(talepler: List<TalepItem>) {

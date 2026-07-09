@@ -5,7 +5,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-/** Açık endüstriyel Satınalma paneli — petrol mavisi + bakır aksan. */
+/** İnşaat / satınalma: slate + teal — mor/indigo generic AI görünümünden uzak. */
 data class MetrikPalette(
     val Primary: Color,
     val PrimaryDark: Color,
@@ -32,31 +32,30 @@ data class MetrikPalette(
 )
 
 val MetrikLight = MetrikPalette(
-    Primary = Color(0xFF0B3A53),
-    PrimaryDark = Color(0xFF072A3C),
-    Accent = Color(0xFFC45C26),
-    AccentMuted = Color(0xFFF3E0D6),
-    Background = Color(0xFFEEF1F4),
-    Surface = Color(0xFFF7F8FA),
-    SurfaceMuted = Color(0xFFE4E8ED),
-    Border = Color(0xFFC9D1D9),
-    Divider = Color(0xFFD5DBE2),
-    Success = Color(0xFF1F7A4C),
-    SuccessMuted = Color(0xFFD8EDE3),
-    Warning = Color(0xFFB7791F),
-    WarningMuted = Color(0xFFF5EBD4),
-    Danger = Color(0xFFB42318),
-    DangerMuted = Color(0xFFF5D6D3),
-    Info = Color(0xFF1D5C8A),
-    InfoMuted = Color(0xFFD6E6F0),
-    TextPrimary = Color(0xFF15202B),
-    TextSecondary = Color(0xFF5B6B78),
-    TextTertiary = Color(0xFF8795A1),
-    TextOnPrimary = Color(0xFFF7F8FA),
-    TextOnAccent = Color(0xFFFFF8F4)
+    Primary = Color(0xFF1B2838),
+    PrimaryDark = Color(0xFF111A24),
+    Accent = Color(0xFF0F766E),
+    AccentMuted = Color(0xFFCCFBF1),
+    Background = Color(0xFFEEF2F5),
+    Surface = Color(0xFFFFFFFF),
+    SurfaceMuted = Color(0xFFE4E9EE),
+    Border = Color(0xFFCDD5DD),
+    Divider = Color(0xFFE2E8EE),
+    Success = Color(0xFF047857),
+    SuccessMuted = Color(0xFFD1FAE5),
+    Warning = Color(0xFFC2410C),
+    WarningMuted = Color(0xFFFFEDD5),
+    Danger = Color(0xFFB91C1C),
+    DangerMuted = Color(0xFFFEE2E2),
+    Info = Color(0xFF0369A1),
+    InfoMuted = Color(0xFFE0F2FE),
+    TextPrimary = Color(0xFF0F172A),
+    TextSecondary = Color(0xFF64748B),
+    TextTertiary = Color(0xFF94A3B8),
+    TextOnPrimary = Color(0xFFFFFFFF),
+    TextOnAccent = Color(0xFFFFFFFF)
 )
 
-/** DemoData ve eski sabit renk erişimi için. */
 object LightAppColors {
     val Primary = MetrikLight.Primary
     val PrimaryDark = MetrikLight.PrimaryDark
@@ -78,9 +77,9 @@ object LightAppColors {
     val TextOnPrimary = MetrikLight.TextOnPrimary
     val IconBlue = MetrikLight.Info
     val IconGreen = MetrikLight.Success
-    val IconOrange = MetrikLight.Accent
+    val IconOrange = MetrikLight.Warning
     val IconRed = MetrikLight.Danger
-    val IconPurple = MetrikLight.Primary
+    val IconPurple = MetrikLight.Accent
 }
 
 val DarkAppColors = LightAppColors
@@ -140,7 +139,7 @@ object AppColors {
     val TextOnPrimary: Color @Composable @ReadOnlyComposable get() = MetrikColors.TextOnPrimary
     val IconBlue: Color @Composable @ReadOnlyComposable get() = MetrikColors.Info
     val IconGreen: Color @Composable @ReadOnlyComposable get() = MetrikColors.Success
-    val IconOrange: Color @Composable @ReadOnlyComposable get() = MetrikColors.Accent
+    val IconOrange: Color @Composable @ReadOnlyComposable get() = MetrikColors.Warning
     val IconRed: Color @Composable @ReadOnlyComposable get() = MetrikColors.Danger
-    val IconPurple: Color @Composable @ReadOnlyComposable get() = MetrikColors.Primary
+    val IconPurple: Color @Composable @ReadOnlyComposable get() = MetrikColors.Accent
 }

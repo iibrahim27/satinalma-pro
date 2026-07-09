@@ -24,12 +24,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.fragment.app.FragmentActivity
 import com.satinalmapro.android.security.BiometricAuthHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
 
 class AppViewModel(private val container: AppContainer) : ViewModel() {
     /** Şifre ile giriş yapıldıysa bu oturumda biyometrik kilidi atla. */
@@ -175,17 +178,16 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    val dashboardCards = combine(talepler, stokHareketleri, notifications) { _, _, _ ->
-        container.dashboardData().first
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val dashboardActivities = combine(talepler, stokHareketleri, notifications) { _, _, _ ->
-        container.dashboardData().second
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // Ölü akışlar — sync sonrası ağır dashboardData() Main'de patlamasın diye kaldırıldı.
+    // UI DashboardScreen kuyruk kartlarını kullanıyor.
 
     val menuBadges = combine(talepler, user) { talepList, u ->
-        RolNavigasyon.menuBadgeCounts(u?.role, talepList, u?.uid.orEmpty(), u?.fullName.orEmpty())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+        runCatching {
+            RolNavigasyon.menuBadgeCounts(u?.role, talepList, u?.uid.orEmpty(), u?.fullName.orEmpty())
+        }.getOrDefault(emptyMap())
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     private val filteredFlows = ConcurrentHashMap<TalepQueue, StateFlow<List<TalepItem>>>()
     private val talepByIdFlows = ConcurrentHashMap<String, StateFlow<TalepItem?>>()
@@ -237,7 +239,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         splashJob = viewModelScope.launch {
             _splashMessage.value = "Yükleniyor..."
             val restored = try {
-                kotlinx.coroutines.withTimeoutOrNull(12_000) {
+                kotlinx.coroutines.withTimeoutOrNull(6_000) {
                     container.restoreSession()
                 } ?: container.hasActiveSession()
             } catch (_: kotlinx.coroutines.CancellationException) {
@@ -303,9 +305,14 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     private fun startPostLoginSync() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
+            // UI otursun; badge/recompose + ağ fırtınasını geciktir.
+            kotlinx.coroutines.delay(8_000)
             runCatching { container.refreshNotifications() }
+                .onFailure { android.util.Log.e("PostLoginSync", "refreshNotifications", it) }
+            kotlinx.coroutines.delay(3_000)
             runCatching { container.syncData() }
+                .onFailure { android.util.Log.e("PostLoginSync", "syncData", it) }
         }
     }
 
@@ -410,9 +417,14 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     private fun applyPostLoginNavigation() {
-        _currentRoute.value = RolNavigasyon.defaultRoute(container.user.value?.role)
-        val pending = _pendingUpdate.value
-        if (pending != null && !container.isUpdateSkipped(pending)) {
+        val pending = container.pendingRoute
+        _currentRoute.value = if (!pending.isNullOrBlank()) {
+            BildirimRota.safeRoute(pending, container.user.value?.role)
+        } else {
+            RolNavigasyon.defaultRoute(container.user.value?.role)
+        }
+        val update = _pendingUpdate.value
+        if (update != null && !container.isUpdateSkipped(update)) {
             _showUpdateDialog.value = true
         }
     }
@@ -463,7 +475,9 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             container.pendingNotificationId = notificationId
             return
         }
-        navigate(route)
+        // Bildirim tıklaması: ana ekranı değil, doğrudan ilgili işlemi aç.
+        routeHistory.clear()
+        navigate(route, pushHistory = false)
         viewModelScope.launch {
             notificationId?.let { runCatching { container.markNotificationRead(it) } }
             runCatching { container.syncData() }
@@ -503,16 +517,19 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun startBackgroundRefresh() {
         if (backgroundRefreshStarted) return
         backgroundRefreshStarted = true
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
+            // İlk turu post-login sync'e bırak.
+            kotlinx.coroutines.delay(20_000)
             while (true) {
-                val delayMs = if (foreground) 2_000L else 12_000L
+                val delayMs = if (foreground) 8_000L else 30_000L
                 kotlinx.coroutines.delay(delayMs)
                 if (_isLoggedIn.value) runCatching { container.refreshNotifications() }
             }
         }
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
+            kotlinx.coroutines.delay(30_000)
             while (true) {
-                kotlinx.coroutines.delay(if (foreground) 15_000 else 60_000)
+                kotlinx.coroutines.delay(if (foreground) 45_000 else 90_000)
                 if (_isLoggedIn.value) runCatching { container.syncData() }
             }
         }
@@ -529,17 +546,15 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     fun onAppResume() {
         foreground = true
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             // Şifre ile açılmış oturumda biyometrik kilidi tamamen atla (izin diyaloğu / recreate atmasın).
             if (passwordSessionUnlocked || loginInProgress) {
                 if (container.hasActiveSession()) {
                     _needsBiometricUnlock.value = false
                     _isLoggedIn.value = true
                 }
-                if (_isLoggedIn.value) {
-                    runCatching { container.refreshNotifications() }
-                    runCatching { container.syncData() }
-                }
+                // Giriş sonrası hemen syncData ÇAĞIRMA — startPostLoginSync zaten gecikmeli çalışır.
+                // Resume anındaki sync + FCM fırtınası 1–2 sn'de process kill üretiyordu.
                 return@launch
             }
 

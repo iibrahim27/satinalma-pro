@@ -21,8 +21,8 @@ android {
         applicationId = "com.metrik.satinalmapro"
         minSdk = 31
         targetSdk = 35
-        versionCode = 104
-        versionName = "2.1.50"
+        versionCode = 113
+        versionName = "2.1.51"
     }
 
     signingConfigs {
@@ -133,7 +133,17 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.auth:google-auth-library-oauth2-http:1.30.1")
+    // google-auth, Firestore'un gRPC classpath'ini bozabiliyor (InternalGlobalInterceptors).
+    // gRPC artifact'lerini hizala; auth kütüphanesinden çakışan grpc'yi dışla.
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.30.1") {
+        exclude(group = "io.grpc")
+    }
+    implementation("io.grpc:grpc-android:1.68.2")
+    implementation("io.grpc:grpc-okhttp:1.68.2")
+    implementation("io.grpc:grpc-protobuf-lite:1.68.2")
+    implementation("io.grpc:grpc-stub:1.68.2")
+    implementation("io.grpc:grpc-api:1.68.2")
+
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.code.gson:gson:2.11.0")

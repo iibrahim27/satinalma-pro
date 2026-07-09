@@ -2,65 +2,74 @@ package com.satinalmapro.android.ui.shell
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ListAlt
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.ShoppingCart
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.satinalmapro.android.core.model.MenuItem
 import com.satinalmapro.android.core.model.TalepQueue
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.core.roles.RolNavigasyon
 import com.satinalmapro.android.core.saas.TenantSession
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.LocalFragmentActivity
-import com.satinalmapro.android.ui.components.TenantFooter
 import com.satinalmapro.android.ui.procurement.DashboardScreen
 import com.satinalmapro.android.ui.procurement.MaterialsScreen
 import com.satinalmapro.android.ui.procurement.NewRequestScreen
 import com.satinalmapro.android.ui.procurement.NotificationsScreen
 import com.satinalmapro.android.ui.procurement.OnayGecmisiScreen
 import com.satinalmapro.android.ui.procurement.ProfileScreen
+import com.satinalmapro.android.ui.procurement.QueuesHubScreen
 import com.satinalmapro.android.ui.procurement.SettingsScreen
+import com.satinalmapro.android.ui.procurement.StokCikisScreen
+import com.satinalmapro.android.ui.procurement.StokDurumScreen
+import com.satinalmapro.android.ui.procurement.StokGirisScreen
+import com.satinalmapro.android.ui.procurement.StokHareketScreen
 import com.satinalmapro.android.ui.procurement.TalepDetayScreen
 import com.satinalmapro.android.ui.procurement.TalepListScreen
 import com.satinalmapro.android.ui.procurement.TeklifGirisScreen
 import com.satinalmapro.android.ui.procurement.TeklifKarsilastirmaScreen
 import com.satinalmapro.android.ui.procurement.TeklifOnayDetayScreen
 import com.satinalmapro.android.ui.procurement.TeklifsizFirmaFiyatScreen
-import com.satinalmapro.android.ui.theme.AppShapes
 import com.satinalmapro.android.ui.theme.MetrikLight
-import com.satinalmapro.android.ui.theme.MetrikSpace
 
+private data class BottomTab(
+    val route: String,
+    val label: String,
+    val icon: ImageVector
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProcurementShell(viewModel: AppViewModel) {
     val currentRoute by viewModel.currentRoute.collectAsState()
@@ -71,12 +80,27 @@ fun ProcurementShell(viewModel: AppViewModel) {
     val route = currentRoute ?: "dashboard"
     val base = route.substringBefore('?')
     val menus = viewModel.menus()
-    val queueMenus = RolNavigasyon.queueMenus(user?.role)
-    val title = menus.firstOrNull { it.route == base }?.title
-        ?: if (base == "dashboard") "Satınalma" else "Satınalma Pro"
+    val title = when (base) {
+        "dashboard" -> null // kendi hero'su var
+        "isler" -> null
+        else -> menus.firstOrNull { it.route == base }?.title
+            ?: when (base) {
+                "bildirimler" -> "Bildirimler"
+                "profil" -> "Profil"
+                "ayarlar" -> "Ayarlar"
+                "yeni-talep" -> "Yeni Talep"
+                "stok-durum" -> "Stok Durumu"
+                "stok-hareket" -> "Stok Hareketleri"
+                "stok-giris" -> "Stok Girişi"
+                "stok-cikis" -> "Stok Çıkışı"
+                else -> "Satınalma Pro"
+            }
+    }
     val unread = notifications.count { !it.read }
-    val isRoot = base in setOf("dashboard", "bildirimler", "profil", "ayarlar") ||
-        queueMenus.any { it.route == base }
+    val waiting = menuBadges.values.sum()
+    val bottomTabs = remember(user?.role) { bottomTabsFor(user?.role) }
+    val hideChrome = base in setOf("dashboard", "isler")
+    val isRoot = base in bottomTabs.map { it.route } || base == "ayarlar"
 
     BackHandler {
         when {
@@ -88,25 +112,117 @@ fun ProcurementShell(viewModel: AppViewModel) {
     Scaffold(
         containerColor = MetrikLight.Background,
         topBar = {
-            ShellTopChrome(
-                title = title,
-                showBack = !isRoot && base != "dashboard",
-                unread = unread,
-                queueMenus = queueMenus,
-                selectedRoute = base,
-                badges = menuBadges,
-                onBack = { viewModel.navigateBack() },
-                onNotifications = { viewModel.navigateFromMenu("bildirimler") },
-                onProfile = { viewModel.navigateFromMenu("profil") },
-                onSelectQueue = { viewModel.navigateFromMenu(it) }
-            )
+            if (!hideChrome) {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(
+                                title.orEmpty(),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            val firma = TenantSession.tenantName().orEmpty()
+                            if (firma.isNotBlank() && base != "profil") {
+                                Text(
+                                    firma,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MetrikLight.TextSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    },
+                    navigationIcon = {
+                        if (!isRoot) {
+                            IconButton(onClick = { viewModel.navigateBack() }) {
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Geri")
+                            }
+                        }
+                    },
+                    actions = {
+                        if (base != "bildirimler") {
+                            IconButton(onClick = { viewModel.navigateFromMenu("bildirimler") }) {
+                                BadgedBox(badge = {
+                                    if (unread > 0) {
+                                        Badge { Text(if (unread > 99) "99+" else unread.toString()) }
+                                    }
+                                }) {
+                                    Icon(Icons.Rounded.Notifications, contentDescription = "Bildirimler")
+                                }
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MetrikLight.Surface,
+                        titleContentColor = MetrikLight.TextPrimary,
+                        navigationIconContentColor = MetrikLight.TextPrimary,
+                        actionIconContentColor = MetrikLight.TextPrimary
+                    )
+                )
+            }
         },
         bottomBar = {
-            TenantFooter(
-                firma = TenantSession.tenantName().orEmpty(),
-                kullanici = user?.fullName?.ifBlank { user?.email }.orEmpty(),
-                rol = user?.role.orEmpty()
-            )
+            if (bottomTabs.isNotEmpty()) {
+                NavigationBar(
+                    containerColor = MetrikLight.Surface,
+                    tonalElevation = 0.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MetrikLight.Surface)
+                ) {
+                    bottomTabs.forEach { tab ->
+                        val selected = when (tab.route) {
+                            "isler" -> {
+                                val queues = RolNavigasyon.queueMenus(user?.role)
+                                base == "isler" || (
+                                    base !in setOf("dashboard", "bildirimler", "profil", "ayarlar", "yeni-talep") &&
+                                        !base.startsWith("stok-") &&
+                                        queues.any { it.route == base }
+                                    )
+                            }
+                            "stok-durum" -> base.startsWith("stok-")
+                            else -> base == tab.route
+                        }
+                        val badge = when (tab.route) {
+                            "isler" -> waiting
+                            "bildirimler" -> unread
+                            else -> menuBadges[tab.route] ?: 0
+                        }
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = { viewModel.navigateFromMenu(tab.route) },
+                            icon = {
+                                if (badge > 0) {
+                                    BadgedBox(badge = {
+                                        Badge(
+                                            containerColor = MetrikLight.Accent,
+                                            contentColor = MetrikLight.TextOnAccent
+                                        ) {
+                                            Text(if (badge > 99) "99+" else badge.toString())
+                                        }
+                                    }) {
+                                        Icon(tab.icon, contentDescription = tab.label)
+                                    }
+                                } else {
+                                    Icon(tab.icon, contentDescription = tab.label)
+                                }
+                            },
+                            label = {
+                                Text(tab.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MetrikLight.Accent,
+                                selectedTextColor = MetrikLight.Accent,
+                                indicatorColor = MetrikLight.AccentMuted,
+                                unselectedIconColor = MetrikLight.TextSecondary,
+                                unselectedTextColor = MetrikLight.TextSecondary
+                            )
+                        )
+                    }
+                }
+            }
         }
     ) { padding ->
         Box(
@@ -120,125 +236,23 @@ fun ProcurementShell(viewModel: AppViewModel) {
     }
 }
 
-@Composable
-private fun ShellTopChrome(
-    title: String,
-    showBack: Boolean,
-    unread: Int,
-    queueMenus: List<MenuItem>,
-    selectedRoute: String,
-    badges: Map<String, Int>,
-    onBack: () -> Unit,
-    onNotifications: () -> Unit,
-    onProfile: () -> Unit,
-    onSelectQueue: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier.background(MetrikLight.Surface)
-    ) {
-        TopBar(
-            title = title,
-            showBack = showBack,
-            unread = unread,
-            onBack = onBack,
-            onNotifications = onNotifications,
-            onProfile = onProfile
-        )
-        if (queueMenus.isNotEmpty()) {
-            RoleQueueStrip(
-                items = queueMenus,
-                selectedRoute = selectedRoute,
-                badges = badges,
-                onSelect = onSelectQueue
-            )
-        }
-        HorizontalDivider(color = MetrikLight.Divider, thickness = 1.dp)
+private fun bottomTabsFor(role: String?): List<BottomTab> {
+    val normalized = KullaniciRolleri.normalize(role)
+    val tabs = mutableListOf(
+        BottomTab("dashboard", "Ana", Icons.Rounded.Home),
+        BottomTab("isler", "İşler", Icons.AutoMirrored.Rounded.ListAlt)
+    )
+    val queues = RolNavigasyon.queueMenus(role)
+    when {
+        queues.any { it.route == "onaylanan-malzemeler" } || KullaniciRolleri.canMalKabul(role) ->
+            tabs += BottomTab("onaylanan-malzemeler", "Malzeme", Icons.Rounded.ShoppingCart)
+        normalized in setOf(KullaniciRolleri.DEPO, KullaniciRolleri.ATOLYE) ||
+            queues.any { it.route.startsWith("stok-") } ->
+            tabs += BottomTab("stok-durum", "Stok", Icons.Rounded.Inventory2)
     }
-}
-
-@Composable
-private fun TopBar(
-    title: String,
-    showBack: Boolean,
-    unread: Int,
-    onBack: () -> Unit,
-    onNotifications: () -> Unit,
-    onProfile: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .padding(horizontal = MetrikSpace.sm),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (showBack) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Geri", tint = MetrikLight.Primary)
-            }
-        } else {
-            Spacer(Modifier.width(8.dp))
-        }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            color = MetrikLight.TextPrimary,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
-        IconButton(onClick = onNotifications) {
-            BadgedBox(badge = {
-                if (unread > 0) Badge { Text(if (unread > 99) "99+" else unread.toString()) }
-            }) {
-                Icon(Icons.Rounded.Notifications, contentDescription = "Bildirimler", tint = MetrikLight.Primary)
-            }
-        }
-        IconButton(onClick = onProfile) {
-            Icon(Icons.Rounded.Person, contentDescription = "Profil", tint = MetrikLight.Primary)
-        }
-    }
-}
-
-@Composable
-private fun RoleQueueStrip(
-    items: List<MenuItem>,
-    selectedRoute: String,
-    badges: Map<String, Int>,
-    onSelect: (String) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = MetrikSpace.md, vertical = MetrikSpace.strip),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        for (item in items) {
-            val selected = item.route == selectedRoute
-            val badge = badges[item.route] ?: 0
-            val label = if (badge > 0) "${item.title} ($badge)" else item.title
-            Text(
-                text = label,
-                modifier = Modifier
-                    .background(
-                        if (selected) MetrikLight.Primary else MetrikLight.SurfaceMuted,
-                        AppShapes.chip
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = if (selected) MetrikLight.Primary else MetrikLight.Border,
-                        shape = AppShapes.chip
-                    )
-                    .clickable { onSelect(item.route) }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                color = if (selected) MetrikLight.TextOnPrimary else MetrikLight.TextPrimary,
-                style = MaterialTheme.typography.labelLarge,
-                maxLines = 1
-            )
-        }
-    }
+    tabs += BottomTab("bildirimler", "Bildirim", Icons.Rounded.Notifications)
+    tabs += BottomTab("profil", "Profil", Icons.Rounded.Person)
+    return tabs.take(5)
 }
 
 @Composable
@@ -251,6 +265,7 @@ private fun RouteHost(route: String, viewModel: AppViewModel) {
 
     when (base) {
         "dashboard" -> DashboardScreen(viewModel)
+        "isler" -> QueuesHubScreen(viewModel)
         "talep-duzenle" -> if (talepId != null) NewRequestScreen(viewModel, editTalepId = talepId)
         else DashboardScreen(viewModel)
         "yeni-talep" -> NewRequestScreen(viewModel)
@@ -287,6 +302,10 @@ private fun RouteHost(route: String, viewModel: AppViewModel) {
         "teklifsiz-firma-fiyat" -> TeklifsizFirmaFiyatScreen(viewModel, talepId)
         "onay-gecmisi", "yonetim-onay-gecmisi", "yonetim-gecmis" -> OnayGecmisiScreen(viewModel)
         "talep-detay" -> TalepDetayScreen(viewModel, talepId.orEmpty(), viewMode = viewMode)
+        "stok-durum" -> StokDurumScreen(viewModel)
+        "stok-hareket" -> StokHareketScreen(viewModel)
+        "stok-giris" -> StokGirisScreen(viewModel)
+        "stok-cikis" -> StokCikisScreen(viewModel)
         else -> DashboardScreen(viewModel)
     }
 }

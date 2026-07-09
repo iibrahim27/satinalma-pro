@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.50",
-    "build":  104,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.50/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.50/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.50/SatinalmaPro.apk",
-    "notes":  "Kiraci izolasyonu tum moduller, Ayarlar sadece Satinalma, Android Satinalma-only yeni arayuz",
+    "version":  "2.1.51",
+    "build":  113,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.51/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.51/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.51/SatinalmaPro.apk",
+    "notes":  "Android stok rolleri (Atolye/Depo), bildirim izni ve tray deep-link; FCM data-only",
     "zorunlu":  false
 }

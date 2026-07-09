@@ -4,15 +4,14 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import com.google.firebase.FirebaseApp
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
 import com.satinalmapro.android.core.saas.TenantFcmTopics
 import com.satinalmapro.android.core.saas.TenantSession
 import com.satinalmapro.shared.model.UserRole
 
 /**
- * Giriş yapmış kullanıcının Firestore rolüne göre kiracıya özel FCM topic aboneliğini yönetir.
+ * Rol topic aboneliği — Firestore SDK kullanmaz (google-auth/gRPC native çökme riski).
+ * Rol, REST oturumundan / profil cache'den gelir.
  */
 class FcmSubscriptionHelper(private val context: Context) {
 
@@ -21,18 +20,9 @@ class FcmSubscriptionHelper(private val context: Context) {
     private fun firebaseReady(): Boolean =
         runCatching { FirebaseApp.getApps(context.applicationContext).isNotEmpty() }.getOrDefault(false)
 
-    fun syncRoleTopicSubscription(showSuccessToast: Boolean = true) {
+    fun syncRoleTopicSubscription(roleRaw: String?, showSuccessToast: Boolean = true) {
         if (!firebaseReady()) {
             Log.w(TAG, "FCM abonelik atlandı: FirebaseApp hazır değil")
-            return
-        }
-
-        val auth = runCatching { FirebaseAuth.getInstance() }.getOrNull() ?: return
-        val firestore = runCatching { FirebaseFirestore.getInstance() }.getOrNull() ?: return
-
-        val currentUser = auth.currentUser
-        if (currentUser == null) {
-            Log.w(TAG, "FCM abonelik atlandı: Firebase Auth oturumu yok")
             return
         }
 
@@ -42,40 +32,20 @@ class FcmSubscriptionHelper(private val context: Context) {
             return
         }
 
-        val uid = currentUser.uid
-        val userPath = "tenants/$tenantId/users/$uid"
-        Log.d(TAG, "Rol okunuyor: $userPath")
+        if (roleRaw.isNullOrBlank()) {
+            Log.e(TAG, "FCM abonelik atlandı: rol boş")
+            return
+        }
 
-        firestore.document(userPath)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                if (!snapshot.exists()) {
-                    Log.e(TAG, "Kullanıcı belgesi bulunamadı: $userPath")
-                    return@addOnSuccessListener
-                }
+        val userRole = UserRole.fromFirestore(roleRaw)
+        if (userRole == null) {
+            Log.e(TAG, "Geçersiz veya desteklenmeyen rol: '$roleRaw'")
+            return
+        }
 
-                val roleRaw = snapshot.getString(FIELD_ROL)
-                    ?: snapshot.getString(FIELD_ROLE)
-                    ?: ""
-
-                if (roleRaw.isBlank()) {
-                    Log.e(TAG, "Kullanıcı belgesinde rol alanı boş: $userPath")
-                    return@addOnSuccessListener
-                }
-
-                val userRole = UserRole.fromFirestore(roleRaw)
-                if (userRole == null) {
-                    Log.e(TAG, "Geçersiz veya desteklenmeyen rol: '$roleRaw' (uid=$uid)")
-                    return@addOnSuccessListener
-                }
-
-                val topic = TenantFcmTopics.forRole(userRole, tenantId)
-                Log.i(TAG, "Rol okundu: ${userRole.displayName} → topic=$topic")
-                subscribeToRoleTopic(tenantId, topic, userRole, showSuccessToast)
-            }
-            .addOnFailureListener { error ->
-                Log.e(TAG, "Firestore rol okuma hatası uid=$uid tenant=$tenantId", error)
-            }
+        val topic = TenantFcmTopics.forRole(userRole, tenantId)
+        Log.i(TAG, "Rol: ${userRole.displayName} → topic=$topic")
+        subscribeToRoleTopic(tenantId, topic, userRole, showSuccessToast)
     }
 
     private fun messagingOrNull(): FirebaseMessaging? =
@@ -95,7 +65,10 @@ class FcmSubscriptionHelper(private val context: Context) {
                     Log.i(TAG, "FCM topic aboneliği başarılı: topic=$topic rol=${userRole.displayName}")
                     if (showSuccessToast) {
                         val message = "Bildirim kanalına başarıyla bağlanıldı: ${userRole.displayName}"
-                        Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT).show()
+                        // Toast yalnızca ana thread'de güvenli
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
                 .addOnFailureListener { error ->
@@ -164,7 +137,5 @@ class FcmSubscriptionHelper(private val context: Context) {
         private const val PREFS_NAME = "fcm_subscription"
         private const val KEY_LAST_TOPIC = "last_role_topic"
         private const val KEY_LAST_TENANT = "last_tenant_id"
-        private const val FIELD_ROL = "rol"
-        private const val FIELD_ROLE = "role"
     }
 }

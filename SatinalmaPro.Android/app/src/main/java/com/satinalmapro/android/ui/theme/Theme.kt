@@ -10,12 +10,13 @@ import androidx.compose.ui.graphics.Color
 private val MetrikColorScheme = lightColorScheme(
     primary = MetrikLight.Primary,
     onPrimary = MetrikLight.TextOnPrimary,
-    primaryContainer = MetrikLight.SurfaceMuted,
-    onPrimaryContainer = MetrikLight.TextPrimary,
+    primaryContainer = MetrikLight.AccentMuted,
+    onPrimaryContainer = MetrikLight.PrimaryDark,
     secondary = MetrikLight.Accent,
     onSecondary = MetrikLight.TextOnAccent,
     secondaryContainer = MetrikLight.AccentMuted,
     onSecondaryContainer = MetrikLight.PrimaryDark,
+    tertiary = MetrikLight.Info,
     background = MetrikLight.Background,
     onBackground = MetrikLight.TextPrimary,
     surface = MetrikLight.Surface,
@@ -32,7 +33,6 @@ fun MetrikTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    // Plan: açık endüstriyel panel — sistem koyu olsa da açık palet.
     CompositionLocalProvider(LocalMetrikColors provides MetrikLight) {
         MaterialTheme(
             colorScheme = MetrikColorScheme,
@@ -43,7 +43,6 @@ fun MetrikTheme(
     }
 }
 
-/** Eski giriş noktası. */
 @Composable
 fun SatinalmaProTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

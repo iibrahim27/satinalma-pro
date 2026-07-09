@@ -1,6 +1,9 @@
 package com.satinalmapro.shared.filter
 
 import com.satinalmapro.android.core.model.TalepItem
+import com.satinalmapro.android.core.model.TalepKalem
+import com.satinalmapro.android.core.model.TeklifFiyat
+import com.satinalmapro.android.core.model.TeklifItem
 
 /** Legacy [TalepItem] → enterprise sekme filtresi köprüsü. */
 fun TalepItem.toProcurementSnapshot(): ProcurementRequestSnapshot =
@@ -11,6 +14,18 @@ fun TalepItem.toProcurementSnapshot(): ProcurementRequestSnapshot =
         priority = resolvedEnterprisePriority(),
         requestType = talepTuru
     )
+
+@Suppress("UNCHECKED_CAST", "USELESS_ELVIS")
+private fun TalepItem.safeKalemler(): List<TalepKalem> =
+    (kalemler as List<TalepKalem>?) ?: emptyList()
+
+@Suppress("UNCHECKED_CAST", "USELESS_ELVIS")
+private fun TalepItem.safeTeklifler(): List<TeklifItem> =
+    (teklifler as List<TeklifItem>?) ?: emptyList()
+
+@Suppress("UNCHECKED_CAST", "USELESS_ELVIS")
+private fun TeklifItem.safeFiyatlar(): List<TeklifFiyat> =
+    (fiyatlar as List<TeklifFiyat>?) ?: emptyList()
 
 /**
  * Sekme filtreleri için Durum kaynağıdır.
@@ -26,7 +41,7 @@ fun TalepItem.resolvedEnterpriseStatus(): String {
         "Taslak" -> ProcurementStatus.DRAFT
         "Reddedildi" -> ProcurementStatus.REJECTED
         "Sipariş Oluşturuldu", "Siparis Olusturuldu" -> {
-            val kalemler = kalemler.filter { it.malzeme.isNotBlank() }
+            val kalemler = safeKalemler().filter { it.malzeme.isNotBlank() }
             val tamam = kalemler.isNotEmpty() && kalemler.all {
                 it.siparisTamamlandi || it.kabulEdilenMiktar >= it.miktar - 0.0001
             }
@@ -35,13 +50,17 @@ fun TalepItem.resolvedEnterpriseStatus(): String {
         "Onaylandı", "Onaylandi" -> ProcurementStatus.APPROVED
         "Karşılaştırma", "Karsilastirma" -> ProcurementStatus.COMPARISON
         "Teklif Girişi", "Teklif Girisi" -> {
-            val gercekTeklif = teklifler.any { it.firmaAdi.isNotBlank() || it.fiyatlar.any { f -> f.birimFiyat > 0 } }
+            val gercekTeklif = safeTeklifler().any {
+                it.firmaAdi.isNotBlank() || it.safeFiyatlar().any { f -> f.birimFiyat > 0 }
+            }
             if (!gercekTeklif) ProcurementStatus.QUOTE_REQUESTED
             else ProcurementStatus.QUOTE_ENTRY
         }
         "Yönetim Onayında", "Yonetim Onayinda" -> {
-            val gercekTeklif = teklifler.any { it.firmaAdi.isNotBlank() || it.fiyatlar.any { f -> f.birimFiyat > 0 } }
-            val kalemOnayli = kalemler.any { !it.onaylananTeklifId.isNullOrBlank() }
+            val gercekTeklif = safeTeklifler().any {
+                it.firmaAdi.isNotBlank() || it.safeFiyatlar().any { f -> f.birimFiyat > 0 }
+            }
+            val kalemOnayli = safeKalemler().any { !it.onaylananTeklifId.isNullOrBlank() }
             when {
                 gercekTeklif && !kalemOnayli -> ProcurementStatus.MANAGEMENT_QUOTE_REVIEW
                 // Kalem/teklif onayı var ama Durum güncellenmemiş

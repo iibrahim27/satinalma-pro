@@ -30,7 +30,8 @@ class OfflineCache(context: Context) {
         if (tid.isBlank()) return emptyList()
         val json = prefs.getString(taleplerKey(tid), null) ?: return emptyList()
         return runCatching {
-            gson.fromJson<List<TalepItem>>(json, talepType) ?: emptyList()
+            (gson.fromJson<List<TalepItem?>>(json, talepType) ?: emptyList())
+                .mapNotNull { item -> runCatching { item?.normalized() }.getOrNull() }
         }.getOrDefault(emptyList())
     }
 

@@ -14,7 +14,22 @@ data class BildirimRecord(
     val okundu: Boolean = false,
     val guncellemeUtc: Long = 0,
     val inboxDocId: String? = null
-)
+) {
+    @Suppress("UNCHECKED_CAST", "USELESS_ELVIS")
+    fun normalized(): BildirimRecord = copy(
+        id = (id as String?) ?: "",
+        baslik = (baslik as String?) ?: "",
+        mesaj = (mesaj as String?) ?: "",
+        tip = (tip as String?) ?: "",
+        talepId = talepId?.takeIf { it.isNotBlank() },
+        hedefRol = hedefRol?.takeIf { it.isNotBlank() },
+        hedefUid = hedefUid?.takeIf { it.isNotBlank() },
+        olusturanUid = (olusturanUid as String?) ?: "",
+        olusturanAd = (olusturanAd as String?) ?: "",
+        olusturmaTarihi = (olusturmaTarihi as String?) ?: "",
+        inboxDocId = inboxDocId?.takeIf { it.isNotBlank() }
+    )
+}
 
 object BildirimTipleri {
     const val YONETIME_GONDERILDI = "yonetime_gonderildi"

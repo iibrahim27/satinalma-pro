@@ -212,8 +212,9 @@ class AppContainer(private val context: Context) {
                     }
                     if (_user.value == null) throw ex
                 }
-            // FCM token/topic splash'ı bloklamasın — arka planda dene.
+            // FCM token/topic splash'ı bloklamasın — gecikmeli arka plan.
             CoroutineScope(Dispatchers.IO).launch {
+                kotlinx.coroutines.delay(12_000)
                 runCatching { registerFcmIfNeeded() }
                 runCatching { syncFcmRoleSubscription(showSuccessToast = false) }
             }
@@ -351,12 +352,15 @@ class AppContainer(private val context: Context) {
             }
 
             val email = result.eposta ?: ""
-            // FCM/SDK senkronu giriş ekranını asla bloklamasın.
+            // FCM/SDK: giriş UI otursun; Firestore SDK topic okuması kaldırıldı (native crash).
+            // Auth bridge + token kaydı gecikmeli — 1–2 sn'lik atmayı tetiklemesin.
             CoroutineScope(Dispatchers.IO).launch {
+                kotlinx.coroutines.delay(12_000)
                 runCatching { FirebaseAuthBridge.signIn(email, password) }
                     .onFailure { ex ->
                         BildirimLog.w("FCM_TOPIC", "Firebase Auth SDK senkronu atlandı: ${ex.message}")
                     }
+                kotlinx.coroutines.delay(2_000)
                 runCatching { registerFcmIfNeeded() }
                 runCatching { syncFcmRoleSubscription(showSuccessToast = false) }
             }
@@ -411,13 +415,20 @@ class AppContainer(private val context: Context) {
         if (!syncMutex.tryLock()) return
         try {
             val uid = auth.uid ?: return
-            loadMaterialNames()
-            loadTalepler()
-            loadSatinalmaAyarlar()
-            loadStok()
-            loadModulKayitlari()
-            loadNotifications(uid, cleanup = true)
+            runCatching { loadMaterialNames() }
+                .onFailure { BildirimLog.e("SYNC", "loadMaterialNames", it) }
+            runCatching { loadTalepler() }
+                .onFailure { BildirimLog.e("SYNC", "loadTalepler", it) }
+            runCatching { loadSatinalmaAyarlar() }
+                .onFailure { BildirimLog.e("SYNC", "loadSatinalmaAyarlar", it) }
+            runCatching { loadStok() }
+                .onFailure { BildirimLog.e("SYNC", "loadStok", it) }
+            runCatching { loadModulKayitlari() }
+                .onFailure { BildirimLog.e("SYNC", "loadModulKayitlari", it) }
+            runCatching { loadNotifications(uid, cleanup = true) }
+                .onFailure { BildirimLog.e("SYNC", "loadNotifications", it) }
             runCatching { loadUygulamaAyarlar() }
+                .onFailure { BildirimLog.e("SYNC", "loadUygulamaAyarlar", it) }
         } finally {
             syncMutex.unlock()
         }
@@ -1527,12 +1538,14 @@ class AppContainer(private val context: Context) {
             BildirimLog.w("FCM_TOPIC", "tenantId yok — topic aboneliği atlandı")
             return
         }
-        if (!FirebaseAuthBridge.hasMatchingSession(auth.uid)) {
-            BildirimLog.w("FCM_TOPIC", "Firebase Auth SDK oturumu yok — topic aboneliği atlandı")
+        val role = _user.value?.role
+        if (role.isNullOrBlank()) {
+            BildirimLog.w("FCM_TOPIC", "profil rolü yok — topic aboneliği atlandı")
             return
         }
+        // Auth SDK oturumu topic için şart değil; Messaging token yeterli.
         runCatching {
-            FcmSubscriptionHelper(context).syncRoleTopicSubscription(showSuccessToast)
+            FcmSubscriptionHelper(context).syncRoleTopicSubscription(role, showSuccessToast)
         }.onFailure { ex ->
             BildirimLog.e("FCM_TOPIC", "Topic aboneliği başarısız", ex)
         }

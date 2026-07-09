@@ -12,9 +12,10 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.satinalmapro.android.MainActivity
 import com.satinalmapro.android.R
 import com.satinalmapro.android.SatinalmaProApp
-import com.satinalmapro.android.TalepDetayActivity
+import com.satinalmapro.android.core.roles.BildirimRota
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,14 +34,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         Log.i(TAG, "FCM mesajı alındı from=${remoteMessage.from} dataKeys=${remoteMessage.data.keys}")
 
         val data = remoteMessage.data
-        val requestId = extractRequestId(data)
-        val status = extractStatus(data)
-
         val title = remoteMessage.notification?.title
             ?: data["title"]
             ?: data["baslik"]
             ?: "Satınalma Pro"
-
         val body = remoteMessage.notification?.body
             ?: data["body"]
             ?: data["message"]
@@ -53,12 +50,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
 
         ensureNotificationChannel()
-        showTalepNotification(
-            title = title,
-            body = body,
-            requestId = requestId,
-            status = status
-        )
+        val route = resolveRoute(data)
+        val bildirimId = data["bildirimId"]
+            ?: data["bildirim_id"]
+            ?: data["notificationId"]
+            ?: ""
+        showActionNotification(title, body, route, bildirimId)
 
         scope.launch {
             runCatching { SatinalmaProApp.get(applicationContext).container.refreshNotifications() }
@@ -68,7 +65,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         Log.i(TAG, "Yeni FCM token alındı (${token.take(12)}…)")
-
         val container = runCatching { SatinalmaProApp.get(this).container }.getOrNull()
         val uid = container?.auth?.uid
         if (uid.isNullOrBlank()) {
@@ -79,7 +75,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             Log.w(TAG, "Oturum yok — FCM token beklemeye alındı")
             return
         }
-
         scope.launch {
             runCatching { container.firestore.updateFcmToken(uid, token) }
                 .onSuccess { Log.i(TAG, "FCM token Firestore'a yazıldı uid=$uid") }
@@ -87,37 +82,44 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
-    private fun extractRequestId(data: Map<String, String>): String {
-        return data["request_id"]
+    private fun resolveRoute(data: Map<String, String>): String {
+        val explicit = data["route"]?.takeIf { it.isNotBlank() }
+            ?: data["bildirim_route"]?.takeIf { it.isNotBlank() }
+        if (!explicit.isNullOrBlank()) return explicit
+
+        val tip = data["tip"] ?: data["type"] ?: data["event"] ?: ""
+        val talepId = data["talepId"]
+            ?: data["request_id"]
             ?: data["requestId"]
-            ?: data["talepId"]
             ?: data["entityId"]
-            ?: ""
+        val role = runCatching {
+            SatinalmaProApp.get(applicationContext).container.user.value?.role
+        }.getOrNull()
+        return BildirimRota.hedefRoute(BildirimRota.normalizeTip(tip), talepId, role)
     }
 
-    private fun extractStatus(data: Map<String, String>): String {
-        return data["status"]
-            ?: data["durum"]
-            ?: data["requestStatus"]
-            ?: ""
-    }
-
-    private fun showTalepNotification(
+    private fun showActionNotification(
         title: String,
         body: String,
-        requestId: String,
-        status: String
+        route: String,
+        bildirimId: String
     ) {
-        val intent = Intent(this, TalepDetayActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            putExtra(TalepDetayActivity.EXTRA_REQUEST_ID, requestId)
-            putExtra(TalepDetayActivity.EXTRA_STATUS, status)
+        // Doğrudan ilgili işleme git — ana ekranı açma.
+        val intent = Intent(this, MainActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
+            addFlags(
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+            )
+            putExtra("bildirim_route", route)
+            if (bildirimId.isNotBlank()) putExtra("bildirim_id", bildirimId)
         }
 
-        val notificationId = if (requestId.isNotBlank()) {
-            notificationIdFromRequest(requestId, status)
+        val notificationId = if (bildirimId.isNotBlank()) {
+            bildirimId.hashCode()
         } else {
-            (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
+            route.hashCode()
         }
 
         val pendingIntent = PendingIntent.getActivity(
@@ -140,23 +142,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             .build()
 
         NotificationManagerCompat.from(this).notify(notificationId, notification)
-        Log.i(TAG, "Tray bildirimi gösterildi requestId=$requestId status=$status")
-    }
-
-    private fun notificationIdFromRequest(requestId: String, status: String): Int {
-        return (requestId + status).hashCode()
+        Log.i(TAG, "Tray bildirimi gösterildi route=$route")
     }
 
     private fun ensureNotificationChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return
-        }
-
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = getSystemService(NotificationManager::class.java) ?: return
-        if (manager.getNotificationChannel(CHANNEL_ID) != null) {
-            return
-        }
-
+        if (manager.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(
             CHANNEL_ID,
             CHANNEL_NAME,
@@ -167,13 +159,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             enableLights(true)
         }
         manager.createNotificationChannel(channel)
-        Log.i(TAG, "NotificationChannel oluşturuldu: $CHANNEL_ID")
     }
 
     private fun canShowNotifications(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            return true
-        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
         return ContextCompat.checkSelfPermission(
             this,
             android.Manifest.permission.POST_NOTIFICATIONS

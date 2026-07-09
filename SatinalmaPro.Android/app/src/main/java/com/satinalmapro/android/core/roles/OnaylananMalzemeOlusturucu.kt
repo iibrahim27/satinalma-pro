@@ -28,7 +28,8 @@ object OnaylananMalzemeOlusturucu {
         val liste = mutableListOf<OnaylananMalzemeSatiri>()
         for (talep in talepler.filter(::malKabulTalep)) {
             val teklifsiz = talep.teklifsizYonetimOnayi && !talep.herhangiKalemOnayli
-            val kalemler = talep.kalemler
+            @Suppress("UNCHECKED_CAST", "USELESS_ELVIS")
+            val kalemler = ((talep.kalemler as List<TalepKalem>?) ?: emptyList())
                 .filter { it.malzeme.isNotBlank() }
                 .filter { teklifsiz || !it.onaylananTeklifId.isNullOrBlank() }
                 .sortedBy { it.siraNo }
@@ -42,9 +43,15 @@ object OnaylananMalzemeOlusturucu {
     private fun satirOlustur(talep: TalepItem, kalem: TalepKalem, teklifsiz: Boolean): OnaylananMalzemeSatiri {
         val teklifId = kalem.onaylananTeklifId
         if (!teklifsiz && !teklifId.isNullOrBlank()) {
-            val teklif = talep.teklifler.firstOrNull { it.id == teklifId }
-            val fiyat = teklif?.fiyatlar?.firstOrNull { it.kalemId == kalem.id }
-            val siparisNo = talep.firmaSiparisNolari[teklifId]
+            @Suppress("UNCHECKED_CAST", "USELESS_ELVIS")
+            val teklifler = (talep.teklifler as List<com.satinalmapro.android.core.model.TeklifItem>?) ?: emptyList()
+            val teklif = teklifler.firstOrNull { it.id == teklifId }
+            @Suppress("UNCHECKED_CAST", "USELESS_ELVIS")
+            val fiyatlar = (teklif?.fiyatlar as List<com.satinalmapro.android.core.model.TeklifFiyat>?) ?: emptyList()
+            val fiyat = fiyatlar.firstOrNull { it.kalemId == kalem.id }
+            @Suppress("UNCHECKED_CAST", "USELESS_ELVIS")
+            val siparisMap = (talep.firmaSiparisNolari as Map<String, String>?) ?: emptyMap()
+            val siparisNo = siparisMap[teklifId]
                 ?: talep.siparisNo.ifBlank { talep.talepNo }
             return OnaylananMalzemeSatiri(
                 talepId = talep.id,

@@ -33,7 +33,10 @@ class BildirimRepository(
 
     suspend fun loadAll(): List<BildirimRecord> {
         val json = firestore.readDocumentJson("veri/bildirimler") ?: return emptyList()
-        return runCatching { gson.fromJson<List<BildirimRecord>>(json, listType) ?: emptyList() }.getOrDefault(emptyList())
+        return runCatching {
+            (gson.fromJson<List<BildirimRecord?>>(json, listType) ?: emptyList())
+                .mapNotNull { it?.normalized() }
+        }.getOrDefault(emptyList())
     }
 
     suspend fun ekle(records: List<BildirimRecord>) {

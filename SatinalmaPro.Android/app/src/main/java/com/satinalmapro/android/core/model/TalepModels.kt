@@ -1,5 +1,13 @@
 package com.satinalmapro.android.core.model
 
+/** Gson reflection Kotlin non-null alanlara null yazabiliyor; runtime NPE önlemi. */
+@Suppress("UNCHECKED_CAST", "USELESS_ELVIS", "UNNECESSARY_SAFE_CALL")
+internal object GsonNulls {
+    fun s(value: String?): String = value ?: ""
+    fun <T> list(value: List<T>?): List<T> = value ?: emptyList()
+    fun <K, V> map(value: Map<K, V>?): Map<K, V> = value ?: emptyMap()
+}
+
 data class TalepKalem(
     val id: String = "",
     val siraNo: Int = 1,
@@ -12,6 +20,14 @@ data class TalepKalem(
     val siparisTamamlandi: Boolean = false
 ) {
     val kalanMiktar: Double get() = (miktar - kabulEdilenMiktar).coerceAtLeast(0.0)
+
+    fun normalized(): TalepKalem = copy(
+        id = GsonNulls.s(id as String?),
+        malzeme = GsonNulls.s(malzeme as String?),
+        birim = GsonNulls.s(birim as String?).ifBlank { "Adet" },
+        aciklama = GsonNulls.s(aciklama as String?),
+        onaylananTeklifId = onaylananTeklifId?.takeIf { it.isNotBlank() }
+    )
 }
 
 data class TeklifFiyat(
@@ -23,7 +39,13 @@ data class TeklifFiyat(
     val toplamTutar: Double = 0.0,
     val kdvTutari: Double = 0.0,
     val toplamKdvDahil: Double = 0.0
-)
+) {
+    fun normalized(): TeklifFiyat = copy(
+        kalemId = GsonNulls.s(kalemId as String?),
+        marka = GsonNulls.s(marka as String?),
+        paraBirimi = GsonNulls.s(paraBirimi as String?).ifBlank { "TRY" }
+    )
+}
 
 data class TeklifItem(
     val id: String = "",
@@ -39,9 +61,22 @@ data class TeklifItem(
     val onaylandi: Boolean = false,
     val fiyatlar: List<TeklifFiyat> = emptyList()
 ) {
-    val araToplam: Double get() = fiyatlar.sumOf { it.toplamTutar }
-    val kdvTutari: Double get() = fiyatlar.sumOf { it.kdvTutari }
-    val genelToplam: Double get() = fiyatlar.sumOf { it.toplamKdvDahil }
+    private val safeFiyatlar: List<TeklifFiyat>
+        get() = GsonNulls.list(fiyatlar as List<TeklifFiyat>?)
+
+    val araToplam: Double get() = safeFiyatlar.sumOf { it.toplamTutar }
+    val kdvTutari: Double get() = safeFiyatlar.sumOf { it.kdvTutari }
+    val genelToplam: Double get() = safeFiyatlar.sumOf { it.toplamKdvDahil }
+
+    fun normalized(): TeklifItem = copy(
+        id = GsonNulls.s(id as String?),
+        firmaAdi = GsonNulls.s(firmaAdi as String?),
+        marka = GsonNulls.s(marka as String?),
+        teslimSuresi = GsonNulls.s(teslimSuresi as String?),
+        odemeSekli = GsonNulls.s(odemeSekli as String?),
+        aciklama = GsonNulls.s(aciklama as String?),
+        fiyatlar = safeFiyatlar.map { it.normalized() }
+    )
 }
 
 data class TalepItem(
@@ -74,25 +109,73 @@ data class TalepItem(
     val kalemler: List<TalepKalem> = emptyList(),
     val teklifler: List<TeklifItem> = emptyList()
 ) {
+    private val safeKalemler: List<TalepKalem>
+        get() = GsonNulls.list(kalemler as List<TalepKalem>?)
+
+    private val safeTeklifler: List<TeklifItem>
+        get() = GsonNulls.list(teklifler as List<TeklifItem>?)
+
     val malzemeOzeti: String
-        get() = kalemler.firstOrNull()?.malzeme?.ifBlank { talepAciklamasi } ?: talepAciklamasi
+        get() {
+            val aciklama = GsonNulls.s(talepAciklamasi as String?)
+            return safeKalemler.firstOrNull()?.let { GsonNulls.s(it.malzeme as String?) }
+                ?.ifBlank { aciklama }
+                ?: aciklama
+        }
 
     val miktarOzeti: String
-        get() = kalemler.firstOrNull()?.let { "${it.miktar} ${it.birim}" } ?: ""
+        get() = safeKalemler.firstOrNull()?.let {
+            "${it.miktar} ${GsonNulls.s(it.birim as String?)}"
+        } ?: ""
 
     val herhangiKalemOnayli: Boolean
-        get() = kalemler.any { !it.onaylananTeklifId.isNullOrBlank() }
+        get() = safeKalemler.any { !it.onaylananTeklifId.isNullOrBlank() }
 
     val teklifGirilmis: Boolean
-        get() = teklifler.any { it.firmaAdi.isNotBlank() || it.fiyatlar.any { f -> f.birimFiyat > 0 } }
+        get() = safeTeklifler.any { teklif ->
+            GsonNulls.s(teklif.firmaAdi as String?).isNotBlank() ||
+                GsonNulls.list(teklif.fiyatlar as List<TeklifFiyat>?).any { f -> f.birimFiyat > 0 }
+        }
 
     fun onerilenTeklif(): TeklifItem? {
-        val gecerli = teklifler.filter { it.firmaAdi.isNotBlank() && it.genelToplam > 0 }
+        val gecerli = safeTeklifler.filter {
+            GsonNulls.s(it.firmaAdi as String?).isNotBlank() && it.genelToplam > 0
+        }
         if (satinalmaOnerisiElleSecildi && !yonetimOnerilenTeklifId.isNullOrBlank()) {
             return gecerli.firstOrNull { it.id.equals(yonetimOnerilenTeklifId, true) }
         }
-        return gecerli.minWithOrNull(compareBy<TeklifItem> { it.genelToplam }.thenBy { it.firmaAdi.lowercase() })
+        return gecerli.minWithOrNull(
+            compareBy<TeklifItem> { it.genelToplam }
+                .thenBy { GsonNulls.s(it.firmaAdi as String?).lowercase() }
+        )
     }
+
+    fun normalized(): TalepItem = copy(
+        id = GsonNulls.s(id as String?),
+        talepNo = GsonNulls.s(talepNo as String?),
+        tarih = GsonNulls.s(tarih as String?),
+        talepEden = GsonNulls.s(talepEden as String?),
+        santiyeAdi = GsonNulls.s(santiyeAdi as String?),
+        talepAciklamasi = GsonNulls.s(talepAciklamasi as String?),
+        talepTuru = GsonNulls.s(talepTuru as String?).ifBlank { "Normal" },
+        olusturanUid = GsonNulls.s(olusturanUid as String?),
+        olusturanRol = GsonNulls.s(olusturanRol as String?),
+        redGerekcesi = GsonNulls.s(redGerekcesi as String?),
+        durum = GsonNulls.s(durum as String?).ifBlank { "Taslak" },
+        status = GsonNulls.s(status as String?),
+        priority = GsonNulls.s(priority as String?),
+        yonetimOnaylayanUid = GsonNulls.s(yonetimOnaylayanUid as String?),
+        yonetimOnaylayanAd = GsonNulls.s(yonetimOnaylayanAd as String?),
+        yonetimOnaylayanEposta = GsonNulls.s(yonetimOnaylayanEposta as String?),
+        yonetimOnayTarihi = GsonNulls.s(yonetimOnayTarihi as String?),
+        onaylananTeklifId = onaylananTeklifId?.takeIf { it.isNotBlank() },
+        teklifDuzeltmeNotu = GsonNulls.s(teklifDuzeltmeNotu as String?),
+        yonetimOnerilenTeklifId = yonetimOnerilenTeklifId?.takeIf { it.isNotBlank() },
+        siparisNo = GsonNulls.s(siparisNo as String?),
+        firmaSiparisNolari = GsonNulls.map(firmaSiparisNolari as Map<String, String>?),
+        kalemler = safeKalemler.map { it.normalized() },
+        teklifler = safeTeklifler.map { it.normalized() }
+    )
 }
 
 data class OnaylananMalzemeSatiri(

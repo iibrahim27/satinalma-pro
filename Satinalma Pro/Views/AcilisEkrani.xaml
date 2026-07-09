@@ -2,7 +2,6 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:SatinalmaPro.Controls"
-        xmlns:views="clr-namespace:SatinalmaPro.Views"
         Title="Satınalma Pro"
         Width="480"
         Height="720"
@@ -108,13 +107,6 @@
                      Foreground="{StaticResource InkMutedBrush}"
                      HorizontalAlignment="Center" />
         </StackPanel>
-      </ScrollViewer>
-
-      <ScrollViewer x:Name="PanelGiris"
-                    Visibility="Collapsed"
-                    VerticalScrollBarVisibility="Auto"
-                    HorizontalScrollBarVisibility="Disabled">
-        <views:GirisView x:Name="GirisKontrol" Margin="0,8,0,0" />
       </ScrollViewer>
     </Grid>
   </Border>

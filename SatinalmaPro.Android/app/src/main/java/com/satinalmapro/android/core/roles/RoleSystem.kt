@@ -1,6 +1,8 @@
 package com.satinalmapro.android.core.roles
 
 import com.satinalmapro.android.core.model.MenuItem
+import com.satinalmapro.android.core.roles.OnaylananMalzemeOlusturucu
+import com.satinalmapro.android.core.roles.TalepKuyrugu
 
 object KullaniciRolleri {
     const val ADMIN = "Admin"
@@ -40,13 +42,18 @@ object KullaniciRolleri {
     fun canManagementDecide(role: String?) = normalize(role) in setOf(ADMIN, YONETIM)
     fun canMalKabul(role: String?) = normalize(role) in setOf(ADMIN, SATINALMA)
     fun isAtolyeOnly(role: String?) = normalize(role) == ATOLYE
-    // Stok/modül UI kaldırıldı; repository derlemesi için stub yetkiler.
+    fun isDepoOnly(role: String?) = normalize(role) == DEPO
+    /** Stok durumu / hareketleri görüntüleme. */
+    fun canStockView(role: String?) = normalize(role) in setOf(
+        ADMIN, YONETIM, SATINALMA, SEF, SAHA, ATOLYE, DEPO
+    )
+    /** Stok giriş / çıkış / sayım yazma. */
     fun canStockWrite(role: String?) = normalize(role) in setOf(ADMIN, SATINALMA, DEPO)
     fun canModulKayitView(role: String?) = normalize(role) in setOf(ADMIN, YONETIM, SEF, SAHA, SATINALMA)
     fun canModulKayitWrite(role: String?) = normalize(role) in setOf(ADMIN, SATINALMA)
 }
 
-/** Satınalma-only menü: stok/agrega/rapor yok. */
+/** Rol menüleri — Atölye/Depo satınalma dışı (stok); Şef/Saha talep + stok. */
 object RolNavigasyon {
     private val dashboard = MenuItem("Özet", "dashboard", "Genel")
     private val profil = MenuItem("Profil", "profil")
@@ -76,6 +83,10 @@ object RolNavigasyon {
     private val satinalmaSiparis = MenuItem("Sipariş Verilen", "satinalma-siparis", "Malzeme")
     private val satinalmaMalKabul = MenuItem("Mal Kabul", "satinalma-mal-kabul", "Malzeme")
     private val ayarlar = MenuItem("Ayarlar", "ayarlar", "Yönetim")
+    private val stokDurum = MenuItem("Stok Durumu", "stok-durum", "Stok")
+    private val stokHareket = MenuItem("Stok Hareketleri", "stok-hareket", "Stok")
+    private val stokGiris = MenuItem("Stok Girişi", "stok-giris", "Stok")
+    private val stokCikis = MenuItem("Stok Çıkışı", "stok-cikis", "Stok")
 
     fun menus(role: String?): List<MenuItem> {
         val normalized = KullaniciRolleri.normalize(role)
@@ -85,26 +96,32 @@ object RolNavigasyon {
                 yonetimTeklifGirilen, yonetimDirekOnaylanan, satinalmaTeklifIstenen, teklifGir, teklifKarsilastirma,
                 teklifsizFirmaFiyat, satinalmaTeklifGirilen, satinalmaTeklifDuzeltme, teklifOnay, onaylananTeklifler, onayGecmisi,
                 satinalmaOnaylanan, onaylananMalzemeler, satinalmaSiparis, satinalmaMalKabul,
+                stokDurum, stokHareket, stokGiris, stokCikis,
                 redTalepler, gecmisTalepler, gecmisTeklifli, bildirimler
             )
             KullaniciRolleri.YONETIM -> listOf(
                 gelenTalepler, teklifBekleyen, yonetimTeklifGirilen, yonetimDirekOnaylanan,
-                onayGecmisi, onaylananTeklifler, gecmisTalepler, redTalepler, bildirimler
+                onayGecmisi, onaylananTeklifler, gecmisTalepler, redTalepler, stokDurum, bildirimler
             )
             KullaniciRolleri.SATINALMA -> listOf(
                 yeniTalep, taleplerim, gelenTalepler,
                 satinalmaTeklifIstenen, satinalmaTeklifGirilen, satinalmaTeklifDuzeltme, teklifKarsilastirma, teklifsizFirmaFiyat,
                 satinalmaOnaylanan, satinalmaSiparis, satinalmaMalKabul, onaylananMalzemeler,
+                stokDurum, stokHareket, stokGiris, stokCikis,
                 bildirimler, ayarlar
             )
             KullaniciRolleri.SEF -> listOf(
-                yeniTalep, taleplerim, onayBekleyen, onaylananTalepler, bildirimler
+                yeniTalep, taleplerim, onayBekleyen, onaylananTalepler,
+                stokDurum, stokHareket, bildirimler
             )
             KullaniciRolleri.SAHA -> listOf(
-                yeniTalep, taleplerim, onayBekleyen, onaylananTalepler, bildirimler
+                yeniTalep, taleplerim, onayBekleyen, onaylananTalepler,
+                stokDurum, stokHareket, bildirimler
             )
-            KullaniciRolleri.ATOLYE -> listOf(bildirimler)
-            KullaniciRolleri.DEPO -> listOf(bildirimler)
+            // Atölye: satınalma yok — yalnızca stok durumu
+            KullaniciRolleri.ATOLYE -> listOf(stokDurum, bildirimler)
+            // Depo: satınalma yok — stok giriş/çıkış/hareket/durum
+            KullaniciRolleri.DEPO -> listOf(stokDurum, stokGiris, stokCikis, stokHareket, bildirimler)
             else -> listOf(yeniTalep, taleplerim, bildirimler)
         }
         return listOf(dashboard) + items + profil
@@ -116,7 +133,11 @@ object RolNavigasyon {
     fun accessibleRoutes(role: String?): Set<String> =
         menus(role).map { it.route }.toSet()
 
-    fun defaultRoute(role: String?): String = "dashboard"
+    fun defaultRoute(role: String?): String =
+        when (KullaniciRolleri.normalize(role)) {
+            KullaniciRolleri.ATOLYE, KullaniciRolleri.DEPO -> "stok-durum"
+            else -> "dashboard"
+        }
 
     private val talepDetayKaynakRotalar = setOf(
         "yeni-talep", "taleplerim", "onay-bekleyen", "onaylanan-talepler", "gelen-talepler",
@@ -132,23 +153,28 @@ object RolNavigasyon {
         list: List<com.satinalmapro.android.core.model.TalepItem>,
         uid: String,
         ad: String
-    ): Map<String, Int> =
-        menus(role)
+    ): Map<String, Int> {
+        // olustur() her menuSayac'ta tekrarlanmasın — tek sefer hesapla.
+        val malzemeler = runCatching { OnaylananMalzemeOlusturucu.olustur(list) }.getOrDefault(emptyList())
+        return menus(role)
             .mapNotNull { item ->
-                val count = TalepKuyrugu.menuSayac(item.route, list, uid, ad, role)
+                val count = TalepKuyrugu.menuSayac(item.route, list, uid, ad, role, malzemeler)
                 if (count > 0) item.route to count else null
             }
             .toMap()
+    }
 
     fun canAccess(role: String?, route: String): Boolean {
         val base = route.substringBefore('?')
         val menus = accessibleRoutes(role)
         if (menus.contains(base)) return true
         return when (base) {
+            "isler", "dashboard", "bildirimler", "profil" -> true
             "talep-duzenle" -> menus.contains("yeni-talep") || menus.contains("taleplerim") ||
                 KullaniciRolleri.isAdmin(role) ||
                 KullaniciRolleri.normalize(role) == KullaniciRolleri.SATINALMA
-            "talep-detay" -> menus.any { it in talepDetayKaynakRotalar }
+            // Bildirim derin linkleri Atölye/Depo dahil tüm roller için talep detayına inebilir.
+            "talep-detay" -> true
             "teklif-gir" -> (menus.contains("teklif-gir") || menus.contains("satinalma-teklif-istenen")) &&
                 KullaniciRolleri.canEnterQuotes(role)
             "teklif-karsilastirma", "satinalma-karsilastirma", "satinalma-teklif-duzeltme" ->
@@ -169,6 +195,19 @@ object RolNavigasyon {
                     menus.contains("onaylanan-malzemeler") ||
                     menus.contains("satinalma-siparis") ||
                     menus.contains("satinalma-onaylanan")
+            "stok-durum" -> KullaniciRolleri.canStockView(role) || menus.contains("stok-durum")
+            "stok-hareket" -> menus.contains("stok-hareket") ||
+                KullaniciRolleri.normalize(role) in setOf(
+                    KullaniciRolleri.ADMIN, KullaniciRolleri.SATINALMA, KullaniciRolleri.DEPO,
+                    KullaniciRolleri.SEF, KullaniciRolleri.SAHA
+                )
+            "stok-giris", "stok-cikis" ->
+                KullaniciRolleri.canStockWrite(role) && (
+                    menus.contains(base) ||
+                        KullaniciRolleri.normalize(role) in setOf(
+                            KullaniciRolleri.ADMIN, KullaniciRolleri.SATINALMA, KullaniciRolleri.DEPO
+                        )
+                    )
             else -> false
         }
     }
@@ -178,25 +217,54 @@ object BildirimRota {
     fun hedefRoute(type: String, requestId: String?, role: String?): String {
         val tip = normalizeTip(type)
         val r = KullaniciRolleri.normalize(role)
+        val sahaLike = r in setOf(KullaniciRolleri.SAHA, KullaniciRolleri.SEF)
+        val stokOnly = r in setOf(KullaniciRolleri.ATOLYE, KullaniciRolleri.DEPO)
+        if (stokOnly) {
+            return when {
+                tip == "MalKabulEdildi" && r == KullaniciRolleri.DEPO -> "stok-giris"
+                tip in setOf("MalKabulEdildi", "SiparisOlusturuldu", "Onaylandi") -> "stok-durum"
+                else -> "stok-durum"
+            }
+        }
         if (requestId != null && tip == "Reddedildi") {
             return if (r == KullaniciRolleri.YONETIM) "red-talepler"
             else "talep-detay?id=$requestId"
         }
         return when (tip) {
-            "YonetimeGonderildi" -> "gelen-talepler"
+            "YonetimeGonderildi" -> when {
+                r == KullaniciRolleri.YONETIM || r == KullaniciRolleri.ADMIN || r == KullaniciRolleri.SATINALMA ->
+                    "gelen-talepler"
+                requestId != null -> "talep-detay?id=$requestId"
+                sahaLike -> "onay-bekleyen"
+                else -> "bildirimler"
+            }
             "TeklifIstendi" -> when {
                 r == KullaniciRolleri.YONETIM -> "teklif-bekleyen"
-                requestId != null -> "teklif-gir?id=$requestId"
-                else -> "satinalma-teklif-istenen"
+                r == KullaniciRolleri.SATINALMA || r == KullaniciRolleri.ADMIN ->
+                    if (requestId != null) "teklif-gir?id=$requestId" else "satinalma-teklif-istenen"
+                requestId != null -> "talep-detay?id=$requestId"
+                sahaLike -> "onay-bekleyen"
+                else -> "bildirimler"
             }
-            "TeklifDuzeltmeIstendi" -> if (requestId != null) "satinalma-teklif-duzeltme?id=$requestId"
-            else "satinalma-teklif-duzeltme"
-            "TeklifOnayda" -> if (requestId != null) "teklif-onay-detay?id=$requestId"
-            else if (r == KullaniciRolleri.YONETIM) "yonetim-teklif-girilen"
-            else "satinalma-teklif-girilen"
+            "TeklifDuzeltmeIstendi" -> when {
+                r == KullaniciRolleri.SATINALMA || r == KullaniciRolleri.ADMIN ->
+                    if (requestId != null) "satinalma-teklif-duzeltme?id=$requestId"
+                    else "satinalma-teklif-duzeltme"
+                requestId != null -> "talep-detay?id=$requestId"
+                else -> "bildirimler"
+            }
+            "TeklifOnayda" -> when {
+                requestId != null && (r == KullaniciRolleri.YONETIM || r == KullaniciRolleri.SATINALMA || r == KullaniciRolleri.ADMIN) ->
+                    "teklif-onay-detay?id=$requestId"
+                r == KullaniciRolleri.YONETIM -> "yonetim-teklif-girilen"
+                r == KullaniciRolleri.SATINALMA || r == KullaniciRolleri.ADMIN -> "satinalma-teklif-girilen"
+                requestId != null -> "talep-detay?id=$requestId"
+                else -> "bildirimler"
+            }
             "Onaylandi" -> when {
                 requestId == null && r == KullaniciRolleri.YONETIM -> "onay-gecmisi"
                 requestId == null && r == KullaniciRolleri.SATINALMA -> "satinalma-onaylanan"
+                requestId == null && sahaLike -> "onaylanan-talepler"
                 requestId == null -> "bildirimler"
                 r == KullaniciRolleri.SATINALMA -> "talep-detay?id=$requestId&view=onaylanan"
                 else -> "talep-detay?id=$requestId"
@@ -204,12 +272,17 @@ object BildirimRota {
             "SiparisOlusturuldu" -> when {
                 requestId != null -> "talep-detay?id=$requestId&view=siparis"
                 r in setOf(KullaniciRolleri.SATINALMA, KullaniciRolleri.ADMIN) -> "satinalma-siparis"
-                else -> "onaylanan-malzemeler?section=siparis"
+                r == KullaniciRolleri.YONETIM -> "onay-gecmisi"
+                sahaLike -> "onaylanan-talepler"
+                else -> "bildirimler"
             }
             "MalKabulEdildi" -> when {
+                r == KullaniciRolleri.DEPO -> "stok-durum"
                 requestId != null -> "talep-detay?id=$requestId&view=malkabul"
                 r in setOf(KullaniciRolleri.SATINALMA, KullaniciRolleri.ADMIN) -> "satinalma-mal-kabul"
-                else -> "onaylanan-malzemeler?section=malkabul"
+                r == KullaniciRolleri.YONETIM -> "onay-gecmisi"
+                sahaLike -> "onaylanan-talepler"
+                else -> "bildirimler"
             }
             "Reddedildi" -> if (r == KullaniciRolleri.YONETIM) "red-talepler"
             else if (requestId != null) "talep-detay?id=$requestId" else "bildirimler"
@@ -227,6 +300,8 @@ object BildirimRota {
             return "teklif-onay-detay?id=$requestId"
         if (requestId != null && RolNavigasyon.canAccess(role, "talep-detay"))
             return aliased
+        // Bildirim derin linki erişilemezse dashboard yerine bildirim listesine düş.
+        if (RolNavigasyon.canAccess(role, "bildirimler")) return "bildirimler"
         return RolNavigasyon.defaultRoute(role)
     }
 

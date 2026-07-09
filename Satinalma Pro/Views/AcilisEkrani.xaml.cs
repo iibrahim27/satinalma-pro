@@ -15,13 +15,11 @@ public partial class AcilisEkrani : Window
 
     private double _prgGenislik;
     private double _sonYuzde;
-    private TaskCompletionSource<bool>? _girisTamam;
 
     public AcilisEkrani()
     {
         InitializeComponent();
         TxtVersiyon.Text = $"Versiyon {UygulamaBilgisi.Versiyon}";
-        GirisKontrol.GirisBasarili += GirisKontrol_GirisBasarili;
         Loaded += (_, _) => GuncellePrgGenisligi();
         PrgTrack.SizeChanged += (_, _) => GuncellePrgGenisligi();
     }
@@ -45,36 +43,27 @@ public partial class AcilisEkrani : Window
         if (await OturumYoneticisi.OtomatikGirisDeneAsync())
             return true;
 
-        _girisTamam = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        Dispatcher.Invoke(GirisPaneliniGoster);
-        return await _girisTamam.Task;
-    }
-
-    private void GirisPaneliniGoster()
-    {
-        PanelYukleme.Visibility = Visibility.Collapsed;
-        PanelGiris.Visibility = Visibility.Visible;
-        Title = $"{UygulamaBilgisi.Ad} — Giriş";
-        Height = 740;
-        GirisKontrol.TercihleriYukle();
+        // İlk açılış ve çıkış sonrası aynı split-pane giriş ekranı.
+        var ok = false;
+        await Dispatcher.InvokeAsync(() =>
+        {
+            Hide();
+            ok = GirisPenceresi.OturumAc(null);
+            if (ok)
+            {
+                YuklemePaneliniGoster();
+                Show();
+                Activate();
+            }
+        });
+        return ok;
     }
 
     private void YuklemePaneliniGoster()
     {
-        PanelGiris.Visibility = Visibility.Collapsed;
         PanelYukleme.Visibility = Visibility.Visible;
         Title = UygulamaBilgisi.Ad;
         Height = 720;
-    }
-
-    private void GirisKontrol_GirisBasarili()
-    {
-        if (_girisTamam is null)
-            return;
-
-        YuklemePaneliniGoster();
-        _girisTamam.TrySetResult(true);
-        _girisTamam = null;
     }
 
     private void GuncellePrgGenisligi()
@@ -209,7 +198,6 @@ public partial class AcilisEkrani : Window
 
     private void BtnKapat_Click(object sender, RoutedEventArgs e)
     {
-        _girisTamam?.TrySetResult(false);
         Application.Current.Shutdown();
     }
 

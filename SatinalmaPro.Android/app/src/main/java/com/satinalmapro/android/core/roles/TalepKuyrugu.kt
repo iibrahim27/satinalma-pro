@@ -15,8 +15,20 @@ object TalepDurumlari {
 }
 
 object TalepKuyrugu {
+    @Suppress("UNCHECKED_CAST", "USELESS_ELVIS")
+    private fun tekliflerOf(t: TalepItem): List<com.satinalmapro.android.core.model.TeklifItem> =
+        (t.teklifler as List<com.satinalmapro.android.core.model.TeklifItem>?) ?: emptyList()
+
+    @Suppress("UNCHECKED_CAST", "USELESS_ELVIS")
+    private fun kalemlerOf(t: TalepItem): List<com.satinalmapro.android.core.model.TalepKalem> =
+        (t.kalemler as List<com.satinalmapro.android.core.model.TalepKalem>?) ?: emptyList()
+
+    @Suppress("UNCHECKED_CAST", "USELESS_ELVIS")
+    private fun fiyatlarOf(teklif: com.satinalmapro.android.core.model.TeklifItem): List<com.satinalmapro.android.core.model.TeklifFiyat> =
+        (teklif.fiyatlar as List<com.satinalmapro.android.core.model.TeklifFiyat>?) ?: emptyList()
+
     fun kayitli(t: TalepItem): Boolean =
-        t.durum != TalepDurumlari.TASLAK || t.kalemler.any { it.malzeme.isNotBlank() } || t.talepAciklamasi.isNotBlank()
+        t.durum != TalepDurumlari.TASLAK || kalemlerOf(t).any { it.malzeme.isNotBlank() } || t.talepAciklamasi.isNotBlank()
 
     fun onayBekleyen(t: TalepItem): Boolean =
         t.durum in setOf(TalepDurumlari.HAZIRLANIYOR, TalepDurumlari.IMZA, TalepDurumlari.YONETIM_ONAY)
@@ -46,8 +58,8 @@ object TalepKuyrugu {
         t.teklifsizYonetimOnayi && !t.herhangiKalemOnayli
 
     private fun gercekTeklifVar(t: TalepItem): Boolean =
-        t.teklifler.any { teklif ->
-            teklif.firmaAdi.isNotBlank() || teklif.fiyatlar.any { it.birimFiyat > 0 }
+        tekliflerOf(t).any { teklif ->
+            teklif.firmaAdi.isNotBlank() || fiyatlarOf(teklif).any { it.birimFiyat > 0 }
         }
 
     private fun teklifsizYonetim(t: TalepItem): Boolean = !gercekTeklifVar(t)
@@ -60,9 +72,9 @@ object TalepKuyrugu {
 
     fun teklifGirisi(t: TalepItem): Boolean =
         yonetimTeklifBekleyen(t) ||
-            (t.durum == TalepDurumlari.TEKLIF_GIRISI && t.teklifler.isNotEmpty() && !t.yonetimOnayKilitli) ||
+            (t.durum == TalepDurumlari.TEKLIF_GIRISI && tekliflerOf(t).isNotEmpty() && !t.yonetimOnayKilitli) ||
             (t.durum == TalepDurumlari.KARSILASTIRMA && !t.yonetimOnayKilitli) ||
-            (t.durum == TalepDurumlari.IMZA && t.teklifler.isEmpty() && !t.yonetimOnayKilitli && t.talepTuru != "Acil")
+            (t.durum == TalepDurumlari.IMZA && tekliflerOf(t).isEmpty() && !t.yonetimOnayKilitli && t.talepTuru != "Acil")
 
     fun teklifDuzeltmeBekliyor(t: TalepItem): Boolean =
         t.teklifDuzeltmeNotu.isNotBlank() &&
@@ -72,7 +84,7 @@ object TalepKuyrugu {
 
     fun karsilastirma(t: TalepItem): Boolean =
         ((t.durum == TalepDurumlari.KARSILASTIRMA ||
-            (t.durum == TalepDurumlari.TEKLIF_GIRISI && t.teklifler.isNotEmpty())) &&
+            (t.durum == TalepDurumlari.TEKLIF_GIRISI && tekliflerOf(t).isNotEmpty())) &&
             !t.yonetimOnayKilitli &&
             !teklifYonetimOnayiBekliyor(t)) &&
             !teklifDuzeltmeBekliyor(t)
@@ -81,7 +93,7 @@ object TalepKuyrugu {
 
     fun teklifYonetimOnayiBekliyor(t: TalepItem): Boolean =
         t.durum == TalepDurumlari.YONETIM_ONAY &&
-            t.teklifler.isNotEmpty() &&
+            tekliflerOf(t).isNotEmpty() &&
             !t.herhangiKalemOnayli &&
             !t.yonetimOnayKilitli
 
@@ -89,7 +101,7 @@ object TalepKuyrugu {
     fun teklifOnayKanitiVar(t: TalepItem): Boolean =
         t.herhangiKalemOnayli ||
             !t.onaylananTeklifId.isNullOrBlank() ||
-            t.teklifler.any { it.onaylandi }
+            tekliflerOf(t).any { it.onaylandi }
 
     /** Yönetim teklif kararı bekliyor (masaüstü YonetimTeklifler). */
     fun yonetimTeklifKarariBekliyor(t: TalepItem): Boolean =
@@ -98,7 +110,7 @@ object TalepKuyrugu {
     fun teklifDuzenlemeDevamEdiyor(t: TalepItem): Boolean =
         !t.yonetimOnayKilitli &&
             !t.herhangiKalemOnayli &&
-            t.teklifler.isNotEmpty() &&
+            tekliflerOf(t).isNotEmpty() &&
             t.durum in setOf(
                 TalepDurumlari.KARSILASTIRMA,
                 TalepDurumlari.TEKLIF_GIRISI,
@@ -175,9 +187,16 @@ object TalepKuyrugu {
 
     fun taleplerim(t: TalepItem): Boolean = kayitli(t)
 
-    fun filtre(queue: com.satinalmapro.android.core.model.TalepQueue, list: List<TalepItem>, uid: String, ad: String, rol: String?): List<TalepItem> {
+    fun filtre(
+        queue: com.satinalmapro.android.core.model.TalepQueue,
+        list: List<TalepItem>,
+        uid: String,
+        ad: String,
+        rol: String?,
+        malzemelerOnbellek: List<com.satinalmapro.android.core.model.OnaylananMalzemeSatiri>? = null
+    ): List<TalepItem> {
         val normalized = KullaniciRolleri.normalize(rol)
-        val malzemeler = OnaylananMalzemeOlusturucu.olustur(list)
+        val malzemeler = malzemelerOnbellek ?: OnaylananMalzemeOlusturucu.olustur(list)
         return when (queue) {
             com.satinalmapro.android.core.model.TalepQueue.TALEPLERIM ->
                 list.filter { kayitli(it) }.sortedByDescending { it.guncellemeUtc }
@@ -226,15 +245,25 @@ object TalepKuyrugu {
         }
     }
 
-    fun menuSayac(route: String, list: List<TalepItem>, uid: String, ad: String, rol: String?): Int {
-        val malzemeler = OnaylananMalzemeOlusturucu.olustur(list)
-        return when (route) {
-            "onaylanan-malzemeler" -> malzemeler.count {
-                OnaylananMalzemeOlusturucu.siparisVerBekleyen(it) || OnaylananMalzemeOlusturucu.malKabulBekleyen(it)
+    fun menuSayac(
+        route: String,
+        list: List<TalepItem>,
+        uid: String,
+        ad: String,
+        rol: String?,
+        malzemelerOnbellek: List<com.satinalmapro.android.core.model.OnaylananMalzemeSatiri>? = null
+    ): Int {
+        return runCatching {
+            val malzemeler = malzemelerOnbellek
+                ?: OnaylananMalzemeOlusturucu.olustur(list)
+            when (route) {
+                "onaylanan-malzemeler" -> malzemeler.count {
+                    OnaylananMalzemeOlusturucu.siparisVerBekleyen(it) || OnaylananMalzemeOlusturucu.malKabulBekleyen(it)
+                }
+                "satinalma-siparis" -> list.count { satinalmaSiparisBekleyen(it, malzemeler) }
+                else -> routeToQueue(route)?.let { filtre(it, list, uid, ad, rol, malzemeler).size } ?: 0
             }
-            "satinalma-siparis" -> list.count { satinalmaSiparisBekleyen(it, malzemeler) }
-            else -> routeToQueue(route)?.let { filtre(it, list, uid, ad, rol).size } ?: 0
-        }
+        }.getOrDefault(0)
     }
 
     private fun routeToQueue(route: String): com.satinalmapro.android.core.model.TalepQueue? = when (route) {
