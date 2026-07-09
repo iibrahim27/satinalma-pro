@@ -145,6 +145,7 @@ class AppContainer(private val context: Context) {
     var pendingNotificationId: String? = null
 
     private val syncMutex = Mutex()
+    private val liveSyncMutex = Mutex()
     private var lastNotifCleanupMs = 0L
     private val notifCleanupIntervalMs = 3 * 60 * 1000L
 
@@ -434,6 +435,23 @@ class AppContainer(private val context: Context) {
         }
     }
 
+    /**
+     * Hızlı canlı senkron — talep + bildirim.
+     * Telefonlarda FCM gecikince / Doze'da sekmelerin güncel kalması için.
+     */
+    suspend fun syncLiveData() {
+        if (!liveSyncMutex.tryLock()) return
+        try {
+            val uid = auth.uid ?: return
+            runCatching { loadTalepler() }
+                .onFailure { BildirimLog.e("SYNC", "live loadTalepler", it) }
+            runCatching { loadNotifications(uid, cleanup = false) }
+                .onFailure { BildirimLog.e("SYNC", "live loadNotifications", it) }
+        } finally {
+            liveSyncMutex.unlock()
+        }
+    }
+
     suspend fun loadUygulamaAyarlar() {
         val ayarlar = settingsRepo.loadSettings()
         val firma = ayarlar.firmaAdi.ifBlank { TenantSession.tenantName().orEmpty() }
@@ -489,14 +507,27 @@ class AppContainer(private val context: Context) {
     }
 
     private suspend fun loadStok() {
-        _stok.value = runCatching { stokRepo.loadStok() }.getOrDefault(emptyList())
-        _stokHareketleri.value = runCatching { stokRepo.loadHareketler() }.getOrDefault(emptyList())
+        val prevStok = _stok.value
+        val prevHareket = _stokHareketleri.value
+        _stok.value = runCatching { stokRepo.loadStok() }
+            .getOrElse {
+                BildirimLog.w("SESSION", "Stok okunamadı, son veri korunuyor: ${it.message}")
+                prevStok
+            }
+        _stokHareketleri.value = runCatching { stokRepo.loadHareketler() }
+            .getOrElse {
+                BildirimLog.w("SESSION", "Stok hareketleri okunamadı, son veri korunuyor: ${it.message}")
+                prevHareket
+            }
     }
 
     private suspend fun loadModulKayitlari() {
-        _agrega.value = runCatching { modulRepo.loadAgrega() }.getOrDefault(emptyList())
-        _cimento.value = runCatching { modulRepo.loadCimento() }.getOrDefault(emptyList())
-        _alinanMalzemeKayitlari.value = runCatching { modulRepo.loadAlinanMalzemeler() }.getOrDefault(emptyList())
+        val prevAgrega = _agrega.value
+        val prevCimento = _cimento.value
+        val prevAlinan = _alinanMalzemeKayitlari.value
+        _agrega.value = runCatching { modulRepo.loadAgrega() }.getOrElse { prevAgrega }
+        _cimento.value = runCatching { modulRepo.loadCimento() }.getOrElse { prevCimento }
+        _alinanMalzemeKayitlari.value = runCatching { modulRepo.loadAlinanMalzemeler() }.getOrElse { prevAlinan }
     }
 
     fun modulBugun(): String = modulRepo.bugun()
@@ -1194,16 +1225,50 @@ class AppContainer(private val context: Context) {
 
     private suspend fun loadTalepler() {
         val tenantId = TenantSession.tenantId().orEmpty()
-        _talepler.value = runCatching {
-            val loaded = talepler.loadTalepler()
-            if (tenantId.isNotBlank()) {
-                // Yalnızca bu kiracıya ait önbelleğe yaz; boş bulut = boş liste (başka firma cache'i yok).
-                offlineCache.saveTalepler(tenantId, loaded)
+        val previous = _talepler.value
+        val cached = if (tenantId.isBlank()) emptyList()
+        else offlineCache.loadTalepler(tenantId)
+
+        val loaded = runCatching { talepler.loadTalepler() }
+            .getOrElse { ex ->
+                BildirimLog.w("SESSION", "Talepler buluttan okunamadı, son veri korunuyor: ${ex.message}")
+                // Geçici hata: boş liste yazma / cache zehirleme — sekmeler kaybolmasın.
+                val keep = when {
+                    previous.isNotEmpty() -> previous
+                    cached.isNotEmpty() -> cached
+                    else -> emptyList()
+                }
+                if (keep !== _talepler.value) _talepler.value = keep
+                return
             }
-            loaded
-        }.getOrElse { ex ->
-            BildirimLog.w("SESSION", "Talepler buluttan okunamadı, kiracı cache deneniyor: ${ex.message}")
-            if (tenantId.isBlank()) emptyList() else offlineCache.loadTalepler(tenantId)
+
+        // Telefonda sık görülen: geçici boş/eksik yanıt → dolu listeyi silme.
+        // Bellekte veya cache'de veri varken bulut boş dönerse şüpheli say, koru.
+        val next = when {
+            loaded.isNotEmpty() -> loaded
+            previous.isNotEmpty() -> {
+                BildirimLog.w(
+                    "SESSION",
+                    "Bulut boş döndü ama bellekte ${previous.size} talep var — korunuyor"
+                )
+                previous
+            }
+            cached.isNotEmpty() -> {
+                BildirimLog.w(
+                    "SESSION",
+                    "Bulut boş döndü ama cache'de ${cached.size} talep var — korunuyor"
+                )
+                cached
+            }
+            else -> loaded
+        }
+
+        _talepler.value = next
+        if (tenantId.isNotBlank() && next.isNotEmpty()) {
+            offlineCache.saveTalepler(tenantId, next)
+        } else if (tenantId.isNotBlank() && loaded.isEmpty() && previous.isEmpty() && cached.isEmpty()) {
+            // Gerçekten boş kiracı — boş cache yazılabilir.
+            offlineCache.saveTalepler(tenantId, emptyList())
         }
     }
 
@@ -1485,7 +1550,8 @@ class AppContainer(private val context: Context) {
         if (inboxArsivlenmisMi(fields)) return null
         fun s(key: String) = fields.optJSONObject(key)?.optString("stringValue").orEmpty()
         val eventCode = s("eventCode")
-        val tip = s("tip").ifBlank { s("type") }.ifBlank { eventCodeToTip(eventCode) }
+        // Cloud Function fan-out `type` alanına APPROVAL/INFO yazar; asıl tip eventCode'dadır.
+        val tip = resolveInboxTip(s("tip"), s("type"), eventCode)
         val talepId = s("talepId").ifBlank { s("entityId") }.ifBlank { null }
         val hedefRol = s("hedefRol").ifBlank { s("targetRole") }.ifBlank { null }
         val hedefUid = s("hedefUid").ifBlank { s("targetUid") }.ifBlank { null }
@@ -1521,8 +1587,21 @@ class AppContainer(private val context: Context) {
         return fields.optJSONObject("isArchived")?.optBoolean("booleanValue") == true
     }
 
+    private fun resolveInboxTip(tip: String, type: String, eventCode: String): String {
+        val fromEvent = eventCodeToTip(eventCode)
+        if (fromEvent in KNOWN_BILDIRIM_TIPLERI) return fromEvent
+        val raw = tip.ifBlank { type }
+        if (raw in KNOWN_BILDIRIM_TIPLERI) return raw
+        // APPROVAL / INFO / TASK gibi kategori alanlarını tip sanma
+        if (raw.uppercase() in setOf("APPROVAL", "INFO", "TASK", "WARNING", "REMINDER", "URGENT", "CRITICAL")) {
+            return fromEvent.ifBlank { raw }
+        }
+        return raw.ifBlank { fromEvent }
+    }
+
     private fun eventCodeToTip(eventCode: String): String = when (eventCode) {
-        "talep.yonetime_gonderildi" -> BildirimTipleri.YONETIME_GONDERILDI
+        "talep.yonetime_gonderildi", "talep.olusturuldu", "talep.sla_yaklasiyor", "talep.sla_asildi" ->
+            BildirimTipleri.YONETIME_GONDERILDI
         "teklif.istendi" -> BildirimTipleri.TEKLIF_ISTENDI
         "teklif.yonetime_gonderildi" -> BildirimTipleri.TEKLIF_ONAYDA
         "teklif.duzeltme_istendi" -> BildirimTipleri.TEKLIF_DUZELTME_ISTENDI
@@ -1640,6 +1719,16 @@ class AppContainer(private val context: Context) {
     }
 
     companion object {
+        private val KNOWN_BILDIRIM_TIPLERI = setOf(
+            BildirimTipleri.YONETIME_GONDERILDI,
+            BildirimTipleri.TEKLIF_ISTENDI,
+            BildirimTipleri.TEKLIF_ONAYDA,
+            BildirimTipleri.TEKLIF_DUZELTME_ISTENDI,
+            BildirimTipleri.ONAYLANDI,
+            BildirimTipleri.REDDEDILDI,
+            BildirimTipleri.SIPARIS_OLUSTURULDU,
+            BildirimTipleri.MAL_KABUL_EDILDI
+        )
         private const val KEY_SESSION = "session_json"
         private const val KEY_PROFILE = "profile_cache"
         private const val KEY_PENDING_APK = "pending_apk_path"

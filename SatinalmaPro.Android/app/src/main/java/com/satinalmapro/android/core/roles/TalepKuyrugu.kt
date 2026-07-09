@@ -64,8 +64,14 @@ object TalepKuyrugu {
 
     private fun teklifsizYonetim(t: TalepItem): Boolean = !gercekTeklifVar(t)
 
+    /** Yönetim Gelen Talepler — masaüstü Submitted (Hazırlanıyor/İmza/Yönetim Onayında) ile aynı. */
     fun yonetimTalepler(t: TalepItem): Boolean =
-        teklifsizYonetim(t) && t.durum in setOf(TalepDurumlari.IMZA, TalepDurumlari.YONETIM_ONAY)
+        teklifsizYonetim(t) &&
+            t.durum in setOf(
+                TalepDurumlari.HAZIRLANIYOR,
+                TalepDurumlari.IMZA,
+                TalepDurumlari.YONETIM_ONAY
+            )
 
     fun yonetimTeklifBekleyen(t: TalepItem): Boolean =
         t.durum == TalepDurumlari.TEKLIF_GIRISI && !gercekTeklifVar(t) && !t.yonetimOnayKilitli

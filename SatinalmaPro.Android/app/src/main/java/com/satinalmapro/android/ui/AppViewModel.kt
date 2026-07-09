@@ -189,6 +189,14 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
+    val queueItemCounts = combine(talepler, user) { talepList, u ->
+        runCatching {
+            RolNavigasyon.queueItemCounts(u?.role, talepList, u?.uid.orEmpty(), u?.fullName.orEmpty())
+        }.getOrDefault(emptyMap())
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     private val filteredFlows = ConcurrentHashMap<TalepQueue, StateFlow<List<TalepItem>>>()
     private val talepByIdFlows = ConcurrentHashMap<String, StateFlow<TalepItem?>>()
     private val approvedMaterialsFlow by lazy {
@@ -205,7 +213,8 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             talepler.map { container.filteredTalepler(queue) }
                 .stateIn(
                     viewModelScope,
-                    SharingStarted.WhileSubscribed(5000),
+                    // Sekme değişince 5 sn sonra upstream kesilmesin — boş flash olmasın.
+                    SharingStarted.WhileSubscribed(60_000),
                     container.filteredTalepler(queue)
                 )
         }
@@ -213,7 +222,11 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun talepById(id: String): StateFlow<TalepItem?> =
         talepByIdFlows.getOrPut(id) {
             talepler.map { container.findTalep(id) }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), container.findTalep(id))
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(60_000),
+                    container.findTalep(id)
+                )
         }
 
     fun approvedMaterials(): StateFlow<List<OnaylananMalzemeSatiri>> = approvedMaterialsFlow
@@ -306,11 +319,11 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     private fun startPostLoginSync() {
         viewModelScope.launch(Dispatchers.IO) {
-            // UI otursun; badge/recompose + ağ fırtınasını geciktir.
-            kotlinx.coroutines.delay(8_000)
-            runCatching { container.refreshNotifications() }
-                .onFailure { android.util.Log.e("PostLoginSync", "refreshNotifications", it) }
-            kotlinx.coroutines.delay(3_000)
+            // Hızlı ilk tur — telefonlarda 8–11 sn bekleme olmasın.
+            kotlinx.coroutines.delay(1_200)
+            runCatching { container.syncLiveData() }
+                .onFailure { android.util.Log.e("PostLoginSync", "syncLiveData", it) }
+            kotlinx.coroutines.delay(2_500)
             runCatching { container.syncData() }
                 .onFailure { android.util.Log.e("PostLoginSync", "syncData", it) }
         }
@@ -480,7 +493,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         navigate(route, pushHistory = false)
         viewModelScope.launch {
             notificationId?.let { runCatching { container.markNotificationRead(it) } }
-            runCatching { container.syncData() }
+            runCatching { container.syncLiveData() }
         }
     }
 
@@ -517,19 +530,20 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun startBackgroundRefresh() {
         if (backgroundRefreshStarted) return
         backgroundRefreshStarted = true
+        // Canlı talep+bildirim — telefon Doze/FCM gecikmesinde sekmeler güncel kalsın.
         viewModelScope.launch(Dispatchers.IO) {
-            // İlk turu post-login sync'e bırak.
-            kotlinx.coroutines.delay(20_000)
+            kotlinx.coroutines.delay(4_000)
             while (true) {
-                val delayMs = if (foreground) 8_000L else 30_000L
+                val delayMs = if (foreground) 12_000L else 45_000L
                 kotlinx.coroutines.delay(delayMs)
-                if (_isLoggedIn.value) runCatching { container.refreshNotifications() }
+                if (_isLoggedIn.value) runCatching { container.syncLiveData() }
             }
         }
+        // Tam senkron (stok/ayarlar) daha seyrek.
         viewModelScope.launch(Dispatchers.IO) {
-            kotlinx.coroutines.delay(30_000)
+            kotlinx.coroutines.delay(20_000)
             while (true) {
-                kotlinx.coroutines.delay(if (foreground) 45_000 else 90_000)
+                kotlinx.coroutines.delay(if (foreground) 60_000 else 120_000)
                 if (_isLoggedIn.value) runCatching { container.syncData() }
             }
         }
@@ -553,8 +567,10 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                     _needsBiometricUnlock.value = false
                     _isLoggedIn.value = true
                 }
-                // Giriş sonrası hemen syncData ÇAĞIRMA — startPostLoginSync zaten gecikmeli çalışır.
-                // Resume anındaki sync + FCM fırtınası 1–2 sn'de process kill üretiyordu.
+                // Hafif canlı senkron — giriş oturumunda da telefon güncel kalsın.
+                if (_isLoggedIn.value) {
+                    runCatching { container.syncLiveData() }
+                }
                 return@launch
             }
 
@@ -581,7 +597,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 _isLoggedIn.value = false
                 return@launch
             }
-            runCatching { container.refreshNotifications() }
+            runCatching { container.syncLiveData() }
             if (_isLoggedIn.value) {
                 runCatching { container.syncData() }
             }

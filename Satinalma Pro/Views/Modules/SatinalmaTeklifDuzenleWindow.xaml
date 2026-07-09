@@ -92,11 +92,11 @@
       <DataGrid.Columns>
         <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" IsReadOnly="True" />
         <DataGridTextColumn Header="Miktar" Binding="{Binding MiktarMetni}" Width="90" IsReadOnly="True" />
-        <DataGridTextColumn Header="Marka" Binding="{Binding Marka, UpdateSourceTrigger=LostFocus}" Width="110" />
+        <DataGridTextColumn Header="Marka" Binding="{Binding Marka, UpdateSourceTrigger=PropertyChanged}" Width="110" />
         <DataGridComboBoxColumn x:Name="ParaBirimiSutunu" Header="Para" Width="72"
-                                SelectedItemBinding="{Binding ParaBirimi, UpdateSourceTrigger=LostFocus}" />
-        <DataGridTextColumn Header="Birim Fiyat" Binding="{Binding BirimFiyatMetni, UpdateSourceTrigger=LostFocus}" Width="100" />
-        <DataGridTextColumn Header="KDV %" Binding="{Binding KdvOraniMetni, UpdateSourceTrigger=LostFocus}" Width="64" />
+                                SelectedItemBinding="{Binding ParaBirimi, UpdateSourceTrigger=PropertyChanged}" />
+        <DataGridTextColumn Header="Birim Fiyat" Binding="{Binding BirimFiyatMetni, UpdateSourceTrigger=PropertyChanged}" Width="100" />
+        <DataGridTextColumn Header="KDV %" Binding="{Binding KdvOraniMetni, UpdateSourceTrigger=PropertyChanged}" Width="64" />
         <DataGridTextColumn Header="Satır Toplam" Binding="{Binding SatirToplamMetni}" Width="110" IsReadOnly="True" />
       </DataGrid.Columns>
     </DataGrid>
@@ -116,8 +116,8 @@
     <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
       <Button Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,0"
               Content="İptal" Click="Iptal_Click" />
-      <Button Style="{StaticResource PrimaryToolbarButtonStyle}"
-              Content="Kaydet" Click="Kaydet_Click" />
+      <Button x:Name="BtnKaydet" Style="{StaticResource PrimaryToolbarButtonStyle}"
+              Content="Kaydet" Click="Kaydet_Click" IsDefault="True" />
     </StackPanel>
   </Grid>
 </Window>

@@ -34,9 +34,9 @@ public partial class OnaylananTalepDetayView : UserControl
             return;
 
         _talep = talep;
-        var gecmisModu = _listeRoute == SatinalmaPart1Menusu.YonetimOnayGecmisi;
+        var gecmisModu = SatinalmaPart1Menusu.OnayGecmisiRoute(_listeRoute ?? "");
         TxtBaslik.Text = gecmisModu
-            ? $"Onay Geçmişi — {talep.TalepNo}"
+            ? $"Geçmiş Onay — {talep.TalepNo}"
             : $"Onaylanan Talep — {talep.TalepNo}";
         TxtOzet.Text = $"{talep.Tarih} · {talep.TalepEden} · {SatinalmaPart1DurumEtiketi.TeklifDurumu(talep)}";
 
@@ -63,7 +63,13 @@ public partial class OnaylananTalepDetayView : UserControl
         BtnSiparisVer.Visibility = satinalmaModu ? Visibility.Visible : Visibility.Collapsed;
         BtnSiparisVer.IsEnabled = !teklifsizBekliyor && satinalmaModu;
 
-        KalemTablosu.ItemsSource = SatinalmaDepo.OnaylananMalzemeleriOlustur()
+        KalemTablosu.ItemsSource = OnaylananKalemSatirlari(talep);
+        TeklifGecmisiniGoster(talep);
+    }
+
+    private static List<OnaylananKalemDetaySatiri> OnaylananKalemSatirlari(SatinalmaTalep talep)
+    {
+        var depodan = SatinalmaDepo.OnaylananMalzemeleriOlustur()
             .Where(s => s.TalepId == talep.Id)
             .Select(s => new OnaylananKalemDetaySatiri
             {
@@ -74,6 +80,48 @@ public partial class OnaylananTalepDetayView : UserControl
                 Toplam = s.ToplamTutar
             })
             .ToList();
+
+        if (depodan.Count > 0)
+            return depodan;
+
+        // Arşiv / edge durumlar: depo filtresi kaçırsa talepten doğrudan göster
+        foreach (var teklif in talep.Teklifler ?? [])
+            teklif.FiyatlariHesapla(talep.Kalemler);
+
+        return (talep.Kalemler ?? [])
+            .Where(k => !string.IsNullOrWhiteSpace(k.Malzeme))
+            .OrderBy(k => k.SiraNo)
+            .Select(k =>
+            {
+                var teklif = talep.KalemOnayTeklifi(k);
+                var fiyat = teklif?.Fiyatlar?.FirstOrDefault(f => f.KalemId == k.Id);
+                return new OnaylananKalemDetaySatiri
+                {
+                    Malzeme = k.Malzeme,
+                    MiktarMetni = $"{k.Miktar.ToString("G", Tr)} {k.Birim}",
+                    Firma = string.IsNullOrWhiteSpace(teklif?.FirmaAdi) ? "—" : teklif!.FirmaAdi,
+                    BirimFiyat = fiyat?.TlBirimFiyat(teklif?.UsdKuru ?? 0, teklif?.EurKuru ?? 0) ?? 0,
+                    Toplam = fiyat?.ToplamTutar ?? 0
+                };
+            })
+            .ToList();
+    }
+
+    private void TeklifGecmisiniGoster(SatinalmaTalep talep)
+    {
+        foreach (var teklif in talep.Teklifler ?? [])
+            teklif.FiyatlariHesapla(talep.Kalemler);
+
+        var satirlar = (talep.Teklifler ?? [])
+            .OrderByDescending(t => t.Onaylandi)
+            .ThenBy(t => t.FirmaAdi, StringComparer.OrdinalIgnoreCase)
+            .Select(t => new OnaylananTeklifGecmisSatiri(t))
+            .ToList();
+
+        var goster = satirlar.Count > 0;
+        TxtTeklifBaslik.Visibility = goster ? Visibility.Visible : Visibility.Collapsed;
+        TeklifTablosu.Visibility = goster ? Visibility.Visible : Visibility.Collapsed;
+        TeklifTablosu.ItemsSource = satirlar;
     }
 
     private SatinalmaTalep? GuncelTalep() =>

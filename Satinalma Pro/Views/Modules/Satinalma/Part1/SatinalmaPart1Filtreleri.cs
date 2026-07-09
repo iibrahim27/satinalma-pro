@@ -100,6 +100,9 @@ public static class SatinalmaPart1Filtreleri
     public static bool YonetimOnayGecmisi(SatinalmaTalep talep) =>
         Eslesir(SatinalmaRoutes.YonetimOnayGecmisi, talep);
 
+    public static bool SatinalmaOnayGecmisi(SatinalmaTalep talep) =>
+        Eslesir(SatinalmaRoutes.SatinalmaOnayGecmisi, talep);
+
     public static int Sayaç(string route) =>
         RozetSayilari([route]).GetValueOrDefault(route);
 

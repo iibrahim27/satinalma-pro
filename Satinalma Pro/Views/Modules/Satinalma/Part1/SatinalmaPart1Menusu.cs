@@ -27,6 +27,7 @@ public static class SatinalmaPart1Menusu
     public const string SatinalmaTeklifDuzeltme = "satinalma-teklif-duzeltme";
     public const string SatinalmaKarsilastirma = "satinalma-karsilastirma";
     public const string SatinalmaOnaylanan = "satinalma-onaylanan";
+    public const string SatinalmaOnayGecmisi = "satinalma-onay-gecmisi";
     public const string SatinalmaSiparis = "satinalma-siparis";
     public const string SatinalmaMalKabul = "satinalma-mal-kabul";
     public const string SatinalmaOnayBekleyen = "satinalma-onay-bekleyen";
@@ -85,7 +86,10 @@ public static class SatinalmaPart1Menusu
             or SatinalmaOnaylananTalepler;
 
     public static bool OnaylananListeRoute(string route) =>
-        route is SatinalmaOnaylanan or YonetimOnaylananTeklifler or YonetimOnayGecmisi;
+        route is SatinalmaOnaylanan or YonetimOnaylananTeklifler or YonetimOnayGecmisi or SatinalmaOnayGecmisi;
+
+    public static bool OnayGecmisiRoute(string route) =>
+        route is YonetimOnayGecmisi or SatinalmaOnayGecmisi;
 
     public static bool SiparisListeRoute(string route) =>
         route is SatinalmaSiparis;
@@ -131,7 +135,8 @@ public static class SatinalmaPart1Menusu
         SatinalmaTeklifGirilen => ("Teklif Girilen Talepler", "Yönetime gönderilmiş, onay bekleyen teklifler"),
         SatinalmaTeklifDuzeltme => ("Düzeltme Bekleyen Teklifler", "Yönetimden geri gönderilen teklifler — düzeltip yeniden gönderin"),
         SatinalmaKarsilastirma => ("Karşılaştırma", "Teklif karşılaştırma ve seçim"),
-        SatinalmaOnaylanan => ("Onaylanan Teklifler ve Talepler", "Onaylanmış talep ve teklifler"),
+        SatinalmaOnaylanan => ("Onaylanan Teklifler ve Talepler", "Onaylanmış talep ve teklifler — sipariş bekleyen"),
+        SatinalmaOnayGecmisi => ("Geçmiş Onaylananlar", "Tüm onaylı talep ve teklifler — sipariş/mal kabul sonrası kalıcı arşiv, PDF ve firma teklif geçmişi"),
         SatinalmaSiparis => ("Sipariş Verilen Talep ve Teklifler", "Sipariş oluşturulmuş talepler"),
         SatinalmaMalKabul => ("Mal Kabul Edilmiş Talep ve Teklifler", "Mal kabulü tamamlanan talepler"),
         SatinalmaOnayBekleyen => ("Onay Bekleyen", "Yönetim onayı bekleyen talepleriniz"),

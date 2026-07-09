@@ -28,6 +28,8 @@ import androidx.compose.foundation.verticalScroll
 
 import androidx.compose.material.icons.Icons
 
+import androidx.compose.material.icons.automirrored.rounded.Logout
+
 import androidx.compose.material.icons.rounded.Fingerprint
 
 import androidx.compose.material.icons.rounded.Lock
@@ -128,6 +130,8 @@ fun ProfileScreen(viewModel: AppViewModel) {
 
     var showPasswordDialog by remember { mutableStateOf(false) }
 
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     val profile = user ?: return
 
 
@@ -152,6 +156,29 @@ fun ProfileScreen(viewModel: AppViewModel) {
 
         )
 
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Hesaptan çıkış") },
+            text = { Text("Oturumu kapatıp giriş ekranına dönmek istiyor musunuz?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        viewModel.logout()
+                    }
+                ) {
+                    Text("Çıkış yap", color = AppColors.Danger)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("İptal")
+                }
+            }
+        )
     }
 
 
@@ -385,6 +412,14 @@ fun ProfileScreen(viewModel: AppViewModel) {
             RowMenuItem(Icons.Rounded.Lock, "Şifre Değiştir", AppColors.TextPrimary)
 
         }
+
+        Spacer(Modifier.height(12.dp))
+
+        AppCard(onClick = { showLogoutDialog = true }) {
+            RowMenuItem(Icons.AutoMirrored.Rounded.Logout, "Hesaptan çıkış yap", AppColors.Danger)
+        }
+
+        Spacer(Modifier.height(24.dp))
 
     }
 

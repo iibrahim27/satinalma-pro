@@ -153,8 +153,16 @@ object RolNavigasyon {
         list: List<com.satinalmapro.android.core.model.TalepItem>,
         uid: String,
         ad: String
+    ): Map<String, Int> =
+        queueItemCounts(role, list, uid, ad).filterKeys { isActionQueue(it) }
+
+    /** Tüm kuyruklardaki kayıt sayısı (geçmiş dahil) — İşler listesi için. */
+    fun queueItemCounts(
+        role: String?,
+        list: List<com.satinalmapro.android.core.model.TalepItem>,
+        uid: String,
+        ad: String
     ): Map<String, Int> {
-        // olustur() her menuSayac'ta tekrarlanmasın — tek sefer hesapla.
         val malzemeler = runCatching { OnaylananMalzemeOlusturucu.olustur(list) }.getOrDefault(emptyList())
         return menus(role)
             .mapNotNull { item ->
@@ -162,6 +170,36 @@ object RolNavigasyon {
                 if (count > 0) item.route to count else null
             }
             .toMap()
+    }
+
+    /**
+     * Kullanıcı aksiyonu bekleyen kuyruklar — alt rozet / "bekliyor" metni yalnızca bunlar.
+     * Onay geçmişi, onaylanan teklif, red, geçmiş vb. arşivdir.
+     */
+    fun isActionQueue(route: String): Boolean {
+        val r = route.substringBefore('?')
+        return when (r) {
+            "gelen-talepler",
+            "yonetim-gelen-talepler",
+            "teklif-bekleyen",
+            "yonetim-teklif-bekleyen",
+            "yonetim-teklif-girilen",
+            "teklif-onay",
+            "onay-bekleyen",
+            "satinalma-teklif-istenen",
+            "satinalma-teklif-duzeltme",
+            "teklif-duzeltme",
+            "satinalma-teklif-girilen",
+            "teklif-gir",
+            "teklif-karsilastirma",
+            "satinalma-karsilastirma",
+            "teklifsiz-firma-fiyat",
+            "satinalma-onaylanan",
+            "satinalma-siparis",
+            "satinalma-mal-kabul",
+            "onaylanan-malzemeler" -> true
+            else -> false
+        }
     }
 
     fun canAccess(role: String?, route: String): Boolean {

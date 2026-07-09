@@ -186,6 +186,10 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
                 => SatinalmaPart1Menusu.SatinalmaMalKabul,
             "satinalma-onaylanan" or "onaylanan-teklifler"
                 => SatinalmaPart1Menusu.SatinalmaOnaylanan,
+            "satinalma-onay-gecmisi" or "onay-gecmisi-satinalma"
+                => SatinalmaPart1Menusu.SatinalmaOnayGecmisi,
+            "yonetim-onay-gecmisi"
+                => SatinalmaPart1Menusu.YonetimOnayGecmisi,
             "yonetim-onaylanan-teklifler" or "onaylanan-teklifler-yonetim"
                 => SatinalmaPart1Menusu.YonetimOnaylananTeklifler,
             "gecmis-talepler" or "yonetim-gecmis"

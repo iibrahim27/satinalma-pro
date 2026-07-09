@@ -46,7 +46,7 @@ public partial class OnaylananTalepListesiView : UserControl
 
         TabloyuFiltrele();
 
-        var gecmisModu = route == SatinalmaPart1Menusu.YonetimOnayGecmisi;
+        var gecmisModu = SatinalmaPart1Menusu.OnayGecmisiRoute(route);
         BtnSiparis.Visibility = route == SatinalmaPart1Menusu.SatinalmaOnaylanan && !gecmisModu
             ? Visibility.Visible
             : Visibility.Collapsed;
@@ -58,6 +58,8 @@ public partial class OnaylananTalepListesiView : UserControl
         {
             SatinalmaPart1Menusu.YonetimOnayGecmisi =>
                 "Yönetimin verdiği tüm onaylar (teklifsiz + teklifli). Sipariş ve mal kabul sonrası kayıtlar dahil. Detay ve PDF için çift tıklayın veya üstteki yazdır düğmelerini kullanın.",
+            SatinalmaPart1Menusu.SatinalmaOnayGecmisi =>
+                "Tüm onaylı talep ve teklifler kalıcı arşivde. Sipariş / mal kabul sonrası kayıtlar dahil. Detayda firma teklif geçmişi, karşılaştırma PDF ve onay PDF alınabilir.",
             SatinalmaPart1Menusu.YonetimOnaylananTeklifler =>
                 "Onayladığınız teklifli talepler. Detay ve PDF için çift tıklayın veya sağ tık menüsünü kullanın.",
             _ =>

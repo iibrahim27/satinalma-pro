@@ -25,6 +25,8 @@ public static class SatinalmaRoutes
     public const string SatinalmaTeklifDuzeltme = "satinalma-teklif-duzeltme";
     public const string SatinalmaKarsilastirma = "satinalma-karsilastirma";
     public const string SatinalmaOnaylanan = "satinalma-onaylanan";
+    /// <summary>Kalıcı arşiv — onaylı talep/teklifler (sipariş ve mal kabul sonrası dahil).</summary>
+    public const string SatinalmaOnayGecmisi = "satinalma-onay-gecmisi";
     public const string SatinalmaSiparis = "satinalma-siparis";
     public const string SatinalmaMalKabul = "satinalma-mal-kabul";
     public const string SatinalmaIade = "satinalma-iade";

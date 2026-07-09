@@ -77,6 +77,7 @@ fun DashboardScreen(viewModel: AppViewModel) {
     }
     val priorityQueues = remember(queues, badges) {
         queues
+            .filter { RolNavigasyon.isActionQueue(it.route) }
             .map { it to (badges[it.route] ?: 0) }
             .sortedByDescending { it.second }
             .take(4)

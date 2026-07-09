@@ -30,18 +30,43 @@
           <TextBlock x:Name="TxtDurum" FontSize="12" Foreground="#166534" TextWrapping="Wrap" />
         </Border>
 
-        <StackPanel Grid.Row="2">
-          <TextBlock Text="Onaylanan Kalemler" Style="{StaticResource SatModSectionTitle}" />
-          <DataGrid x:Name="KalemTablosu" Style="{StaticResource SatModDataGrid}">
+        <Grid Grid.Row="2">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*" MinHeight="120" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" MinHeight="100" />
+          </Grid.RowDefinitions>
+
+          <StackPanel>
+            <TextBlock Text="Onaylanan Kalemler" Style="{StaticResource SatModSectionTitle}" />
+            <DataGrid x:Name="KalemTablosu" Style="{StaticResource SatModDataGrid}" MaxHeight="280">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" />
+                <DataGridTextColumn Header="Miktar" Binding="{Binding MiktarMetni}" Width="100" />
+                <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="*" />
+                <DataGridTextColumn Header="Birim Fiyat" Binding="{Binding BirimFiyatMetni}" Width="110" />
+                <DataGridTextColumn Header="Toplam" Binding="{Binding ToplamMetni}" Width="110" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </StackPanel>
+
+          <TextBlock x:Name="TxtTeklifBaslik" Grid.Row="1" Text="Firma Teklif Geçmişi"
+                     Style="{StaticResource SatModSectionTitle}" Margin="0,16,0,0"
+                     Visibility="Collapsed" />
+          <DataGrid x:Name="TeklifTablosu" Grid.Row="2" Style="{StaticResource SatModDataGrid}"
+                    MaxHeight="220" Visibility="Collapsed" IsReadOnly="True">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" />
-              <DataGridTextColumn Header="Miktar" Binding="{Binding MiktarMetni}" Width="100" />
-              <DataGridTextColumn Header="Firma" Binding="{Binding Firma}" Width="*" />
-              <DataGridTextColumn Header="Birim Fiyat" Binding="{Binding BirimFiyatMetni}" Width="110" />
-              <DataGridTextColumn Header="Toplam" Binding="{Binding ToplamMetni}" Width="110" />
+              <DataGridTextColumn Header="Durum" Binding="{Binding DurumMetni}" Width="90" />
+              <DataGridTextColumn Header="Firma" Binding="{Binding FirmaAdi}" Width="*" />
+              <DataGridTextColumn Header="Marka" Binding="{Binding MarkaOzeti}" Width="100" />
+              <DataGridTextColumn Header="Vade" Binding="{Binding VadeGosterim}" Width="80" />
+              <DataGridTextColumn Header="Teslim" Binding="{Binding TeslimSuresi}" Width="90" />
+              <DataGridTextColumn Header="Ödeme" Binding="{Binding OdemeSekli}" Width="100" />
+              <DataGridTextColumn Header="KDV Hariç" Binding="{Binding KdvHaricMetni}" Width="110" />
+              <DataGridTextColumn Header="KDV Dahil" Binding="{Binding KdvDahilMetni}" Width="110" />
             </DataGrid.Columns>
           </DataGrid>
-        </StackPanel>
+        </Grid>
       </Grid>
     </Border>
 

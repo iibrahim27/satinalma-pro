@@ -175,11 +175,16 @@ public static class PurchaseRequestDetailServisi
         }
     }
 
-    private static SatinalmaPro.Shared.Models.SatinalmaTalep PaylasimaCevir(SatinalmaTalep talep) =>
-        System.Text.Json.JsonSerializer.Deserialize<SatinalmaPro.Shared.Models.SatinalmaTalep>(
-            System.Text.Json.JsonSerializer.Serialize(talep,
-                new System.Text.Json.JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
-                })) ?? new SatinalmaPro.Shared.Models.SatinalmaTalep();
+    private static SatinalmaPro.Shared.Models.SatinalmaTalep PaylasimaCevir(SatinalmaTalep talep)
+    {
+        // CamelCase + case-sensitive deserialize Durum/Status kaybediyordu → butonlar Collapsed.
+        // DesktopRoleTabManager.TalepPaylasimaCevir ile aynı kural.
+        var opts = new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+        var json = System.Text.Json.JsonSerializer.Serialize(talep);
+        return System.Text.Json.JsonSerializer.Deserialize<SatinalmaPro.Shared.Models.SatinalmaTalep>(json, opts)
+               ?? new SatinalmaPro.Shared.Models.SatinalmaTalep();
+    }
 }

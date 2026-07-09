@@ -40,10 +40,15 @@ public static class SatinalmaTalepKuyrugu
         !Reddedildi(t)
         && (Onaylanmis(t) || OnaylananTalep(t) || YonetimGecmisTalep(t) || YonetimGecmisTeklifli(t));
 
-    /// <summary>Yönetim Talepler — yalnızca teklifsiz karar (imza veya direkt yönetim onayı).</summary>
+    /// <summary>
+    /// Yönetim Gelen Talepler — teklifsiz submitted (masaüstü enterprise Submitted ile aynı).
+    /// Hazırlanıyor / İmza Sürecinde / Yönetim Onayında.
+    /// </summary>
     public static bool YonetimTalepler(SatinalmaTalep t) =>
         TeklifsizYonetimTalebi(t)
-        && t.Durum is SatinalmaTalepDurumlari.ImzaSurecinde or SatinalmaTalepDurumlari.YonetimOnayinda;
+        && t.Durum is SatinalmaTalepDurumlari.Hazirlaniyor
+            or SatinalmaTalepDurumlari.ImzaSurecinde
+            or SatinalmaTalepDurumlari.YonetimOnayinda;
 
     /// <summary>Boş teklif kabuğu olan talepler teklifsiz sayılır.</summary>
     public static bool TeklifsizYonetimTalebi(SatinalmaTalep t) =>

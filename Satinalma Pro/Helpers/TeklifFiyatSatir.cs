@@ -138,6 +138,15 @@ public class TeklifFiyatSatir : INotifyPropertyChanged
         GuncelleSatirToplam();
     }
 
+    public void MetindenDegerleriYenile()
+    {
+        if (SayiMetniYardimcisi.OndalikOku(_birimFiyatMetni, out var birim))
+            _birimFiyat = birim;
+        if (SayiMetniYardimcisi.CiftOku(_kdvOraniMetni, out var kdv))
+            _kdvOrani = kdv;
+        GuncelleSatirToplam();
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void OnChanged([CallerMemberName] string? name = null) =>

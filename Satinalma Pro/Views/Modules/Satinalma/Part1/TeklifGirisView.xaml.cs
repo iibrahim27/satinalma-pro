@@ -237,7 +237,47 @@ public partial class TeklifGirisView : UserControl
             return;
 
         talep.Teklifler ??= [];
-        talep.Teklifler.Add(teklif);
+        var ayniFirma = talep.Teklifler.FirstOrDefault(t =>
+            !string.IsNullOrWhiteSpace(t.FirmaAdi)
+            && string.Equals(t.FirmaAdi.Trim(), teklif.FirmaAdi.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (ayniFirma is not null)
+        {
+            var secim = MessageBox.Show(
+                $"«{teklif.FirmaAdi}» için zaten bir teklif var.\n\nMevcut teklifi güncellemek ister misiniz?\n\nEvet = güncelle · Hayır = yeni teklif olarak ekle · İptal = vazgeç",
+                UygulamaBilgisi.Ad,
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
+
+            if (secim == MessageBoxResult.Cancel)
+                return;
+
+            if (secim == MessageBoxResult.Yes)
+            {
+                ayniFirma.FirmaAdi = teklif.FirmaAdi;
+                ayniFirma.UsdKuru = teklif.UsdKuru;
+                ayniFirma.EurKuru = teklif.EurKuru;
+                ayniFirma.VadeGunu = teklif.VadeGunu;
+                ayniFirma.TeslimSuresi = teklif.TeslimSuresi;
+                ayniFirma.OdemeSekli = teklif.OdemeSekli;
+                ayniFirma.Aciklama = teklif.Aciklama;
+                ayniFirma.KdvOrani = teklif.KdvOrani;
+                ayniFirma.Fiyatlar = teklif.Fiyatlar;
+                ayniFirma.FiyatlariHesapla(talep.Kalemler);
+                _seciliTeklif = ayniFirma;
+            }
+            else
+            {
+                talep.Teklifler.Add(teklif);
+                _seciliTeklif = teklif;
+            }
+        }
+        else
+        {
+            talep.Teklifler.Add(teklif);
+            _seciliTeklif = teklif;
+        }
+
         _talep = talep;
         SatinalmaDepo.TeklifDegisikligiIsle(talep);
         _ = SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);

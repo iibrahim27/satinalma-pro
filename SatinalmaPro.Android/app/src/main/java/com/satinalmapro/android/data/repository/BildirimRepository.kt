@@ -157,7 +157,7 @@ class BildirimRepository(
                 if (inboxArsivlenmisMi(fields)) return@forEach
                 fun s(key: String) = fields.optJSONObject(key)?.optString("stringValue").orEmpty()
                 val docTalepId = s("talepId").ifBlank { s("entityId") }
-                val docTip = s("tip").ifBlank { s("type") }.ifBlank { mapEventCodeToTip(s("eventCode")) }
+                val docTip = resolveInboxTip(s("tip"), s("type"), s("eventCode"))
                 val docHedefRol = s("hedefRol").ifBlank { s("targetRole") }
                 val docHedefUid = s("hedefUid").ifBlank { s("targetUid") }
                 val okundu = fields.optJSONObject("isRead")?.optBoolean("booleanValue")
@@ -316,7 +316,7 @@ class BildirimRepository(
                 if (docId.isBlank()) return@forEach
                 val fields = doc.optJSONObject("fields") ?: return@forEach
                 fun s(key: String) = fields.optJSONObject(key)?.optString("stringValue").orEmpty()
-                val tip = s("tip").ifBlank { s("type") }.ifBlank { mapEventCodeToTip(s("eventCode")) }
+                val tip = resolveInboxTip(s("tip"), s("type"), s("eventCode"))
                 val talepId = s("talepId").ifBlank { s("entityId") }.ifBlank { null }
                 val pseudo = BildirimRecord(id = docId, tip = tip, talepId = talepId)
                 if (!gecerliMi(pseudo, talepler)) {
@@ -420,7 +420,7 @@ class BildirimRepository(
         return when (tip) {
             BildirimTipleri.YONETIME_GONDERILDI ->
                 TalepKuyrugu.yonetimTalepler(talep) ||
-                    talep.durum == TalepDurumlari.HAZIRLANIYOR
+                    TalepKuyrugu.onayBekleyen(talep)
             BildirimTipleri.TEKLIF_ISTENDI ->
                 !TalepKuyrugu.teklifYonetimOnayiBekliyor(talep) &&
                     !talep.yonetimOnayKilitli &&
@@ -468,7 +468,7 @@ class BildirimRepository(
         if (inboxArsivlenmisMi(fields)) return null
         fun s(key: String) = fields.optJSONObject(key)?.optString("stringValue").orEmpty()
         val eventCode = s("eventCode")
-        val tip = s("tip").ifBlank { s("type") }.ifBlank { mapEventCodeToTip(eventCode) }
+        val tip = resolveInboxTip(s("tip"), s("type"), eventCode)
         val talepId = s("talepId").ifBlank { s("entityId") }.ifBlank { null }
         val docId = doc.optString("name").substringAfterLast('/')
         if (docId.isBlank()) return null
@@ -483,8 +483,20 @@ class BildirimRepository(
         )
     }
 
+    private fun resolveInboxTip(tip: String, type: String, eventCode: String): String {
+        val fromEvent = mapEventCodeToTip(eventCode)
+        if (fromEvent in TALEP_BAGLANTILI_TIPLER) return fromEvent
+        val raw = tip.ifBlank { type }
+        if (raw in TALEP_BAGLANTILI_TIPLER) return raw
+        if (raw.uppercase(Locale.ROOT) in setOf("APPROVAL", "INFO", "TASK", "WARNING", "REMINDER", "URGENT", "CRITICAL")) {
+            return fromEvent.ifBlank { raw }
+        }
+        return raw.ifBlank { fromEvent }
+    }
+
     private fun mapEventCodeToTip(eventCode: String): String = when (eventCode) {
-        "talep.yonetime_gonderildi" -> BildirimTipleri.YONETIME_GONDERILDI
+        "talep.yonetime_gonderildi", "talep.olusturuldu", "talep.sla_yaklasiyor", "talep.sla_asildi" ->
+            BildirimTipleri.YONETIME_GONDERILDI
         "teklif.istendi" -> BildirimTipleri.TEKLIF_ISTENDI
         "teklif.yonetime_gonderildi" -> BildirimTipleri.TEKLIF_ONAYDA
         "teklif.duzeltme_istendi" -> BildirimTipleri.TEKLIF_DUZELTME_ISTENDI

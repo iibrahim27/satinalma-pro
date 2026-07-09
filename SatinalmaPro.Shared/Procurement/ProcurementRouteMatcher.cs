@@ -69,7 +69,7 @@ public static class ProcurementRouteMatcher
             ProcurementStatusResolver.Resolve(talep) == ProcurementStatus.Approved
             && talep.TeklifsizYonetimOnayi,
 
-        SatinalmaRoutes.YonetimOnayGecmisi =>
+        SatinalmaRoutes.YonetimOnayGecmisi or SatinalmaRoutes.SatinalmaOnayGecmisi =>
             SatinalmaTalepKuyrugu.YonetimOnayGecmisinde(talep),
 
         SatinalmaRoutes.YonetimGecmis =>
@@ -165,6 +165,7 @@ public static class ProcurementRouteMatcher
                 new("Teklif Girişi Bekleyenler", SatinalmaRoutes.SatinalmaTeklifGirilen),
                 new("Fiyat Karşılaştırma", SatinalmaRoutes.SatinalmaKarsilastirma),
                 new("Onaylananlar", SatinalmaRoutes.SatinalmaOnaylanan),
+                new("Geçmiş Onaylananlar", SatinalmaRoutes.SatinalmaOnayGecmisi),
                 new("Reddedilenler", SatinalmaRoutes.YonetimRedVerilen),
                 new("Sipariş Yönetimi", SatinalmaRoutes.SatinalmaSiparis),
                 new("Mal Kabul & Sevkiyat", SatinalmaRoutes.SatinalmaMalKabul),

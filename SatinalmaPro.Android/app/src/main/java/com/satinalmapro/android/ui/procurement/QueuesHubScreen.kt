@@ -49,6 +49,7 @@ import com.satinalmapro.android.ui.theme.MetrikSpace
 fun QueuesHubScreen(viewModel: AppViewModel) {
     val user by viewModel.user.collectAsState()
     val badges by viewModel.menuBadges.collectAsState()
+    val itemCounts by viewModel.queueItemCounts.collectAsState()
     val queues = remember(user?.role) {
         runCatching { RolNavigasyon.queueMenus(user?.role) }.getOrDefault(emptyList())
     }
@@ -76,7 +77,7 @@ fun QueuesHubScreen(viewModel: AppViewModel) {
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                if (waiting > 0) "$waiting bekleyen kayıt" else "Tüm kuyruklar burada",
+                if (waiting > 0) "$waiting bekleyen iş" else "Tüm kuyruklar burada",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MetrikLight.TextSecondary
             )
@@ -108,9 +109,12 @@ fun QueuesHubScreen(viewModel: AppViewModel) {
                         )
                     }
                     items(itemsInGroup, key = { it.route }) { item ->
+                        val count = itemCounts[item.route] ?: 0
+                        val action = RolNavigasyon.isActionQueue(item.route)
                         QueueRow(
                             title = item.title,
-                            count = badges[item.route] ?: 0,
+                            count = count,
+                            actionQueue = action,
                             icon = queueIcon(item.route),
                             tint = queueTint(item.route),
                             onClick = { viewModel.navigateFromMenu(item.route) }
@@ -127,10 +131,17 @@ fun QueuesHubScreen(viewModel: AppViewModel) {
 private fun QueueRow(
     title: String,
     count: Int,
+    actionQueue: Boolean,
     icon: ImageVector,
     tint: Color,
     onClick: () -> Unit
 ) {
+    val subtitle = when {
+        count <= 0 -> "Boş"
+        actionQueue -> "$count bekliyor"
+        else -> "$count kayıt"
+    }
+    val showActionBadge = actionQueue && count > 0
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -158,12 +169,16 @@ private fun QueueRow(
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                if (count > 0) "$count bekliyor" else "Boş",
+                subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = if (count > 0) tint else MetrikLight.TextTertiary
+                color = when {
+                    count <= 0 -> MetrikLight.TextTertiary
+                    actionQueue -> tint
+                    else -> MetrikLight.TextSecondary
+                }
             )
         }
-        if (count > 0) {
+        if (showActionBadge) {
             Box(
                 modifier = Modifier
                     .background(tint, RoundedCornerShape(8.dp))
@@ -176,6 +191,14 @@ private fun QueueRow(
                     fontWeight = FontWeight.Bold
                 )
             }
+            Spacer(Modifier.width(6.dp))
+        } else if (count > 0) {
+            Text(
+                count.toString(),
+                color = MetrikLight.TextTertiary,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium
+            )
             Spacer(Modifier.width(6.dp))
         }
         Icon(

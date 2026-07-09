@@ -172,6 +172,11 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
     {
         try
         {
+            // Kaydet'e basıldığında odak hâlâ hücrede olabilir — önce odağı al,
+            // sonra CommitEdit; fiyat bağları kaçmasın.
+            if (FiyatGrid.IsKeyboardFocusWithin)
+                BtnKaydet.Focus();
+
             FiyatGrid.CommitEdit(DataGridEditingUnit.Cell, true);
             FiyatGrid.CommitEdit(DataGridEditingUnit.Row, true);
         }
@@ -179,6 +184,9 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
         {
             // düzenleme zaten kapanıyorsa yoksay
         }
+
+        foreach (var satir in _satirlar)
+            satir.MetindenDegerleriYenile();
     }
 
     private void ToplamlariGuncelle()
@@ -233,7 +241,9 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
 
         if (!_satirlar.Any(s => s.BirimFiyat > 0))
         {
-            MessageBox.Show("En az bir kalem için birim fiyat girin.", UygulamaBilgisi.Ad,
+            MessageBox.Show(
+                "En az bir kalem için birim fiyat girin.\n\nFiyatı yazdıktan sonra hücreden çıkıp Kaydet'e basın (veya Enter).",
+                UygulamaBilgisi.Ad,
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }

@@ -3,51 +3,53 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Background="{StaticResource DashBackgroundBrush}">
   <UserControl.Resources>
     <DataTemplate x:Key="KalemOneriSatirSablonu">
-      <Border BorderBrush="#DBEAFE" BorderThickness="1" CornerRadius="8"
-              Padding="10,8" Margin="0,0,0,8" Background="#F8FAFF">
+      <Border BorderBrush="#DBEAFE" BorderThickness="1" CornerRadius="6"
+              Padding="8,6" Margin="0,0,0,4" Background="#F8FAFF">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*" />
-            <ColumnDefinition Width="72" />
-            <ColumnDefinition Width="56" />
-            <ColumnDefinition Width="12" />
-            <ColumnDefinition Width="*" MinWidth="200" />
-            <ColumnDefinition Width="100" />
+            <ColumnDefinition Width="64" />
+            <ColumnDefinition Width="48" />
+            <ColumnDefinition Width="8" />
+            <ColumnDefinition Width="*" MinWidth="160" />
+            <ColumnDefinition Width="90" />
           </Grid.ColumnDefinitions>
-          <TextBlock Grid.Column="0" Text="{Binding Malzeme}" VerticalAlignment="Center" FontSize="12" />
-          <TextBlock Grid.Column="1" Text="{Binding Miktar}" VerticalAlignment="Center" FontSize="12"
+          <TextBlock Grid.Column="0" Text="{Binding Malzeme}" VerticalAlignment="Center" FontSize="12"
+                     TextTrimming="CharacterEllipsis" />
+          <TextBlock Grid.Column="1" Text="{Binding Miktar}" VerticalAlignment="Center" FontSize="11"
                      HorizontalAlignment="Right" />
-          <TextBlock Grid.Column="2" Text="{Binding Birim}" VerticalAlignment="Center" FontSize="12"
+          <TextBlock Grid.Column="2" Text="{Binding Birim}" VerticalAlignment="Center" FontSize="11"
                      HorizontalAlignment="Center" />
           <ComboBox Grid.Column="4" ItemsSource="{Binding Firmalar}"
                     SelectedValue="{Binding OnerilenTeklifId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     SelectedValuePath="Id" DisplayMemberPath="Ad"
-                    Style="{StaticResource FilterComboStyle}" />
+                    Style="{StaticResource FilterComboStyle}" Height="28" />
           <TextBlock Grid.Column="5" Text="{Binding OneriToplamMetni}" VerticalAlignment="Center"
                      FontSize="11" Foreground="#475569" HorizontalAlignment="Right" />
         </Grid>
       </Border>
     </DataTemplate>
     <DataTemplate x:Key="KalemOnaySatirSablonu">
-      <Border BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8"
-              Padding="10,8" Margin="0,0,0,8" Background="#FAFBFC">
+      <Border BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6"
+              Padding="8,6" Margin="0,0,0,4" Background="#FAFBFC">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*" />
-            <ColumnDefinition Width="72" />
-            <ColumnDefinition Width="56" />
-            <ColumnDefinition Width="12" />
-            <ColumnDefinition Width="*" MinWidth="160" />
+            <ColumnDefinition Width="64" />
+            <ColumnDefinition Width="48" />
+            <ColumnDefinition Width="8" />
+            <ColumnDefinition Width="*" MinWidth="140" />
           </Grid.ColumnDefinitions>
-          <TextBlock Grid.Column="0" Text="{Binding Malzeme}" VerticalAlignment="Center" FontSize="12" />
-          <TextBlock Grid.Column="1" Text="{Binding Miktar}" VerticalAlignment="Center" FontSize="12"
+          <TextBlock Grid.Column="0" Text="{Binding Malzeme}" VerticalAlignment="Center" FontSize="12"
+                     TextTrimming="CharacterEllipsis" />
+          <TextBlock Grid.Column="1" Text="{Binding Miktar}" VerticalAlignment="Center" FontSize="11"
                      HorizontalAlignment="Right" />
-          <TextBlock Grid.Column="2" Text="{Binding Birim}" VerticalAlignment="Center" FontSize="12"
+          <TextBlock Grid.Column="2" Text="{Binding Birim}" VerticalAlignment="Center" FontSize="11"
                      HorizontalAlignment="Center" />
           <ComboBox Grid.Column="4" ItemsSource="{Binding Firmalar}"
                     SelectedValue="{Binding OnaylananTeklifId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     SelectedValuePath="Id" DisplayMemberPath="Ad"
-                    Style="{StaticResource FilterComboStyle}" />
+                    Style="{StaticResource FilterComboStyle}" Height="28" />
         </Grid>
       </Border>
     </DataTemplate>
@@ -67,38 +69,44 @@
           <RowDefinition Height="Auto" />
           <RowDefinition Height="Auto" />
           <RowDefinition Height="Auto" />
-          <RowDefinition Height="*" />
-          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" MinHeight="160" />
           <RowDefinition Height="Auto" />
           <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <StackPanel Margin="0,0,0,14">
+        <StackPanel Margin="0,0,0,10">
           <TextBlock x:Name="TxtBaslik" FontSize="18" FontWeight="Bold"
                      Foreground="{StaticResource SatModInkBrush}" />
-          <TextBlock x:Name="TxtOzet" Style="{StaticResource SatModHint}" Margin="0,6,0,0" />
+          <TextBlock x:Name="TxtOzet" Style="{StaticResource SatModHint}" Margin="0,4,0,0" />
         </StackPanel>
 
         <Border x:Name="DuzeltmeNotuPanel" Grid.Row="1" Background="#FFF7ED"
                 BorderBrush="#FDBA74" BorderThickness="1" CornerRadius="10"
-                Padding="12,10" Margin="0,0,0,14" Visibility="Collapsed">
+                Padding="12,8" Margin="0,0,0,10" Visibility="Collapsed">
           <TextBlock x:Name="TxtDuzeltmeNotu" TextWrapping="Wrap" FontSize="12"
                      Foreground="#9A3412" />
         </Border>
 
-        <StackPanel Grid.Row="2" Margin="0,0,0,12">
-          <TextBlock Text="Talep Kalemleri" Style="{StaticResource SatModSectionTitle}" />
-          <DataGrid x:Name="KalemTablosu" Style="{StaticResource SatModDataGrid}" MaxHeight="180">
+        <Expander Grid.Row="2" Header="Talep kalemleri" IsExpanded="False"
+                  Margin="0,0,0,8" FontSize="12" Foreground="{StaticResource SatModInkBrush}">
+          <DataGrid x:Name="KalemTablosu" Style="{StaticResource SatModDataGrid}"
+                    MaxHeight="140" Margin="0,6,0,0">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" />
               <DataGridTextColumn Header="Miktar" Binding="{Binding MiktarGosterim}" Width="90" />
               <DataGridTextColumn Header="Birim" Binding="{Binding Birim}" Width="90" />
             </DataGrid.Columns>
           </DataGrid>
-        </StackPanel>
+        </Expander>
 
-        <StackPanel Grid.Row="3">
-          <Grid Margin="0,0,0,10">
+        <Grid Grid.Row="3">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+
+          <Grid Margin="0,0,0,8">
             <TextBlock Text="Teklifler" Style="{StaticResource SatModSectionTitle}" VerticalAlignment="Center" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
               <Button Content="Yeni Teklif" Style="{StaticResource ToolbarButtonStyle}"
@@ -110,9 +118,10 @@
             </StackPanel>
           </Grid>
 
-          <DataGrid x:Name="TeklifTablosu" Style="{StaticResource SatModDataGrid}"
+          <DataGrid x:Name="TeklifTablosu" Grid.Row="1" Style="{StaticResource SatModDataGrid}"
                     SelectionChanged="TeklifTablosu_SelectionChanged"
-                    MouseDoubleClick="TeklifTablosu_MouseDoubleClick">
+                    MouseDoubleClick="TeklifTablosu_MouseDoubleClick"
+                    MinHeight="140">
             <DataGrid.Columns>
               <DataGridTextColumn Header="" Binding="{Binding OneriMetni}" Width="28" />
               <DataGridTextColumn Header="Firma" Binding="{Binding FirmaAdi}" Width="*" />
@@ -123,41 +132,53 @@
             </DataGrid.Columns>
           </DataGrid>
 
-          <TextBlock x:Name="TxtSatinalmaOnerisi" Style="{StaticResource SatModHint}"
-                     Margin="0,12,0,0" TextWrapping="Wrap" />
-        </StackPanel>
+          <TextBlock x:Name="TxtSatinalmaOnerisi" Grid.Row="2" Style="{StaticResource SatModHint}"
+                     Margin="0,8,0,0" TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis" />
+        </Grid>
 
-        <StackPanel x:Name="KalemOneriPanel" Grid.Row="4" Margin="0,14,0,0" Visibility="Collapsed">
-          <TextBlock Text="Satınalma Önerisi (Kalem Bazlı)" Style="{StaticResource SatModSectionTitle}" />
-          <TextBlock Style="{StaticResource SatModHint}" Margin="0,0,0,8" TextWrapping="Wrap"
-                     Text="Her kalem için önerdiğiniz firmayı ve birim fiyatı seçin. Farklı kalemlerde farklı firmalar önerebilirsiniz." />
-          <ItemsControl x:Name="KalemOneriListesi" ItemTemplate="{StaticResource KalemOneriSatirSablonu}" />
-          <Button Content="Kalem Önerilerini Temizle" Style="{StaticResource ToolbarButtonStyle}"
-                  Click="KalemOneriTemizle_Click" Margin="0,8,0,0" Padding="10,6" HorizontalAlignment="Left" />
-        </StackPanel>
+        <Expander x:Name="KalemOneriPanel" Grid.Row="4" Margin="0,8,0,0"
+                  Header="Satınalma birim önerisi (kalem bazlı)"
+                  IsExpanded="False" Visibility="Collapsed"
+                  FontSize="12" Foreground="{StaticResource SatModInkBrush}">
+          <StackPanel Margin="0,6,0,0">
+            <TextBlock Style="{StaticResource SatModHint}" Margin="0,0,0,6" TextWrapping="Wrap"
+                       Text="Her kalem için önerdiğiniz firmayı seçin. Farklı kalemlerde farklı firmalar önerebilirsiniz." />
+            <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto">
+              <ItemsControl x:Name="KalemOneriListesi" ItemTemplate="{StaticResource KalemOneriSatirSablonu}" />
+            </ScrollViewer>
+            <Button Content="Kalem Önerilerini Temizle" Style="{StaticResource ToolbarButtonStyle}"
+                    Click="KalemOneriTemizle_Click" Margin="0,6,0,0" Padding="10,5" HorizontalAlignment="Left" />
+          </StackPanel>
+        </Expander>
 
-        <StackPanel x:Name="KalemOnayPanel" Grid.Row="5" Margin="0,14,0,0" Visibility="Collapsed">
-          <TextBlock Text="Firma Onayı" Style="{StaticResource SatModSectionTitle}" />
-          <TextBlock Style="{StaticResource SatModHint}" Margin="0,0,0,8" TextWrapping="Wrap"
-                     Text="Her kalem için onaylanacak firmayı seçin; ardından «Teklif Onayla» ile süreci tamamlayın." />
-          <ItemsControl x:Name="KalemOnayListesi" ItemTemplate="{StaticResource KalemOnaySatirSablonu}" />
-        </StackPanel>
-
-        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
-          <Button x:Name="BtnOneri" Content="Tüm Teklifi Öner" Style="{StaticResource ToolbarButtonStyle}"
-                  Click="Oneri_Click" Margin="0,0,8,0" Padding="12,8" />
-          <Button x:Name="BtnTedarikciPdf" Content="Teklif İsteme PDF" Style="{StaticResource ToolbarButtonStyle}"
-                  Click="TedarikciPdf_Click" Margin="0,0,8,0" Padding="12,8" />
-          <Button x:Name="BtnKarsilastirmaPdf" Content="Karşılaştırma PDF" Style="{StaticResource ToolbarButtonStyle}"
-                  Click="KarsilastirmaPdf_Click" Margin="0,0,8,0" Padding="12,8" Visibility="Collapsed" />
-          <Button x:Name="BtnKaydet" Content="Kaydet" Style="{StaticResource ToolbarButtonStyle}"
-                  Click="Kaydet_Click" Margin="0,0,8,0" Padding="16,8" />
-          <Button x:Name="BtnTeklifOnayla" Content="Teklif Onayla" Style="{StaticResource PrimaryToolbarButtonStyle}"
-                  Click="TeklifOnayla_Click" Margin="0,0,8,0" Padding="18,8" Visibility="Collapsed" />
-          <Button x:Name="BtnOnayaGonder" Content="Onaya Gönder" Style="{StaticResource PrimaryToolbarButtonStyle}"
-                  Click="OnayaGonder_Click" Padding="18,8" />
-        </StackPanel>
+        <Expander x:Name="KalemOnayPanel" Grid.Row="5" Margin="0,8,0,0"
+                  Header="Firma onayı (kalem bazlı)"
+                  IsExpanded="False" Visibility="Collapsed"
+                  FontSize="12" Foreground="{StaticResource SatModInkBrush}">
+          <StackPanel Margin="0,6,0,0">
+            <TextBlock Style="{StaticResource SatModHint}" Margin="0,0,0,6" TextWrapping="Wrap"
+                       Text="Her kalem için onaylanacak firmayı seçin; ardından «Teklif Onayla» ile süreci tamamlayın." />
+            <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto">
+              <ItemsControl x:Name="KalemOnayListesi" ItemTemplate="{StaticResource KalemOnaySatirSablonu}" />
+            </ScrollViewer>
+          </StackPanel>
+        </Expander>
       </Grid>
     </Border>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+      <Button x:Name="BtnOneri" Content="Tüm Teklifi Öner" Style="{StaticResource ToolbarButtonStyle}"
+              Click="Oneri_Click" Margin="0,0,8,0" Padding="12,8" />
+      <Button x:Name="BtnTedarikciPdf" Content="Teklif İsteme PDF" Style="{StaticResource ToolbarButtonStyle}"
+              Click="TedarikciPdf_Click" Margin="0,0,8,0" Padding="12,8" />
+      <Button x:Name="BtnKarsilastirmaPdf" Content="Karşılaştırma PDF" Style="{StaticResource ToolbarButtonStyle}"
+              Click="KarsilastirmaPdf_Click" Margin="0,0,8,0" Padding="12,8" Visibility="Collapsed" />
+      <Button x:Name="BtnKaydet" Content="Kaydet" Style="{StaticResource ToolbarButtonStyle}"
+              Click="Kaydet_Click" Margin="0,0,8,0" Padding="16,8" />
+      <Button x:Name="BtnTeklifOnayla" Content="Teklif Onayla" Style="{StaticResource PrimaryToolbarButtonStyle}"
+              Click="TeklifOnayla_Click" Margin="0,0,8,0" Padding="18,8" Visibility="Collapsed" />
+      <Button x:Name="BtnOnayaGonder" Content="Onaya Gönder" Style="{StaticResource PrimaryToolbarButtonStyle}"
+              Click="OnayaGonder_Click" Padding="18,8" />
+    </StackPanel>
   </Grid>
 </UserControl>

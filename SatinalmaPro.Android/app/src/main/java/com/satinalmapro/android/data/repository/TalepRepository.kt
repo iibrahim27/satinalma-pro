@@ -60,30 +60,33 @@ class TalepRepository(
         return synced to degisti
     }
 
+    /**
+     * Başarılı okuma: liste (boş olabilir).
+     * Geçici ağ/Firestore hatası: exception — çağıran son iyi veriyi korumalı.
+     * Boş listeyi "başarısız okuma" sanmayın; yalnızca gerçek `"[]"` için empty döner.
+     */
     suspend fun loadTalepler(): List<TalepItem> {
-        return runCatching {
-            val ayarlar = loadAyarlar()
-            val silinen = runCatching {
-                ayarlar.silinenTalepIdleri.map { it.lowercase() }.toSet()
-            }.getOrDefault(emptySet())
-            val json = firestore.readDocumentJson("veri/satinalma_talepler") ?: return@runCatching emptyList()
-            val raw = runCatching {
-                gson.fromJson<List<TalepItem?>>(json, listType) ?: emptyList()
-            }.getOrDefault(emptyList())
-            val normalized = raw.mapNotNull { item ->
-                runCatching { item?.normalized() }.getOrNull()
-            }
-            val filtered = if (silinen.isEmpty()) normalized
-            else normalized.filterNot { silinen.contains(it.id.lowercase()) }
-            val (synced, degisti) = syncStatuses(filtered)
-            if (degisti && auth.uid != null) {
-                runCatching { saveTalepler(synced) }
-            }
-            synced
+        val ayarlar = loadAyarlar()
+        val silinen = runCatching {
+            ayarlar.silinenTalepIdleri.map { it.lowercase() }.toSet()
+        }.getOrDefault(emptySet())
+        val json = firestore.readDocumentJson("veri/satinalma_talepler")
+            ?: throw IllegalStateException("Talep dokümanı okunamadı (boş/geçici yanıt)")
+        val raw = runCatching {
+            gson.fromJson<List<TalepItem?>>(json, listType) ?: emptyList()
         }.getOrElse { ex ->
-            BildirimLog.e("TALEP", "loadTalepler başarısız", ex)
-            emptyList()
+            throw IllegalStateException("Talep JSON parse hatası: ${ex.message}", ex)
         }
+        val normalized = raw.mapNotNull { item ->
+            runCatching { item?.normalized() }.getOrNull()
+        }
+        val filtered = if (silinen.isEmpty()) normalized
+        else normalized.filterNot { silinen.contains(it.id.lowercase()) }
+        val (synced, degisti) = syncStatuses(filtered)
+        if (degisti && auth.uid != null) {
+            runCatching { saveTalepler(synced) }
+        }
+        return synced
     }
 
     suspend fun loadAyarlar(): SatinalmaAyarlar {

@@ -46,6 +46,8 @@ public static class MasaustuRolHaritasi
             ["satinalma-siparis"] = AlinanMalzemeler,
             ["satinalma-mal-kabul"] = "Mal Kabul Edilmiş",
             ["satinalma-onaylanan"] = OnaylananTeklifler,
+            ["satinalma-onay-gecmisi"] = OnayGecmisi,
+            ["yonetim-onay-gecmisi"] = OnayGecmisi,
             ["satinalma-teklif-istenen"] = TeklifGirisi,
             ["satinalma-teklif-girilen"] = TeklifGirisi,
             ["satinalma-teklif-duzeltme"] = "Düzeltme Bekleyen",

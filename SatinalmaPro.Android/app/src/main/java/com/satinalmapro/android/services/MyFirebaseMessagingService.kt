@@ -45,21 +45,23 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             ?: ""
 
         if (!canShowNotifications()) {
-            Log.w(TAG, "POST_NOTIFICATIONS izni yok — bildirim gösterilemedi")
-            return
+            Log.w(TAG, "POST_NOTIFICATIONS izni yok — tray atlandı, veri yine yenilenecek")
+        } else {
+            ensureNotificationChannel()
+            val route = resolveRoute(data)
+            val bildirimId = data["bildirimId"]
+                ?: data["bildirim_id"]
+                ?: data["notificationId"]
+                ?: ""
+            showActionNotification(title, body, route, bildirimId)
         }
 
-        ensureNotificationChannel()
-        val route = resolveRoute(data)
-        val bildirimId = data["bildirimId"]
-            ?: data["bildirim_id"]
-            ?: data["notificationId"]
-            ?: ""
-        showActionNotification(title, body, route, bildirimId)
-
+        // FCM geldiğinde talepleri de çek — telefonlarda 45 sn bekleme olmasın.
         scope.launch {
-            runCatching { SatinalmaProApp.get(applicationContext).container.refreshNotifications() }
-                .onFailure { error -> Log.e(TAG, "Bildirim listesi yenileme hatası", error) }
+            val container = runCatching { SatinalmaProApp.get(applicationContext).container }.getOrNull()
+                ?: return@launch
+            runCatching { container.syncLiveData() }
+                .onFailure { error -> Log.e(TAG, "Canlı senkron hatası", error) }
         }
     }
 
@@ -85,9 +87,17 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     private fun resolveRoute(data: Map<String, String>): String {
         val explicit = data["route"]?.takeIf { it.isNotBlank() }
             ?: data["bildirim_route"]?.takeIf { it.isNotBlank() }
+            ?: data["screen"]?.takeIf { it.isNotBlank() }
         if (!explicit.isNullOrBlank()) return explicit
 
-        val tip = data["tip"] ?: data["type"] ?: data["event"] ?: ""
+        val eventCode = data["eventCode"].orEmpty()
+        val rawTip = data["tip"].orEmpty().ifBlank { data["type"].orEmpty() }
+        val tip = when {
+            eventCode.isNotBlank() -> eventCodeToLegacyTip(eventCode)
+            rawTip.uppercase() in setOf("APPROVAL", "INFO", "TASK", "WARNING", "REMINDER", "URGENT", "CRITICAL") ->
+                eventCodeToLegacyTip(eventCode).ifBlank { rawTip }
+            else -> rawTip
+        }
         val talepId = data["talepId"]
             ?: data["request_id"]
             ?: data["requestId"]
@@ -96,6 +106,19 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             SatinalmaProApp.get(applicationContext).container.user.value?.role
         }.getOrNull()
         return BildirimRota.hedefRoute(BildirimRota.normalizeTip(tip), talepId, role)
+    }
+
+    private fun eventCodeToLegacyTip(eventCode: String): String = when (eventCode) {
+        "talep.yonetime_gonderildi", "talep.olusturuldu", "talep.sla_yaklasiyor", "talep.sla_asildi" ->
+            "yonetime_gonderildi"
+        "teklif.istendi" -> "teklif_istendi"
+        "teklif.yonetime_gonderildi" -> "teklif_onayda"
+        "teklif.duzeltme_istendi" -> "teklif_duzeltme_istendi"
+        "talep.onaylandi" -> "onaylandi"
+        "talep.reddedildi" -> "reddedildi"
+        "siparis.olusturuldu" -> "siparis_olusturuldu"
+        "depo.mal_kabul_yapildi" -> "mal_kabul_edildi"
+        else -> eventCode
     }
 
     private fun showActionNotification(
