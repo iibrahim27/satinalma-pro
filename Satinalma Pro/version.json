@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.57",
-    "build":  123,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.57/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.57/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.57/SatinalmaPro.apk",
-    "notes":  "Bildirim kaliciligi / teklif-onayda FCM; Alinan Malzemeler sync; Acil onay-red; Normal onay+teklif iste+red (Yonetim+Satinalma); Depo Stok Girisi Satinalma; bildirim blob 1MB fix",
+    "version":  "2.1.58",
+    "build":  124,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.58/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.58/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.58/SatinalmaPro.apk",
+    "notes":  "Android teklif inceleme ekrani sikilastirma (Satinalma/Yonetim)",
     "zorunlu":  false
 }

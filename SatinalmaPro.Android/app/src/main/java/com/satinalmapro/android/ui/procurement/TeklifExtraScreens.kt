@@ -1,17 +1,17 @@
 package com.satinalmapro.android.ui.procurement
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -292,110 +293,159 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
         }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-    AppScreenContent {
+    val quoteReviewUi = PurchaseRequestDetailPresenter.buildUiState(
+        item,
+        user?.role,
+        PurchaseRequestDetailScreen.MANAGEMENT_QUOTE_REVIEW
+    )
+    val quoteRows = PurchaseRequestDetailPresenter.buildQuoteRows(item, user?.role)
+    val compactPad = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = AppColors.Surface,
+        unfocusedContainerColor = AppColors.Surface
+    )
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
+    ) {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(item.talepNo, style = MaterialTheme.typography.headlineMedium, color = AppColors.TextPrimary)
+            Text(item.talepNo, style = MaterialTheme.typography.titleLarge, color = AppColors.TextPrimary)
             StatusBadge(item.durum, AppColors.PrimaryContainer, AppColors.Primary)
         }
         Text(
             "${item.talepEden} · ${item.santiyeAdi}",
             style = MaterialTheme.typography.bodySmall,
-            color = AppColors.TextSecondary,
-            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+            color = AppColors.TextSecondary
         )
 
         if (item.teklifDuzeltmeNotu.isNotBlank()) {
-            AppCard {
-                Column {
-                    Text("Düzeltme Notu", fontWeight = FontWeight.SemiBold)
-                    Text(item.teklifDuzeltmeNotu, color = AppColors.TextSecondary)
-                }
+            AppCard(contentPadding = AppSpacing.sm) {
+                Text("Düzeltme Notu", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge)
+                Text(
+                    item.teklifDuzeltmeNotu,
+                    color = AppColors.TextSecondary,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
             }
-            Spacer(Modifier.height(12.dp))
         }
 
         item.onerilenTeklif()?.let { oneri ->
             AppCard(
+                contentPadding = AppSpacing.sm,
+                containerColor = AppColors.SuccessContainer,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, AppColors.Success, RoundedCornerShape(10.dp))
-                    .background(AppColors.SuccessContainer, RoundedCornerShape(10.dp))
+                    .border(1.dp, AppColors.Success, AppShapes.medium)
             ) {
-                Column(Modifier.padding(12.dp)) {
-                    Text("Satınalma Önerisi", fontWeight = FontWeight.SemiBold, color = AppColors.Success)
+                Text("Satınalma Önerisi", fontWeight = FontWeight.SemiBold, color = AppColors.Success)
+                Text(
+                    oneri.firmaAdi,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.Success,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+                Text(
+                    "KDV Hariç: %.2f TL".format(oneri.araToplam),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.Success
+                )
+                Text(
+                    "KDV Dahil: %.2f TL".format(oneri.genelToplam),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.Success
+                )
+                if (item.satinalmaOnerisiElleSecildi) {
                     Text(
-                        "${oneri.firmaAdi} — KDV Hariç: %.2f TL · KDV Dahil: %.2f TL".format(
-                            oneri.araToplam,
-                            oneri.genelToplam
-                        ),
-                        color = AppColors.Success,
-                        modifier = Modifier.padding(top = 4.dp)
+                        "Elle seçilmiş öneri",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.TextSecondary,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
-                    if (item.satinalmaOnerisiElleSecildi) {
-                        Text("Elle seçilmiş öneri", style = MaterialTheme.typography.labelSmall, color = AppColors.TextSecondary)
-                    }
                 }
             }
-            Spacer(Modifier.height(12.dp))
         }
 
-        val quoteReviewUi = PurchaseRequestDetailPresenter.buildUiState(
-            item,
-            user?.role,
-            PurchaseRequestDetailScreen.MANAGEMENT_QUOTE_REVIEW
-        )
-        val quoteRows = PurchaseRequestDetailPresenter.buildQuoteRows(item, user?.role)
         if (quoteReviewUi.showQuotesList && quoteRows.isNotEmpty()) {
             SectionTitle("Teklifler")
-            quoteRows.forEach { row ->
-                AppCard {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(row.firmName, fontWeight = FontWeight.SemiBold)
-                        if (row.canApprove) {
-                            Button(
-                                onClick = {
-                                    viewModel.applyTalepDetayAction(
-                                        talepId,
-                                        PurchaseRequestDetailAction.APPROVE_QUOTE,
-                                        quoteId = row.quoteId
-                                    ) {
-                                        viewModel.navigate(
-                                            IsAkisRotalari.teklifOnaySonrasi(user?.role, talepId)
-                                        )
-                                    }
-                                },
-                                enabled = !loading,
-                                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Success)
-                            ) {
-                                Text(quoteReviewUi.labelFor(PurchaseRequestDetailAction.APPROVE_QUOTE))
+            Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
+                quoteRows.forEach { row ->
+                    AppCard(contentPadding = AppSpacing.sm) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                row.firmName,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            if (row.canApprove) {
+                                Button(
+                                    onClick = {
+                                        viewModel.applyTalepDetayAction(
+                                            talepId,
+                                            PurchaseRequestDetailAction.APPROVE_QUOTE,
+                                            quoteId = row.quoteId
+                                        ) {
+                                            viewModel.navigate(
+                                                IsAkisRotalari.teklifOnaySonrasi(user?.role, talepId)
+                                            )
+                                        }
+                                    },
+                                    enabled = !loading,
+                                    contentPadding = compactPad,
+                                    modifier = Modifier.heightIn(min = 36.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.Success)
+                                ) {
+                                    Text(
+                                        quoteReviewUi.labelFor(PurchaseRequestDetailAction.APPROVE_QUOTE),
+                                        style = MaterialTheme.typography.labelLarge
+                                    )
+                                }
                             }
                         }
                     }
                 }
-                Spacer(Modifier.height(8.dp))
             }
-            Spacer(Modifier.height(8.dp))
         }
 
-        Text(
-            "Fiyat Karşılaştırma Tablosu",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Fiyat Karşılaştırma",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            if (canDecide && item.onerilenTeklif() != null) {
+                OutlinedButton(
+                    onClick = {
+                        val oneriId = item.onerilenTeklif()!!.id
+                        item.kalemler.forEach { secimMap[it.id] = oneriId }
+                    },
+                    contentPadding = compactPad,
+                    modifier = Modifier.heightIn(min = 32.dp)
+                ) {
+                    Text("Öneriyi uygula", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
         Text(
             "Birim fiyatları karşılaştırın. Seçim için fiyat hücresine dokunun.",
             style = MaterialTheme.typography.bodySmall,
-            color = AppColors.TextSecondary,
-            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+            color = AppColors.TextSecondary
         )
 
         YonetimTeklifKarsilastirmaTablo(
@@ -410,35 +460,30 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
             if (seciliSayisi == 0) "Henüz kalem seçimi yapılmadı."
             else "$seciliSayisi/${item.kalemler.size} kalem için firma seçildi.",
             style = MaterialTheme.typography.bodySmall,
-            color = AppColors.TextSecondary,
-            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+            color = AppColors.TextSecondary
         )
 
-        if (canDecide && item.onerilenTeklif() != null) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
+        ) {
             OutlinedButton(
-                onClick = {
-                    val oneriId = item.onerilenTeklif()!!.id
-                    item.kalemler.forEach { secimMap[it.id] = oneriId }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) { Text("Öneriyi tüm kalemlere uygula") }
-            Spacer(Modifier.height(8.dp))
+                onClick = { SatinalmaPdfHelper.karsilastirmaPaylas(context, item, viewModel.pdfBaglam()) },
+                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                contentPadding = compactPad
+            ) { Text("Karşılaştırma PDF", style = MaterialTheme.typography.labelLarge) }
+            OutlinedButton(
+                onClick = { SatinalmaPdfHelper.yonetimOnayBelgesiPaylas(context, item, viewModel.pdfBaglam()) },
+                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                contentPadding = compactPad
+            ) { Text("Onay Belgesi PDF", style = MaterialTheme.typography.labelLarge) }
         }
 
-        OutlinedButton(
-            onClick = { SatinalmaPdfHelper.karsilastirmaPaylas(context, item, viewModel.pdfBaglam()) },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Karşılaştırma PDF") }
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(
-            onClick = { SatinalmaPdfHelper.yonetimOnayBelgesiPaylas(context, item, viewModel.pdfBaglam()) },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Onay Belgesi Taslağı PDF") }
-        Spacer(Modifier.height(12.dp))
-
-        error?.let { Text(it, color = AppColors.Danger, modifier = Modifier.padding(vertical = 8.dp)) }
+        error?.let { Text(it, color = AppColors.Danger, style = MaterialTheme.typography.bodySmall) }
 
         if (canDecide) {
+            HorizontalDivider(color = AppColors.Border, modifier = Modifier.padding(vertical = AppSpacing.xs))
+
             Button(
                 onClick = {
                     val atamalar = item.kalemler.mapNotNull { kalem ->
@@ -449,20 +494,21 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
                         viewModel.navigate(IsAkisRotalari.teklifOnaySonrasi(user?.role, talepId))
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
                 enabled = !loading,
+                contentPadding = compactPad,
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.Success)
             ) { Text(if (loading) "Lütfen bekleyin..." else "Teklifleri Onayla") }
-            Spacer(Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = geriGonderGerekce,
                 onValueChange = { geriGonderGerekce = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Geri gönderme gerekçesi (isteğe bağlı)") },
-                shape = AppShapes.medium
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                label = { Text("Revize gerekçesi (isteğe bağlı)") },
+                singleLine = true,
+                shape = AppShapes.medium,
+                colors = fieldColors
             )
-            Spacer(Modifier.height(8.dp))
             Button(
                 onClick = {
                     viewModel.applyTalepDetayAction(
@@ -473,21 +519,23 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
                         viewModel.navigate(IsAkisRotalari.duzeltmeGonderSonrasi(user?.role))
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp),
                 enabled = !loading,
+                contentPadding = compactPad,
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.Warning)
             ) {
                 Text(quoteReviewUi.labelFor(PurchaseRequestDetailAction.SEND_QUOTES_FOR_REVISION))
             }
-            Spacer(Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = redGerekce,
                 onValueChange = { redGerekce = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 label = { Text("Red gerekçesi") },
-                shape = AppShapes.medium
+                singleLine = true,
+                shape = AppShapes.medium,
+                colors = fieldColors
             )
-            Spacer(Modifier.height(8.dp))
             Button(
                 onClick = {
                     if (redGerekce.isBlank()) return@Button
@@ -499,14 +547,16 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
                         viewModel.navigate("red-talepler")
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp),
                 enabled = !loading && redGerekce.isNotBlank(),
+                contentPadding = compactPad,
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.Danger)
             ) {
                 Text(quoteReviewUi.labelFor(PurchaseRequestDetailAction.REJECT_ENTIRE_REQUEST))
             }
         }
-    }
+
+        Spacer(Modifier.height(AppSpacing.md))
     }
 }
 
