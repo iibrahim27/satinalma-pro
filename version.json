@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.54",
-    "build":  118,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.54/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.54/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.54/SatinalmaPro.apk",
-    "notes":  "Taleplerim sahiplik filtresi; Atolye siparis bildirim gurultusu kaldirildi",
+    "version":  "2.1.55",
+    "build":  120,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.55/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.55/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.55/SatinalmaPro.apk",
+    "notes":  "Taleplerim ortak gorunum; duzenle/sil sahiplik (Satinalma tam yetki). Atolye siparis bildirim temizligi.",
     "zorunlu":  false
 }

@@ -147,10 +147,7 @@ public static class DashboardServisi
     private static DashboardOzet SefOzet(
         DashboardVeriKaynagi kaynak, ISatinalmaDashboardSorgu satinalma, string ad, string uid, int bildirim)
     {
-        var taleplerimListe = KayitliTumTalepler(satinalma)
-            .Where(t => SatinalmaTalepKuyrugu.TaleplerimListesindeGoster(t, uid, ad, KullaniciRolleri.Sef))
-            .ToList();
-        var taleplerim = taleplerimListe.Count;
+        var taleplerim = KayitliTumTalepler(satinalma).Count();
 
         return new()
         {
@@ -161,13 +158,13 @@ public static class DashboardServisi
                 Kart("Taleplerim", taleplerim.ToString(), "Toplam talep", "#1B3A5C", "taleplerim"),
                 Kart("Onay Bekleyen", satinalma.OnayBekleyenTalepler().Count().ToString(), "İşlemde", "#E67E22", "onay-bekleyen"),
                 Kart("Onaylanan", satinalma.OnaylanmisTalepler().Count().ToString(), "Firma seçildi", "#27AE60", "onaylanan-talepler"),
-                Kart("Siparişte", taleplerimListe.Count(SiparisDurum).ToString(), "Teslim bekliyor", "#2980B9", "onaylanan-talepler"),
-                Kart("Reddedilen", taleplerimListe.Count(t => t.Durum == SatinalmaTalepDurumlari.Reddedildi).ToString(), "Geri dönen", "#C0392B", "taleplerim"),
+                Kart("Siparişte", KayitliTumTalepler(satinalma).Count(SiparisDurum).ToString(), "Teslim bekliyor", "#2980B9", "onaylanan-talepler"),
+                Kart("Reddedilen", KayitliTumTalepler(satinalma).Count(t => t.Durum == SatinalmaTalepDurumlari.Reddedildi).ToString(), "Geri dönen", "#C0392B", "taleplerim"),
                 Kart("Alınan Malz.", satinalma.OnaylananMalzemeleriOlustur().Count(s => s.KabulEdilenMiktar > 0.0001).ToString(), "Teslim alınan", "#8E44AD", "onaylanan-malzemeler"),
                 Kart("Stok Kritik", StokKritik(kaynak).ToString(), "Depo durumu", "#34495E", "stok-durum"),
                 Kart("Bildirimler", bildirim.ToString(), "Okunmamış", "#7F8C8D", "bildirimler")
             ],
-            SonAktivite = SonTalepler(kaynak, 5, taleplerimListe)
+            SonAktivite = SonTalepler(kaynak, 5, KayitliTumTalepler(satinalma))
         };
     }
 
@@ -189,10 +186,7 @@ public static class DashboardServisi
     private static DashboardOzet SahaOzet(
         DashboardVeriKaynagi kaynak, ISatinalmaDashboardSorgu satinalma, string ad, string uid, int bildirim)
     {
-        var taleplerimListe = KayitliTumTalepler(satinalma)
-            .Where(t => SatinalmaTalepKuyrugu.TaleplerimListesindeGoster(t, uid, ad, KullaniciRolleri.Saha))
-            .ToList();
-        var taleplerim = taleplerimListe.Count;
+        var taleplerim = KayitliTumTalepler(satinalma).Count();
 
         return new()
         {
@@ -203,12 +197,12 @@ public static class DashboardServisi
                 Kart("Taleplerim", taleplerim.ToString(), "Toplam talep", "#1B3A5C", "taleplerim"),
                 Kart("Onay Bekleyen", satinalma.OnayBekleyenTalepler().Count().ToString(), "İşlemde", "#E67E22", "onay-bekleyen"),
                 Kart("Onaylanan", satinalma.OnaylanmisTalepler().Count().ToString(), "Firma onaylandı", "#27AE60", "onaylanan-talepler"),
-                Kart("Siparişte", taleplerimListe.Count(SiparisDurum).ToString(), "Teslim bekliyor", "#2980B9", "onaylanan-talepler"),
-                Kart("Reddedilen", taleplerimListe.Count(t => t.Durum == SatinalmaTalepDurumlari.Reddedildi).ToString(), "Geri dönen", "#C0392B", "taleplerim"),
+                Kart("Siparişte", KayitliTumTalepler(satinalma).Count(SiparisDurum).ToString(), "Teslim bekliyor", "#2980B9", "onaylanan-talepler"),
+                Kart("Reddedilen", KayitliTumTalepler(satinalma).Count(t => t.Durum == SatinalmaTalepDurumlari.Reddedildi).ToString(), "Geri dönen", "#C0392B", "taleplerim"),
                 Kart("Stok Kritik", StokKritik(kaynak).ToString(), "Depo durumu", "#8E44AD", "stok-durum"),
                 Kart("Bildirimler", bildirim.ToString(), "Okunmamış", "#34495E", "bildirimler")
             ],
-            SonAktivite = SonTalepler(kaynak, 5, taleplerimListe)
+            SonAktivite = SonTalepler(kaynak, 5, KayitliTumTalepler(satinalma))
         };
     }
 

@@ -106,9 +106,7 @@ public static class MasaustuPart1Ayna
                 && (t.HerhangiKalemOnayli || t.TeklifsizYonetimOnayi || t.YonetimOnayKilitli),
             "gelen-talepler" => SatinalmaTalepKuyrugu.YonetimTalepler(t),
             "yonetim-teklif-girilen" => SatinalmaTalepKuyrugu.YonetimTeklifler(t),
-            "taleplerim" => SatinalmaTalepKuyrugu.KayitliTalep(t) &&
-                (rol is KullaniciRolleri.Satinalma or KullaniciRolleri.Admin ||
-                 SatinalmaTalepKuyrugu.KullanicininTalebi(t, uid, ad)),
+            "taleplerim" => SatinalmaTalepKuyrugu.KayitliTalep(t),
             _ => false
         };
     }
