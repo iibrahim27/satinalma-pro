@@ -53,6 +53,7 @@ public partial class YonetimTeklifIncelemeWindow : Window
         _talep = talep;
         talep.Kalemler ??= [];
         talep.Teklifler ??= [];
+        ProcurementTalepAdapter.StatusSenkronizeEt(talep);
 
         foreach (var teklif in talep.Teklifler)
             teklif.FiyatlariHesapla(talep.Kalemler);
@@ -200,10 +201,11 @@ public partial class YonetimTeklifIncelemeWindow : Window
         var ui = PurchaseRequestDetailServisi.UiDurumu(
             talep, rol, PurchaseRequestDetailScreen.ManagementQuoteReview);
 
-        var onaylanabilir = SatinalmaPart1OnayYardimcisi.TeklifOnaylanabilir(talep);
+        var onaylanabilir = SatinalmaPart1OnayYardimcisi.TeklifOnaylanabilir(talep)
+            || ui.IsActionVisible(PurchaseRequestDetailAction.ApproveQuote);
         _secimAktif = onaylanabilir && ui.ShowPerQuoteApproveButtons;
 
-        BtnOnayla.Visibility = onaylanabilir && ui.ShowPerQuoteApproveButtons
+        BtnOnayla.Visibility = _secimAktif
             ? Visibility.Visible
             : Visibility.Collapsed;
 
@@ -217,7 +219,7 @@ public partial class YonetimTeklifIncelemeWindow : Window
             : Visibility.Collapsed;
         BtnGeriGonder.Content = ui.LabelFor(PurchaseRequestDetailAction.SendQuotesForRevision);
 
-        BtnOneriyiUygula.Visibility = onaylanabilir && talep.OnerilenTeklif() is not null
+        BtnOneriyiUygula.Visibility = _secimAktif && talep.OnerilenTeklif() is not null
             ? Visibility.Visible
             : Visibility.Collapsed;
     }

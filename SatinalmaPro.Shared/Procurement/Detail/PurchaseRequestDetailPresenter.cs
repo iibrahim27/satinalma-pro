@@ -45,12 +45,15 @@ public static class PurchaseRequestDetailPresenter
         var resolvedScreen = screen ?? ResolveScreen(talep);
         var status = ProcurementStatusResolver.Resolve(talep);
         var priority = ResolvePriority(talep);
-        var canManage = CanManagementDecide(role);
+        var canSubmitted = CanSubmittedDecide(role);
+        var canQuote = CanQuoteDecide(role);
 
         var actions = new List<PurchaseRequestDetailAction>();
         var labels = new Dictionary<PurchaseRequestDetailAction, string>(DefaultLabels);
 
-        if (canManage && resolvedScreen == PurchaseRequestDetailScreen.ManagementSubmittedReview
+        // Gelen talep inceleme: Yönetim + Satınalma + Admin
+        // Acil: yalnızca direkt onay / red — teklif süreci başlatılamaz.
+        if (canSubmitted && resolvedScreen == PurchaseRequestDetailScreen.ManagementSubmittedReview
             && status.Equals(ProcurementStatus.Submitted, StringComparison.OrdinalIgnoreCase))
         {
             var urgent = priority.Equals(ProcurementPriority.Urgent, StringComparison.OrdinalIgnoreCase);
@@ -71,13 +74,16 @@ public static class PurchaseRequestDetailPresenter
         var showQuotes = false;
         var showPerQuoteApprove = false;
 
-        if (canManage && resolvedScreen == PurchaseRequestDetailScreen.ManagementQuoteReview
+        // Teklif inceleme: Yönetim + Satınalma + Admin — onay / red / yeniden teklif (revize)
+        if (canQuote && resolvedScreen == PurchaseRequestDetailScreen.ManagementQuoteReview
             && status.Equals(ProcurementStatus.ManagementQuoteReview, StringComparison.OrdinalIgnoreCase))
         {
             showQuotes = (talep.Teklifler?.Count ?? 0) > 0;
             showPerQuoteApprove = showQuotes && !talep.YonetimOnayKilitli && !talep.HerhangiKalemOnayli;
             actions.Add(PurchaseRequestDetailAction.RejectEntireRequest);
             actions.Add(PurchaseRequestDetailAction.SendQuotesForRevision);
+            if (showPerQuoteApprove)
+                actions.Add(PurchaseRequestDetailAction.ApproveQuote);
         }
 
         return new PurchaseRequestDetailUiState
@@ -149,9 +155,16 @@ public static class PurchaseRequestDetailPresenter
         };
     }
 
-    public static bool CanManagementDecide(string? role)
+    /// <summary>Gelen talep: teklif iste / direkt onay / red — Yönetim, Satınalma, Admin.</summary>
+    public static bool CanSubmittedDecide(string? role)
     {
         var normalized = KullaniciRolleri.Normalize(role);
-        return normalized is KullaniciRolleri.Admin or KullaniciRolleri.Yonetim;
+        return normalized is KullaniciRolleri.Admin or KullaniciRolleri.Yonetim or KullaniciRolleri.Satinalma;
     }
+
+    /// <summary>Teklif inceleme: onay / red / revize — Yönetim, Satınalma, Admin.</summary>
+    public static bool CanQuoteDecide(string? role) => CanSubmittedDecide(role);
+
+    /// <summary>Geriye uyumluluk — gelen + teklif karar yetkisi.</summary>
+    public static bool CanManagementDecide(string? role) => CanSubmittedDecide(role);
 }

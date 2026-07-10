@@ -1,9 +1,11 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
+using SatinalmaPro.Services;
 
 namespace SatinalmaPro.Views.Modules;
 
@@ -111,6 +113,10 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
         if (e.EditAction != DataGridEditAction.Commit)
             return;
 
+        // Düzenleme TextBox'ından kaynağı hemen yaz — Kaydet tıklanınca fiyat kaçmasın.
+        if (e.EditingElement is TextBox textBox)
+            textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+
         if (e.Column is DataGridComboBoxColumn && e.EditingElement is FrameworkElement element)
         {
             var combo = ComboKutusunuBul(element);
@@ -172,21 +178,82 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
     {
         try
         {
-            // Kaydet'e basıldığında odak hâlâ hücrede olabilir — önce odağı al,
-            // sonra CommitEdit; fiyat bağları kaçmasın.
+            // Aktif hücredeki TextBox metnini modele zorla yaz (CommitEdit yetmeyebilir).
+            AktifHucreKaynaginiGuncelle();
+
             if (FiyatGrid.IsKeyboardFocusWithin)
                 BtnKaydet.Focus();
+
+            // Binding / LostFocus kuyruğunun boşalması için bir tur bekle.
+            Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Input);
 
             FiyatGrid.CommitEdit(DataGridEditingUnit.Cell, true);
             FiyatGrid.CommitEdit(DataGridEditingUnit.Row, true);
         }
-        catch
+        catch (Exception ex)
         {
-            // düzenleme zaten kapanıyorsa yoksay
+            HataGunlugu.Kaydet(ex, "TeklifDuzenle.BekleyenDuzenleme");
         }
 
         foreach (var satir in _satirlar)
             satir.MetindenDegerleriYenile();
+    }
+
+    private void AktifHucreKaynaginiGuncelle()
+    {
+        try
+        {
+            if (Keyboard.FocusedElement is TextBox odakli)
+            {
+                odakli.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                return;
+            }
+
+            var hucre = FiyatGrid.CurrentCell;
+            if (!hucre.IsValid || hucre.Item is not TeklifFiyatSatir satir)
+                return;
+
+            // Görsel ağaçta düzenleme TextBox'ını bul
+            var satirUi = FiyatGrid.ItemContainerGenerator.ContainerFromItem(satir) as DataGridRow;
+            if (satirUi is null)
+                return;
+
+            var textBox = DuzenlemeTextBoxunuBul(satirUi);
+            if (textBox is null)
+                return;
+
+            textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            if (hucre.Column?.Header?.ToString()?.Contains("Birim", StringComparison.OrdinalIgnoreCase) == true
+                || Equals(hucre.Column?.SortMemberPath, nameof(TeklifFiyatSatir.BirimFiyatMetni)))
+            {
+                satir.BirimFiyatMetni = textBox.Text;
+            }
+            else if (hucre.Column?.Header?.ToString()?.Contains("KDV", StringComparison.OrdinalIgnoreCase) == true
+                     || Equals(hucre.Column?.SortMemberPath, nameof(TeklifFiyatSatir.KdvOraniMetni)))
+            {
+                satir.KdvOraniMetni = textBox.Text;
+            }
+        }
+        catch (Exception ex)
+        {
+            HataGunlugu.Kaydet(ex, "TeklifDuzenle.AktifHucre");
+        }
+    }
+
+    private static TextBox? DuzenlemeTextBoxunuBul(DependencyObject kok)
+    {
+        if (kok is TextBox tb)
+            return tb;
+
+        var adet = VisualTreeHelper.GetChildrenCount(kok);
+        for (var i = 0; i < adet; i++)
+        {
+            var bulunan = DuzenlemeTextBoxunuBul(VisualTreeHelper.GetChild(kok, i));
+            if (bulunan is not null)
+                return bulunan;
+        }
+
+        return null;
     }
 
     private void ToplamlariGuncelle()
@@ -241,8 +308,12 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
 
         if (!_satirlar.Any(s => s.BirimFiyat > 0))
         {
+            var gecersizMetin = _satirlar.FirstOrDefault(s =>
+                !string.IsNullOrWhiteSpace(s.BirimFiyatMetni) && s.BirimFiyat <= 0);
             MessageBox.Show(
-                "En az bir kalem için birim fiyat girin.\n\nFiyatı yazdıktan sonra hücreden çıkıp Kaydet'e basın (veya Enter).",
+                gecersizMetin is not null
+                    ? $"Geçersiz birim fiyat: \"{gecersizMetin.BirimFiyatMetni}\" ({gecersizMetin.Malzeme}).\n\nSayısal bir değer girin (ör. 12,50)."
+                    : "En az bir kalem için birim fiyat girin.",
                 UygulamaBilgisi.Ad,
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;

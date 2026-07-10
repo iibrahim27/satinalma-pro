@@ -44,6 +44,8 @@ public partial class GelenTalepDetayView : UserControl
 
         _talep = SatinalmaDepo.Talepler.FirstOrDefault(t => t.Id == talep.Id) ?? talep;
 
+        ProcurementTalepAdapter.StatusSenkronizeEt(_talep);
+
 
 
         TxtBaslik.Text = $"Talep · {_talep.TalepNo}";

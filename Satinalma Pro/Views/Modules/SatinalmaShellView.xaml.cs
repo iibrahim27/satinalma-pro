@@ -6,6 +6,7 @@ using System.Windows.Threading;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
+using SatinalmaPro.Shared.Procurement.Detail;
 using SatinalmaPro.Shared.Services;
 using SatinalmaPro.Views.Modules.Satinalma;
 using SatinalmaPro.Views.Modules.Satinalma.Part1;
@@ -546,7 +547,23 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
 
         if (SatinalmaPart1Menusu.TeklifGirisRoute(_aktifRoute))
         {
-            if (!KullaniciRolleri.SatinalmaTeklifGirebilir(OturumYoneticisi.AktifKullanici?.Rol))
+            ProcurementTalepAdapter.StatusSenkronizeEt(talep);
+            var rol = OturumYoneticisi.AktifKullanici?.Rol;
+            var ui = PurchaseRequestDetailServisi.UiDurumu(
+                talep, rol, PurchaseRequestDetailScreen.ManagementQuoteReview);
+
+            // Yönetime gönderilmiş teklif incelemesi: onay / red / revize (Yönetim + Satınalma)
+            if (ui.Screen == PurchaseRequestDetailScreen.ManagementQuoteReview
+                && PurchaseRequestDetailPresenter.CanQuoteDecide(rol)
+                && (ui.VisibleActions.Count > 0 || ui.ShowPerQuoteApproveButtons)
+                && _aktifRoute is not SatinalmaPart1Menusu.SatinalmaTeklifIstenen)
+            {
+                if (YonetimTeklifIncelemeWindow.Goster(Window.GetWindow(this), talep))
+                    NavRozetleriniGuncelle();
+                return;
+            }
+
+            if (!KullaniciRolleri.SatinalmaTeklifGirebilir(rol))
             {
                 _yonetimDetay ??= OlusturYonetimDetay();
                 _yonetimDetay.Yukle(talep, YonetimTalepDetayModu.Gecmis);
