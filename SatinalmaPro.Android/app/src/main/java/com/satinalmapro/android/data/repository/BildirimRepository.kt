@@ -18,6 +18,8 @@ import com.satinalmapro.android.data.firebase.FirebaseAuthClient
 import com.satinalmapro.android.data.firebase.FirestoreClient
 import com.satinalmapro.android.core.helpers.BildirimLog
 import com.satinalmapro.android.services.FcmPushService
+import com.satinalmapro.shared.filter.ProcurementStatus
+import com.satinalmapro.shared.filter.resolvedEnterpriseStatus
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -417,24 +419,32 @@ class BildirimRepository(
         if (talepId.isBlank()) return false
 
         val talep = talepler.firstOrNull { it.id.equals(talepId, true) } ?: return true
+        val tamamlandi = talep.resolvedEnterpriseStatus() == ProcurementStatus.COMPLETED
         return when (tip) {
             BildirimTipleri.YONETIME_GONDERILDI ->
-                TalepKuyrugu.yonetimTalepler(talep) ||
-                    TalepKuyrugu.onayBekleyen(talep)
+                !tamamlandi && (
+                    TalepKuyrugu.yonetimTalepler(talep) ||
+                        TalepKuyrugu.onayBekleyen(talep)
+                    )
             BildirimTipleri.TEKLIF_ISTENDI ->
-                !TalepKuyrugu.teklifYonetimOnayiBekliyor(talep) &&
+                !tamamlandi &&
+                    !TalepKuyrugu.teklifYonetimOnayiBekliyor(talep) &&
                     !talep.yonetimOnayKilitli &&
                     (TalepKuyrugu.satinalmaTeklifGirisiAktif(talep) ||
                         (talep.durum == TalepDurumlari.TEKLIF_GIRISI && talep.teklifler.isEmpty()))
             BildirimTipleri.TEKLIF_DUZELTME_ISTENDI ->
-                TalepKuyrugu.teklifDuzenlemeDevamEdiyor(talep) &&
+                !tamamlandi &&
+                    TalepKuyrugu.teklifDuzenlemeDevamEdiyor(talep) &&
                     talep.durum != TalepDurumlari.YONETIM_ONAY
-            BildirimTipleri.TEKLIF_ONAYDA -> TalepKuyrugu.yonetimTeklifKarariBekliyor(talep)
+            BildirimTipleri.TEKLIF_ONAYDA ->
+                !tamamlandi && TalepKuyrugu.yonetimTeklifKarariBekliyor(talep)
             BildirimTipleri.REDDEDILDI -> talep.durum == TalepDurumlari.REDDEDILDI
             BildirimTipleri.ONAYLANDI ->
-                talep.durum in setOf(TalepDurumlari.ONAYLANDI, TalepDurumlari.SIPARIS)
-            BildirimTipleri.SIPARIS_OLUSTURULDU -> talep.durum == TalepDurumlari.SIPARIS
-            BildirimTipleri.MAL_KABUL_EDILDI -> true
+                !tamamlandi && talep.durum == TalepDurumlari.ONAYLANDI
+            BildirimTipleri.SIPARIS_OLUSTURULDU ->
+                !tamamlandi && talep.durum == TalepDurumlari.SIPARIS
+            BildirimTipleri.MAL_KABUL_EDILDI ->
+                !tamamlandi && talep.durum == TalepDurumlari.SIPARIS
             else -> false
         }
     }

@@ -36,6 +36,12 @@ class SatinalmaProApp : Application() {
             .onFailure { android.util.Log.e("SatinalmaProApp", "Firebase init fatal", it) }
         runCatching { createNotificationChannel() }
         container = AppContainer(this)
+        // Kayıtlı oturum varsa arka plan senkronunu hemen planla (uygulama kapalıyken de).
+        if (container.hasPersistedSession()) {
+            runCatching {
+                com.satinalmapro.android.services.BackgroundSyncScheduler.ensureScheduled(this)
+            }
+        }
     }
 
     private fun writeCrashFile(threadName: String, throwable: Throwable) {

@@ -26,6 +26,7 @@ import com.satinalmapro.android.ui.components.QueueRow
 fun TalepListScreen(viewModel: AppViewModel, queue: TalepQueue) {
     var search by remember { mutableStateOf("") }
     val loading by viewModel.loading.collectAsState()
+    val initialSyncPending by viewModel.initialSyncPending.collectAsState()
     val items by viewModel.filteredTalepler(queue).collectAsState(initial = emptyList())
     val filtered = items.filter { it.matchesSearch(search) }
 
@@ -39,7 +40,8 @@ fun TalepListScreen(viewModel: AppViewModel, queue: TalepQueue) {
             placeholder = "Talep no, malzeme veya talep eden ara..."
         )
         when {
-            loading && items.isEmpty() -> LoadingState(modifier = Modifier.fillMaxSize())
+            (loading || initialSyncPending) && items.isEmpty() ->
+                LoadingState(modifier = Modifier.fillMaxSize())
             filtered.isEmpty() -> EmptyState(
                 title = if (items.isEmpty()) "Bu firmada henüz kayıt yok" else "Arama sonucu bulunamadı",
                 subtitle = if (items.isEmpty()) "Yeni talep oluştuğunda burada listelenir." else "Farklı bir arama deneyin."

@@ -196,6 +196,11 @@ public static class SatinalmaSiparisIslemleri
         {
             // bildirim hatası mal kabulü engellemez
         }
+
+        // Tüm kalemler tamamlandıysa eski sipariş/mal kabul bildirimlerini düşür.
+        if (ProcurementTalepAdapter.ResolveStatus(talep)
+                .Equals(ProcurementStatus.Completed, StringComparison.OrdinalIgnoreCase))
+            _ = BildirimYoneticisi.GecersizleriOkunduYapAsync();
     }
 
     public static void SevkiyatiTamamla(OnaylananMalzemeSatiri satir)
@@ -226,6 +231,10 @@ public static class SatinalmaSiparisIslemleri
         SatinalmaTalepYardimcisi.Dokun(talep);
         SatinalmaDepo.Kaydet();
         _ = SatinalmaKayitYardimcisi.BulutaHemenGonderAsync();
+
+        if (ProcurementTalepAdapter.ResolveStatus(talep)
+                .Equals(ProcurementStatus.Completed, StringComparison.OrdinalIgnoreCase))
+            _ = BildirimYoneticisi.GecersizleriOkunduYapAsync();
     }
 
     private static void KalemMiktariniGercekleseneGoreAyarla(

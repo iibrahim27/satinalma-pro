@@ -49,6 +49,7 @@ import com.satinalmapro.android.data.local.BildirimHatirlatmaDeposu
 import com.satinalmapro.android.data.local.BiometricPreferences
 import com.satinalmapro.android.data.local.RequestDraftStore
 import com.satinalmapro.android.services.ApkUpdateInstaller
+import com.satinalmapro.android.services.BackgroundSyncScheduler
 import com.satinalmapro.android.services.LocalNotificationHelper
 import com.satinalmapro.android.services.SatinalmaPdfBaglam
 import com.satinalmapro.android.services.StokTeslimFisiHelper
@@ -75,6 +76,7 @@ import java.util.Date
 import java.util.Locale
 
 class AppContainer(private val context: Context) {
+    val appContext: Context get() = context.applicationContext
     enum class UpdateInstallResult { SUCCESS, NEEDS_PERMISSION, FAILED }
 
     data class UpdateCheckResult(
@@ -84,10 +86,6 @@ class AppContainer(private val context: Context) {
     )
 
     private val prefs = context.getSharedPreferences("satinalma_pro", Context.MODE_PRIVATE)
-
-    init {
-        ensureLoginCredentialsFresh()
-    }
 
     val config: FirebaseConfig = loadFirebaseConfig(context)
     val auth = FirebaseAuthClient(config)
@@ -149,15 +147,57 @@ class AppContainer(private val context: Context) {
     private var lastNotifCleanupMs = 0L
     private val notifCleanupIntervalMs = 3 * 60 * 1000L
 
+    init {
+        ensureLoginCredentialsFresh()
+        // Process yeniden doğunca disk cache'i hemen belleğe al (splash beklemeden).
+        if (hasPersistedSession()) {
+            runCatching { hydrateFromOfflineCache() }
+        }
+    }
+
     /** Bellekte geçerli oturum var mı (Activity yeniden oluşsa bile). */
     fun hasActiveSession(): Boolean =
         !auth.uid.isNullOrBlank() &&
             !TenantSession.tenantId().isNullOrBlank() &&
             _user.value?.active == true
 
+    /**
+     * Diskteki son talep/bildirim listesini belleğe yükler — ağ beklemeden anında UI.
+     * Cold start / FCM sonrası boş ekranı önler.
+     */
+    fun hydrateFromOfflineCache() {
+        val tenantId = TenantSession.tenantId()?.takeIf { it.isNotBlank() }
+            ?: prefs.getString("saved_tenant_id", null)?.takeIf { it.isNotBlank() }
+            ?: return
+        if (TenantSession.tenantId().isNullOrBlank()) {
+            TenantSession.set(
+                tenantId,
+                prefs.getString("saved_tenant_ad", null),
+                null
+            )
+        }
+        if (_talepler.value.isEmpty()) {
+            val cached = offlineCache.loadTalepler(tenantId)
+            if (cached.isNotEmpty()) {
+                _talepler.value = cached
+                BildirimLog.i("CACHE", "Offline talepler yüklendi: ${cached.size}")
+            }
+        }
+        if (_notifications.value.isEmpty()) {
+            val cachedNotif = offlineCache.loadNotifications(tenantId)
+            if (cachedNotif.isNotEmpty()) {
+                _notifications.value = cachedNotif
+                BildirimLog.i("CACHE", "Offline bildirimler yüklendi: ${cachedNotif.size}")
+            }
+        }
+    }
+
     suspend fun restoreSession(): Boolean {
         // Zaten giriş yapılmışsa (login sonrası Activity recreate) tekrar restore etme.
-        if (hasActiveSession()) return true
+        if (hasActiveSession()) {
+            hydrateFromOfflineCache()
+            return true
+        }
 
         val json = prefs.getString(KEY_SESSION, null) ?: return false
         return try {
@@ -198,6 +238,9 @@ class AppContainer(private val context: Context) {
             }?.ifBlank { null }
             TenantSession.set(tenantId, tenantAd, lisans)
 
+            // WhatsApp benzeri: ağ gelmeden önce son bilinen talepleri göster.
+            hydrateFromOfflineCache()
+
             loadProfileCache(uid)?.takeIf { it.active }?.let { _user.value = it }
             auth.restoreSession(
                 obj.getString("refreshToken"),
@@ -213,9 +256,9 @@ class AppContainer(private val context: Context) {
                     }
                     if (_user.value == null) throw ex
                 }
-            // FCM token/topic splash'ı bloklamasın — gecikmeli arka plan.
+            // FCM token/topic splash'ı bloklamasın — kısa gecikmeyle arka plan.
             CoroutineScope(Dispatchers.IO).launch {
-                kotlinx.coroutines.delay(12_000)
+                kotlinx.coroutines.delay(2_000)
                 runCatching { registerFcmIfNeeded() }
                 runCatching { syncFcmRoleSubscription(showSuccessToast = false) }
             }
@@ -356,12 +399,11 @@ class AppContainer(private val context: Context) {
             // FCM/SDK: giriş UI otursun; Firestore SDK topic okuması kaldırıldı (native crash).
             // Auth bridge + token kaydı gecikmeli — 1–2 sn'lik atmayı tetiklemesin.
             CoroutineScope(Dispatchers.IO).launch {
-                kotlinx.coroutines.delay(12_000)
+                kotlinx.coroutines.delay(2_000)
                 runCatching { FirebaseAuthBridge.signIn(email, password) }
                     .onFailure { ex ->
                         BildirimLog.w("FCM_TOPIC", "Firebase Auth SDK senkronu atlandı: ${ex.message}")
                     }
-                kotlinx.coroutines.delay(2_000)
                 runCatching { registerFcmIfNeeded() }
                 runCatching { syncFcmRoleSubscription(showSuccessToast = false) }
             }
@@ -379,6 +421,7 @@ class AppContainer(private val context: Context) {
         val uid = auth.uid
         runCatching { FcmSubscriptionHelper(context).unsubscribeAllRoleTopics() }
         runCatching { FirebaseAuthBridge.signOut() }
+        runCatching { BackgroundSyncScheduler.cancel(context) }
         auth.clear()
         TenantSession.clear()
         clearInMemoryTenantData()
@@ -1522,6 +1565,10 @@ class AppContainer(private val context: Context) {
         val mergedRecords = bildirimler.inboxIleBirlestir(cloud, inboxRecords, user)
             .filter { bildirimler.kullaniciyaMi(it, user) && bildirimler.gecerliMi(it, talepList) }
         _notifications.value = bildirimler.toAppNotifications(mergedRecords, user, talepList)
+        val tenantId = TenantSession.tenantId().orEmpty()
+        if (tenantId.isNotBlank()) {
+            offlineCache.saveNotifications(tenantId, _notifications.value)
+        }
         trayBildirimleriniGoster(mergedRecords, user)
     }
 

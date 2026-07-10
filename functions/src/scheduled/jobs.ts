@@ -72,6 +72,20 @@ export const cleanupTempStorage = onSchedule("every 24 hours", async () => {
 export const dailyDigest = onSchedule("0 8 * * *", async () => {
   const tenants = await admin.firestore().collection("tenants").where("aktif", "==", true).get();
   const yesterday = new Date(Date.now() - 86400000);
+  /** Yalnızca aksiyon bekleyen bildirimler günlük özete girer. */
+  const actionable = new Set([
+    "talep.olusturuldu",
+    "talep.yonetime_gonderildi",
+    "talep.imzaya_gonderildi",
+    "teklif.istendi",
+    "teklif.girildi",
+    "teklif.yonetime_gonderildi",
+    "teklif.duzeltme_istendi",
+    "talep.onaylandi",
+    "talep.reddedildi",
+    "talep.sla_yaklasiyor",
+    "talep.sla_asildi",
+  ]);
 
   for (const tenant of tenants.docs) {
     const tenantId = tenant.id;
@@ -82,12 +96,29 @@ export const dailyDigest = onSchedule("0 8 * * *", async () => {
         .collection("notification_inbox")
         .where("createdAt", ">=", yesterday)
         .where("isRead", "==", false)
-        .limit(20)
+        .limit(50)
         .get();
 
       if (inbox.empty) continue;
 
-      const count = inbox.size;
+      const count = inbox.docs.filter((d) => {
+        const data = d.data() as { eventCode?: string; tip?: string; type?: string };
+        const code = String(data.eventCode ?? data.tip ?? data.type ?? "").trim();
+        if (!code) return false;
+        // Tamamlanmış sipariş / mal kabul özetini şişirmesin.
+        if (
+          code === "siparis.olusturuldu" ||
+          code === "depo.mal_kabul_yapildi" ||
+          code === "mal_kabul_edildi" ||
+          code === "siparis_olusturuldu"
+        ) {
+          return false;
+        }
+        return actionable.has(code) || code.startsWith("teklif.") || code.startsWith("talep.");
+      }).length;
+
+      if (count <= 0) continue;
+
       await admin.firestore().collection("notification_dispatch_queue").add({
         uid: user.id,
         tenantId,

@@ -167,7 +167,8 @@ public static class BildirimYoneticisi
 
     private static async Task IlkYukleAsync()
     {
-        await KontrolEtAsync(hatirlatmaGoster: true);
+        // Açılışta eski okunmamışları toast ile tekrar basma; yalnızca geçersizleri temizle.
+        await KontrolEtAsync(hatirlatmaGoster: false);
         BildirimlerDegisti?.Invoke();
     }
 

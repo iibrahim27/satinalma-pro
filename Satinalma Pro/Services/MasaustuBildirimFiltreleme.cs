@@ -1,5 +1,6 @@
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
+using SatinalmaPro.Shared.Procurement;
 using SatinalmaPro.Shared.Services;
 using DesktopBildirimKaydi = SatinalmaPro.Models.BildirimKaydi;
 using DesktopKullaniciProfili = SatinalmaPro.Models.KullaniciProfili;
@@ -30,30 +31,37 @@ public static class MasaustuBildirimFiltreleme
         if (talep is null)
             return true;
 
+        var tamamlandi = ProcurementTalepAdapter.ResolveStatus(talep)
+            .Equals(ProcurementStatus.Completed, StringComparison.OrdinalIgnoreCase);
+
         return tip switch
         {
             BildirimTipleri.YonetimeGonderildi =>
-                SatinalmaTalepKuyrugu.YonetimTalepler(talep)
-                || SatinalmaTalepKuyrugu.OnayBekleyen(talep)
-                || talep.Durum == SatinalmaTalepDurumlari.Hazirlaniyor,
+                !tamamlandi
+                && (SatinalmaTalepKuyrugu.YonetimTalepler(talep)
+                    || SatinalmaTalepKuyrugu.OnayBekleyen(talep)
+                    || talep.Durum == SatinalmaTalepDurumlari.Hazirlaniyor),
             BildirimTipleri.TeklifIstendi =>
-                !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep)
+                !tamamlandi
+                && !SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep)
                 && !talep.YonetimOnayKilitli
                 && (SatinalmaTalepKuyrugu.SatinalmaTeklifGirisiAktif(talep)
                     || (talep.Durum == SatinalmaTalepDurumlari.TeklifGirisi
                         && (talep.Teklifler?.Count ?? 0) == 0)),
             BildirimTipleri.TeklifDuzeltmeIstendi =>
-                SatinalmaTalepYardimcisi.TeklifDuzenlemeDevamEdiyor(talep)
+                !tamamlandi
+                && SatinalmaTalepYardimcisi.TeklifDuzenlemeDevamEdiyor(talep)
                 && talep.Durum != SatinalmaTalepDurumlari.YonetimOnayinda,
             BildirimTipleri.TeklifOnayda =>
-                SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep),
+                !tamamlandi && SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep),
             BildirimTipleri.Reddedildi =>
                 talep.Durum == SatinalmaTalepDurumlari.Reddedildi,
             BildirimTipleri.Onaylandi =>
-                talep.Durum is SatinalmaTalepDurumlari.Onaylandi or SatinalmaTalepDurumlari.SiparisOlusturuldu,
+                !tamamlandi && talep.Durum == SatinalmaTalepDurumlari.Onaylandi,
             BildirimTipleri.SiparisOlusturuldu =>
-                talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu,
-            BildirimTipleri.MalKabulEdildi => true,
+                !tamamlandi && talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu,
+            BildirimTipleri.MalKabulEdildi =>
+                !tamamlandi && talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu,
             _ => false
         };
     }

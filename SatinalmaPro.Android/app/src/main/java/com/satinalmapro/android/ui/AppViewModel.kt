@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.fragment.app.FragmentActivity
 import com.satinalmapro.android.security.BiometricAuthHelper
+import com.satinalmapro.android.services.BackgroundSyncScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
@@ -86,6 +87,10 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading.asStateFlow()
+
+    /** İlk ağ senkronu bitene kadar boş listeyi «kayıt yok» sanma. */
+    private val _initialSyncPending = MutableStateFlow(false)
+    val initialSyncPending: StateFlow<Boolean> = _initialSyncPending.asStateFlow()
     private val workflowMutex = Mutex()
     private val syncMutex = Mutex()
 
@@ -312,18 +317,21 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             }
             _splashDone.value = true
             if (_isLoggedIn.value) {
+                container.hydrateFromOfflineCache()
                 startPostLoginSync()
+                BackgroundSyncScheduler.ensureScheduled(container.appContext)
             }
         }
     }
 
     private fun startPostLoginSync() {
         viewModelScope.launch(Dispatchers.IO) {
-            // Hızlı ilk tur — telefonlarda 8–11 sn bekleme olmasın.
-            kotlinx.coroutines.delay(1_200)
+            _initialSyncPending.value = container.talepList.value.isEmpty()
+            container.hydrateFromOfflineCache()
+            // Gecikme yok — cache zaten ekranda; ağ hemen yenilesin.
             runCatching { container.syncLiveData() }
                 .onFailure { android.util.Log.e("PostLoginSync", "syncLiveData", it) }
-            kotlinx.coroutines.delay(2_500)
+            _initialSyncPending.value = false
             runCatching { container.syncData() }
                 .onFailure { android.util.Log.e("PostLoginSync", "syncData", it) }
         }
@@ -350,6 +358,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 applyPostLoginNavigation()
                 consumePendingNotificationRoute()
                 startPostLoginSync()
+                BackgroundSyncScheduler.ensureScheduled(container.appContext)
             }.onFailure {
                 _loginError.value = NetworkError.translate(it.message)
                 // Başarısız login'de splash'ı tekrar açma; kullanıcı login ekranında kalsın.
@@ -530,9 +539,9 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun startBackgroundRefresh() {
         if (backgroundRefreshStarted) return
         backgroundRefreshStarted = true
-        // Canlı talep+bildirim — telefon Doze/FCM gecikmesinde sekmeler güncel kalsın.
+        BackgroundSyncScheduler.ensureScheduled(container.appContext)
+        // Canlı talep+bildirim — uygulama açıkken sık; arka planda WorkManager tamamlar.
         viewModelScope.launch(Dispatchers.IO) {
-            kotlinx.coroutines.delay(4_000)
             while (true) {
                 val delayMs = if (foreground) 12_000L else 45_000L
                 kotlinx.coroutines.delay(delayMs)
@@ -541,7 +550,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         }
         // Tam senkron (stok/ayarlar) daha seyrek.
         viewModelScope.launch(Dispatchers.IO) {
-            kotlinx.coroutines.delay(20_000)
+            kotlinx.coroutines.delay(15_000)
             while (true) {
                 kotlinx.coroutines.delay(if (foreground) 60_000 else 120_000)
                 if (_isLoggedIn.value) runCatching { container.syncData() }

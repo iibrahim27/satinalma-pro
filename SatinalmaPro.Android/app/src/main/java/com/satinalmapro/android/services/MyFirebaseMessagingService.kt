@@ -56,10 +56,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             showActionNotification(title, body, route, bildirimId)
         }
 
-        // FCM geldiğinde talepleri de çek — telefonlarda 45 sn bekleme olmasın.
+        // FCM geldiğinde oturumu geri yükle + canlı veri çek (uygulama kapalıyken de).
         scope.launch {
             val container = runCatching { SatinalmaProApp.get(applicationContext).container }.getOrNull()
                 ?: return@launch
+            if (!container.hasActiveSession() && container.hasPersistedSession()) {
+                runCatching { container.restoreSession() }
+                    .onFailure { error -> Log.e(TAG, "FCM sonrası oturum yenileme hatası", error) }
+            }
+            container.hydrateFromOfflineCache()
             runCatching { container.syncLiveData() }
                 .onFailure { error -> Log.e(TAG, "Canlı senkron hatası", error) }
         }
