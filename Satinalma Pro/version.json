@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.53",
-    "build":  116,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.53/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.53/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.53/SatinalmaPro.apk",
-    "notes":  "Tamamlanan talep bildirimleri temizlendi; Android aninda cache + arka plan senkron (WorkManager/FCM)",
+    "version":  "2.1.54",
+    "build":  118,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.54/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.54/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.54/SatinalmaPro.apk",
+    "notes":  "Taleplerim sahiplik filtresi; Atolye siparis bildirim gurultusu kaldirildi",
     "zorunlu":  false
 }

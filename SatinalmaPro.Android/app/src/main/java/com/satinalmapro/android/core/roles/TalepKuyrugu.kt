@@ -191,7 +191,13 @@ object TalepKuyrugu {
 
     fun onayGecmisi(t: TalepItem): Boolean = yonetimOnayGecmisinde(t)
 
-    fun taleplerim(t: TalepItem): Boolean = kayitli(t)
+    fun taleplerim(t: TalepItem, uid: String, ad: String, rol: String?): Boolean {
+        if (!kayitli(t)) return false
+        val r = KullaniciRolleri.normalize(rol)
+        // Satınalma/Admin tüm kayıtlı talepleri görür; diğer roller yalnızca kendi taleplerini.
+        if (KullaniciRolleri.isAdmin(rol) || r == KullaniciRolleri.SATINALMA) return true
+        return talepSahibi(t, uid, ad)
+    }
 
     fun filtre(
         queue: com.satinalmapro.android.core.model.TalepQueue,
@@ -205,7 +211,7 @@ object TalepKuyrugu {
         val malzemeler = malzemelerOnbellek ?: OnaylananMalzemeOlusturucu.olustur(list)
         return when (queue) {
             com.satinalmapro.android.core.model.TalepQueue.TALEPLERIM ->
-                list.filter { kayitli(it) }.sortedByDescending { it.guncellemeUtc }
+                list.filter { taleplerim(it, uid, ad, rol) }.sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.ONAY_BEKLEYEN ->
                 list.filter { onayBekleyenListede(it, talepSahibiModu = true) }
                     .sortedByDescending { it.guncellemeUtc }

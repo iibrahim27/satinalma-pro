@@ -51,7 +51,7 @@ public static class BildirimRolPolitikasi
             BildirimTipleri.Reddedildi =>
                 r == KullaniciRolleri.Satinalma,
             BildirimTipleri.SiparisOlusturuldu =>
-                r is KullaniciRolleri.Satinalma or KullaniciRolleri.Depo or KullaniciRolleri.Atolye,
+                r is KullaniciRolleri.Satinalma or KullaniciRolleri.Depo,
             BildirimTipleri.MalKabulEdildi =>
                 r == KullaniciRolleri.Satinalma,
             _ => false
@@ -107,7 +107,6 @@ public static class BildirimRolPolitikasi
     {
         yield return (KullaniciRolleri.Satinalma, null);
         yield return (KullaniciRolleri.Depo, null);
-        yield return (KullaniciRolleri.Atolye, null);
         if (!string.IsNullOrWhiteSpace(talepOlusturanUid)
             && !string.Equals(talepOlusturanUid, islemYapanUid, StringComparison.OrdinalIgnoreCase))
             yield return (null, talepOlusturanUid);

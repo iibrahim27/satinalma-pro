@@ -37,7 +37,7 @@ object BildirimRolPolitikasi {
             BildirimTipleri.ONAYLANDI -> r == KullaniciRolleri.SATINALMA
             BildirimTipleri.REDDEDILDI -> r == KullaniciRolleri.SATINALMA
             BildirimTipleri.SIPARIS_OLUSTURULDU ->
-                r == KullaniciRolleri.SATINALMA || r == KullaniciRolleri.DEPO || r == KullaniciRolleri.ATOLYE
+                r == KullaniciRolleri.SATINALMA || r == KullaniciRolleri.DEPO
             BildirimTipleri.MAL_KABUL_EDILDI -> r == KullaniciRolleri.SATINALMA
             else -> false
         }
@@ -84,7 +84,6 @@ object BildirimRolPolitikasi {
         val hedefler = mutableListOf<Pair<String?, String?>>()
         hedefler += KullaniciRolleri.SATINALMA to null
         hedefler += KullaniciRolleri.DEPO to null
-        hedefler += KullaniciRolleri.ATOLYE to null
         if (!talepOlusturanUid.isNullOrBlank() &&
             !talepOlusturanUid.equals(islemYapanUid, ignoreCase = true)
         ) {

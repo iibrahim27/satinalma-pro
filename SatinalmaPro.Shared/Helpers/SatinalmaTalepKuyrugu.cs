@@ -170,8 +170,20 @@ public static class SatinalmaTalepKuyrugu
         t.HerhangiKalemOnayli;
 
     /// <summary>Tüm kullanıcılar kayıtlı talepleri görür.</summary>
-    public static bool TaleplerimListesindeGoster(SatinalmaTalep t, string? uid, string? adSoyad, string? rol = null) =>
-        KayitliTalep(t);
+    /// <summary>
+    /// Satınalma/Admin tüm kayıtlı talepleri görür; diğer roller yalnızca kendi taleplerini.
+    /// </summary>
+    public static bool TaleplerimListesindeGoster(SatinalmaTalep t, string? uid, string? adSoyad, string? rol = null)
+    {
+        if (!KayitliTalep(t))
+            return false;
+
+        var r = KullaniciRolleri.Normalize(rol);
+        if (KullaniciRolleri.AdminMi(rol) || r == KullaniciRolleri.Satinalma)
+            return true;
+
+        return KullanicininTalebi(t, uid, adSoyad);
+    }
 
     public static bool SahaModu(string? rol) =>
         !KullaniciRolleri.AdminMi(rol)
