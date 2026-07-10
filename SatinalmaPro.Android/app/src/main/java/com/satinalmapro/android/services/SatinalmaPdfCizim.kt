@@ -67,25 +67,38 @@ internal object SatinalmaPdfCizim {
         kompakt: Boolean = false
     ) {
         val canvas = duzen.canvas
-        val logoGenislik = if (kompakt) 84f else 108f
-        val logoYukseklik = if (kompakt) 42f else 54f
+        val logoGenislik = if (kompakt) 120f else 160f
+        val logoYukseklik = if (kompakt) 48f else 64f
         val firmaBoyut = if (kompakt) 11f else 14f
         val baslikBoyut = if (kompakt) 11f else 15f
         val merkezX = duzen.genislik / 2f
-        var metinBaslangicY = duzen.y
 
+        // PdfDocument bazı cihazlarda alpha/hardware bitmap'i atlar — yazılım RGB kopyası.
         val logo = baglam.logoBytes?.let { bytes ->
-            runCatching { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }.getOrNull()
+            runCatching {
+                val ham = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@runCatching null
+                val kopya = android.graphics.Bitmap.createBitmap(
+                    ham.width.coerceAtLeast(1),
+                    ham.height.coerceAtLeast(1),
+                    android.graphics.Bitmap.Config.ARGB_8888
+                )
+                val c = Canvas(kopya)
+                c.drawColor(Color.WHITE)
+                c.drawBitmap(ham, 0f, 0f, null)
+                if (ham !== kopya) ham.recycle()
+                kopya
+            }.getOrNull()
         }
+
         if (logo != null && !logo.isRecycled) {
             val oran = minOf(logoGenislik / logo.width, logoYukseklik / logo.height)
             val w = logo.width * oran
             val h = logo.height * oran
-            val dest = RectF(duzen.margin, duzen.y, duzen.margin + w, duzen.y + h)
+            val left = merkezX - w / 2f
+            val dest = RectF(left, duzen.y, left + w, duzen.y + h)
             canvas.drawBitmap(logo, null, dest, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
-            metinBaslangicY = duzen.y + (h - firmaBoyut - baslikBoyut) / 2f
-            if (metinBaslangicY < duzen.y) metinBaslangicY = duzen.y
-            duzen.y += maxOf(h, firmaBoyut + baslikBoyut + 8f) + 4f
+            duzen.y += h + 8f
+            if (!logo.isRecycled) logo.recycle()
         }
 
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -93,19 +106,11 @@ internal object SatinalmaPdfCizim {
         paint.textSize = firmaBoyut
         paint.textAlign = Paint.Align.CENTER
         paint.color = Color.BLACK
-        if (logo == null) {
-            canvas.drawText(baglam.firmaAdi, merkezX, metinBaslangicY + firmaBoyut, paint)
-            paint.textSize = baslikBoyut
-            paint.color = kirmiziBaslik
-            canvas.drawText(baslik, merkezX, metinBaslangicY + firmaBoyut + baslikBoyut + 4f, paint)
-            duzen.y += if (kompakt) 34f else 44f
-        } else {
-            // Logo varken firma adı + belge başlığı ortada
-            canvas.drawText(baglam.firmaAdi, merkezX, metinBaslangicY + firmaBoyut, paint)
-            paint.textSize = baslikBoyut
-            paint.color = kirmiziBaslik
-            canvas.drawText(baslik, merkezX, metinBaslangicY + firmaBoyut + baslikBoyut + 4f, paint)
-        }
+        canvas.drawText(baglam.firmaAdi, merkezX, duzen.y + firmaBoyut, paint)
+        paint.textSize = baslikBoyut
+        paint.color = kirmiziBaslik
+        canvas.drawText(baslik, merkezX, duzen.y + firmaBoyut + baslikBoyut + 4f, paint)
+        duzen.y += if (kompakt) 34f else 44f
 
         paint.color = griCizgi
         paint.strokeWidth = 1f

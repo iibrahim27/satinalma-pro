@@ -518,7 +518,12 @@ class AppContainer(private val context: Context) {
 
     suspend fun loadMedya() {
         val paket = medyaRepo.loadMedya()
-        firmaLogoBytes = medyaRepo.logoBytes(paket)
+        val bytes = medyaRepo.logoBytes(paket)
+        firmaLogoBytes = bytes
+        BildirimLog.d(
+            "MEDYA",
+            "logo yuklendi=${bytes != null} firmaB64=${!paket.firmaLogoBase64.isNullOrBlank()} anasayfaB64=${!paket.anasayfaLogoBase64.isNullOrBlank()}"
+        )
     }
 
     private suspend fun loadSatinalmaAyarlar() {

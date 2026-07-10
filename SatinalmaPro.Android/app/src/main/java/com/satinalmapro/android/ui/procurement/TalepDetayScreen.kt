@@ -40,7 +40,6 @@ import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailPresenter
 import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailScreen
 import com.satinalmapro.android.core.roles.TalepTurleri
 import com.satinalmapro.android.core.roles.TalepYetkileri
-import com.satinalmapro.android.services.SatinalmaPdfBaglam
 import com.satinalmapro.android.services.SatinalmaPdfHelper
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppCard
@@ -147,7 +146,7 @@ fun TalepDetayScreen(viewModel: AppViewModel, talepId: String, viewMode: String?
                     item, viewMode, malzemeler, canMalKabul, malKabulSatir, { malKabulSatir = it },
                     { sevkiyatTamamlaSatir = it }
                 )
-                2 -> BelgelerTabContent(context, item, viewModel.pdfBaglam())
+                2 -> BelgelerTabContent(context, item, viewModel)
             }
         }
     }
@@ -260,14 +259,21 @@ private fun OzetTabContent(
     }
 
     val context = LocalContext.current
-    val pdfBaglam = viewModel.pdfBaglam()
     OutlinedButton(
-        onClick = { SatinalmaPdfHelper.talepFormuPaylas(context, item, pdfBaglam) },
+        onClick = {
+            viewModel.withPdfBaglam { baglam ->
+                SatinalmaPdfHelper.talepFormuPaylas(context, item, baglam)
+            }
+        },
         modifier = Modifier.fillMaxWidth()
     ) { Text("İmzalı Talep PDF") }
     if (item.teklifler.any { it.firmaAdi.isNotBlank() }) {
         OutlinedButton(
-            onClick = { SatinalmaPdfHelper.karsilastirmaPaylas(context, item, pdfBaglam) },
+            onClick = {
+                viewModel.withPdfBaglam { baglam ->
+                    SatinalmaPdfHelper.karsilastirmaPaylas(context, item, baglam)
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         ) { Text("Fiyat Karşılaştırma PDF") }
     }
@@ -458,25 +464,57 @@ private fun GecmisTabContent(
 }
 
 @Composable
-private fun BelgelerTabContent(context: android.content.Context, item: com.satinalmapro.android.core.model.TalepItem, pdfBaglam: SatinalmaPdfBaglam) {
+private fun BelgelerTabContent(
+    context: android.content.Context,
+    item: com.satinalmapro.android.core.model.TalepItem,
+    viewModel: AppViewModel
+) {
     SectionTitle("Belgeler")
-    OutlinedButton(onClick = { SatinalmaPdfHelper.talepFormuPaylas(context, item, pdfBaglam) }, modifier = Modifier.fillMaxWidth()) {
+    OutlinedButton(
+        onClick = {
+            viewModel.withPdfBaglam { baglam ->
+                SatinalmaPdfHelper.talepFormuPaylas(context, item, baglam)
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Text("İmzalı Talep PDF")
     }
     if (item.teklifler.any { it.firmaAdi.isNotBlank() }) {
-        OutlinedButton(onClick = { SatinalmaPdfHelper.karsilastirmaPaylas(context, item, pdfBaglam) }, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(
+            onClick = {
+                viewModel.withPdfBaglam { baglam ->
+                    SatinalmaPdfHelper.karsilastirmaPaylas(context, item, baglam)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Fiyat Karşılaştırma PDF")
         }
     }
     if (item.durum == TalepDurumlari.ONAYLANDI || item.durum == TalepDurumlari.SIPARIS) {
         if (item.herhangiKalemOnayli || item.teklifsizYonetimOnayi) {
-            OutlinedButton(onClick = { SatinalmaPdfHelper.yonetimOnayBelgesiPaylas(context, item, pdfBaglam) }, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = {
+                    viewModel.withPdfBaglam { baglam ->
+                        SatinalmaPdfHelper.yonetimOnayBelgesiPaylas(context, item, baglam)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text("Yönetim Onay PDF")
             }
         }
     }
     if (item.durum == TalepDurumlari.SIPARIS) {
-        OutlinedButton(onClick = { SatinalmaPdfHelper.siparisFormuPaylas(context, item, pdfBaglam) }, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(
+            onClick = {
+                viewModel.withPdfBaglam { baglam ->
+                    SatinalmaPdfHelper.siparisFormuPaylas(context, item, baglam)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Sipariş Formu PDF")
         }
     }

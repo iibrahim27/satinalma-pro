@@ -521,6 +521,18 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     fun pdfBaglam() = container.pdfBaglam()
 
+    /**
+     * PDF paylaşmadan önce kiracı medyasını yeniler — Compose'un eski (logosuz) bağlamı
+     * yakalamasını ve sync yarışını önler.
+     */
+    fun withPdfBaglam(block: (com.satinalmapro.android.services.SatinalmaPdfBaglam) -> Unit) {
+        viewModelScope.launch {
+            runCatching { container.loadMedya() }
+            val baglam = container.pdfBaglam()
+            withContext(Dispatchers.Main) { block(baglam) }
+        }
+    }
+
     fun refreshData() {
         viewModelScope.launch {
             if (!syncMutex.tryLock()) return@launch

@@ -123,7 +123,11 @@ fun TeklifGirisScreen(viewModel: AppViewModel, talepId: String) {
 
         if (item.teklifler.isNotEmpty()) {
             OutlinedButton(
-                onClick = { SatinalmaPdfHelper.tedarikciTeklifTalebiPaylas(context, item, viewModel.pdfBaglam()) },
+                onClick = {
+                    viewModel.withPdfBaglam { baglam ->
+                        SatinalmaPdfHelper.tedarikciTeklifTalebiPaylas(context, item, baglam)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Tedarikçi Teklif Talebi PDF") }
         }

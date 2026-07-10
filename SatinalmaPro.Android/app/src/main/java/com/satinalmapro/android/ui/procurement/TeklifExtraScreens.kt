@@ -193,12 +193,20 @@ fun TeklifKarsilastirmaScreen(viewModel: AppViewModel, talepId: String?) {
                 )
             }
             OutlinedButton(
-                onClick = { SatinalmaPdfHelper.karsilastirmaPaylas(context, item, viewModel.pdfBaglam()) },
+                onClick = {
+                    viewModel.withPdfBaglam { baglam ->
+                        SatinalmaPdfHelper.karsilastirmaPaylas(context, item, baglam)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Karşılaştırma PDF Paylaş") }
             Spacer(Modifier.height(8.dp))
             OutlinedButton(
-                onClick = { SatinalmaPdfHelper.tedarikciTeklifTalebiPaylas(context, item, viewModel.pdfBaglam()) },
+                onClick = {
+                    viewModel.withPdfBaglam { baglam ->
+                        SatinalmaPdfHelper.tedarikciTeklifTalebiPaylas(context, item, baglam)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Tedarikçi Teklif Talebi PDF") }
             Spacer(Modifier.height(8.dp))
@@ -468,12 +476,20 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
             horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
         ) {
             OutlinedButton(
-                onClick = { SatinalmaPdfHelper.karsilastirmaPaylas(context, item, viewModel.pdfBaglam()) },
+                onClick = {
+                    viewModel.withPdfBaglam { baglam ->
+                        SatinalmaPdfHelper.karsilastirmaPaylas(context, item, baglam)
+                    }
+                },
                 modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                 contentPadding = compactPad
             ) { Text("Fiyat Karşılaştırma PDF", style = MaterialTheme.typography.labelLarge) }
             OutlinedButton(
-                onClick = { SatinalmaPdfHelper.yonetimOnayBelgesiPaylas(context, item, viewModel.pdfBaglam()) },
+                onClick = {
+                    viewModel.withPdfBaglam { baglam ->
+                        SatinalmaPdfHelper.yonetimOnayBelgesiPaylas(context, item, baglam)
+                    }
+                },
                 modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                 contentPadding = compactPad
             ) { Text("Onay Belgesi PDF", style = MaterialTheme.typography.labelLarge) }

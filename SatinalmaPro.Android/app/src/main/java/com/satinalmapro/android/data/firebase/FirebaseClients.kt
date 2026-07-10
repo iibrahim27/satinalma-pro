@@ -248,10 +248,15 @@ class FirestoreClient(
     }
 
     suspend fun readDocumentJson(path: String): String? {
-        val response = HttpClients.get(documentUrl(path), auth.validToken())
-        if (response.isBlank()) return null
+        val response = readDocumentRaw(path) ?: return null
         val fields = JSONObject(response).optJSONObject("fields") ?: return null
-        return fields.optJSONObject("json")?.optString("stringValue")
+        return fields.optJSONObject("json")?.optString("stringValue")?.takeIf { it.isNotBlank() }
+    }
+
+    /** Ham Firestore REST belge gövdesi (fields dahil). */
+    suspend fun readDocumentRaw(path: String): String? {
+        val response = HttpClients.get(documentUrl(path), auth.validToken())
+        return response.takeIf { it.isNotBlank() }
     }
 
     suspend fun readInbox(uid: String, limit: Int = 100): List<JSONObject> {
