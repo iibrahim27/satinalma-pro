@@ -13,9 +13,9 @@ import com.satinalmapro.shared.filter.resolvedEnterpriseStatus
 object PurchaseRequestDetailPresenter {
 
     private val defaultLabels = mapOf(
-        PurchaseRequestDetailAction.DIRECT_APPROVE to "Direkt Onay Ver",
+        PurchaseRequestDetailAction.DIRECT_APPROVE to "Talebi Onayla",
         PurchaseRequestDetailAction.REJECT_REQUEST to "Talebi Reddet",
-        PurchaseRequestDetailAction.START_QUOTE_PROCESS to "Teklif Sürecini Başlat",
+        PurchaseRequestDetailAction.START_QUOTE_PROCESS to "Teklif İste",
         PurchaseRequestDetailAction.APPROVE_QUOTE to "Bu Firmayı Onayla",
         PurchaseRequestDetailAction.REJECT_ENTIRE_REQUEST to "Talebi Komple Reddet",
         PurchaseRequestDetailAction.SEND_QUOTES_FOR_REVISION to "Teklifleri Revizeye Gönder"
@@ -44,14 +44,12 @@ object PurchaseRequestDetailPresenter {
             resolvedScreen == PurchaseRequestDetailScreen.MANAGEMENT_SUBMITTED_REVIEW &&
             status.equals(ProcurementStatus.SUBMITTED, ignoreCase = true)
         ) {
+            // Acil: onay / red. Normal/Öncelikli: onay / teklif iste / red.
             val urgent = priority.equals(ProcurementPriority.URGENT, ignoreCase = true)
-            if (urgent) {
-                actions += PurchaseRequestDetailAction.DIRECT_APPROVE
-                actions += PurchaseRequestDetailAction.REJECT_REQUEST
-            } else {
+            actions += PurchaseRequestDetailAction.DIRECT_APPROVE
+            if (!urgent)
                 actions += PurchaseRequestDetailAction.START_QUOTE_PROCESS
-                actions += PurchaseRequestDetailAction.REJECT_REQUEST
-            }
+            actions += PurchaseRequestDetailAction.REJECT_REQUEST
         }
 
         var showQuotes = false

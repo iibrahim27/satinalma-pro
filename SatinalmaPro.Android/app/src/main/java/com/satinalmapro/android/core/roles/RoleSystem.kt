@@ -39,7 +39,7 @@ object KullaniciRolleri {
     fun canPlaceOrder(role: String?) = canMalKabul(role)
     fun canEnterQuotes(role: String?) = normalize(role) in setOf(ADMIN, SATINALMA)
     fun canApproveQuotes(role: String?) = normalize(role) in setOf(ADMIN, YONETIM, SATINALMA)
-    fun canManagementDecide(role: String?) = normalize(role) in setOf(ADMIN, YONETIM)
+    fun canManagementDecide(role: String?) = normalize(role) in setOf(ADMIN, YONETIM, SATINALMA)
     fun canMalKabul(role: String?) = normalize(role) in setOf(ADMIN, SATINALMA)
     fun isAtolyeOnly(role: String?) = normalize(role) == ATOLYE
     fun isDepoOnly(role: String?) = normalize(role) == DEPO

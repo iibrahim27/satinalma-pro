@@ -207,7 +207,9 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
     private void StokAksiyonlariniAyarla()
     {
         var rol = OturumYoneticisi.AktifKullanici?.Rol;
-        BtnDepoTopluGiris.Visibility = KullaniciYetkileri.AdminMi ? Visibility.Visible : Visibility.Collapsed;
+        BtnDepoTopluGiris.Visibility = KullaniciYetkileri.StokYazabilir()
+            ? Visibility.Visible
+            : Visibility.Collapsed;
         BtnStokGiris.Visibility = DesktopRoleTabManager.StockTabVisible(rol, StokRoutes.StokGirisi)
             && DesktopRoleTabManager.StockCanWrite(rol)
             ? Visibility.Visible : Visibility.Collapsed;
@@ -285,12 +287,8 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
 
     private void DepoTopluGiris_Click(object sender, RoutedEventArgs e)
     {
-        if (!KullaniciYetkileri.AdminMi)
-        {
-            MessageBox.Show("Bu işlem yalnızca admin kullanıcılar içindir.", UygulamaBilgisi.Ad,
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+        if (KullaniciYetkileri.StokYazmaIslemiEngellendi())
             return;
-        }
 
         var pencere = new DepoTopluGirisWindow { Owner = Window.GetWindow(this) };
         if (pencere.ShowDialog() == true)

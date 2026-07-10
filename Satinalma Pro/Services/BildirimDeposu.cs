@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using SatinalmaPro.Helpers;
@@ -72,6 +73,7 @@ public static class BildirimDeposu
                 Bildirimler.AddRange(birlesik.Select(FromShared));
             }
             _sonYukleme = DateTime.Now;
+            BudamayiUygula();
         }
         finally
         {
@@ -130,8 +132,8 @@ public static class BildirimDeposu
         if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
             return;
 
-        SatinalmaDepo.Yukle();
-        await YukleAsync(zorla: true, iptal);
+        // Çağıran taraf talepleri/bildirimleri yüklemiş olmalı; burada yeniden Yukle
+        // geçmiş inbox kayıtlarını tekrar içeri alıp toast/liste yağmuruna yol açıyordu.
 
         var degisti = false;
         lock (Bildirimler)
@@ -243,11 +245,76 @@ public static class BildirimDeposu
         if (OturumYoneticisi.Firestore is null)
             return;
 
+        // Legacy blob şişmesin: inbox-only / okunmuş / geçersizleri budayıp boyut sınırla.
+        BudamayiUygula();
         var json = JsonSerializer.Serialize(AnlikListe(), Json);
+        const int maxBytes = 900_000;
+        if (Encoding.UTF8.GetByteCount(json) > maxBytes)
+        {
+            BudamayiSikistir(maxBytes);
+            json = JsonSerializer.Serialize(AnlikListe(), Json);
+        }
+
         await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
             FirestoreYol, json, OturumYoneticisi.Auth?.Uid, iptal);
 
         await InboxOkunduSenkronizeEtAsync(iptal);
+    }
+
+    /// <summary>
+    /// veri/bildirimler belgesi Firestore ~1MB alan sınırına takılmasın diye
+    /// inbox kopyalarını ve işlemi bitenleri bellekten düşürür.
+    /// </summary>
+    private static void BudamayiUygula()
+    {
+        lock (Bildirimler)
+        {
+            var talepler = SatinalmaDepo.Talepler;
+            var kalacak = Bildirimler
+                .Where(b =>
+                {
+                    // Inbox asıl kaynak; legacy blob'a yalnızca talep bağlı iş akışı kalsın.
+                    if (!string.IsNullOrWhiteSpace(b.InboxDocId) && b.TalepId is null)
+                        return false;
+                    if (b.Okundu && !MasaustuBildirimFiltreleme.Temizlenmemeli(b, talepler))
+                        return false;
+                    if (!MasaustuBildirimFiltreleme.GecerliMi(b, talepler)
+                        && !MasaustuBildirimFiltreleme.Temizlenmemeli(b, talepler))
+                        return false;
+                    return true;
+                })
+                .OrderByDescending(b => b.GuncellemeUtc)
+                .Take(150)
+                .ToList();
+
+            if (kalacak.Count == Bildirimler.Count)
+                return;
+
+            Bildirimler.Clear();
+            Bildirimler.AddRange(kalacak);
+        }
+    }
+
+    private static void BudamayiSikistir(int maxBytes)
+    {
+        lock (Bildirimler)
+        {
+            while (Bildirimler.Count > 10)
+            {
+                var json = JsonSerializer.Serialize(Bildirimler.ToList(), Json);
+                if (Encoding.UTF8.GetByteCount(json) <= maxBytes)
+                    break;
+
+                // En eski okunmuşları at; yoksa en eskileri at.
+                var silinecek = Bildirimler
+                    .OrderByDescending(b => b.Okundu)
+                    .ThenBy(b => b.GuncellemeUtc)
+                    .FirstOrDefault();
+                if (silinecek is null)
+                    break;
+                Bildirimler.Remove(silinecek);
+            }
+        }
     }
 
     public static async Task<bool> EkleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
@@ -532,7 +599,7 @@ public static class BildirimDeposu
         {
             var inbox = await OturumYoneticisi.Firestore.InboxOkuAsync(uid, 50, iptal);
             return inbox
-                .Where(e => !e.IsDismissed)
+                .Where(e => !e.IsDismissed && !e.IsRead)
                 .Select(BildirimInboxServisi.InboxtenBildirimeDonustur)
                 .ToList();
         }

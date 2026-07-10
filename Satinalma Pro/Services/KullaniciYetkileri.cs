@@ -63,11 +63,14 @@ public static class KullaniciYetkileri
         if (modulAdi.Equals("Stok Yönetimi", StringComparison.OrdinalIgnoreCase))
             return StokYazabilir();
 
-        // Satınalma modülü dışında yalnızca Satınalma rolü (açık yazma izniyle) düzenleyebilir.
+        // Satınalma dışı roller yalnızca Satınalma/Stok özel kurallarıyla yazar (yukarıda).
         if (rol != KullaniciRolleri.Satinalma)
             return false;
 
-        return ModulYetkisiniBul(kullanici, modulAdi)?.Yazma == true;
+        // Açık yetki kaydı varsa ona uy; yoksa Satınalma rolü görebildiği modüllerde yazar.
+        // (Boş ModulYetkileri ile mal kabul Alınan Malzemeler'e eklenip kayboluyordu.)
+        var yetki = ModulYetkisiniBul(kullanici, modulAdi);
+        return yetki is null || yetki.Yazma;
     }
 
     /// <summary>Okuma var, yazma yok — filtre/arama/rapor kullanılabilir.</summary>

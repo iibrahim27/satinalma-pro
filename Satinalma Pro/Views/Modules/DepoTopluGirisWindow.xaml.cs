@@ -194,12 +194,8 @@ public partial class DepoTopluGirisWindow : Window
 
     private void DepoyuTamamla_Click(object sender, RoutedEventArgs e)
     {
-        if (!KullaniciYetkileri.AdminMi)
-        {
-            MessageBox.Show("Bu işlem yalnızca admin kullanıcılar içindir.", UygulamaBilgisi.Ad,
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+        if (KullaniciYetkileri.StokYazmaIslemiEngellendi())
             return;
-        }
 
         if (_satirlar.Count == 0)
         {

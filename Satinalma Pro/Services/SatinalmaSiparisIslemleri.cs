@@ -184,9 +184,14 @@ public static class SatinalmaSiparisIslemleri
         AlinanMalzemeAktarimServisi.StogaGirisKaydet(
             satir, miktar, kategori, tarih, teslimAlan, depoSaha, sahayaDirekt, sahaHedef);
 
+        // CollectionChanged yetki kapısından geçmese bile yerel dosyayı zorla yaz.
+        ModulVeriDeposu.KaydetAlinanMalzemeler();
+        ModulVeriDeposu.KaydetStok();
+        ModulVeriDeposu.KaydetStokHareketleri();
+
         SatinalmaTalepYardimcisi.Dokun(talep);
         SatinalmaDepo.Kaydet();
-        _ = SatinalmaKayitYardimcisi.BulutaHemenGonderAsync();
+        _ = SatinalmaKayitYardimcisi.MalKabulSonrasiBulutaGonderAsync();
 
         try
         {

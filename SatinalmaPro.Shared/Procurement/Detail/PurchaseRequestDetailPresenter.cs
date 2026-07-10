@@ -12,9 +12,9 @@ public static class PurchaseRequestDetailPresenter
     private static readonly IReadOnlyDictionary<PurchaseRequestDetailAction, string> DefaultLabels =
         new Dictionary<PurchaseRequestDetailAction, string>
         {
-            [PurchaseRequestDetailAction.DirectApprove] = "Direkt Onay Ver",
+            [PurchaseRequestDetailAction.DirectApprove] = "Talebi Onayla",
             [PurchaseRequestDetailAction.RejectRequest] = "Talebi Reddet",
-            [PurchaseRequestDetailAction.StartQuoteProcess] = "Teklif Sürecini Başlat",
+            [PurchaseRequestDetailAction.StartQuoteProcess] = "Teklif İste",
             [PurchaseRequestDetailAction.ApproveQuote] = "Bu Firmayı Onayla",
             [PurchaseRequestDetailAction.RejectEntireRequest] = "Talebi Komple Reddet",
             [PurchaseRequestDetailAction.SendQuotesForRevision] = "Teklifleri Revizeye Gönder"
@@ -52,23 +52,16 @@ public static class PurchaseRequestDetailPresenter
         var labels = new Dictionary<PurchaseRequestDetailAction, string>(DefaultLabels);
 
         // Gelen talep inceleme: Yönetim + Satınalma + Admin
-        // Acil: yalnızca direkt onay / red — teklif süreci başlatılamaz.
+        // Acil: onay / red (teklif yok). Normal/Öncelikli: onay / teklif iste / red.
         if (canSubmitted && resolvedScreen == PurchaseRequestDetailScreen.ManagementSubmittedReview
             && status.Equals(ProcurementStatus.Submitted, StringComparison.OrdinalIgnoreCase))
         {
             var urgent = priority.Equals(ProcurementPriority.Urgent, StringComparison.OrdinalIgnoreCase);
 
-            if (urgent)
-            {
-                actions.Add(PurchaseRequestDetailAction.DirectApprove);
-                actions.Add(PurchaseRequestDetailAction.RejectRequest);
-            }
-            else
-            {
+            actions.Add(PurchaseRequestDetailAction.DirectApprove);
+            if (!urgent)
                 actions.Add(PurchaseRequestDetailAction.StartQuoteProcess);
-                labels[PurchaseRequestDetailAction.RejectRequest] = "Talebi Reddet";
-                actions.Add(PurchaseRequestDetailAction.RejectRequest);
-            }
+            actions.Add(PurchaseRequestDetailAction.RejectRequest);
         }
 
         var showQuotes = false;

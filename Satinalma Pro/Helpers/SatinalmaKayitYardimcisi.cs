@@ -29,4 +29,19 @@ public static class SatinalmaKayitYardimcisi
             // bulut gecikse yerel kayıt korunur
         }
     }
+
+    public static async Task MalKabulSonrasiBulutaGonderAsync()
+    {
+        if (!OturumYoneticisi.BulutAktif || !OturumYoneticisi.GirisYapildi)
+            return;
+
+        try
+        {
+            await BulutVeriSenkronu.MalKabulSonrasiHemenGonderAsync();
+        }
+        catch
+        {
+            // bulut gecikse yerel kayıt korunur
+        }
+    }
 }

@@ -35,6 +35,9 @@ public static class BildirimFiltreleme
         var tip = BildirimRolPolitikasi.NormalizeTip(bildirim.Tip);
         if (!TalepBaglantiliMi(tip))
         {
+            // Cloud event kodları inbox'ta kalır; legacy listede şişirmesin.
+            if (tip.Contains('.', StringComparison.Ordinal))
+                return false;
             if (string.IsNullOrWhiteSpace(tip) && bildirim.TalepId is null)
                 return false;
             return bildirim.TalepId is null;
@@ -44,8 +47,9 @@ public static class BildirimFiltreleme
             return false;
 
         var talep = talepler.FirstOrDefault(t => t.Id == tid);
+        // Talep yoksa eski bildirimi canlı tutma (açılışta geçmiş bildirim yağmurunu önler).
         if (talep is null)
-            return true;
+            return false;
 
         // Mal kabul/stok tamamlanan talepler için eski bildirimler kalıcı olmasın.
         var tamamlandi = ProcurementStatusResolver.Resolve(talep)
@@ -72,15 +76,15 @@ public static class BildirimFiltreleme
             BildirimTipleri.TeklifOnayda =>
                 !tamamlandi && SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep),
             BildirimTipleri.Reddedildi =>
-                talep.Durum == SatinalmaTalepDurumlari.Reddedildi,
+                !bildirim.Okundu && talep.Durum == SatinalmaTalepDurumlari.Reddedildi,
             // Sipariş/mal kabul sonrası «onaylandı» bildirimi aksiyon gerektirmez.
             BildirimTipleri.Onaylandi =>
                 !tamamlandi && talep.Durum == SatinalmaTalepDurumlari.Onaylandi,
             // Mal kabul tamamlanınca sipariş bildirimi de düşer.
             BildirimTipleri.SiparisOlusturuldu =>
                 !tamamlandi && talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu,
-            BildirimTipleri.MalKabulEdildi =>
-                !tamamlandi && talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu,
+            // Mal kabul bilgisi anlıktır; işlem bitince listede kalmasın.
+            BildirimTipleri.MalKabulEdildi => false,
             _ => false
         };
     }

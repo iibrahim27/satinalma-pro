@@ -135,9 +135,9 @@ public static class SatinalmaTeklifDegerlendirmeYardimcisi
             await BildirimYoneticisi.GecersizleriOkunduYapAsync();
             await SatinalmaBildirimleri.TeklifOnaydaAsync(talep);
         }
-        catch
+        catch (Exception ex)
         {
-            // bildirim hatası kaydı engellemez
+            HataGunlugu.Kaydet(ex, "YonetimeGonder.TeklifOnaydaBildirim");
         }
 
         return true;

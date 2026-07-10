@@ -1,3 +1,4 @@
+using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Models;
 using SatinalmaPro.Shared.Services.Firebase;
 
@@ -22,7 +23,7 @@ public sealed class BildirimInboxServisi
 
         return new BildirimKaydi
         {
-            Id = Guid.TryParse(e.DocId, out var docGuid) ? docGuid : Guid.NewGuid(),
+            Id = BildirimMantikAnahtari.InboxDocIddenGuid(e.DocId),
             Baslik = e.Title,
             Mesaj = e.Message,
             Tip = tip,

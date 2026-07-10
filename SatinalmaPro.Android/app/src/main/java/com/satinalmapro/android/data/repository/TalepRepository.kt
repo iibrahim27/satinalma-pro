@@ -423,7 +423,17 @@ class TalepRepository(
                 teklifDuzeltmeNotu = ""
             )
         }
-        bildirimler?.talepBildirimleri(BildirimTipleri.TEKLIF_ONAYDA, result, user, hedefRol = KullaniciRolleri.YONETIM)
+        // Yönetim cihazına FCM: istemci + Cloud Function (durum geçişi) birlikte güvence.
+        runCatching {
+            bildirimler?.talepBildirimleri(
+                BildirimTipleri.TEKLIF_ONAYDA,
+                result,
+                user,
+                hedefRol = KullaniciRolleri.YONETIM
+            )
+        }.onFailure {
+            BildirimLog.e("TALEP", "Teklif onayda bildirimi gönderilemedi talep=${result.id}", it)
+        }
         return result
     }
 

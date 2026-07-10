@@ -22,6 +22,7 @@ public static class BulutVeriSenkronu
 
     private static readonly SemaphoreSlim BulutYazmaKilidi = new(1, 1);
     private static readonly HashSet<string> BekleyenKayitlar = new(StringComparer.Ordinal);
+    private static readonly HashSet<string> BosYazmayaIzinliAnahtarlar = new(StringComparer.Ordinal);
     private static DispatcherTimer? _zamanlayici;
     private static bool _senkronYukleniyor;
     private static DispatcherTimer? _yoklamaZamanlayici;
@@ -77,8 +78,18 @@ public static class BulutVeriSenkronu
                     // Belge Firestore'da varsa (boş [] dahil) bulutu uygula — aksi halde PC2 eski veriyi geri yükler
                     var bulutBelgesiVar = bulutJson is not null;
                     var yereldeVar = JsonAnlamliMi(yerelJson, anahtar);
+                    var buluttaVar = JsonAnlamliMi(bulutJson, anahtar);
 
-                    if (bulutBelgesiVar)
+                    if (bulutBelgesiVar && !buluttaVar && yereldeVar && yerelJson is not null
+                        && ListeModuluMu(anahtar))
+                    {
+                        // Boş bulut + dolu yerel: mal kabul kaybını önlemek için yereli yükle
+                        await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
+                            yol, yerelJson, OturumYoneticisi.Auth?.Uid, iptal)
+                            .ConfigureAwait(false);
+                        BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
+                    }
+                    else if (bulutBelgesiVar)
                     {
                         await UiThreaddeCalistirAsync(() =>
                         {
@@ -244,6 +255,10 @@ public static class BulutVeriSenkronu
                     json = JsonSerializer.Serialize(SatinalmaDepo.Ayarlar, JsonSecenekleri);
                 }
             }
+            else if (await BosListeBulutuEzmesinAsync(anahtar, json, yol, iptal).ConfigureAwait(false))
+            {
+                return;
+            }
 
             await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
                 yol, json, OturumYoneticisi.Auth?.Uid, iptal);
@@ -277,8 +292,12 @@ public static class BulutVeriSenkronu
     public static void SifirlemeyiBulutaPlanla(string dosyaAdi)
     {
         var anahtar = DosyaAdindanAnahtar(dosyaAdi);
-        if (anahtar is not null)
-            Planla(anahtar);
+        if (anahtar is null)
+            return;
+
+        lock (BosYazmayaIzinliAnahtarlar)
+            BosYazmayaIzinliAnahtarlar.Add(anahtar);
+        Planla(anahtar);
     }
 
     public static async Task BuluttanYukleAsync(CancellationToken iptal = default)
@@ -402,6 +421,14 @@ public static class BulutVeriSenkronu
         _zamanlayici?.Stop();
         try
         {
+            if (_senkronYukleniyor)
+            {
+                // Senkron sürerken bekleyen yazmalar kaybolmasın — kısa sonra tekrar dene.
+                _zamanlayici ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1200) };
+                _zamanlayici.Start();
+                return;
+            }
+
             await BulutaGonderAsync();
         }
         catch (Exception ex)
@@ -437,6 +464,19 @@ public static class BulutVeriSenkronu
             return;
 
         await AnahtarBulutaGonderAsync("satinalma_ayarlar", iptal);
+    }
+
+    /// <summary>Mal kabul sonrası Alınan Malzemeler + stok belgelerini anında buluta yazar.</summary>
+    public static async Task MalKabulSonrasiHemenGonderAsync(CancellationToken iptal = default)
+    {
+        if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
+            return;
+
+        await AnahtarBulutaGonderAsync("satinalma_ayarlar", iptal);
+        await AnahtarBulutaGonderAsync("satinalma_talepler", iptal);
+        await AnahtarBulutaGonderAsync("malzeme", iptal);
+        await AnahtarBulutaGonderAsync("stok", iptal);
+        await AnahtarBulutaGonderAsync("stok_hareket", iptal);
     }
 
     public static async Task BulutaGonderAsync(CancellationToken iptal = default)
@@ -497,6 +537,10 @@ public static class BulutVeriSenkronu
                         SatinalmaDepo.Ayarlar.SonIadeSira, bulutAyarlar.SonIadeSira);
                     json = JsonSerializer.Serialize(SatinalmaDepo.Ayarlar, JsonSecenekleri);
                 }
+            }
+            else if (await BosListeBulutuEzmesinAsync(anahtar, json, yol, iptal).ConfigureAwait(false))
+            {
+                continue;
             }
 
             await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
@@ -689,6 +733,42 @@ public static class BulutVeriSenkronu
         }
 
         return trimmed.Length > 2;
+    }
+
+    private static bool ListeModuluMu(string anahtar) =>
+        anahtar is "malzeme" or "stok" or "stok_hareket" or "agrega" or "cimento"
+            or "akaryakit" or "filo" or "finansman";
+
+    /// <summary>
+    /// Bellek/yerel boşken dolu bulut belgesini [] ile ezmeyi engeller.
+    /// Modül sıfırlama (SifirlemeyiBulutaPlanla) bilinçli boş yazmaya izin verir.
+    /// </summary>
+    private static async Task<bool> BosListeBulutuEzmesinAsync(
+        string anahtar, string json, string yol, CancellationToken iptal)
+    {
+        if (!ListeModuluMu(anahtar) || JsonAnlamliMi(json, anahtar))
+            return false;
+
+        lock (BosYazmayaIzinliAnahtarlar)
+        {
+            if (BosYazmayaIzinliAnahtarlar.Remove(anahtar))
+                return false;
+        }
+
+        try
+        {
+            var (bulutJson, _) = await OturumYoneticisi.Firestore!
+                .BelgeOkuAsync(yol, iptal)
+                .ConfigureAwait(false);
+            if (JsonAnlamliMi(bulutJson, anahtar))
+                return true;
+        }
+        catch
+        {
+            // okuma hatasında yazmayı engelleme
+        }
+
+        return false;
     }
 
     private static string KiraciliBulutYolu(string veriYolu) =>

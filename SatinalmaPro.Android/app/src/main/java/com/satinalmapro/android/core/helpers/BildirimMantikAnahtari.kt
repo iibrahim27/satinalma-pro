@@ -5,6 +5,10 @@ import com.satinalmapro.android.core.model.BildirimRecord
 /** Aynı iş akışı bildirimini tekilleştirmek için mantıksal anahtar (talep + tip + hedef). */
 object BildirimMantikAnahtari {
     fun olustur(bildirim: BildirimRecord): String {
+        // Inbox docId ile sabitle — talepsiz/event kayıtlarında şişmeyi önler.
+        val inbox = bildirim.inboxDocId?.trim().orEmpty()
+        if (inbox.isNotBlank()) return "inbox:$inbox"
+
         val talepId = normalizeTalepId(bildirim.talepId)
         if (talepId.isNullOrBlank()) return "id:${bildirim.id}"
 

@@ -411,6 +411,7 @@ class BildirimRepository(
     fun gecerliMi(record: BildirimRecord, talepler: List<TalepItem>): Boolean {
         val tip = normalizeTip(record.tip)
         if (!talepBaglantili(tip)) {
+            if (tip.contains('.')) return false
             if (tip.isBlank() && record.talepId.isNullOrBlank()) return false
             return record.talepId.isNullOrBlank()
         }
@@ -418,7 +419,7 @@ class BildirimRepository(
         val talepId = record.talepId?.trim().orEmpty()
         if (talepId.isBlank()) return false
 
-        val talep = talepler.firstOrNull { it.id.equals(talepId, true) } ?: return true
+        val talep = talepler.firstOrNull { it.id.equals(talepId, true) } ?: return false
         val tamamlandi = talep.resolvedEnterpriseStatus() == ProcurementStatus.COMPLETED
         return when (tip) {
             BildirimTipleri.YONETIME_GONDERILDI ->
@@ -438,13 +439,13 @@ class BildirimRepository(
                     talep.durum != TalepDurumlari.YONETIM_ONAY
             BildirimTipleri.TEKLIF_ONAYDA ->
                 !tamamlandi && TalepKuyrugu.yonetimTeklifKarariBekliyor(talep)
-            BildirimTipleri.REDDEDILDI -> talep.durum == TalepDurumlari.REDDEDILDI
+            BildirimTipleri.REDDEDILDI ->
+                !record.okundu && talep.durum == TalepDurumlari.REDDEDILDI
             BildirimTipleri.ONAYLANDI ->
                 !tamamlandi && talep.durum == TalepDurumlari.ONAYLANDI
             BildirimTipleri.SIPARIS_OLUSTURULDU ->
                 !tamamlandi && talep.durum == TalepDurumlari.SIPARIS
-            BildirimTipleri.MAL_KABUL_EDILDI ->
-                !tamamlandi && talep.durum == TalepDurumlari.SIPARIS
+            BildirimTipleri.MAL_KABUL_EDILDI -> false
             else -> false
         }
     }

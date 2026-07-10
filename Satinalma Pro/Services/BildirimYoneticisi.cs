@@ -24,8 +24,11 @@ public static class BildirimYoneticisi
         if (kullanici is null)
             return [];
 
+        // Yalnızca işlem bekleyen (okunmamış + hâlâ geçerli) bildirimler.
         return BildirimDeposu.AnlikListe()
-            .Where(b => KullaniciyaMi(b, kullanici) && MasaustuBildirimFiltreleme.GecerliMi(b, SatinalmaDepo.Talepler))
+            .Where(b => KullaniciyaMi(b, kullanici)
+                        && !b.Okundu
+                        && MasaustuBildirimFiltreleme.GecerliMi(b, SatinalmaDepo.Talepler))
             .ToList();
     }
 
@@ -36,14 +39,15 @@ public static class BildirimYoneticisi
 
         Durdur();
 
+        // Periyodik kontrol yalnızca temizler; geçmiş bildirimleri toast ile yeniden basmaz.
         _zamanlayici = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        _zamanlayici.Tick += async (_, _) => await KontrolEtAsync(hatirlatmaGoster: true);
+        _zamanlayici.Tick += async (_, _) => await KontrolEtAsync(hatirlatmaGoster: false);
         _zamanlayici.Start();
 
         _ = IlkYukleAsync();
     }
 
-    public static async Task BildirimleriKontrolEtAsync() => await KontrolEtAsync(hatirlatmaGoster: true);
+    public static async Task BildirimleriKontrolEtAsync() => await KontrolEtAsync(hatirlatmaGoster: false);
 
     public static void Durdur()
     {
@@ -97,15 +101,24 @@ public static class BildirimYoneticisi
             BildirimHatirlatmaDeposu.Temizle(b);
         }
 
-        await BildirimDeposu.KaydetYerelAsync(iptal);
+        try
+        {
+            await BildirimDeposu.KaydetYerelAsync(iptal);
+        }
+        catch (Exception ex)
+        {
+            // Boyut limiti vb. — inbox okundu işaretlemeyi yine dene.
+            HataGunlugu.Kaydet(ex, "Bildirim.TumunuOkundu.Kaydet");
+        }
+
         await BildirimDeposu.InboxTumunuOkunduAsync(iptal);
+        await BildirimDeposu.GecersizleriSilAsync(iptal);
         BildirimlerDegisti?.Invoke();
     }
 
     public static async Task GecersizleriSilAsync(CancellationToken iptal = default)
     {
-        SatinalmaDepo.Yukle();
-        await BildirimDeposu.YukleAsync(zorla: true, iptal: iptal);
+        // Talepler zaten senkron; tekrar buluttan tüm geçmişi çekip geri getirme.
         await BildirimDeposu.GecersizleriSilAsync(iptal);
         BildirimlerDegisti?.Invoke();
     }
@@ -118,9 +131,6 @@ public static class BildirimYoneticisi
 
     public static async Task GecersizleriOkunduYapAsync(CancellationToken iptal = default)
     {
-        SatinalmaDepo.Yukle();
-        await BildirimDeposu.YukleAsync(zorla: true, iptal: iptal);
-
         var degisti = false;
         foreach (var b in BildirimDeposu.AnlikListe())
         {
@@ -229,13 +239,15 @@ public static class BildirimYoneticisi
             else
                 SatinalmaDepo.Yukle();
 
-            await BildirimDeposu.YukleAsync(zorla: hatirlatmaGoster);
-            await GecersizleriSilAsync();
+            await BildirimDeposu.YukleAsync(zorla: true);
+            await GecersizleriOkunduYapAsync();
+            await BildirimDeposu.GecersizleriSilAsync();
 
             var kullanici = OturumYoneticisi.AktifKullanici;
             if (kullanici is null)
                 return;
 
+            // Toast yalnızca yeni eklenen bildirimlerde (EkleAsync); açılış/polling geçmişi basmaz.
             if (hatirlatmaGoster)
             {
                 foreach (var bildirim in KullaniciBildirimleri()

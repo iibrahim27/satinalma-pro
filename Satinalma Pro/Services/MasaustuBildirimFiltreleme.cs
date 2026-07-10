@@ -19,6 +19,9 @@ public static class MasaustuBildirimFiltreleme
         var tip = NormalizeTip(bildirim.Tip);
         if (!TalepBaglantiliMi(tip))
         {
+            // Cloud event kodları (talep.olusturuldu …) inbox'ta kalır; legacy listede şişirmesin.
+            if (tip.Contains('.', StringComparison.Ordinal))
+                return false;
             if (string.IsNullOrWhiteSpace(tip) && bildirim.TalepId is null)
                 return false;
             return bildirim.TalepId is null;
@@ -28,8 +31,9 @@ public static class MasaustuBildirimFiltreleme
             return false;
 
         var talep = talepler.FirstOrDefault(t => t.Id == tid);
+        // Talep yoksa (silinmiş / henüz senkron değil) eski bildirimi canlı tutma.
         if (talep is null)
-            return true;
+            return false;
 
         var tamamlandi = ProcurementTalepAdapter.ResolveStatus(talep)
             .Equals(ProcurementStatus.Completed, StringComparison.OrdinalIgnoreCase);
@@ -55,13 +59,13 @@ public static class MasaustuBildirimFiltreleme
             BildirimTipleri.TeklifOnayda =>
                 !tamamlandi && SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep),
             BildirimTipleri.Reddedildi =>
-                talep.Durum == SatinalmaTalepDurumlari.Reddedildi,
+                !bildirim.Okundu && talep.Durum == SatinalmaTalepDurumlari.Reddedildi,
             BildirimTipleri.Onaylandi =>
                 !tamamlandi && talep.Durum == SatinalmaTalepDurumlari.Onaylandi,
             BildirimTipleri.SiparisOlusturuldu =>
                 !tamamlandi && talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu,
-            BildirimTipleri.MalKabulEdildi =>
-                !tamamlandi && talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu,
+            // Mal kabul bilgisi anlıktır; işlem bitince listede/toast'ta kalmasın.
+            BildirimTipleri.MalKabulEdildi => false,
             _ => false
         };
     }

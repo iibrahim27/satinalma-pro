@@ -59,12 +59,24 @@ public static class PurchaseModuleAutomationTest
             "Talep yönetim-gelen-talepler listesinde DEĞİL");
 
         var uiYonetim = ortam.UiDurumu(talep, AutomasyonTestOrtami.Yonetim);
+        sonuc.Bekle(uiYonetim.VisibleActions.Contains(PurchaseRequestDetailAction.DirectApprove),
+            "Talebi Onayla butonu görünür (normal öncelik)",
+            "DirectApprove butonu görünmüyor");
         sonuc.Bekle(uiYonetim.VisibleActions.Contains(PurchaseRequestDetailAction.StartQuoteProcess),
-            "Teklif Sürecini Başlat butonu görünür (normal öncelik)",
+            "Teklif İste butonu görünür (normal öncelik)",
             "StartQuoteProcess butonu görünmüyor");
-        sonuc.Bekle(!uiYonetim.VisibleActions.Contains(PurchaseRequestDetailAction.DirectApprove),
-            "Direkt Onay gizli (normal öncelik)",
-            "Normal talepte Direkt Onay görünmemeli");
+        sonuc.Bekle(uiYonetim.VisibleActions.Contains(PurchaseRequestDetailAction.RejectRequest),
+            "Talebi Reddet butonu görünür (normal öncelik)",
+            "RejectRequest butonu görünmüyor");
+
+        // Satınalma da aynı karar butonlarını görür
+        var uiSatinalma = ortam.UiDurumu(talep, AutomasyonTestOrtami.Satinalma);
+        sonuc.Bekle(uiSatinalma.VisibleActions.Contains(PurchaseRequestDetailAction.DirectApprove),
+            "Satınalma: Talebi Onayla görünür",
+            "Satınalma DirectApprove yok");
+        sonuc.Bekle(uiSatinalma.VisibleActions.Contains(PurchaseRequestDetailAction.StartQuoteProcess),
+            "Satınalma: Teklif İste görünür",
+            "Satınalma StartQuoteProcess yok");
 
         ortam.DetayAksiyonUygula(talep, PurchaseRequestDetailAction.StartQuoteProcess, AutomasyonTestOrtami.Yonetim);
         talep = ortam.GuncelTalep(talep.Id);
