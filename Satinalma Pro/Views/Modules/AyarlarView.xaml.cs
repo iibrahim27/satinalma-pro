@@ -246,7 +246,8 @@ public partial class AyarlarView : UserControl
     private void AyarlariYukle()
     {
         _genelYukleniyor = true;
-        TxtFirmaAdi.Text = UygulamaAyarDeposu.Ayarlar.FirmaAdi;
+        TxtFirmaAdi.Text = SatinalmaPro.Shared.SaaS.KiracıOturumu.TenantAd
+            ?? UygulamaAyarDeposu.Ayarlar.FirmaAdi;
         TxtLogoYolu.Text = SatinalmaProLogoDeposu.GorunenAd(UygulamaAyarDeposu.Ayarlar.LogoDosyaYolu);
         TxtAnasayfaLogoYolu.Text = SatinalmaProLogoDeposu.GorunenAd(UygulamaAyarDeposu.Ayarlar.AnasayfaLogoDosyaYolu);
         _genelYukleniyor = false;
@@ -309,7 +310,8 @@ public partial class AyarlarView : UserControl
 
     private void AyarlarKaydet_Click(object sender, RoutedEventArgs e)
     {
-        UygulamaAyarDeposu.Ayarlar.FirmaAdi = TxtFirmaAdi.Text.Trim();
+        // Firma adı Yönetici kaynağıdır — UI'dan yazılmaz.
+        UygulamaAyarDeposu.FirmaAdiniOturumdanSenkronizeEt();
         FiloZimmetMaddeleriniKaydet(sessiz: true);
         SatinalmaDepo.Ayarlar.SartnameMetni = TxtSartnameMetni.Text;
         SatinalmaDepo.Ayarlar.TeklifIstemeSartnameleri = TxtTeklifIstemeSartnameleri.Text;
@@ -439,8 +441,6 @@ public partial class AyarlarView : UserControl
     private void GenelAyarDegisti(object sender, TextChangedEventArgs e)
     {
         if (_genelYukleniyor) return;
-        UygulamaAyarDeposu.Ayarlar.FirmaAdi = TxtFirmaAdi.Text.Trim();
-        UygulamaAyarDeposu.Kaydet();
         DegisiklikIsaretle();
     }
 

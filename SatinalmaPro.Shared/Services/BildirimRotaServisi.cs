@@ -24,9 +24,7 @@ public static class BildirimRotaServisi
                 ? $"satinalma-teklif-duzeltme?id={duzTid}"
                 : "satinalma-teklif-duzeltme",
             BildirimTipleri.TeklifOnayda when tid is { } onayTid => $"teklif-onay-detay?id={onayTid}",
-            BildirimTipleri.TeklifOnayda => rol == KullaniciRolleri.Yonetim
-                ? "yonetim-teklif-girilen"
-                : "satinalma-teklif-girilen",
+            BildirimTipleri.TeklifOnayda => "yonetim-teklif-girilen",
             BildirimTipleri.Onaylandi when tid is null && rol == KullaniciRolleri.Yonetim => "gecmis-talepler",
             BildirimTipleri.Onaylandi when tid is null && rol == KullaniciRolleri.Satinalma => "satinalma-onaylanan",
             BildirimTipleri.Onaylandi when tid is null => "bildirimler",

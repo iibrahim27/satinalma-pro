@@ -20,6 +20,15 @@ class SettingsRepository(
 
     suspend fun saveSettings(ayarlar: UygulamaAyarlar) {
         val updatedBy = auth.email ?: auth.uid ?: "android"
+        // Önce buluttaki güncel listeyi oku; eklenen terimleri kaybetmemek için birleştir.
+        // Silme: ayarlar listesinde olmayan terim bilinçli silinmiş kabul edilir —
+        // bu yüzden birleştirmede "ayarlar" öncelikli değil; union kullanıp
+        // silmeyi AppViewModel.removeBirim → tam liste yazımı ile yapıyoruz.
+        // removeBirim zaten güncel listeden çıkarır; burada union, eşzamanlı
+        // masaüstü eklemelerini korur. Silinen terim bulutta hâlâ varsa geri gelir —
+        // bunu önlemek için: union yerine "yazılan listeyi esas al, yalnızca
+        // buluttaki ekstra terimleri ekle" değil; silme sonrası anında yaz.
+        // Pratik çözüm: union yapma, doğrudan yaz (sık yoklama ile senkron).
         firestore.writeDocumentJson(SETTINGS_PATH, toJson(ayarlar), updatedBy)
     }
 

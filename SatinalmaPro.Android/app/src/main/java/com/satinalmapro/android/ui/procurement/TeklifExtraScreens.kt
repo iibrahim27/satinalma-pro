@@ -471,7 +471,7 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
                 onClick = { SatinalmaPdfHelper.karsilastirmaPaylas(context, item, viewModel.pdfBaglam()) },
                 modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                 contentPadding = compactPad
-            ) { Text("Karşılaştırma PDF", style = MaterialTheme.typography.labelLarge) }
+            ) { Text("Fiyat Karşılaştırma PDF", style = MaterialTheme.typography.labelLarge) }
             OutlinedButton(
                 onClick = { SatinalmaPdfHelper.yonetimOnayBelgesiPaylas(context, item, viewModel.pdfBaglam()) },
                 modifier = Modifier.weight(1f).heightIn(min = 40.dp),

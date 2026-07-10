@@ -25,11 +25,11 @@ public static class ProcurementAkisKapsamDenetimi
     private static readonly Dictionary<string, string[]> BeklenenGorunurluk = new(StringComparer.OrdinalIgnoreCase)
     {
         [ProcurementStatus.Draft] = [KullaniciRolleri.Sef, KullaniciRolleri.Saha],
-        [ProcurementStatus.Submitted] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Sef, KullaniciRolleri.Saha],
+        [ProcurementStatus.Submitted] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Sef, KullaniciRolleri.Saha],
         [ProcurementStatus.QuoteRequested] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma],
         [ProcurementStatus.QuoteEntry] = [KullaniciRolleri.Satinalma],
         [ProcurementStatus.Comparison] = [KullaniciRolleri.Satinalma],
-        [ProcurementStatus.ManagementQuoteReview] = [KullaniciRolleri.Yonetim],
+        [ProcurementStatus.ManagementQuoteReview] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma],
         [ProcurementStatus.Approved] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Sef, KullaniciRolleri.Saha],
         [ProcurementStatus.Ordered] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Depo, KullaniciRolleri.Sef, KullaniciRolleri.Saha, KullaniciRolleri.Atolye],
         [ProcurementStatus.Rejected] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Sef, KullaniciRolleri.Saha],
@@ -95,6 +95,8 @@ public static class ProcurementAkisKapsamDenetimi
         talep = ortam.GuncelTalep(talep.Id);
         sonuc.Bekle(SekmeVar(talep, KullaniciRolleri.Yonetim, SatinalmaRoutes.YonetimTeklifGirilen, AutomasyonTestOrtami.Yonetim.Uid),
             "management_quote_review → yönetim Teklif İnceleme", "yönetim inceleme sekmesi yok");
+        sonuc.Bekle(SekmeVar(talep, KullaniciRolleri.Satinalma, SatinalmaRoutes.YonetimTeklifGirilen, AutomasyonTestOrtami.Satinalma.Uid),
+            "management_quote_review → satınalma Teklif İnceleme & Onay", "satınalma inceleme sekmesi yok");
 
         ortam.Temizle();
         return sonuc;

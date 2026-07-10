@@ -96,7 +96,8 @@ public sealed class AutomasyonTestOrtami
         };
 
         Kaydet(talep);
-        BildirimVeFcm(BildirimTipleri.YonetimeGonderildi, talep, hedefRol: KullaniciRolleri.Yonetim);
+        foreach (var (hedefRol, _) in BildirimRolPolitikasi.YonetimeGonderildiHedefleri())
+            BildirimVeFcm(BildirimTipleri.YonetimeGonderildi, talep, hedefRol: hedefRol);
         return talep;
     }
 
@@ -250,7 +251,8 @@ public sealed class AutomasyonTestOrtami
         talep.Status = ProcurementStatus.ManagementQuoteReview;
         talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
         Kaydet(talep);
-        BildirimVeFcm(BildirimTipleri.TeklifOnayda, talep, hedefRol: KullaniciRolleri.Yonetim);
+        foreach (var (hedefRol, _) in BildirimRolPolitikasi.TeklifOnaydaHedefleri())
+            BildirimVeFcm(BildirimTipleri.TeklifOnayda, talep, hedefRol: hedefRol);
     }
 
     public void SiparisOlustur(SatinalmaTalep talep, KullaniciProfili user)

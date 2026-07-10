@@ -4,7 +4,7 @@ namespace SatinalmaPro.Shared.Helpers;
 
 /// <summary>
 /// Rol × bildirim tipi matrisi — masaüstü, mobil ve Android aynı kuralları kullanır.
-/// Yönetim yalnızca: sahadan gelen talep (YonetimeGonderildi) ve teklif onayı (TeklifOnayda).
+/// Talep/teklif onay bildirimleri: Yönetim + Satınalma (aynı karar yetkisi).
 /// </summary>
 public static class BildirimRolPolitikasi
 {
@@ -41,9 +41,9 @@ public static class BildirimRolPolitikasi
         return tip switch
         {
             BildirimTipleri.YonetimeGonderildi =>
-                r == KullaniciRolleri.Yonetim,
+                r is KullaniciRolleri.Yonetim or KullaniciRolleri.Satinalma,
             BildirimTipleri.TeklifOnayda =>
-                r == KullaniciRolleri.Yonetim,
+                r is KullaniciRolleri.Yonetim or KullaniciRolleri.Satinalma,
             BildirimTipleri.TeklifIstendi or BildirimTipleri.TeklifDuzeltmeIstendi =>
                 r == KullaniciRolleri.Satinalma,
             BildirimTipleri.Onaylandi =>
@@ -88,7 +88,14 @@ public static class BildirimRolPolitikasi
 
     public static IEnumerable<(string? HedefRol, string? HedefUid)> YonetimeGonderildiHedefleri() =>
     [
-        (KullaniciRolleri.Yonetim, null)
+        (KullaniciRolleri.Yonetim, null),
+        (KullaniciRolleri.Satinalma, null)
+    ];
+
+    public static IEnumerable<(string? HedefRol, string? HedefUid)> TeklifOnaydaHedefleri() =>
+    [
+        (KullaniciRolleri.Yonetim, null),
+        (KullaniciRolleri.Satinalma, null)
     ];
 
     public static IEnumerable<(string? HedefRol, string? HedefUid)> ReddedildiHedefleri(

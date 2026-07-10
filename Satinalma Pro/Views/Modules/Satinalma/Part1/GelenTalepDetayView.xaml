@@ -55,6 +55,9 @@
     </Border>
 
     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+      <Button Content="Talep PDF" Style="{StaticResource ToolbarButtonStyle}"
+              Click="TalepPdf_Click" Margin="0,0,8,0" Padding="14,8"
+              ToolTip="İmzalı talep formu PDF çıktısı" />
       <Button x:Name="BtnReddet" Content="Reddet" Style="{StaticResource ToolbarButtonStyle}"
               Click="Reddet_Click" Margin="0,0,8,0" />
       <Button x:Name="BtnTeklifAl" Content="Teklif Al" Style="{StaticResource ToolbarButtonStyle}"

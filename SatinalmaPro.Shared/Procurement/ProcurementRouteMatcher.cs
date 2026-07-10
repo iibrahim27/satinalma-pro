@@ -163,6 +163,7 @@ public static class ProcurementRouteMatcher
                 new("Gelen Talepler", SatinalmaRoutes.YonetimGelenTalepler),
                 new("Teklif İstemi Yapılanlar", SatinalmaRoutes.SatinalmaTeklifIstenen),
                 new("Teklif Girişi Bekleyenler", SatinalmaRoutes.SatinalmaTeklifGirilen),
+                new("Teklif İnceleme & Onay", SatinalmaRoutes.YonetimTeklifGirilen),
                 new("Fiyat Karşılaştırma", SatinalmaRoutes.SatinalmaKarsilastirma),
                 new("Onaylananlar", SatinalmaRoutes.SatinalmaOnaylanan),
                 new("Geçmiş Onaylananlar", SatinalmaRoutes.SatinalmaOnayGecmisi),

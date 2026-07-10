@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.58",
-    "build":  124,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.58/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.58/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.58/SatinalmaPro.apk",
-    "notes":  "Android teklif inceleme ekrani sikilastirma (Satinalma/Yonetim)",
+    "version":  "2.1.59",
+    "build":  126,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.59/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.59/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.59/SatinalmaPro.apk",
+    "notes":  "SaaS firma adi Yonetici kaynagi (kiraci degistiremez); logolar tenant izolasyonu; Android PDF firma logosu; yeni firmada bos medya + varsayilan ikon",
     "zorunlu":  false
 }

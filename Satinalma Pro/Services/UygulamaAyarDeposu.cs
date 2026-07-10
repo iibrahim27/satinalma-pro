@@ -70,17 +70,24 @@ public static class UygulamaAyarDeposu
         }
 
         // Oturumdaki kiracı adı varsa ayarlara yansıt (sol alt / PDF başlığı).
-        if (!string.IsNullOrWhiteSpace(KiracıOturumu.TenantAd) &&
-            string.IsNullOrWhiteSpace(Ayarlar.FirmaAdi))
-        {
-            Ayarlar.FirmaAdi = KiracıOturumu.TenantAd!;
-        }
+        FirmaAdiniOturumdanSenkronizeEt();
 
         SatinalmaFirmaBilgileriniGocEt();
         LogolariIceAktar();
         MalzemeKategoriDeposu.VarsayilanlariHazirla();
         MalzemeBirimDeposu.VarsayilanlariHazirla();
         FiloZimmetVarsayilanlariniHazirla();
+    }
+
+    /// <summary>Firma adı yalnızca Yönetici (tenant.ad) kaynağından gelir; kiracı değiştiremez.</summary>
+    public static void FirmaAdiniOturumdanSenkronizeEt()
+    {
+        var ad = KiracıOturumu.TenantAd?.Trim();
+        if (string.IsNullOrWhiteSpace(ad))
+            return;
+        if (string.Equals(Ayarlar.FirmaAdi, ad, StringComparison.Ordinal))
+            return;
+        Ayarlar.FirmaAdi = ad;
     }
 
     private static void FiloZimmetVarsayilanlariniHazirla()
@@ -123,6 +130,7 @@ public static class UygulamaAyarDeposu
 
     public static void Kaydet()
     {
+        FirmaAdiniOturumdanSenkronizeEt();
         SatinalmaProKlasor.Olustur();
         var json = JsonSerializer.Serialize(Ayarlar, JsonSecenekleri);
         File.WriteAllText(Dosya, json);
@@ -134,20 +142,47 @@ public static class UygulamaAyarDeposu
     {
         try
         {
-            Ayarlar = JsonSerializer.Deserialize<UygulamaAyarlar>(json, JsonSecenekleri) ?? new UygulamaAyarlar();
-            // Buluttan gelen boş firma adını oturum adıyla doldur.
-            if (string.IsNullOrWhiteSpace(Ayarlar.FirmaAdi) &&
-                !string.IsNullOrWhiteSpace(KiracıOturumu.TenantAd))
-            {
-                Ayarlar.FirmaAdi = KiracıOturumu.TenantAd!;
-            }
+            var oncekiBirimler = Ayarlar.MalzemeBirimleri.ToList();
+            var oncekiKategoriler = Ayarlar.MalzemeKategorileri.ToList();
+            var bulutHam = JsonSerializer.Deserialize<UygulamaAyarlar>(json, JsonSecenekleri) ?? new UygulamaAyarlar();
+
+            var birlesikBirimler = TerimListesiniBirlestir(oncekiBirimler, bulutHam.MalzemeBirimleri);
+            var birlesikKategoriler = TerimListesiniBirlestir(oncekiKategoriler, bulutHam.MalzemeKategorileri);
+            var yerelEksikBulutta =
+                birlesikBirimler.Count > bulutHam.MalzemeBirimleri.Count
+                || birlesikKategoriler.Count > bulutHam.MalzemeKategorileri.Count;
+
+            bulutHam.MalzemeBirimleri = birlesikBirimler;
+            bulutHam.MalzemeKategorileri = birlesikKategoriler;
+
+            Ayarlar = bulutHam;
+            FirmaAdiniOturumdanSenkronizeEt();
             SatinalmaProKlasor.Olustur();
             File.WriteAllText(Dosya, JsonSerializer.Serialize(Ayarlar, JsonSecenekleri));
+
+            // Yerelde olup bulutta olmayan birim/kategori varsa birleşik listeyi geri yükle.
+            if (yerelEksikBulutta)
+                BulutVeriSenkronu.Planla("uygulama_ayarlar");
         }
         catch
         {
             // yoksay
         }
+    }
+
+    private static List<string> TerimListesiniBirlestir(IEnumerable<string> a, IEnumerable<string> b)
+    {
+        var sonuc = new List<string>();
+        foreach (var terim in a.Concat(b))
+        {
+            var t = terim?.Trim();
+            if (string.IsNullOrWhiteSpace(t))
+                continue;
+            if (sonuc.Any(x => x.Equals(t, StringComparison.OrdinalIgnoreCase)))
+                continue;
+            sonuc.Add(t);
+        }
+        return sonuc;
     }
 
     private static void SatinalmaFirmaBilgileriniGocEt()

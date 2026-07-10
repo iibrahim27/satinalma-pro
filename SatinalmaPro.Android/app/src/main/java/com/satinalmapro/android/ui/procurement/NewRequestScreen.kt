@@ -397,7 +397,7 @@ private fun RequestLineRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RequestBirimDropdown(
+internal fun RequestBirimDropdown(
     value: String,
     options: List<String>,
     onSelect: (String) -> Unit,

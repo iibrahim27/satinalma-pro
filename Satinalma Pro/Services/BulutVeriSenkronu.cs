@@ -28,7 +28,8 @@ public static class BulutVeriSenkronu
     private static DispatcherTimer? _yoklamaZamanlayici;
     private static int _yoklamaDongusu;
 
-    private static readonly string[] SikYoklamaAnahtarlari = ["satinalma_ayarlar", "satinalma_talepler"];
+    private static readonly string[] SikYoklamaAnahtarlari =
+        ["satinalma_ayarlar", "satinalma_talepler", "uygulama_ayarlar"];
     private static readonly TimeSpan YoklamaAraligi = TimeSpan.FromSeconds(30);
 
     public static bool BuluttanYuklendi { get; private set; }
@@ -724,7 +725,8 @@ public static class BulutVeriSenkronu
                     !string.IsNullOrWhiteSpace(ayarlar.FirmaAdi) ||
                     !string.IsNullOrWhiteSpace(ayarlar.LogoDosyaYolu) ||
                     !string.IsNullOrWhiteSpace(ayarlar.AnasayfaLogoDosyaYolu) ||
-                    ayarlar.MalzemeKategorileri.Count > 0);
+                    ayarlar.MalzemeKategorileri.Count > 0 ||
+                    ayarlar.MalzemeBirimleri.Count > 0);
             }
             catch
             {

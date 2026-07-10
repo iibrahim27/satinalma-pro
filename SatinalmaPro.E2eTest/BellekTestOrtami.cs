@@ -193,7 +193,8 @@ public sealed class BellekTestOrtami
             talep.YonetimOnerilenTeklifId = oneri.Id;
         talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
         Kaydet(talep);
-        BildirimEkle(BildirimTipleri.TeklifOnayda, talep, hedefRol: KullaniciRolleri.Yonetim);
+        foreach (var (hedefRol, _) in BildirimRolPolitikasi.TeklifOnaydaHedefleri())
+            BildirimEkle(BildirimTipleri.TeklifOnayda, talep, hedefRol: hedefRol);
     }
 
     public void YonetimTeklifOnayla(SatinalmaTalep talep, Guid teklifId)

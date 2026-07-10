@@ -74,10 +74,10 @@ object RolNavigasyon {
     private val gecmisTalepler = MenuItem("Geçmiş Talepler", "gecmis-talepler", "Talep")
     private val gecmisTeklifli = MenuItem("Geçmiş Teklifli", "gecmis-teklifli-onaylar", "Talep")
     private val redTalepler = MenuItem("Red Talepler", "red-talepler", "Talep")
-    private val yonetimTeklifGirilen = MenuItem("Teklif Girilen", "yonetim-teklif-girilen", "Talep")
+    private val yonetimTeklifGirilen = MenuItem("Teklif İnceleme & Onay", "yonetim-teklif-girilen", "Talep")
     private val yonetimDirekOnaylanan = MenuItem("Direk Onaylanan", "yonetim-direk-onaylanan", "Talep")
     private val satinalmaTeklifIstenen = MenuItem("Teklif İstenen", "satinalma-teklif-istenen", "Teklif")
-    private val satinalmaTeklifGirilen = MenuItem("Yönetime Gönderilen", "satinalma-teklif-girilen", "Teklif")
+    private val satinalmaTeklifGirilen = MenuItem("Teklif İnceleme & Onay", "satinalma-teklif-girilen", "Teklif")
     private val satinalmaTeklifDuzeltme = MenuItem("Düzeltme Bekleyen", "satinalma-teklif-duzeltme", "Teklif")
     private val satinalmaOnaylanan = MenuItem("Sipariş Bekleyen", "satinalma-onaylanan", "Malzeme")
     private val satinalmaSiparis = MenuItem("Sipariş Verilen", "satinalma-siparis", "Malzeme")
@@ -105,7 +105,7 @@ object RolNavigasyon {
             )
             KullaniciRolleri.SATINALMA -> listOf(
                 yeniTalep, taleplerim, gelenTalepler,
-                satinalmaTeklifIstenen, satinalmaTeklifGirilen, satinalmaTeklifDuzeltme, teklifKarsilastirma, teklifsizFirmaFiyat,
+                satinalmaTeklifIstenen, yonetimTeklifGirilen, satinalmaTeklifDuzeltme, teklifKarsilastirma, teklifsizFirmaFiyat,
                 satinalmaOnaylanan, satinalmaSiparis, satinalmaMalKabul, onaylananMalzemeler,
                 stokDurum, stokHareket, stokGiris, stokCikis,
                 bildirimler, ayarlar
@@ -220,14 +220,16 @@ object RolNavigasyon {
                     menus.contains("teklif-karsilastirma") ||
                         menus.contains("satinalma-teklif-duzeltme") ||
                         menus.contains("satinalma-teklif-istenen") ||
-                        menus.contains("satinalma-teklif-girilen")
+                        menus.contains("satinalma-teklif-girilen") ||
+                        menus.contains("yonetim-teklif-girilen")
                     )
             "teklifsiz-firma-fiyat" ->
                 KullaniciRolleri.canEnterQuotes(role) && menus.contains("teklifsiz-firma-fiyat")
-            "teklif-onay-detay" ->
+            "teklif-onay-detay", "satinalma-teklif-girilen" ->
                 menus.contains("teklif-onay") ||
                     menus.contains("yonetim-teklif-girilen") ||
-                    menus.contains("satinalma-teklif-girilen")
+                    menus.contains("satinalma-teklif-girilen") ||
+                    KullaniciRolleri.canApproveQuotes(role)
             "onaylanan-malzemeler" ->
                 KullaniciRolleri.canMalKabul(role) ||
                     menus.contains("onaylanan-malzemeler") ||
@@ -294,8 +296,8 @@ object BildirimRota {
             "TeklifOnayda" -> when {
                 requestId != null && (r == KullaniciRolleri.YONETIM || r == KullaniciRolleri.SATINALMA || r == KullaniciRolleri.ADMIN) ->
                     "teklif-onay-detay?id=$requestId"
-                r == KullaniciRolleri.YONETIM -> "yonetim-teklif-girilen"
-                r == KullaniciRolleri.SATINALMA || r == KullaniciRolleri.ADMIN -> "satinalma-teklif-girilen"
+                r == KullaniciRolleri.YONETIM || r == KullaniciRolleri.SATINALMA || r == KullaniciRolleri.ADMIN ->
+                    "yonetim-teklif-girilen"
                 requestId != null -> "talep-detay?id=$requestId"
                 else -> "bildirimler"
             }

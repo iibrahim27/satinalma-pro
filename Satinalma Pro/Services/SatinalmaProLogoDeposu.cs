@@ -1,13 +1,23 @@
 using System.IO;
+using SatinalmaPro.Shared.SaaS;
 
 namespace SatinalmaPro.Services;
 
 /// <summary>
-/// Logoları uygulama veri klasörü\logos\ altında saklar.
+/// Logoları uygulama veri klasörü\logos\{tenantId}\ altında saklar — kiracılar birbirinin logosunu görmez.
 /// </summary>
 public static class SatinalmaProLogoDeposu
 {
-    public static string LogolarKlasoru => Path.Combine(SatinalmaProKlasor.Yol, "logos");
+    public static string LogolarKlasoru
+    {
+        get
+        {
+            var tid = KiracıOturumu.TenantId;
+            return string.IsNullOrWhiteSpace(tid)
+                ? Path.Combine(SatinalmaProKlasor.Yol, "logos", "_legacy")
+                : Path.Combine(SatinalmaProKlasor.Yol, "logos", tid);
+        }
+    }
 
     public static void Olustur()
     {
@@ -15,7 +25,7 @@ public static class SatinalmaProLogoDeposu
         Directory.CreateDirectory(LogolarKlasoru);
     }
 
-    /// <summary>Harici dosyayı logolar klasörüne kopyalar; göreli yol döner (örn. logos/firma_....png).</summary>
+    /// <summary>Harici dosyayı kiracı logos klasörüne kopyalar; göreli yol döner.</summary>
     public static string Kaydet(string kaynakDosya, string onEk)
     {
         Olustur();
@@ -45,6 +55,25 @@ public static class SatinalmaProLogoDeposu
         var sadeceDosya = Path.Combine(LogolarKlasoru, Path.GetFileName(kayitliYol));
         if (File.Exists(sadeceDosya))
             return sadeceDosya;
+
+        // Eski paylaşımlı logos\ klasöründen (kiracı alt klasörü öncesi) taşı.
+        var legacy = Path.Combine(SatinalmaProKlasor.Yol, "logos", Path.GetFileName(kayitliYol));
+        if (File.Exists(legacy) &&
+            !string.Equals(Path.GetDirectoryName(legacy), LogolarKlasoru, StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                Olustur();
+                var hedef = Path.Combine(LogolarKlasoru, Path.GetFileName(legacy));
+                if (!File.Exists(hedef))
+                    File.Copy(legacy, hedef, overwrite: false);
+                return hedef;
+            }
+            catch
+            {
+                return legacy;
+            }
+        }
 
         return "";
     }
@@ -83,7 +112,7 @@ public static class SatinalmaProLogoDeposu
     public static string GorunenAd(string? kayitliYol) =>
         string.IsNullOrWhiteSpace(kayitliYol) ? "" : Path.GetFileName(kayitliYol.Replace('\\', '/'));
 
-    /// <summary>logos klasöründeki tüm dosyaları siler (firma / anasayfa logo sıfırlama).</summary>
+    /// <summary>Yalnızca aktif kiracının logos klasöründeki dosyaları siler.</summary>
     public static void TumDosyalariSil()
     {
         if (!Directory.Exists(LogolarKlasoru))

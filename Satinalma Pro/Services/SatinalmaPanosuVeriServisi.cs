@@ -97,7 +97,7 @@ public static class SatinalmaPanosuVeriServisi
             new() { Baslik = "Toplam Sipariş", Deger = siparis.ToString("N0", Tr), Alt = "Sipariş aşamasında", RenkHex = "#0891B2", Ikon = "\uE7BF" },
             new() { Baslik = "Teklif Sürecinde", Deger = teklifSurecinde.ToString("N0", Tr), Alt = "Giriş veya karşılaştırma", RenkHex = "#8B5CF6", Ikon = "\uE8D1" },
             new() { Baslik = "Mal Kabul", Deger = malKabul.ToString("N0", Tr), Alt = "Teslimat sürecinde", RenkHex = "#16A34A", Ikon = "\uE896" },
-            new() { Baslik = "Bekleyen Onay", Deger = bekleyenOnay.ToString("N0", Tr), Alt = "Yönetim onayı", RenkHex = "#F59E0B", Ikon = "\uE823" },
+            new() { Baslik = "Bekleyen Onay", Deger = bekleyenOnay.ToString("N0", Tr), Alt = "Talep / teklif onayı", RenkHex = "#F59E0B", Ikon = "\uE823" },
             new() { Baslik = "Ort. Onay Süresi", Deger = "2,4 gün", Alt = "Son 30 gün", RenkHex = "#64748B", Ikon = "\uE916" }
         ];
     }

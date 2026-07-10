@@ -23,12 +23,12 @@ public partial class TalepListesiView : UserControl
         TxtYardim.Text = route switch
         {
             SatinalmaRoutes.YonetimGelenTalepler => "Onay, teklif iste veya red için satıra çift tıklayın.",
-            SatinalmaRoutes.YonetimTeklifGirilen => "Teklif inceleme için satıra çift tıklayın.",
+            SatinalmaRoutes.YonetimTeklifGirilen => "Teklif inceleme, onay, red veya revize için satıra çift tıklayın.",
             SatinalmaRoutes.YonetimDirekOnaylanan => "Direk onaylanan talep detayı için çift tıklayın.",
             SatinalmaRoutes.YonetimRedVerilen => "Red verilen talep detayı için çift tıklayın.",
             SatinalmaRoutes.YonetimGecmis => "Geçmiş talep detayı için çift tıklayın.",
             SatinalmaRoutes.SatinalmaTeklifIstenen => "Teklif girmek için satıra çift tıklayın.",
-            SatinalmaRoutes.SatinalmaTeklifGirilen => "Yönetim onayı bekleyen teklifler — durum takibi için listede görünür.",
+            SatinalmaRoutes.SatinalmaTeklifGirilen => "Teklif girmek için satıra çift tıklayın.",
             SatinalmaRoutes.SatinalmaTeklifDuzeltme => "Yönetim düzeltme notu ile geri gönderdi — teklifleri düzenleyip yeniden gönderin.",
             SatinalmaRoutes.SatinalmaKarsilastirma => "Teklifleri karşılaştırmak için satıra çift tıklayın.",
             SatinalmaRoutes.Taleplerim => "Detay için satıra çift tıklayın.",

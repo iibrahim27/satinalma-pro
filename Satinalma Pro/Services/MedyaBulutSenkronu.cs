@@ -151,13 +151,12 @@ public static class MedyaBulutSenkronu
     {
         var ayarlar = UygulamaAyarDeposu.Ayarlar;
         if (!string.IsNullOrWhiteSpace(ayarlar.LogoDosyaYolu)
-            || !string.IsNullOrWhiteSpace(ayarlar.AnasayfaLogoDosyaYolu))
+            && !string.IsNullOrWhiteSpace(SatinalmaProLogoDeposu.TamYol(ayarlar.LogoDosyaYolu)))
             return false;
-
-        if (!Directory.Exists(SatinalmaProLogoDeposu.LogolarKlasoru))
-            return true;
-
-        return Directory.GetFiles(SatinalmaProLogoDeposu.LogolarKlasoru).Length == 0;
+        if (!string.IsNullOrWhiteSpace(ayarlar.AnasayfaLogoDosyaYolu)
+            && !string.IsNullOrWhiteSpace(SatinalmaProLogoDeposu.TamYol(ayarlar.AnasayfaLogoDosyaYolu)))
+            return false;
+        return true;
     }
 
     private static Task UiThreaddeCalistirAsync(Action islem)

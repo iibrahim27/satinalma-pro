@@ -413,6 +413,35 @@ export const platformSaveTenant = onCall(async (request) => {
     { merge: true }
   );
 
+  // Kiracı ayarlarında firma adı Yönetici kaynağıdır; yeni firmada boş medya iskeleti.
+  const ayarlarRef = tenantRef.collection("veri").doc("uygulama_ayarlar");
+  if (!id) {
+    await ayarlarRef.set(
+      {
+        firmaAdi: ad,
+        malzemeBirimleri: ["Adet", "Ton", "Kg", "Lt", "m", "m²", "m³"],
+        malzemeKategorileri: [],
+        guncelleme: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+    await tenantRef.collection("veri").doc("medya").set(
+      {
+        firmaLogoDosya: "",
+        anasayfaLogoDosya: "",
+        firmaLogoBase64: "",
+        anasayfaLogoBase64: "",
+        guncelleme: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } else {
+    await ayarlarRef.set(
+      { firmaAdi: ad, guncelleme: admin.firestore.FieldValue.serverTimestamp() },
+      { merge: true }
+    );
+  }
+
   // Lisans yenilendiğinde süre dolumuyla pasife alınan kullanıcıları geri aç.
   if (lisansYenile && aktif && !lisansOzetiHesap.suresiDoldu) {
     const pasifler = await db()

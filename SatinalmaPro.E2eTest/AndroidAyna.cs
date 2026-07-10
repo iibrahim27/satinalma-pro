@@ -48,8 +48,7 @@ public static class AndroidAyna
             BildirimTipleri.TeklifDuzeltmeIstendi when talepId is not null => $"satinalma-teklif-duzeltme?id={talepId}",
             BildirimTipleri.TeklifDuzeltmeIstendi => "satinalma-teklif-duzeltme",
             BildirimTipleri.TeklifOnayda when talepId is not null => $"teklif-onay-detay?id={talepId}",
-            BildirimTipleri.TeklifOnayda when rol == KullaniciRolleri.Yonetim => "yonetim-teklif-girilen",
-            BildirimTipleri.TeklifOnayda => "satinalma-teklif-girilen",
+            BildirimTipleri.TeklifOnayda => "yonetim-teklif-girilen",
             BildirimTipleri.Onaylandi when talepId is null && rol == KullaniciRolleri.Yonetim => "gecmis-talepler",
             BildirimTipleri.Onaylandi when talepId is null && rol == KullaniciRolleri.Satinalma => "satinalma-onaylanan",
             BildirimTipleri.Onaylandi when talepId is null => "bildirimler",
@@ -75,7 +74,7 @@ public static class AndroidAyna
         var satinalmaMenus = new HashSet<string>
         {
             "dashboard", "yeni-talep", "taleplerim", "gelen-talepler",
-            "satinalma-teklif-istenen", "satinalma-teklif-girilen", "satinalma-teklif-duzeltme",
+            "satinalma-teklif-istenen", "yonetim-teklif-girilen", "satinalma-teklif-girilen", "satinalma-teklif-duzeltme",
             "teklif-karsilastirma",
             "teklifsiz-firma-fiyat", "satinalma-onaylanan", "satinalma-siparis", "satinalma-mal-kabul",
             "stok-durum", "stok-hareket", "stok-giris", "stok-cikis", "stok-sayim", "raporlar", "bildirimler", "profil"

@@ -133,6 +133,15 @@ public static class PurchaseModuleAutomationTest
             "Talep Yönetim Teklif İnceleme sekmesinde",
             "yonetim-teklif-girilen listesinde DEĞİL");
 
+        sonuc.Bekle(ortam.RouteTalepleri(SatinalmaRoutes.YonetimTeklifGirilen, AutomasyonTestOrtami.Satinalma)
+                .Any(t => t.Id == talep.Id),
+            "Talep Satınalma Teklif İnceleme & Onay sekmesinde",
+            "Satınalma yonetim-teklif-girilen listesinde DEĞİL");
+
+        sonuc.Bekle(ortam.Fcm.PushGittiMi(satTopic, BildirimTipleri.TeklifOnayda, talep.Id),
+            $"Satınalma kanalına ({satTopic}) TeklifOnayda bildirimi gitti",
+            "Satınalma teklif inceleme bildirimi yok");
+
         // 4 — Yönetim revize
         ortam.OturumAc(AutomasyonTestOrtami.Yonetim);
         var uiRevize = ortam.UiDurumu(talep, AutomasyonTestOrtami.Yonetim);

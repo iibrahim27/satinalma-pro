@@ -166,6 +166,7 @@ fun StokGirisScreen(viewModel: AppViewModel) {
     val user by viewModel.user.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.submitError.collectAsState()
+    val birimler by viewModel.malzemeBirimleri.collectAsState()
     val canWrite = KullaniciRolleri.canStockWrite(user?.role)
     var malzeme by remember { mutableStateOf("") }
     var miktar by remember { mutableStateOf("") }
@@ -193,7 +194,13 @@ fun StokGirisScreen(viewModel: AppViewModel) {
                 miktar, { miktar = it }, "Miktar",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
             )
-            MetrikField(birim, { birim = it }, "Birim")
+            Text("Birim", style = MaterialTheme.typography.labelMedium, color = MetrikLight.TextSecondary)
+            RequestBirimDropdown(
+                value = birim,
+                options = birimler,
+                onSelect = { birim = it },
+                modifier = Modifier.fillMaxWidth()
+            )
             MetrikField(kategori, { kategori = it }, "Kategori")
             MetrikField(depo, { depo = it }, "Depo / saha")
             MetrikField(

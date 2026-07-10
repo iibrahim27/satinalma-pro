@@ -33,6 +33,7 @@ import com.satinalmapro.android.core.roles.BildirimRota
 import com.satinalmapro.android.data.repository.BildirimRepository
 import com.satinalmapro.android.data.repository.StokRepository
 import com.satinalmapro.android.data.repository.ModulRepository
+import com.satinalmapro.android.data.repository.MedyaRepository
 import com.satinalmapro.android.data.repository.SettingsRepository
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -102,9 +103,11 @@ class AppContainer(private val context: Context) {
     val stokRepo = StokRepository(firestore, auth)
     val modulRepo = ModulRepository(firestore, auth)
     val settingsRepo = SettingsRepository(firestore, auth)
+    private val medyaRepo = MedyaRepository(firestore)
 
     private val _uygulamaAyarlar = MutableStateFlow(UygulamaAyarlar())
     val uygulamaAyarlar: StateFlow<UygulamaAyarlar> = _uygulamaAyarlar.asStateFlow()
+    @Volatile private var firmaLogoBytes: ByteArray? = null
 
     private val _satinalmaAyarlar = MutableStateFlow(SatinalmaAyarlar())
     val satinalmaAyarlar: StateFlow<SatinalmaAyarlar> = _satinalmaAyarlar.asStateFlow()
@@ -387,12 +390,9 @@ class AppContainer(private val context: Context) {
                 }
                 .apply()
 
-            // Firma adını uygulama ayarlarına yansıt (PDF / UI).
-            val mevcut = _uygulamaAyarlar.value
-            if (!result.tenantAd.isNullOrBlank() &&
-                mevcut.firmaAdi.isBlank()
-            ) {
-                _uygulamaAyarlar.value = mevcut.copy(firmaAdi = result.tenantAd)
+            // Firma adı Yönetici kaynağıdır — her girişte oturumdaki tenant adını zorla.
+            if (!result.tenantAd.isNullOrBlank()) {
+                _uygulamaAyarlar.value = _uygulamaAyarlar.value.copy(firmaAdi = result.tenantAd)
             }
 
             val email = result.eposta ?: ""
@@ -444,6 +444,7 @@ class AppContainer(private val context: Context) {
         _uygulamaAyarlar.value = UygulamaAyarlar()
         _satinalmaAyarlar.value = SatinalmaAyarlar()
         _settingsUsers.value = emptyList()
+        firmaLogoBytes = null
     }
 
     private fun unregisterFcm(uid: String?) {
@@ -473,6 +474,8 @@ class AppContainer(private val context: Context) {
                 .onFailure { BildirimLog.e("SYNC", "loadNotifications", it) }
             runCatching { loadUygulamaAyarlar() }
                 .onFailure { BildirimLog.e("SYNC", "loadUygulamaAyarlar", it) }
+            runCatching { loadMedya() }
+                .onFailure { BildirimLog.e("SYNC", "loadMedya", it) }
         } finally {
             syncMutex.unlock()
         }
@@ -490,6 +493,10 @@ class AppContainer(private val context: Context) {
                 .onFailure { BildirimLog.e("SYNC", "live loadTalepler", it) }
             runCatching { loadNotifications(uid, cleanup = false) }
                 .onFailure { BildirimLog.e("SYNC", "live loadNotifications", it) }
+            runCatching { loadUygulamaAyarlar() }
+                .onFailure { BildirimLog.e("SYNC", "live loadUygulamaAyarlar", it) }
+            runCatching { loadMedya() }
+                .onFailure { BildirimLog.e("SYNC", "live loadMedya", it) }
         } finally {
             liveSyncMutex.unlock()
         }
@@ -497,8 +504,9 @@ class AppContainer(private val context: Context) {
 
     suspend fun loadUygulamaAyarlar() {
         val ayarlar = settingsRepo.loadSettings()
-        val firma = ayarlar.firmaAdi.ifBlank { TenantSession.tenantName().orEmpty() }
-        _uygulamaAyarlar.value = if (firma.isNotBlank() && ayarlar.firmaAdi.isBlank()) {
+        // Firma adı Yönetici (tenant.ad) kaynağıdır — kiracı override edemez.
+        val firma = TenantSession.tenantName().orEmpty().ifBlank { ayarlar.firmaAdi }
+        _uygulamaAyarlar.value = if (firma.isNotBlank()) {
             ayarlar.copy(firmaAdi = firma)
         } else {
             ayarlar
@@ -508,24 +516,35 @@ class AppContainer(private val context: Context) {
         }
     }
 
+    suspend fun loadMedya() {
+        val paket = medyaRepo.loadMedya()
+        firmaLogoBytes = medyaRepo.logoBytes(paket)
+    }
+
     private suspend fun loadSatinalmaAyarlar() {
         _satinalmaAyarlar.value = runCatching { talepler.loadAyarlar() }.getOrDefault(SatinalmaAyarlar())
     }
 
     fun pdfBaglam(): SatinalmaPdfBaglam {
         val sat = _satinalmaAyarlar.value
-        val uyg = _uygulamaAyarlar.value
-        val firma = sat.firmaAdi.ifBlank { uyg.firmaAdi }.ifBlank { "Satınalma Pro" }
+        val firma = TenantSession.tenantName()
+            .orEmpty()
+            .ifBlank { _uygulamaAyarlar.value.firmaAdi }
+            .ifBlank { sat.firmaAdi }
+            .ifBlank { "Satınalma Pro" }
         return SatinalmaPdfBaglam(
             firmaAdi = firma,
             sefImzalari = sat.sefImzalari.filter { it.aktif },
-            yonetimImzalari = sat.yonetimImzalari.filter { it.aktif }
+            yonetimImzalari = sat.yonetimImzalari.filter { it.aktif },
+            logoBytes = firmaLogoBytes
         )
     }
 
     suspend fun saveUygulamaAyarlar(ayarlar: UygulamaAyarlar) {
-        settingsRepo.saveSettings(ayarlar)
-        _uygulamaAyarlar.value = ayarlar
+        val firma = TenantSession.tenantName().orEmpty().ifBlank { ayarlar.firmaAdi }
+        val guvenli = if (firma.isNotBlank()) ayarlar.copy(firmaAdi = firma) else ayarlar
+        settingsRepo.saveSettings(guvenli)
+        _uygulamaAyarlar.value = guvenli
     }
 
     suspend fun saveManagedUser(user: ManagedUser) {

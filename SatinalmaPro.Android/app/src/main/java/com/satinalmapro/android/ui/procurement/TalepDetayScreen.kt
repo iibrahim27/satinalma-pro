@@ -258,6 +258,20 @@ private fun OzetTabContent(
             }
         }
     }
+
+    val context = LocalContext.current
+    val pdfBaglam = viewModel.pdfBaglam()
+    OutlinedButton(
+        onClick = { SatinalmaPdfHelper.talepFormuPaylas(context, item, pdfBaglam) },
+        modifier = Modifier.fillMaxWidth()
+    ) { Text("İmzalı Talep PDF") }
+    if (item.teklifler.any { it.firmaAdi.isNotBlank() }) {
+        OutlinedButton(
+            onClick = { SatinalmaPdfHelper.karsilastirmaPaylas(context, item, pdfBaglam) },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Fiyat Karşılaştırma PDF") }
+    }
+
     if (!readOnlyView) {
         error?.let { Text(it, color = AppColors.Danger) }
         if (teklifsizFirmaGir) {
@@ -447,11 +461,11 @@ private fun GecmisTabContent(
 private fun BelgelerTabContent(context: android.content.Context, item: com.satinalmapro.android.core.model.TalepItem, pdfBaglam: SatinalmaPdfBaglam) {
     SectionTitle("Belgeler")
     OutlinedButton(onClick = { SatinalmaPdfHelper.talepFormuPaylas(context, item, pdfBaglam) }, modifier = Modifier.fillMaxWidth()) {
-        Text("Talep PDF Paylaş")
+        Text("İmzalı Talep PDF")
     }
     if (item.teklifler.any { it.firmaAdi.isNotBlank() }) {
         OutlinedButton(onClick = { SatinalmaPdfHelper.karsilastirmaPaylas(context, item, pdfBaglam) }, modifier = Modifier.fillMaxWidth()) {
-            Text("Karşılaştırma PDF")
+            Text("Fiyat Karşılaştırma PDF")
         }
     }
     if (item.durum == TalepDurumlari.ONAYLANDI || item.durum == TalepDurumlari.SIPARIS) {

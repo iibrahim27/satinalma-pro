@@ -121,7 +121,7 @@ public static class SatinalmaPart1Menusu
     {
         YonetimGelenTalepler => ("Gelen Talepler", "Onaya gönderilen talepler"),
         YonetimTeklifBekleyen => ("Teklif Bekleyen Talepler", "Satınalmadan teklif beklenen talepler"),
-        YonetimTeklifGirilen => ("Teklif Girilen Talepler", "Teklif girilmiş, yönetim kararı bekleyen talepler"),
+        YonetimTeklifGirilen => ("Teklif İnceleme & Onay", "Teklif girilmiş — onay / red / revize bekleyen talepler"),
         YonetimOnaylananTeklifler => ("Onaylanan Teklifler", "Yönetim tarafından onaylanmış teklifli talepler"),
         YonetimOnayGecmisi => ("Yönetim Onay Geçmişi", "Teklifsiz ve teklifli tüm yönetim onayları — arşiv ve PDF"),
         YonetimDirekOnaylanan => ("Direk Onaylanan Talepler", "Teklif süreci olmadan onaylanan talepler"),
@@ -132,7 +132,7 @@ public static class SatinalmaPart1Menusu
         SatinalmaPanosu => ("Satınalma Panosu", "Satınalma alımları ve sevkiyat kayıtları"),
         SatinalmaTalepler => ("Talepler", "Oluşturduğunuz talepler"),
         SatinalmaTeklifIstenen => ("Teklif İstenen Talepler", "Yönetim teklif istedi — tek teklif ile de yönetime gönderebilirsiniz"),
-        SatinalmaTeklifGirilen => ("Teklif Girilen Talepler", "Yönetime gönderilmiş, onay bekleyen teklifler"),
+        SatinalmaTeklifGirilen => ("Teklif Girişi Bekleyenler", "Teklif girişi yapılacak talepler"),
         SatinalmaTeklifDuzeltme => ("Düzeltme Bekleyen Teklifler", "Yönetimden geri gönderilen teklifler — düzeltip yeniden gönderin"),
         SatinalmaKarsilastirma => ("Karşılaştırma", "Teklif karşılaştırma ve seçim"),
         SatinalmaOnaylanan => ("Onaylanan Teklifler ve Talepler", "Onaylanmış talep ve teklifler — sipariş bekleyen"),

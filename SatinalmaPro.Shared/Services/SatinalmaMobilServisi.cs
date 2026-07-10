@@ -219,7 +219,11 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         SatinalmaIsAkisi.YonetimeTeklifGonderiminiHazirla(talep, oneri);
         await TalepKaydetAsync(talep, iptal);
 
-        await _bildirimler.EkleAsync(BildirimKaydiOlustur(BildirimTipleri.TeklifOnayda, talep, hedefRol: KullaniciRolleri.Yonetim), iptal);
+        await _bildirimler.CokluEkleAsync(
+            BildirimRolPolitikasi.TeklifOnaydaHedefleri()
+                .Select(h => BildirimKaydiOlustur(BildirimTipleri.TeklifOnayda, talep, h.HedefRol, h.HedefUid))
+                .ToList(),
+            iptal);
         await _bildirimler.GecersizleriOkunduYapAsync(iptal);
     }
 

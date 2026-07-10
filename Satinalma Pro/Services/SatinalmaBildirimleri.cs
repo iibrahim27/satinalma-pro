@@ -110,25 +110,18 @@ public static class SatinalmaBildirimleri
 
 
     public static Task TeklifOnaydaAsync(SatinalmaTalep talep)
-
     {
-
         var (baslik, mesaj) = Metin(SharedBildirimTipleri.TeklifOnayda, talep);
-
-        return BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.TeklifOnayda, baslik, mesaj, hedefRol: KullaniciRolleri.Yonetim));
-
+        return BildirimYoneticisi.CokluEkleAsync(
+            BildirimRolPolitikasi.TeklifOnaydaHedefleri()
+                .Select(h => Kayit(talep, SharedBildirimTipleri.TeklifOnayda, baslik, mesaj, h.HedefRol, h.HedefUid))
+                .ToList());
     }
 
-
-
     public static Task TeklifDuzeltmeyeGonderildiAsync(SatinalmaTalep talep, string? not = null)
-
     {
-
         var (baslik, mesaj) = Metin(SharedBildirimTipleri.TeklifDuzeltmeIstendi, talep, ek: not);
-
         return BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.TeklifDuzeltmeIstendi, baslik, mesaj, hedefRol: KullaniciRolleri.Satinalma));
-
     }
 
 

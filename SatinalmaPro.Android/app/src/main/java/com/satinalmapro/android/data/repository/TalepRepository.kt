@@ -206,16 +206,22 @@ class TalepRepository(
             )
             KullaniciRolleri.SATINALMA -> listOf(
                 card(
+                    "Gelen Talepler",
+                    TalepKuyrugu.filtre(TalepQueue.GELEN_TALEPLER, talepler, uid, ad, role).size,
+                    "Onay bekleyen",
+                    "gelen-talepler"
+                ),
+                card(
                     "Teklif İstenen",
                     TalepKuyrugu.filtre(TalepQueue.SATINALMA_TEKLIF_ISTENEN, talepler, uid, ad, role).size,
                     "Teklif girişi bekleyen",
                     "satinalma-teklif-istenen"
                 ),
                 card(
-                    "Yönetime Gönderilen",
-                    TalepKuyrugu.filtre(TalepQueue.SATINALMA_TEKLIF_GIRILEN, talepler, uid, ad, role).size,
-                    "Onay bekleyen teklif",
-                    "satinalma-teklif-girilen"
+                    "Teklif İnceleme & Onay",
+                    TalepKuyrugu.filtre(TalepQueue.TEKLIF_ONAY, talepler, uid, ad, role).size,
+                    "Karar bekleyen",
+                    "yonetim-teklif-girilen"
                 ),
                 card(
                     "Düzeltme Bekleyen",
@@ -423,13 +429,13 @@ class TalepRepository(
                 teklifDuzeltmeNotu = ""
             )
         }
-        // Yönetim cihazına FCM: istemci + Cloud Function (durum geçişi) birlikte güvence.
+        // Yönetim + Satınalma: teklif onay kuyruğu bildirimi (işlemi yapan kişi hariç).
         runCatching {
-            bildirimler?.talepBildirimleri(
+            bildirimler?.talepBildirimleriToplu(
                 BildirimTipleri.TEKLIF_ONAYDA,
                 result,
                 user,
-                hedefRol = KullaniciRolleri.YONETIM
+                hedefler = BildirimRolPolitikasi.teklifOnaydaHedefleri()
             )
         }.onFailure {
             BildirimLog.e("TALEP", "Teklif onayda bildirimi gönderilemedi talep=${result.id}", it)

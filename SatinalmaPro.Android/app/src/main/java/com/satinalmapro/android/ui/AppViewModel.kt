@@ -36,7 +36,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 
 class AppViewModel(private val container: AppContainer) : ViewModel() {
-    /** Şifre ile giriş yapıldıysa bu oturumda biyometrik kilidi atla. */
+    /** Åifre ile giriÅŸ yapÄ±ldÄ±ysa bu oturumda biyometrik kilidi atla. */
     private var passwordSessionUnlocked = false
     private var splashJob: Job? = null
     private var loginInProgress = false
@@ -73,7 +73,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     private val _biometricError = MutableStateFlow<String?>(null)
     val biometricError: StateFlow<String?> = _biometricError.asStateFlow()
 
-    private val _splashMessage = MutableStateFlow("Uygulama yükleniyor...")
+    private val _splashMessage = MutableStateFlow("Uygulama yÃ¼kleniyor...")
     val splashMessage: StateFlow<String> = _splashMessage.asStateFlow()
 
     private val _loginError = MutableStateFlow<String?>(null)
@@ -88,7 +88,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading.asStateFlow()
 
-    /** İlk ağ senkronu bitene kadar boş listeyi «kayıt yok» sanma. */
+    /** Ä°lk aÄŸ senkronu bitene kadar boÅŸ listeyi Â«kayÄ±t yokÂ» sanma. */
     private val _initialSyncPending = MutableStateFlow(false)
     val initialSyncPending: StateFlow<Boolean> = _initialSyncPending.asStateFlow()
     private val workflowMutex = Mutex()
@@ -130,7 +130,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         container.biometricPreferences.setEnabled(enabled)
         _biometricEnabled.value = enabled
         if (!enabled) {
-            _profileMessage.value = "Biyometrik kilit kapatıldı"
+            _profileMessage.value = "Biyometrik kilit kapatÄ±ldÄ±"
             _biometricError.value = null
         }
     }
@@ -147,26 +147,26 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         BiometricAuthHelper.authenticate(
             activity = activity,
             title = "Biyometrik Kilit",
-            subtitle = "Etkinleştirmek için parmak izi veya ekran kilidi ile doğrulayın",
+            subtitle = "EtkinleÅŸtirmek iÃ§in parmak izi veya ekran kilidi ile doÄŸrulayÄ±n",
             onSuccess = {
                 setBiometricEnabled(true)
-                _profileMessage.value = "Biyometrik kilit etkinleştirildi"
+                _profileMessage.value = "Biyometrik kilit etkinleÅŸtirildi"
             },
             onError = {
                 _biometricError.value = it
                 _profileError.value = it
             },
-            onCancel = { _profileError.value = "Doğrulama iptal edildi" }
+            onCancel = { _profileError.value = "DoÄŸrulama iptal edildi" }
         )
     }
 
     fun changePassword(currentPassword: String, newPassword: String, confirmPassword: String, onSuccess: () -> Unit) {
         if (newPassword.length < 6) {
-            _profileError.value = "Yeni şifre en az 6 karakter olmalıdır"
+            _profileError.value = "Yeni ÅŸifre en az 6 karakter olmalÄ±dÄ±r"
             return
         }
         if (newPassword != confirmPassword) {
-            _profileError.value = "Yeni şifreler eşleşmiyor"
+            _profileError.value = "Yeni ÅŸifreler eÅŸleÅŸmiyor"
             return
         }
         viewModelScope.launch {
@@ -175,7 +175,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             _loading.value = true
             runCatching { container.changePassword(currentPassword, newPassword) }
                 .onSuccess {
-                    _profileMessage.value = "Şifreniz güncellendi"
+                    _profileMessage.value = "Åifreniz gÃ¼ncellendi"
                     onSuccess()
                 }
                 .onFailure { _profileError.value = NetworkError.translate(it.message) }
@@ -183,8 +183,8 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    // Ölü akışlar — sync sonrası ağır dashboardData() Main'de patlamasın diye kaldırıldı.
-    // UI DashboardScreen kuyruk kartlarını kullanıyor.
+    // Ã–lÃ¼ akÄ±ÅŸlar â€” sync sonrasÄ± aÄŸÄ±r dashboardData() Main'de patlamasÄ±n diye kaldÄ±rÄ±ldÄ±.
+    // UI DashboardScreen kuyruk kartlarÄ±nÄ± kullanÄ±yor.
 
     val menuBadges = combine(talepler, user) { talepList, u ->
         runCatching {
@@ -218,7 +218,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             talepler.map { container.filteredTalepler(queue) }
                 .stateIn(
                     viewModelScope,
-                    // Sekme değişince 5 sn sonra upstream kesilmesin — boş flash olmasın.
+                    // Sekme deÄŸiÅŸince 5 sn sonra upstream kesilmesin â€” boÅŸ flash olmasÄ±n.
                     SharingStarted.WhileSubscribed(60_000),
                     container.filteredTalepler(queue)
                 )
@@ -239,7 +239,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun siparisBekleyenMalzemeler(): StateFlow<List<OnaylananMalzemeSatiri>> = siparisBekleyenFlow
 
     fun startSplash() {
-        // Zaten giriş yapılmışsa veya splash bitmişse tekrar restore etme.
+        // Zaten giriÅŸ yapÄ±lmÄ±ÅŸsa veya splash bitmiÅŸse tekrar restore etme.
         if (_isLoggedIn.value || passwordSessionUnlocked || loginInProgress) {
             _splashDone.value = true
             _needsBiometricUnlock.value = false
@@ -255,19 +255,19 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         }
         splashJob?.cancel()
         splashJob = viewModelScope.launch {
-            _splashMessage.value = "Yükleniyor..."
+            _splashMessage.value = "YÃ¼kleniyor..."
             val restored = try {
                 kotlinx.coroutines.withTimeoutOrNull(6_000) {
                     container.restoreSession()
                 } ?: container.hasActiveSession()
             } catch (_: kotlinx.coroutines.CancellationException) {
-                // Login splash'ı iptal etti — oturumu düşürme.
+                // Login splash'Ä± iptal etti â€” oturumu dÃ¼ÅŸÃ¼rme.
                 return@launch
             } catch (_: Exception) {
                 container.hasActiveSession()
             }
 
-            // Login yarışını kazanmış olabilir; asla geri alma.
+            // Login yarÄ±ÅŸÄ±nÄ± kazanmÄ±ÅŸ olabilir; asla geri alma.
             if (_isLoggedIn.value || passwordSessionUnlocked || loginInProgress) {
                 _splashDone.value = true
                 _needsBiometricUnlock.value = false
@@ -286,7 +286,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                         !_isLoggedIn.value
                     if (lockBiometric) {
                         _needsBiometricUnlock.value = true
-                        // Tekrar kontrol — login arada bitmiş olabilir.
+                        // Tekrar kontrol â€” login arada bitmiÅŸ olabilir.
                         if (!passwordSessionUnlocked && !loginInProgress && !_isLoggedIn.value) {
                             _isLoggedIn.value = false
                         }
@@ -304,7 +304,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 }
             }
 
-            // Son güvenlik: login başarısını splash ezmesin.
+            // Son gÃ¼venlik: login baÅŸarÄ±sÄ±nÄ± splash ezmesin.
             if (passwordSessionUnlocked || loginInProgress) {
                 _needsBiometricUnlock.value = false
                 _isLoggedIn.value = true
@@ -328,7 +328,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             _initialSyncPending.value = container.talepList.value.isEmpty()
             container.hydrateFromOfflineCache()
-            // Gecikme yok — cache zaten ekranda; ağ hemen yenilesin.
+            // Gecikme yok â€” cache zaten ekranda; aÄŸ hemen yenilesin.
             runCatching { container.syncLiveData() }
                 .onFailure { android.util.Log.e("PostLoginSync", "syncLiveData", it) }
             _initialSyncPending.value = false
@@ -343,7 +343,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             _loginMessage.value = null
             _loading.value = true
             loginInProgress = true
-            // Splash restore yarışını iptal et — aksi halde giriş sonrası isLoggedIn=false yazar.
+            // Splash restore yarÄ±ÅŸÄ±nÄ± iptal et â€” aksi halde giriÅŸ sonrasÄ± isLoggedIn=false yazar.
             splashJob?.cancel()
             splashJob = null
             runCatching {
@@ -361,7 +361,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 BackgroundSyncScheduler.ensureScheduled(container.appContext)
             }.onFailure {
                 _loginError.value = NetworkError.translate(it.message)
-                // Başarısız login'de splash'ı tekrar açma; kullanıcı login ekranında kalsın.
+                // BaÅŸarÄ±sÄ±z login'de splash'Ä± tekrar aÃ§ma; kullanÄ±cÄ± login ekranÄ±nda kalsÄ±n.
                 _splashDone.value = true
             }
             loginInProgress = false
@@ -369,7 +369,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    /** Bellekte profil varken UI'nın login'e düşmesini engeller. */
+    /** Bellekte profil varken UI'nÄ±n login'e dÃ¼ÅŸmesini engeller. */
     fun ensureLoggedInFromSession() {
         if (loginInProgress) return
         if ((_isLoggedIn.value || passwordSessionUnlocked || container.hasActiveSession()) &&
@@ -399,7 +399,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             _loading.value = true
             runCatching { container.sendPasswordResetEmail(email) }
                 .onSuccess {
-                    _loginMessage.value = "Sıfırlama bağlantısı kayıtlı e-posta adresinize gönderildi. Gelen kutunuzu ve spam klasörünü kontrol edin."
+                    _loginMessage.value = "SÄ±fÄ±rlama baÄŸlantÄ±sÄ± kayÄ±tlÄ± e-posta adresinize gÃ¶nderildi. Gelen kutunuzu ve spam klasÃ¶rÃ¼nÃ¼ kontrol edin."
                 }
                 .onFailure { _loginError.value = NetworkError.translate(it.message) }
             _loading.value = false
@@ -408,11 +408,11 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     fun promptBiometricUnlock(activity: FragmentActivity) {
         if (!container.biometricPreferences.isEnabled()) {
-            _biometricError.value = "Biyometrik kilit kapalı. Profil ayarlarından etkinleştirin."
+            _biometricError.value = "Biyometrik kilit kapalÄ±. Profil ayarlarÄ±ndan etkinleÅŸtirin."
             return
         }
         if (container.user.value == null) {
-            _biometricError.value = "Kayıtlı oturum bulunamadı. Kullanıcı adı ve şifre ile giriş yapın."
+            _biometricError.value = "KayÄ±tlÄ± oturum bulunamadÄ±. KullanÄ±cÄ± adÄ± ve ÅŸifre ile giriÅŸ yapÄ±n."
             return
         }
         _biometricError.value = null
@@ -426,7 +426,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     fun completeBiometricUnlock() {
         if (!container.biometricPreferences.isEnabled() || container.user.value == null) {
-            _biometricError.value = "Biyometrik giriş kullanılamıyor. Kullanıcı adı ve şifre ile giriş yapın."
+            _biometricError.value = "Biyometrik giriÅŸ kullanÄ±lamÄ±yor. KullanÄ±cÄ± adÄ± ve ÅŸifre ile giriÅŸ yapÄ±n."
             _needsBiometricUnlock.value = false
             _isLoggedIn.value = false
             return
@@ -497,7 +497,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             container.pendingNotificationId = notificationId
             return
         }
-        // Bildirim tıklaması: ana ekranı değil, doğrudan ilgili işlemi aç.
+        // Bildirim tÄ±klamasÄ±: ana ekranÄ± deÄŸil, doÄŸrudan ilgili iÅŸlemi aÃ§.
         routeHistory.clear()
         navigate(route, pushHistory = false)
         viewModelScope.launch {
@@ -540,7 +540,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         if (backgroundRefreshStarted) return
         backgroundRefreshStarted = true
         BackgroundSyncScheduler.ensureScheduled(container.appContext)
-        // Canlı talep+bildirim — uygulama açıkken sık; arka planda WorkManager tamamlar.
+        // CanlÄ± talep+bildirim â€” uygulama aÃ§Ä±kken sÄ±k; arka planda WorkManager tamamlar.
         viewModelScope.launch(Dispatchers.IO) {
             while (true) {
                 val delayMs = if (foreground) 12_000L else 45_000L
@@ -570,13 +570,13 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun onAppResume() {
         foreground = true
         viewModelScope.launch(Dispatchers.IO) {
-            // Şifre ile açılmış oturumda biyometrik kilidi tamamen atla (izin diyaloğu / recreate atmasın).
+            // Åifre ile aÃ§Ä±lmÄ±ÅŸ oturumda biyometrik kilidi tamamen atla (izin diyaloÄŸu / recreate atmasÄ±n).
             if (passwordSessionUnlocked || loginInProgress) {
                 if (container.hasActiveSession()) {
                     _needsBiometricUnlock.value = false
                     _isLoggedIn.value = true
                 }
-                // Hafif canlı senkron — giriş oturumunda da telefon güncel kalsın.
+                // Hafif canlÄ± senkron â€” giriÅŸ oturumunda da telefon gÃ¼ncel kalsÄ±n.
                 if (_isLoggedIn.value) {
                     runCatching { container.syncLiveData() }
                 }
@@ -618,7 +618,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             if (userInitiated) {
                 _updateError.value = null
-                _updateMessage.value = "Güncelleme kontrol ediliyor..."
+                _updateMessage.value = "GÃ¼ncelleme kontrol ediliyor..."
             }
             val result = runCatching { container.checkForUpdate() }.getOrElse {
                 _updateMessage.value = null
@@ -643,7 +643,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                     }
                 }
                 userInitiated -> {
-                    _updateMessage.value = "Uygulama güncel."
+                    _updateMessage.value = "Uygulama gÃ¼ncel."
                     _showUpdateDialog.value = true
                 }
             }
@@ -662,7 +662,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             _updateError.value = null
             _updateProgress.value = 0
-            _updateMessage.value = "Güncelleme indiriliyor..."
+            _updateMessage.value = "GÃ¼ncelleme indiriliyor..."
             val result = runCatching {
                 container.downloadAndInstallUpdate(manifest) { msg, progress ->
                     _updateMessage.value = msg
@@ -676,15 +676,15 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             _updateProgress.value = null
             when (result) {
                 UpdateInstallResult.SUCCESS -> {
-                    _updateMessage.value = "Kurulum ekranı açıldı. Yüklemeyi tamamlayın."
+                    _updateMessage.value = "Kurulum ekranÄ± aÃ§Ä±ldÄ±. YÃ¼klemeyi tamamlayÄ±n."
                     _showUpdateDialog.value = false
                 }
                 UpdateInstallResult.NEEDS_PERMISSION -> {
-                    _updateError.value = "Kurulum izni gerekli. Ayarlardan 'Bu kaynaktan yükle' iznini verin, sonra tekrar Güncelle'ye basın."
+                    _updateError.value = "Kurulum izni gerekli. Ayarlardan 'Bu kaynaktan yÃ¼kle' iznini verin, sonra tekrar GÃ¼ncelle'ye basÄ±n."
                 }
                 UpdateInstallResult.FAILED -> {
                     container.clearPendingApk()
-                    _updateError.value = "Güncelleme kurulamadı. APK imzası uyuşmuyor olabilir; release dosyasını manuel yükleyin."
+                    _updateError.value = "GÃ¼ncelleme kurulamadÄ±. APK imzasÄ± uyuÅŸmuyor olabilir; release dosyasÄ±nÄ± manuel yÃ¼kleyin."
                 }
             }
         }
@@ -721,7 +721,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 onSuccess()
             }.onFailure { error ->
                 _loading.value = false
-                _submitError.value = NetworkError.translate(error.message ?: "Talep gönderilemedi")
+                _submitError.value = NetworkError.translate(error.message ?: "Talep gÃ¶nderilemedi")
             }
         }
     }
@@ -747,7 +747,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 _loading.value = true
                 runCatching { block() }
                     .onSuccess { onSuccess() }
-                    .onFailure { _submitError.value = it.message ?: "İşlem başarısız" }
+                    .onFailure { _submitError.value = it.message ?: "Ä°ÅŸlem baÅŸarÄ±sÄ±z" }
             } finally {
                 _loading.value = false
                 workflowMutex.unlock()
@@ -832,15 +832,15 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         onSuccess: () -> Unit
     ) {
         val m = form.miktar.replace(',', '.').toDoubleOrNull()
-            ?: run { _submitError.value = "Geçerli miktar girin"; return }
+            ?: run { _submitError.value = "GeÃ§erli miktar girin"; return }
         val f = form.birimFiyat.replace(',', '.').toDoubleOrNull()
-            ?: run { _submitError.value = "Geçerli birim fiyat girin"; return }
+            ?: run { _submitError.value = "GeÃ§erli birim fiyat girin"; return }
         if (form.firma.isBlank()) {
-            _submitError.value = "Firma / tedarikçi girin"
+            _submitError.value = "Firma / tedarikÃ§i girin"
             return
         }
         if (f <= 0) {
-            _submitError.value = "Birim fiyat sıfırdan büyük olmalı"
+            _submitError.value = "Birim fiyat sÄ±fÄ±rdan bÃ¼yÃ¼k olmalÄ±"
             return
         }
         if (form.teslimAlan.isBlank()) {
@@ -848,11 +848,11 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             return
         }
         if (form.depoSaha.isBlank()) {
-            _submitError.value = if (form.sahayaDirekt) "Giriş deposu girin" else "Depo / saha girin"
+            _submitError.value = if (form.sahayaDirekt) "GiriÅŸ deposu girin" else "Depo / saha girin"
             return
         }
         if (form.sahayaDirekt && form.sahaHedef.isBlank()) {
-            _submitError.value = "Malzemenin indiği sahayı girin"
+            _submitError.value = "Malzemenin indiÄŸi sahayÄ± girin"
             return
         }
         runWorkflow(onSuccess) {
@@ -869,18 +869,18 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         runWorkflow(onSuccess) { container.sevkiyatiTamamla(talepId, kalemId) }
 
     fun stokGiris(malzeme: String, miktar: String, birim: String, kategori: String, depo: String, birimMaliyet: String, belgeNo: String, teslimAlan: String, onSuccess: () -> Unit) {
-        val m = miktar.replace(',', '.').toDoubleOrNull() ?: run { _submitError.value = "Geçerli miktar girin"; return }
+        val m = miktar.replace(',', '.').toDoubleOrNull() ?: run { _submitError.value = "GeÃ§erli miktar girin"; return }
         val f = birimMaliyet.replace(',', '.').toDoubleOrNull() ?: 0.0
         runWorkflow(onSuccess) { container.stokGiris(malzeme, m, birim, kategori, depo, f, belgeNo, "", teslimAlan) }
     }
 
     fun stokCikis(malzeme: String, miktar: String, depo: String, belgeNo: String, teslimAlan: String, onSuccess: () -> Unit) {
-        val m = miktar.replace(',', '.').toDoubleOrNull() ?: run { _submitError.value = "Geçerli miktar girin"; return }
+        val m = miktar.replace(',', '.').toDoubleOrNull() ?: run { _submitError.value = "GeÃ§erli miktar girin"; return }
         runWorkflow(onSuccess) { container.stokCikis(malzeme, m, depo, belgeNo, "", teslimAlan) }
     }
 
     fun stokSayim(malzeme: String, depo: String, sayimMiktari: String, onSuccess: () -> Unit) {
-        val m = sayimMiktari.replace(',', '.').toDoubleOrNull() ?: run { _submitError.value = "Geçerli miktar girin"; return }
+        val m = sayimMiktari.replace(',', '.').toDoubleOrNull() ?: run { _submitError.value = "GeÃ§erli miktar girin"; return }
         runWorkflow(onSuccess) { container.stokSayim(malzeme, depo, m) }
     }
 
@@ -898,7 +898,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         onSuccess: () -> Unit
     ) {
         if (satirlar.isEmpty()) {
-            _submitError.value = "En az bir satır girin"
+            _submitError.value = "En az bir satÄ±r girin"
             return
         }
         runWorkflow(onSuccess) { container.stokGirisCoklu(belgeNo, teslimAlan, satirlar) }
@@ -918,7 +918,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         onSuccess: () -> Unit
     ) {
         if (satirlar.isEmpty()) {
-            _submitError.value = "En az bir satır girin"
+            _submitError.value = "En az bir satÄ±r girin"
             return
         }
         if (teslimAlan.isBlank()) {
@@ -944,7 +944,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     ) {
         val m = miktar.replace(',', '.').toDoubleOrNull()
         if (m == null || m <= 0) {
-            _submitError.value = "Geçerli miktar girin"
+            _submitError.value = "GeÃ§erli miktar girin"
             return
         }
         runWorkflow(onSuccess) {
@@ -958,7 +958,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             try {
                 _loading.value = true
                 runCatching { container.markAllNotificationsRead() }
-                    .onFailure { _submitError.value = it.message ?: "Bildirimler güncellenemedi" }
+                    .onFailure { _submitError.value = it.message ?: "Bildirimler gÃ¼ncellenemedi" }
             } finally {
                 _loading.value = false
                 syncMutex.unlock()
@@ -999,7 +999,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             _loading.value = true
             runCatching { container.saveManagedUser(user) }
                 .onSuccess {
-                    _settingsMessage.value = "Kullanıcı kaydedildi."
+                    _settingsMessage.value = "KullanÄ±cÄ± kaydedildi."
                     onSuccess()
                 }
                 .onFailure { _settingsError.value = NetworkError.translate(it.message) }
@@ -1017,7 +1017,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         onSuccess: () -> Unit = {}
     ) {
         if (email.isBlank() || password.length < 6 || fullName.isBlank()) {
-            _settingsError.value = "E-posta, ad soyad ve en az 6 karakterlik şifre girin."
+            _settingsError.value = "E-posta, ad soyad ve en az 6 karakterlik ÅŸifre girin."
             return
         }
         viewModelScope.launch {
@@ -1027,7 +1027,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             runCatching {
                 container.createManagedUser(email, password, fullName, role, site, active)
             }.onSuccess {
-                _settingsMessage.value = "Kullanıcı oluşturuldu."
+                _settingsMessage.value = "KullanÄ±cÄ± oluÅŸturuldu."
                 onSuccess()
             }.onFailure { _settingsError.value = NetworkError.translate(it.message) }
             _loading.value = false
@@ -1036,37 +1036,33 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     fun addBirim(term: String, onSuccess: () -> Unit = {}) =
         updateTermList(
-            current = container.uygulamaAyarlar.value.malzemeBirimleri,
             term = term,
-            onSuccess = onSuccess
-        ) { list, ayarlar ->
-            container.saveUygulamaAyarlar(ayarlar.copy(malzemeBirimleri = list))
-        }
+            onSuccess = onSuccess,
+            read = { it.malzemeBirimleri },
+            write = { ayarlar, list -> ayarlar.copy(malzemeBirimleri = list) }
+        )
 
     fun removeBirim(term: String) = updateTermList(
-        current = container.uygulamaAyarlar.value.malzemeBirimleri,
         term = term,
-        remove = true
-    ) { list, ayarlar ->
-        container.saveUygulamaAyarlar(ayarlar.copy(malzemeBirimleri = list))
-    }
+        remove = true,
+        read = { it.malzemeBirimleri },
+        write = { ayarlar, list -> ayarlar.copy(malzemeBirimleri = list) }
+    )
 
     fun addKategori(term: String, onSuccess: () -> Unit = {}) =
         updateTermList(
-            current = container.uygulamaAyarlar.value.malzemeKategorileri,
             term = term,
-            onSuccess = onSuccess
-        ) { list, ayarlar ->
-            container.saveUygulamaAyarlar(ayarlar.copy(malzemeKategorileri = list))
-        }
+            onSuccess = onSuccess,
+            read = { it.malzemeKategorileri },
+            write = { ayarlar, list -> ayarlar.copy(malzemeKategorileri = list) }
+        )
 
     fun removeKategori(term: String) = updateTermList(
-        current = container.uygulamaAyarlar.value.malzemeKategorileri,
         term = term,
-        remove = true
-    ) { list, ayarlar ->
-        container.saveUygulamaAyarlar(ayarlar.copy(malzemeKategorileri = list))
-    }
+        remove = true,
+        read = { it.malzemeKategorileri },
+        write = { ayarlar, list -> ayarlar.copy(malzemeKategorileri = list) }
+    )
 
     fun modulBugun(): String = container.modulBugun()
 
@@ -1100,39 +1096,37 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     private fun updateTermList(
-        current: List<String>,
         term: String,
         remove: Boolean = false,
         onSuccess: () -> Unit = {},
-        save: suspend (List<String>, UygulamaAyarlar) -> Unit
+        read: (UygulamaAyarlar) -> List<String>,
+        write: (UygulamaAyarlar, List<String>) -> UygulamaAyarlar
     ) {
         val trimmed = term.trim()
         if (trimmed.isBlank()) {
             _settingsError.value = "Geçerli bir terim girin."
             return
         }
-        val next = if (remove) {
-            if (current.size <= 1) {
-                _settingsError.value = "En az bir terim kalmalıdır."
-                return
-            }
-            current.filterNot { it.equals(trimmed, ignoreCase = true) }
-        } else {
-            if (current.any { it.equals(trimmed, ignoreCase = true) }) {
-                _settingsError.value = "Bu terim zaten listede."
-                return
-            }
-            current + trimmed
-        }
         viewModelScope.launch {
             _settingsError.value = null
             _loading.value = true
-            runCatching { save(next, container.uygulamaAyarlar.value) }
-                .onSuccess {
-                    _settingsMessage.value = if (remove) "Terim silindi." else "Terim eklendi."
-                    onSuccess()
+            runCatching {
+                container.loadUygulamaAyarlar()
+                val ayarlar = container.uygulamaAyarlar.value
+                val kaynak = read(ayarlar)
+                val next = if (remove) {
+                    if (kaynak.size <= 1) throw IllegalStateException("En az bir terim kalmalıdır.")
+                    kaynak.filterNot { it.equals(trimmed, ignoreCase = true) }
+                } else {
+                    if (kaynak.any { it.equals(trimmed, ignoreCase = true) })
+                        throw IllegalStateException("Bu terim zaten listede.")
+                    kaynak + trimmed
                 }
-                .onFailure { _settingsError.value = NetworkError.translate(it.message) }
+                container.saveUygulamaAyarlar(write(ayarlar, next))
+            }.onSuccess {
+                _settingsMessage.value = if (remove) "Terim silindi." else "Terim eklendi."
+                onSuccess()
+            }.onFailure { _settingsError.value = NetworkError.translate(it.message) }
             _loading.value = false
         }
     }

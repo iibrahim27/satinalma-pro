@@ -1,5 +1,6 @@
 package com.satinalmapro.android.services
 
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -11,7 +12,9 @@ import com.satinalmapro.android.core.model.ImzaAyari
 data class SatinalmaPdfBaglam(
     val firmaAdi: String = "Satınalma Pro",
     val sefImzalari: List<ImzaAyari> = emptyList(),
-    val yonetimImzalari: List<ImzaAyari> = emptyList()
+    val yonetimImzalari: List<ImzaAyari> = emptyList(),
+    /** Kiracıya özel firma logosu (PDF başlığı); yoksa yalnızca metin. */
+    val logoBytes: ByteArray? = null
 )
 
 internal class PdfSayfaDuzeni(
@@ -65,22 +68,45 @@ internal object SatinalmaPdfCizim {
     ) {
         val canvas = duzen.canvas
         val logoGenislik = if (kompakt) 84f else 108f
+        val logoYukseklik = if (kompakt) 42f else 54f
         val firmaBoyut = if (kompakt) 11f else 14f
         val baslikBoyut = if (kompakt) 11f else 15f
         val merkezX = duzen.genislik / 2f
+        var metinBaslangicY = duzen.y
+
+        val logo = baglam.logoBytes?.let { bytes ->
+            runCatching { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }.getOrNull()
+        }
+        if (logo != null && !logo.isRecycled) {
+            val oran = minOf(logoGenislik / logo.width, logoYukseklik / logo.height)
+            val w = logo.width * oran
+            val h = logo.height * oran
+            val dest = RectF(duzen.margin, duzen.y, duzen.margin + w, duzen.y + h)
+            canvas.drawBitmap(logo, null, dest, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+            metinBaslangicY = duzen.y + (h - firmaBoyut - baslikBoyut) / 2f
+            if (metinBaslangicY < duzen.y) metinBaslangicY = duzen.y
+            duzen.y += maxOf(h, firmaBoyut + baslikBoyut + 8f) + 4f
+        }
 
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         paint.textSize = firmaBoyut
         paint.textAlign = Paint.Align.CENTER
         paint.color = Color.BLACK
-        canvas.drawText(baglam.firmaAdi, merkezX, duzen.y + firmaBoyut, paint)
+        if (logo == null) {
+            canvas.drawText(baglam.firmaAdi, merkezX, metinBaslangicY + firmaBoyut, paint)
+            paint.textSize = baslikBoyut
+            paint.color = kirmiziBaslik
+            canvas.drawText(baslik, merkezX, metinBaslangicY + firmaBoyut + baslikBoyut + 4f, paint)
+            duzen.y += if (kompakt) 34f else 44f
+        } else {
+            // Logo varken firma adı + belge başlığı ortada
+            canvas.drawText(baglam.firmaAdi, merkezX, metinBaslangicY + firmaBoyut, paint)
+            paint.textSize = baslikBoyut
+            paint.color = kirmiziBaslik
+            canvas.drawText(baslik, merkezX, metinBaslangicY + firmaBoyut + baslikBoyut + 4f, paint)
+        }
 
-        paint.textSize = baslikBoyut
-        paint.color = kirmiziBaslik
-        canvas.drawText(baslik, merkezX, duzen.y + firmaBoyut + baslikBoyut + 4f, paint)
-
-        duzen.y += if (kompakt) 34f else 44f
         paint.color = griCizgi
         paint.strokeWidth = 1f
         canvas.drawLine(duzen.margin, duzen.y, duzen.genislik - duzen.margin, duzen.y, paint)

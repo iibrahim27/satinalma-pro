@@ -5,7 +5,7 @@ import com.satinalmapro.android.core.model.BildirimTipleri
 import com.satinalmapro.android.core.model.UserProfile
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 
-/** Yönetim yalnızca: saha talebi + teklif onayı bildirimlerini görür. */
+/** Talep/teklif onay bildirimleri: Yönetim + Satınalma (aynı karar yetkisi). */
 object BildirimRolPolitikasi {
     fun islemYapanKendisiMi(record: BildirimRecord, user: UserProfile?): Boolean =
         user != null &&
@@ -30,8 +30,9 @@ object BildirimRolPolitikasi {
         val t = normalizeTip(tip)
         return when (t) {
             BildirimTipleri.YONETIME_GONDERILDI ->
-                r == KullaniciRolleri.YONETIM
-            BildirimTipleri.TEKLIF_ONAYDA -> r == KullaniciRolleri.YONETIM
+                r == KullaniciRolleri.YONETIM || r == KullaniciRolleri.SATINALMA
+            BildirimTipleri.TEKLIF_ONAYDA ->
+                r == KullaniciRolleri.YONETIM || r == KullaniciRolleri.SATINALMA
             BildirimTipleri.TEKLIF_ISTENDI, BildirimTipleri.TEKLIF_DUZELTME_ISTENDI ->
                 r == KullaniciRolleri.SATINALMA
             BildirimTipleri.ONAYLANDI -> r == KullaniciRolleri.SATINALMA
@@ -67,7 +68,16 @@ object BildirimRolPolitikasi {
     }
 
     fun yonetimeGonderildiHedefleri(): List<Pair<String?, String?>> =
-        listOf(KullaniciRolleri.YONETIM to null)
+        listOf(
+            KullaniciRolleri.YONETIM to null,
+            KullaniciRolleri.SATINALMA to null
+        )
+
+    fun teklifOnaydaHedefleri(): List<Pair<String?, String?>> =
+        listOf(
+            KullaniciRolleri.YONETIM to null,
+            KullaniciRolleri.SATINALMA to null
+        )
 
     fun reddedildiHedefleri(talepOlusturanUid: String?, islemYapanUid: String?): List<Pair<String?, String?>> {
         val hedefler = mutableListOf<Pair<String?, String?>>()

@@ -14,8 +14,7 @@ object IsAkisRotalari {
     )
 
     fun teklifOnayListesi(role: String?): String = when (KullaniciRolleri.normalize(role)) {
-        KullaniciRolleri.YONETIM -> "yonetim-teklif-girilen"
-        KullaniciRolleri.SATINALMA -> "satinalma-teklif-girilen"
+        KullaniciRolleri.YONETIM, KullaniciRolleri.SATINALMA -> "yonetim-teklif-girilen"
         else -> "teklif-onay"
     }
 
@@ -36,7 +35,7 @@ object IsAkisRotalari {
     }
 
     fun yonetimGonderSonrasi(role: String?): String = when (KullaniciRolleri.normalize(role)) {
-        KullaniciRolleri.SATINALMA -> "satinalma-teklif-girilen"
+        KullaniciRolleri.SATINALMA -> "yonetim-teklif-girilen"
         else -> teklifOnayListesi(role)
     }
 
@@ -70,7 +69,9 @@ object IsAkisRotalari {
             aliasedBase == "teklif-onay" && r == KullaniciRolleri.YONETIM ->
                 "yonetim-teklif-girilen$suffix"
             aliasedBase == "teklif-onay" && r == KullaniciRolleri.SATINALMA ->
-                "satinalma-teklif-girilen$suffix"
+                "yonetim-teklif-girilen$suffix"
+            aliasedBase == "satinalma-teklif-girilen" && r == KullaniciRolleri.SATINALMA ->
+                "yonetim-teklif-girilen$suffix"
             aliasedBase == "onaylanan-malzemeler" && r == KullaniciRolleri.YONETIM ->
                 if (talepId != null) "talep-detay?id=$talepId" else "onaylanan-teklifler"
             aliasedBase == "teklifsiz-firma-fiyat" && r == KullaniciRolleri.YONETIM ->
