@@ -200,7 +200,7 @@ public static class SatinalmaPart1Servisi
         if (!KullaniciYetkileri.MalKabulVeStokAktarYapabilir())
         {
             MessageBox.Show(
-                "Mal kabul işlemi yalnızca Satınalma rolü tarafından yapılabilir.",
+                "Mal kabul işlemi yalnızca Satınalma veya Depo rolü tarafından yapılabilir.",
                 UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }

@@ -248,10 +248,11 @@ private fun bottomTabsFor(role: String?): List<BottomTab> {
     )
     val queues = RolNavigasyon.queueMenus(role)
     when {
+        normalized in setOf(KullaniciRolleri.DEPO, KullaniciRolleri.ATOLYE) ->
+            tabs += BottomTab("stok-durum", "Stok", Icons.Rounded.Inventory2)
         queues.any { it.route == "onaylanan-malzemeler" } || KullaniciRolleri.canMalKabul(role) ->
             tabs += BottomTab("onaylanan-malzemeler", "Malzeme", Icons.Rounded.ShoppingCart)
-        normalized in setOf(KullaniciRolleri.DEPO, KullaniciRolleri.ATOLYE) ||
-            queues.any { it.route.startsWith("stok-") } ->
+        queues.any { it.route.startsWith("stok-") } ->
             tabs += BottomTab("stok-durum", "Stok", Icons.Rounded.Inventory2)
     }
     tabs += BottomTab("bildirimler", "Bildirim", Icons.Rounded.Notifications)

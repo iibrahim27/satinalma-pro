@@ -1,6 +1,8 @@
 package com.satinalmapro.android.ui.procurement
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,15 +23,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SwapVert
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,6 +51,7 @@ import com.satinalmapro.android.core.model.StokHareket
 import com.satinalmapro.android.core.model.StokHareketTipi
 import com.satinalmapro.android.core.model.StokKaydi
 import com.satinalmapro.android.core.roles.KullaniciRolleri
+import com.satinalmapro.android.data.repository.StokRepository
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppPrimaryButton
 import com.satinalmapro.android.ui.components.MetrikField
@@ -168,14 +176,16 @@ fun StokGirisScreen(viewModel: AppViewModel) {
     val error by viewModel.submitError.collectAsState()
     val birimler by viewModel.malzemeBirimleri.collectAsState()
     val canWrite = KullaniciRolleri.canStockWrite(user?.role)
+    var belgeNo by remember { mutableStateOf(viewModel.sonrakiGirisBelgeNo()) }
+    var depo by remember { mutableStateOf(user?.site.orEmpty()) }
+    var teslimAlan by remember { mutableStateOf("") }
     var malzeme by remember { mutableStateOf("") }
     var miktar by remember { mutableStateOf("") }
     var birim by remember { mutableStateOf("Adet") }
     var kategori by remember { mutableStateOf("") }
-    var depo by remember { mutableStateOf(user?.site.orEmpty()) }
     var birimMaliyet by remember { mutableStateOf("") }
-    var belgeNo by remember { mutableStateOf(viewModel.sonrakiGirisBelgeNo()) }
-    var teslimAlan by remember { mutableStateOf("") }
+    val satirlar = remember { mutableStateListOf<StokRepository.GirisSatir>() }
+    val oneriler = remember(malzeme) { viewModel.stokMalzemeOnerileri(malzeme) }
 
     Column(
         modifier = Modifier
@@ -183,42 +193,114 @@ fun StokGirisScreen(viewModel: AppViewModel) {
             .background(MetrikLight.Background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = MetrikSpace.screen, vertical = MetrikSpace.lg),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StokHeader(title = "Stok Girişi", subtitle = "Depoya malzeme girişi")
+        StokHeader(title = "Stok Girişi", subtitle = "Belgeye birden fazla satır ekleyin")
         if (!canWrite) {
             Text("Bu rol stok girişi yapamaz.", color = MetrikLight.Danger)
         } else {
-            MetrikField(malzeme, { malzeme = it }, "Malzeme")
-            MetrikField(
-                miktar, { miktar = it }, "Miktar",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-            )
-            Text("Birim", style = MaterialTheme.typography.labelMedium, color = MetrikLight.TextSecondary)
-            RequestBirimDropdown(
-                value = birim,
-                options = birimler,
-                onSelect = { birim = it },
-                modifier = Modifier.fillMaxWidth()
-            )
-            MetrikField(kategori, { kategori = it }, "Kategori")
-            MetrikField(depo, { depo = it }, "Depo / saha")
-            MetrikField(
-                birimMaliyet, { birimMaliyet = it }, "Birim maliyet",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-            )
-            MetrikField(belgeNo, { belgeNo = it }, "Belge no")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                MetrikField(belgeNo, { belgeNo = it }, "Belge no", modifier = Modifier.weight(1f))
+                MetrikField(depo, { depo = it }, "Depo", modifier = Modifier.weight(1f))
+            }
             MetrikField(teslimAlan, { teslimAlan = it }, "Teslim alan")
+
+            Text("Satır ekle", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MetrikLight.TextPrimary)
+            MetrikField(malzeme, { malzeme = it }, "Malzeme")
+            if (oneriler.isNotEmpty() && malzeme.isNotBlank()) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    oneriler.take(6).forEach { o ->
+                        Text(
+                            o,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MetrikLight.Surface)
+                                .clickable { malzeme = o }
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MetrikLight.TextSecondary,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                MetrikField(
+                    miktar, { miktar = it }, "Miktar",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.weight(1.1f)
+                )
+                Column(modifier = Modifier.weight(0.9f)) {
+                    Text("Birim", style = MaterialTheme.typography.labelMedium, color = MetrikLight.TextSecondary)
+                    RequestBirimDropdown(
+                        value = birim,
+                        options = birimler,
+                        onSelect = { birim = it },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                MetrikField(kategori, { kategori = it }, "Kategori", modifier = Modifier.weight(1f))
+                MetrikField(
+                    birimMaliyet, { birimMaliyet = it }, "Birim maliyet",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            OutlinedButton(
+                onClick = {
+                    val m = miktar.replace(',', '.').toDoubleOrNull() ?: 0.0
+                    if (malzeme.isBlank() || m <= 0) return@OutlinedButton
+                    satirlar.add(
+                        StokRepository.GirisSatir(
+                            malzeme = malzeme.trim(),
+                            miktar = m,
+                            birim = birim.ifBlank { "Adet" },
+                            kategori = kategori.trim(),
+                            birimMaliyet = birimMaliyet.replace(',', '.').toDoubleOrNull() ?: 0.0
+                        )
+                    )
+                    malzeme = ""
+                    miktar = ""
+                    kategori = ""
+                    birimMaliyet = ""
+                },
+                enabled = malzeme.isNotBlank() && miktar.isNotBlank(),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Satır ekle")
+            }
+
+            if (satirlar.isNotEmpty()) {
+                Text(
+                    "${satirlar.size} satır",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MetrikLight.TextSecondary
+                )
+                satirlar.forEachIndexed { index, s ->
+                    StokSatirChip(
+                        title = s.malzeme,
+                        subtitle = formatQty(s.miktar, s.birim) +
+                            (if (s.kategori.isNotBlank()) " · ${s.kategori}" else ""),
+                        onRemove = { satirlar.removeAt(index) }
+                    )
+                }
+            }
+
             error?.let { Text(it, color = MetrikLight.Danger, style = MaterialTheme.typography.bodySmall) }
             AppPrimaryButton(
-                text = "Giriş kaydet",
+                text = if (satirlar.isEmpty()) "Giriş kaydet" else "Giriş kaydet (${satirlar.size})",
                 loading = loading,
-                enabled = malzeme.isNotBlank() && miktar.isNotBlank() && depo.isNotBlank(),
+                enabled = satirlar.isNotEmpty() && depo.isNotBlank(),
                 onClick = {
-                    viewModel.stokGiris(
-                        malzeme, miktar, birim, kategori, depo, birimMaliyet, belgeNo, teslimAlan
-                    ) {
-                        miktar = ""
+                    viewModel.stokGirisCoklu(belgeNo, depo, teslimAlan, satirlar.toList()) {
+                        satirlar.clear()
                         belgeNo = viewModel.sonrakiGirisBelgeNo()
                         viewModel.navigateFromMenu("stok-durum")
                     }
@@ -236,11 +318,12 @@ fun StokCikisScreen(viewModel: AppViewModel) {
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.submitError.collectAsState()
     val canWrite = KullaniciRolleri.canStockWrite(user?.role)
-    var malzeme by remember { mutableStateOf("") }
-    var miktar by remember { mutableStateOf("") }
-    var depo by remember { mutableStateOf(user?.site.orEmpty()) }
     var belgeNo by remember { mutableStateOf(viewModel.sonrakiCikisBelgeNo()) }
     var teslimAlan by remember { mutableStateOf("") }
+    var malzeme by remember { mutableStateOf("") }
+    var miktar by remember { mutableStateOf("") }
+    val satirlar = remember { mutableStateListOf<StokRepository.CikisSatir>() }
+    val oneriler = remember(malzeme) { viewModel.stokMalzemeOnerileri(malzeme, sadeceMevcut = true) }
 
     Column(
         modifier = Modifier
@@ -248,28 +331,82 @@ fun StokCikisScreen(viewModel: AppViewModel) {
             .background(MetrikLight.Background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = MetrikSpace.screen, vertical = MetrikSpace.lg),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StokHeader(title = "Stok Çıkışı", subtitle = "Depodan malzeme çıkışı")
+        StokHeader(title = "Stok Çıkışı", subtitle = "Belgeye birden fazla satır ekleyin")
         if (!canWrite) {
             Text("Bu rol stok çıkışı yapamaz.", color = MetrikLight.Danger)
         } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                MetrikField(belgeNo, { belgeNo = it }, "Belge no", modifier = Modifier.weight(1f))
+                MetrikField(teslimAlan, { teslimAlan = it }, "Teslim alan", modifier = Modifier.weight(1f))
+            }
+
+            Text("Satır ekle", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MetrikLight.TextPrimary)
             MetrikField(malzeme, { malzeme = it }, "Malzeme")
+            if (oneriler.isNotEmpty() && malzeme.isNotBlank()) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    oneriler.take(6).forEach { o ->
+                        Text(
+                            o,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MetrikLight.Surface)
+                                .clickable { malzeme = o }
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MetrikLight.TextSecondary,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
             MetrikField(
                 miktar, { miktar = it }, "Miktar",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
             )
-            MetrikField(depo, { depo = it }, "Depo / saha")
-            MetrikField(belgeNo, { belgeNo = it }, "Belge no")
-            MetrikField(teslimAlan, { teslimAlan = it }, "Teslim alan")
+            OutlinedButton(
+                onClick = {
+                    val m = miktar.replace(',', '.').toDoubleOrNull() ?: 0.0
+                    if (malzeme.isBlank() || m <= 0) return@OutlinedButton
+                    satirlar.add(StokRepository.CikisSatir(malzeme = malzeme.trim(), miktar = m))
+                    malzeme = ""
+                    miktar = ""
+                },
+                enabled = malzeme.isNotBlank() && miktar.isNotBlank(),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Satır ekle")
+            }
+
+            if (satirlar.isNotEmpty()) {
+                Text(
+                    "${satirlar.size} satır",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MetrikLight.TextSecondary
+                )
+                satirlar.forEachIndexed { index, s ->
+                    StokSatirChip(
+                        title = s.malzeme,
+                        subtitle = formatQty(s.miktar, ""),
+                        onRemove = { satirlar.removeAt(index) }
+                    )
+                }
+            }
+
             error?.let { Text(it, color = MetrikLight.Danger, style = MaterialTheme.typography.bodySmall) }
             AppPrimaryButton(
-                text = "Çıkış kaydet",
+                text = if (satirlar.isEmpty()) "Çıkış kaydet" else "Çıkış kaydet (${satirlar.size})",
                 loading = loading,
-                enabled = malzeme.isNotBlank() && miktar.isNotBlank() && depo.isNotBlank() && teslimAlan.isNotBlank(),
+                enabled = satirlar.isNotEmpty() && teslimAlan.isNotBlank(),
                 onClick = {
-                    viewModel.stokCikis(malzeme, miktar, depo, belgeNo, teslimAlan) {
-                        miktar = ""
+                    viewModel.stokCikisCoklu(belgeNo, teslimAlan, satirlar.toList()) {
+                        satirlar.clear()
                         belgeNo = viewModel.sonrakiCikisBelgeNo()
                         viewModel.navigateFromMenu("stok-hareket")
                     }
@@ -278,6 +415,33 @@ fun StokCikisScreen(viewModel: AppViewModel) {
             )
         }
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun StokSatirChip(title: String, subtitle: String, onRemove: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MetrikLight.Surface)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MetrikLight.TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MetrikLight.TextTertiary)
+        }
+        IconButton(onClick = onRemove) {
+            Icon(Icons.Rounded.Close, contentDescription = "Kaldır", tint = MetrikLight.Danger, modifier = Modifier.size(18.dp))
+        }
     }
 }
 

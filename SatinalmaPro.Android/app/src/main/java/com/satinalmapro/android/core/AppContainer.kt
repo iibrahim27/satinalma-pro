@@ -1000,11 +1000,12 @@ class AppContainer(private val context: Context) {
 
     suspend fun stokGirisCoklu(
         belgeNo: String,
+        depo: String,
         teslimAlan: String,
         satirlar: List<StokRepository.GirisSatir>
     ) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
-        stokRepo.girisYapCoklu(user, belgeNo, user.site.orEmpty(), teslimAlan, satirlar)
+        stokRepo.girisYapCoklu(user, belgeNo, depo.ifBlank { user.site.orEmpty() }, teslimAlan, satirlar)
         loadStok()
     }
 

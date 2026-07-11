@@ -149,7 +149,7 @@ public static class SatinalmaSiparisIslemleri
         string? sahaHedef = null)
     {
         if (!KullaniciYetkileri.MalKabulVeStokAktarYapabilir())
-            throw new InvalidOperationException("Mal kabul işlemi yalnızca Satınalma rolü tarafından yapılabilir.");
+            throw new InvalidOperationException("Mal kabul işlemi yalnızca Satınalma veya Depo rolü tarafından yapılabilir.");
 
         if (miktar <= 0)
             throw new InvalidOperationException("Miktar sıfırdan büyük olmalıdır.");
@@ -211,7 +211,7 @@ public static class SatinalmaSiparisIslemleri
     public static void SevkiyatiTamamla(OnaylananMalzemeSatiri satir)
     {
         if (!KullaniciYetkileri.MalKabulVeStokAktarYapabilir())
-            throw new InvalidOperationException("Bu işlem yalnızca Satınalma rolü tarafından yapılabilir.");
+            throw new InvalidOperationException("Bu işlem yalnızca Satınalma veya Depo rolü tarafından yapılabilir.");
 
         var talep = SatinalmaDepo.Talepler.FirstOrDefault(t => t.Id == satir.TalepId)
             ?? throw new InvalidOperationException("Talep bulunamadı.");

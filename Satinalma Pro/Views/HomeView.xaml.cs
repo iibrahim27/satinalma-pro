@@ -25,7 +25,11 @@ public partial class HomeView : UserControl
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
 
-        ActivityPanel.TumunuGorTiklandi += (_, _) => ModuleSelected?.Invoke("Satınalma");
+        ActivityPanel.TumunuGorTiklandi += (_, _) =>
+        {
+            var rol = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol);
+            ModuleSelected?.Invoke(rol == KullaniciRolleri.Depo ? "Stok Yönetimi" : "Satınalma");
+        };
         QuickActions.ModulSecildi += modul => ModuleSelected?.Invoke(modul);
 
         _saatTimer.Tick += (_, _) => TarihSaatiGuncelle();
@@ -51,6 +55,10 @@ public partial class HomeView : UserControl
         var ad = OturumYoneticisi.AktifKullanici?.AdSoyad ?? "Kullanıcı";
         var hitap = ad.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? ad;
         TxtKarsilama.Text = $"Hoş geldiniz, {hitap} 👋";
+        var depo = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol) == KullaniciRolleri.Depo;
+        TxtAltBaslik.Text = depo
+            ? "Stok ve mal kabul işlemlerinizi buradan yönetin."
+            : "Satınalma süreçlerinizi kolayca yönetin.";
     }
 
     private void TarihSaatiGuncelle()
@@ -96,8 +104,16 @@ public partial class HomeView : UserControl
     private void VeriyiYenile()
     {
         var veri = AnaSayfaVeriServisi.Yukle();
+        var depo = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol) == KullaniciRolleri.Depo;
+
+        KarsilamayiGuncelle();
+        QuickActions.RolIcinAyarla(OturumYoneticisi.AktifKullanici?.Rol);
+        BtnRaporOlustur.Visibility = depo ? Visibility.Collapsed : Visibility.Visible;
+        LineChart.Visibility = depo ? Visibility.Collapsed : Visibility.Visible;
+        DonutChart.Visibility = depo ? Visibility.Collapsed : Visibility.Visible;
 
         StatGrid.Children.Clear();
+        StatGrid.Columns = Math.Max(1, veri.Istatistikler.Count);
         foreach (var stat in veri.Istatistikler)
         {
             var kart = new StatCardControl { Margin = new Thickness(0, 0, 12, 0) };
@@ -105,8 +121,12 @@ public partial class HomeView : UserControl
             StatGrid.Children.Add(kart);
         }
 
-        LineChart.Bagla(veri.AylikHarcama);
-        DonutChart.Bagla(veri.HarcamaDagilimi);
+        if (!depo)
+        {
+            LineChart.Bagla(veri.AylikHarcama);
+            DonutChart.Bagla(veri.HarcamaDagilimi);
+        }
+
         OpenRecords.Bagla(veri.AcikKayitlar);
         RightWidgets.Bagla(veri.Hatirlatmalar, veri.FinansOzet, veri.TopUrunler);
         ActivityPanel.Bagla(veri.SonIslemler);

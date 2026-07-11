@@ -36,11 +36,11 @@ object KullaniciRolleri {
 
     fun isAdmin(role: String?) = normalize(role) == ADMIN
     fun canCreateRequest(role: String?) = normalize(role) in setOf(ADMIN, SAHA, SEF, SATINALMA)
-    fun canPlaceOrder(role: String?) = canMalKabul(role)
+    fun canPlaceOrder(role: String?) = normalize(role) in setOf(ADMIN, SATINALMA)
     fun canEnterQuotes(role: String?) = normalize(role) in setOf(ADMIN, SATINALMA)
     fun canApproveQuotes(role: String?) = normalize(role) in setOf(ADMIN, YONETIM, SATINALMA)
     fun canManagementDecide(role: String?) = normalize(role) in setOf(ADMIN, YONETIM, SATINALMA)
-    fun canMalKabul(role: String?) = normalize(role) in setOf(ADMIN, SATINALMA)
+    fun canMalKabul(role: String?) = normalize(role) in setOf(ADMIN, SATINALMA, DEPO)
     fun isAtolyeOnly(role: String?) = normalize(role) == ATOLYE
     fun isDepoOnly(role: String?) = normalize(role) == DEPO
     /** Stok durumu / hareketleri görüntüleme. */

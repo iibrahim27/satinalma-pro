@@ -78,7 +78,7 @@ public static class DashboardServisi
         {
             KullaniciRolleri.Yonetim => YonetimOzet(kaynak, satinalma, ad, okunmamisBildirim),
             KullaniciRolleri.Satinalma => SatinalmaOzet(kaynak, satinalma, ad, okunmamisBildirim),
-            KullaniciRolleri.Depo => DepoOzet(kaynak, ad, okunmamisBildirim),
+            KullaniciRolleri.Depo => DepoOzet(kaynak, satinalma, ad, okunmamisBildirim),
             KullaniciRolleri.Sef => SefOzet(kaynak, satinalma, ad, uid, okunmamisBildirim),
             KullaniciRolleri.Atolye => AtolyeOzet(kaynak, ad, okunmamisBildirim),
             _ => SahaOzet(kaynak, satinalma, ad, uid, okunmamisBildirim)
@@ -206,7 +206,8 @@ public static class DashboardServisi
         };
     }
 
-    private static DashboardOzet DepoOzet(DashboardVeriKaynagi kaynak, string ad, int bildirim) =>
+    private static DashboardOzet DepoOzet(
+        DashboardVeriKaynagi kaynak, ISatinalmaDashboardSorgu satinalma, string ad, int bildirim) =>
         new()
         {
             PanelBasligi = "Depo Paneli",
@@ -216,6 +217,7 @@ public static class DashboardServisi
                 Kart("Stok Kalemi", kaynak.Stok.Count.ToString(), "Toplam malzeme", "#1B3A5C", "stok-durum"),
                 Kart("Kritik Stok", kaynak.Stok.Count(s => s.DurumMetin == "Kritik").ToString(), "Minimum altı", "#E67E22", "stok-durum"),
                 Kart("Tükenen", kaynak.Stok.Count(s => s.DurumMetin == "Tükendi").ToString(), "Stok yok", "#C0392B", "stok-durum"),
+                Kart("Yoldaki", satinalma.MalKabulBekleyenSayisi().ToString(), "Mal kabul bekleyen", "#16A085", "satinalma-siparis"),
                 Kart("Hareketler", kaynak.StokHareketleri.Count.ToString(), "Kayıtlı hareket", "#2980B9", "stok-hareket"),
                 Kart("Stok Girişi", "→", "Malzeme girişi", "#27AE60", "stok-giris"),
                 Kart("Stok Çıkışı", "→", "Malzeme çıkışı", "#8E44AD", "stok-cikis"),

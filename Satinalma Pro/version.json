@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.61",
-    "build":  128,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.61/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.61/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.61/SatinalmaPro.apk",
-    "notes":  "Bildirim fan-out geri acildi; kiraci izolasyonu, SaaS kullanici yonetimi, Android menu parity, lisans/sync duzeltmeleri",
-    "zorunlu":  false
+  "version": "2.1.62",
+  "build": 129,
+  "downloadUrl": "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.62/SatinalmaPro_Kurulum.exe",
+  "downloadUrlZip": "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.62/SatinalmaPro.zip",
+  "downloadUrlApk": "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.62/SatinalmaPro.apk",
+  "notes": "Depo rolu: stok giris/cikis/hareket/durum, siparis mal kabul, dashboard; Android coklu satir stok",
+  "zorunlu": false
 }

@@ -905,6 +905,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     fun stokGirisCoklu(
         belgeNo: String,
+        depo: String,
         teslimAlan: String,
         satirlar: List<StokRepository.GirisSatir>,
         onSuccess: () -> Unit
@@ -913,7 +914,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             _submitError.value = "En az bir satır girin"
             return
         }
-        runWorkflow(onSuccess) { container.stokGirisCoklu(belgeNo, teslimAlan, satirlar) }
+        runWorkflow(onSuccess) { container.stokGirisCoklu(belgeNo, depo, teslimAlan, satirlar) }
     }
 
     fun stokCikisFisiOlustur(

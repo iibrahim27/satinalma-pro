@@ -1,7 +1,9 @@
 using System.Globalization;
 using SatinalmaPro.Models;
+using SatinalmaPro.Shared.Procurement;
 using SatinalmaPro.Shared.Services;
 using SatinalmaPro.Theme;
+using SharedKaynak = SatinalmaPro.Shared.Services.DashboardVeriKaynagi;
 
 namespace SatinalmaPro.Services;
 
@@ -98,6 +100,10 @@ public static class AnaSayfaVeriServisi
 
     public static AnaSayfaVeri Yukle()
     {
+        var rol = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol);
+        if (rol == KullaniciRolleri.Depo)
+            return YukleDepo();
+
         var kaynak = MasaustuDashboardBaglanti.VeriKaynagiOlustur();
         var sorgu = new MasaustuDashboardSorgu();
         sorgu.TalepleriGuncelle(kaynak.Talepler);
@@ -192,6 +198,156 @@ public static class AnaSayfaVeriServisi
             FinansOzet = FinansOzetiniOlustur(toplamHarcama, oncekiHarcama),
             TopUrunler = TopUrunleriOlustur(buAyAlimlar)
         };
+    }
+
+    private static AnaSayfaVeri YukleDepo()
+    {
+        var kaynak = MasaustuDashboardBaglanti.VeriKaynagiOlustur();
+        var sorgu = new MasaustuDashboardSorgu();
+        sorgu.TalepleriGuncelle(kaynak.Talepler);
+
+        var kritik = kaynak.Stok.Count(s => s.DurumMetin == "Kritik");
+        var tukenen = kaynak.Stok.Count(s => s.DurumMetin == "Tükendi");
+        var yoldaki = sorgu.MalKabulBekleyenSayisi();
+        var hareket = kaynak.StokHareketleri.Count;
+
+        return new AnaSayfaVeri
+        {
+            Istatistikler =
+            [
+                new AnaSayfaIstatistik
+                {
+                    Baslik = "Stok Kalemi",
+                    Deger = kaynak.Stok.Count.ToString("N0", Tr),
+                    AltMetin = "toplam malzeme",
+                    TrendMetin = "",
+                    TrendPozitif = true,
+                    Icon = DashboardIconKind.Warehouse,
+                    IconRenkHex = AppTheme.PrimaryHex,
+                    Sparkline = MiniSeri(kaynak.Stok.Count)
+                },
+                new AnaSayfaIstatistik
+                {
+                    Baslik = "Kritik Stok",
+                    Deger = kritik.ToString("N0", Tr),
+                    AltMetin = "minimum altı",
+                    TrendMetin = kritik > 0 ? "▼ uyarı" : "▲ 0%",
+                    TrendPozitif = kritik == 0,
+                    Icon = DashboardIconKind.AlertTriangle,
+                    IconRenkHex = "#E67E22",
+                    Sparkline = MiniSeri(kritik)
+                },
+                new AnaSayfaIstatistik
+                {
+                    Baslik = "Tükenen",
+                    Deger = tukenen.ToString("N0", Tr),
+                    AltMetin = "stok yok",
+                    TrendMetin = tukenen > 0 ? "▼ uyarı" : "▲ 0%",
+                    TrendPozitif = tukenen == 0,
+                    Icon = DashboardIconKind.Package,
+                    IconRenkHex = AppTheme.DangerHex,
+                    Sparkline = MiniSeri(tukenen)
+                },
+                new AnaSayfaIstatistik
+                {
+                    Baslik = "Yoldaki Sipariş",
+                    Deger = yoldaki.ToString("N0", Tr),
+                    AltMetin = "mal kabul bekleyen",
+                    TrendMetin = yoldaki > 0 ? "▼ bekliyor" : "▲ 0%",
+                    TrendPozitif = yoldaki == 0,
+                    Icon = DashboardIconKind.ClipboardList,
+                    IconRenkHex = "#16A085",
+                    Sparkline = MiniSeri(yoldaki)
+                },
+                new AnaSayfaIstatistik
+                {
+                    Baslik = "Hareketler",
+                    Deger = hareket.ToString("N0", Tr),
+                    AltMetin = "kayıtlı hareket",
+                    TrendMetin = "",
+                    TrendPozitif = true,
+                    Icon = DashboardIconKind.ShoppingCart,
+                    IconRenkHex = "#2980B9",
+                    Sparkline = MiniSeri(hareket)
+                }
+            ],
+            SonIslemler = DepoSonIslemleri(kaynak),
+            StokUyarilari = StokUyarilariniOlustur(kaynak),
+            AylikHarcama = [],
+            HarcamaDagilimi = [],
+            AcikKayitlar = DepoYoldakiKayitlar(kaynak, sorgu),
+            Hatirlatmalar = DepoHatirlatmalar(kritik + tukenen, yoldaki),
+            FinansOzet = new AnaSayfaFinansOzet
+            {
+                Gelir = "—",
+                Gider = "—",
+                Kar = "—",
+                KarMarjiYuzde = 0
+            },
+            TopUrunler = kaynak.Stok
+                .Where(s => s.DurumMetin is "Kritik" or "Tükendi")
+                .OrderBy(s => s.DurumMetin == "Tükendi" ? 0 : 1)
+                .Take(3)
+                .Select(s => new AnaSayfaTopUrun
+                {
+                    Ad = s.MalzemeAdi,
+                    Tutar = $"{s.MevcutMiktar:N0} {s.Birim}"
+                })
+                .ToList()
+        };
+    }
+
+    private static List<AnaSayfaIslem> DepoSonIslemleri(SharedKaynak kaynak) =>
+        kaynak.StokHareketleri
+            .OrderByDescending(h => h.Tarih)
+            .Take(6)
+            .Select(h => new AnaSayfaIslem
+            {
+                Baslik = $"{h.HareketTipi}: {h.MalzemeAdi}",
+                Zaman = h.Tarih,
+                Durum = string.IsNullOrWhiteSpace(h.BelgeNo) ? h.HareketTipi : h.BelgeNo,
+                DurumRenkHex = h.HareketTipi.Contains("Çıkış", StringComparison.OrdinalIgnoreCase)
+                    ? AppTheme.WarningHex
+                    : AppTheme.SuccessHex,
+                Icon = DashboardIconKind.Warehouse
+            })
+            .ToList();
+
+    private static List<AnaSayfaAcikKayit> DepoYoldakiKayitlar(
+        SharedKaynak kaynak, MasaustuDashboardSorgu sorgu)
+    {
+        _ = sorgu;
+        var rol = OturumYoneticisi.AktifKullanici?.Rol;
+        var uid = OturumYoneticisi.AktifKullanici?.Uid;
+        return kaynak.Talepler
+            .Where(t => ProcurementRouteMatcher.Matches(
+                SatinalmaRoutes.SatinalmaSiparis, t, rol, uid))
+            .OrderByDescending(t => t.Tarih)
+            .Take(5)
+            .Select(t => new AnaSayfaAcikKayit
+            {
+                No = t.TalepNo,
+                Tarih = t.Tarih,
+                Cari = t.TalepEden,
+                Vade = t.Tarih,
+                Tutar = $"{t.Kalemler.Count} kalem",
+                Kalan = "Mal kabul",
+                Durum = "Yolda",
+                DurumRenkHex = "#16A085"
+            })
+            .ToList();
+    }
+
+    private static List<AnaSayfaHatirlatma> DepoHatirlatmalar(int kritikToplam, int yoldaki)
+    {
+        var liste = new List<AnaSayfaHatirlatma>();
+        if (yoldaki > 0)
+            liste.Add(new AnaSayfaHatirlatma { Metin = $"{yoldaki} sipariş mal kabul bekliyor", RenkHex = "#16A085" });
+        if (kritikToplam > 0)
+            liste.Add(new AnaSayfaHatirlatma { Metin = $"{kritikToplam} kritik/tükenen stok kalemi", RenkHex = AppTheme.DangerHex });
+        if (liste.Count == 0)
+            liste.Add(new AnaSayfaHatirlatma { Metin = "Bekleyen depo işlemi yok", RenkHex = AppTheme.SuccessHex });
+        return liste;
     }
 
     private static List<double> MiniSeri(double son) =>

@@ -48,11 +48,17 @@ service cloud.firestore {
     }
 
     function canReadProcurement() {
-      return isAdmin() || isManagement() || isProcurement() || isFieldRole();
+      return isAdmin() || isManagement() || isProcurement() || isFieldRole() || isWarehouse();
     }
 
     function canWriteProcurement() {
       return isAdmin() || isProcurement();
+    }
+
+    /** Depo: sipariş durumundaki taleplerde mal kabul güncellemesi. */
+    function canWarehouseReceive() {
+      return isWarehouse()
+        && resource.data.status in ['ordered', 'Sipariş Oluşturuldu'];
     }
 
     function canApproveProcurement() {
@@ -152,7 +158,7 @@ service cloud.firestore {
 
     match /procurement_requests/{requestId} {
       allow read: if canReadProcurement()
-        && (isAdmin() || isManagement() || isProcurement()
+        && (isAdmin() || isManagement() || isProcurement() || isFieldRole()
             || resource.data.requesterUid == request.auth.uid
             || isWarehouse());
 
@@ -161,6 +167,7 @@ service cloud.firestore {
         && request.resource.data.requesterUid == request.auth.uid;
 
       allow update: if canWriteProcurement()
+        || canWarehouseReceive()
         || (resource.data.requesterUid == request.auth.uid
             && resource.data.status in ['Taslak', 'Hazırlanıyor']
             && !resource.data.managementApprovalLocked);
@@ -170,6 +177,9 @@ service cloud.firestore {
       match /line_items/{lineItemId} {
         allow read: if canReadProcurement();
         allow write: if canWriteProcurement()
+          || (isWarehouse()
+              && get(/databases/$(database)/documents/procurement_requests/$(requestId)).data.status
+                 in ['ordered', 'Sipariş Oluşturuldu'])
           || (get(/databases/$(database)/documents/procurement_requests/$(requestId)).data.requesterUid
               == request.auth.uid
               && get(/databases/$(database)/documents/procurement_requests/$(requestId)).data.status

@@ -15,7 +15,7 @@
         </Grid.ColumnDefinitions>
         <StackPanel VerticalAlignment="Center">
           <TextBlock x:Name="TxtKarsilama" FontSize="26" FontWeight="Bold" Foreground="{StaticResource DashTextBrush}" />
-          <TextBlock Text="Satınalma süreçlerinizi kolayca yönetin."
+          <TextBlock x:Name="TxtAltBaslik" Text="Satınalma süreçlerinizi kolayca yönetin."
                      FontSize="14" Foreground="{StaticResource DashTextSecondaryBrush}" Margin="0,6,0,0" />
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">

@@ -48,7 +48,9 @@ public static class MobilYetkiServisi
         KullaniciRolleri.Normalize(rol) is KullaniciRolleri.Admin or KullaniciRolleri.Satinalma;
 
     public static bool MalKabulVeStokAktarYapabilir(string? rol) =>
-        KullaniciRolleri.Normalize(rol) is KullaniciRolleri.Admin or KullaniciRolleri.Satinalma;
+        KullaniciRolleri.Normalize(rol) is KullaniciRolleri.Admin
+            or KullaniciRolleri.Satinalma
+            or KullaniciRolleri.Depo;
 
     public static bool YonetimIslemiYapabilir(string? rol) =>
         KullaniciRolleri.Normalize(rol) is KullaniciRolleri.Admin

@@ -49,6 +49,7 @@ public static class RolNavigasyonu
     private static readonly MenuOgesi TeklifKarsilastirma = new() { Baslik = "Karşılaştırma", Route = "teklif-karsilastirma", Ikon = "📊", Grup = "Teklif" };
     private static readonly MenuOgesi TeklifOnay = new() { Baslik = "Teklif Onay", Route = "teklif-onay", Ikon = "✅", Grup = "Teklif" };
     private static readonly MenuOgesi OnaylananMalzemeler = new() { Baslik = "Sipariş & Mal Kabul", Route = "onaylanan-malzemeler", Ikon = "📦", Grup = "Malzeme" };
+    private static readonly MenuOgesi SatinalmaSiparis = new() { Baslik = "Yoldaki Malzemeler", Route = "satinalma-siparis", Ikon = "🚚", Grup = "Malzeme" };
     private static readonly MenuOgesi AlinanMalzemeModul = new() { Baslik = "Alınan Malzemeler", Route = "alinan-malzemeler", Ikon = "📋", Grup = "Malzeme" };
     private static readonly MenuOgesi AgregaModul = new() { Baslik = "Agrega", Route = "agrega", Ikon = "🏗", Grup = "Malzeme" };
     private static readonly MenuOgesi CimentoModul = new() { Baslik = "Çimento", Route = "cimento", Ikon = "🧱", Grup = "Malzeme" };
@@ -97,5 +98,5 @@ public static class RolNavigasyonu
         [YeniTalep, Taleplerim, OnayBekleyenTalepler, OnaylananTalepler, OnaylananMalzemeler, StokDurum, StokHareket, Bildirimler];
 
     private static readonly IReadOnlyList<MenuOgesi> DepoMenuleri =
-        [StokDurum, StokGiris, StokCikis, StokHareket, Bildirimler];
+        [StokDurum, StokGiris, StokCikis, StokHareket, SatinalmaSiparis, Bildirimler];
 }

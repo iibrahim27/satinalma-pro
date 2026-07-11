@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.0.14",
-    "build":  14,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.14/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.14/SatinalmaYonetici.zip",
-    "notes":  "Platform yonetim 1.0.14 — Pro 2.1.61 bildirim fan-out ve lisans tarih UI ile birlikte",
-    "zorunlu":  false
+  "version": "1.0.15",
+  "build": 15,
+  "downloadUrl": "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.15/SatinalmaYonetici_Kurulum.exe",
+  "downloadUrlZip": "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.15/SatinalmaYonetici.zip",
+  "notes": "Platform yonetim 1.0.15 - Pro 2.1.62 Depo rolu ve mal kabul ile birlikte",
+  "zorunlu": false
 }

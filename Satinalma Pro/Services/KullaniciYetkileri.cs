@@ -367,7 +367,7 @@ public static class KullaniciYetkileri
         }
     }
 
-    /// <summary>Mal kabul ve stoğa aktarım — yalnızca Satınalma rolü.</summary>
+    /// <summary>Mal kabul ve stoğa aktarım — Satınalma ve Depo.</summary>
     public static bool MalKabulVeStokAktarYapabilir()
     {
         if (!OturumYoneticisi.BulutAktif)
@@ -375,7 +375,8 @@ public static class KullaniciYetkileri
 
         var rol = OturumYoneticisi.AktifKullanici?.Rol;
         return KullaniciRolleri.Normalize(rol) is KullaniciRolleri.Admin
-            or KullaniciRolleri.Satinalma;
+            or KullaniciRolleri.Satinalma
+            or KullaniciRolleri.Depo;
     }
 
     public static bool YonetimIslemiYapabilir()

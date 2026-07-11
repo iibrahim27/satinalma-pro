@@ -72,6 +72,7 @@ fun DashboardScreen(viewModel: AppViewModel) {
     val role = user?.role
     val normalized = KullaniciRolleri.normalize(role)
     val stockFocused = normalized in setOf(KullaniciRolleri.ATOLYE, KullaniciRolleri.DEPO)
+    val depoFocused = normalized == KullaniciRolleri.DEPO
     val queues = remember(role) {
         runCatching { RolNavigasyon.queueMenus(role) }.getOrDefault(emptyList())
     }
@@ -101,6 +102,8 @@ fun DashboardScreen(viewModel: AppViewModel) {
     val unread = notifications.count { !it.read }
     val waitingTotal = badges.values.sum()
     val kritikStok = stok.count { it.durumMetin == "Kritik" || it.durumMetin == "Tükendi" }
+    val tukenenStok = stok.count { it.durumMetin == "Tükendi" }
+    val yoldakiSayisi = badges["satinalma-siparis"] ?: 0
     val displayName = remember(user?.fullName) {
         user?.fullName?.trim()?.takeIf { it.isNotBlank() }
     }
@@ -126,7 +129,7 @@ fun DashboardScreen(viewModel: AppViewModel) {
                     .padding(top = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                if (stockFocused) {
+                if (depoFocused) {
                     SummaryTile(
                         label = "Stok",
                         value = stok.size.toString(),
@@ -140,6 +143,35 @@ fun DashboardScreen(viewModel: AppViewModel) {
                         accent = if (kritikStok > 0) MetrikLight.Warning else MetrikLight.Success,
                         modifier = Modifier.weight(1f),
                         onClick = { viewModel.navigateFromMenu("stok-durum") }
+                    )
+                    SummaryTile(
+                        label = "Yoldaki",
+                        value = yoldakiSayisi.toString(),
+                        accent = if (yoldakiSayisi > 0) MetrikLight.Accent else MetrikLight.TextSecondary,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.navigateFromMenu("satinalma-siparis") }
+                    )
+                } else if (stockFocused) {
+                    SummaryTile(
+                        label = "Stok",
+                        value = stok.size.toString(),
+                        accent = MetrikLight.Info,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.navigateFromMenu("stok-durum") }
+                    )
+                    SummaryTile(
+                        label = "Kritik",
+                        value = kritikStok.toString(),
+                        accent = if (kritikStok > 0) MetrikLight.Warning else MetrikLight.Success,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.navigateFromMenu("stok-durum") }
+                    )
+                    SummaryTile(
+                        label = "Bildirim",
+                        value = unread.toString(),
+                        accent = if (unread > 0) MetrikLight.Warning else MetrikLight.TextSecondary,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.navigateFromMenu("bildirimler") }
                     )
                 } else {
                     SummaryTile(
@@ -159,14 +191,45 @@ fun DashboardScreen(viewModel: AppViewModel) {
                                 ?: viewModel.navigateFromMenu("isler")
                         }
                     )
+                    SummaryTile(
+                        label = "Bildirim",
+                        value = unread.toString(),
+                        accent = if (unread > 0) MetrikLight.Warning else MetrikLight.TextSecondary,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.navigateFromMenu("bildirimler") }
+                    )
                 }
-                SummaryTile(
-                    label = "Bildirim",
-                    value = unread.toString(),
-                    accent = if (unread > 0) MetrikLight.Warning else MetrikLight.TextSecondary,
-                    modifier = Modifier.weight(1f),
-                    onClick = { viewModel.navigateFromMenu("bildirimler") }
-                )
+            }
+            if (depoFocused) {
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = MetrikSpace.screen),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    SummaryTile(
+                        label = "Tükenen",
+                        value = tukenenStok.toString(),
+                        accent = if (tukenenStok > 0) MetrikLight.Danger else MetrikLight.Success,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.navigateFromMenu("stok-durum") }
+                    )
+                    SummaryTile(
+                        label = "Hareket",
+                        value = stokHareketleri.size.toString(),
+                        accent = MetrikLight.Info,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.navigateFromMenu("stok-hareket") }
+                    )
+                    SummaryTile(
+                        label = "Bildirim",
+                        value = unread.toString(),
+                        accent = if (unread > 0) MetrikLight.Warning else MetrikLight.TextSecondary,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.navigateFromMenu("bildirimler") }
+                    )
+                }
             }
 
             // Öncelikli kuyruklar — yatay, sayı odaklı
@@ -247,6 +310,15 @@ fun DashboardScreen(viewModel: AppViewModel) {
                         subtitle = "Depodan malzeme çıkar",
                         tint = MetrikLight.Warning,
                         onClick = { viewModel.navigateFromMenu("stok-cikis") }
+                    )
+                }
+                if (depoFocused && queues.any { it.route == "satinalma-siparis" }) {
+                    ActionRow(
+                        icon = Icons.Rounded.Assignment,
+                        title = "Yoldaki malzemeler",
+                        subtitle = if (yoldakiSayisi > 0) "$yoldakiSayisi sipariş · mal kabul" else "Sipariş ve mal kabul",
+                        tint = MetrikLight.Accent,
+                        onClick = { viewModel.navigateFromMenu("satinalma-siparis") }
                     )
                 }
                 ActionRow(
