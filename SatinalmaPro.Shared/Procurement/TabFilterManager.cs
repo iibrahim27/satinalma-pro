@@ -35,11 +35,11 @@ public static class TabFilterManager
         };
     }
 
-    public static bool RequiresRequesterScope(string? role)
-    {
-        var key = NormalizeRole(role);
-        return key is "sef" or "saha";
-    }
+    /// <summary>
+    /// Liste/sorgu seviyesinde oluşturan filtresi artık kullanılmaz —
+    /// Şef/Saha firma içindeki tüm talepleri görür; düzenleme/silme sahiplikle sınırlıdır.
+    /// </summary>
+    public static bool RequiresRequesterScope(string? role) => false;
 
     public static IReadOnlyList<ProcurementTab> GetVisibleTabs(string? role)
     {

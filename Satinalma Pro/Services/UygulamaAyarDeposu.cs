@@ -138,6 +138,15 @@ public static class UygulamaAyarDeposu
         MedyaBulutSenkronu.Planla();
     }
 
+    /// <summary>Yalnızca yerel dosyaya yazar; buluta medya yeniden yüklemez (indirme sonrası).</summary>
+    public static void KaydetYerel()
+    {
+        FirmaAdiniOturumdanSenkronizeEt();
+        SatinalmaProKlasor.Olustur();
+        var json = JsonSerializer.Serialize(Ayarlar, JsonSecenekleri);
+        File.WriteAllText(Dosya, json);
+    }
+
     public static void BuluttanYukle(string json)
     {
         try

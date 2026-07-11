@@ -304,6 +304,7 @@ public class SatinalmaAyarlar
     /// <summary>Tüm verileri sıfırla sonrası — varsayılan imza ünvanları eklenmez.</summary>
     public bool ImzaAyarleriTemiz { get; set; }
 
+    /// <summary>Eski tek-firma şablonu; yeni kiracılarda kullanılmaz.</summary>
     public static SatinalmaAyarlar VarsayilanOlustur() => new()
     {
         SefImzalari =
@@ -318,7 +319,7 @@ public class SatinalmaAyarlar
         ]
     };
 
-    /// <summary>Modül sıfırlama — imza ünvanları, şartname ve firma bilgisi boş.</summary>
+    /// <summary>Yeni firma / modül sıfırlama — imza ünvanları, şartname ve firma bilgisi boş.</summary>
     public static SatinalmaAyarlar SifirlanmisOlustur() => new()
     {
         SefImzalari = [],

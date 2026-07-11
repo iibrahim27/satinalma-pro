@@ -55,10 +55,15 @@ public partial class HomeView : UserControl
         var ad = OturumYoneticisi.AktifKullanici?.AdSoyad ?? "Kullanıcı";
         var hitap = ad.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? ad;
         TxtKarsilama.Text = $"Hoş geldiniz, {hitap} 👋";
-        var depo = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol) == KullaniciRolleri.Depo;
-        TxtAltBaslik.Text = depo
-            ? "Stok ve mal kabul işlemlerinizi buradan yönetin."
-            : "Satınalma süreçlerinizi kolayca yönetin.";
+        var rol = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol);
+        TxtAltBaslik.Text = rol switch
+        {
+            KullaniciRolleri.Depo => "Stok ve mal kabul işlemlerinizi buradan yönetin.",
+            KullaniciRolleri.Atolye => "Stok durumu ve yoldaki malzemeleri takip edin.",
+            KullaniciRolleri.Sef => "Taleplerin onay, sipariş ve mal kabul durumunu takip edin.",
+            KullaniciRolleri.Saha => "Taleplerin onay, sipariş ve mal kabul durumunu takip edin.",
+            _ => "Satınalma süreçlerinizi kolayca yönetin."
+        };
     }
 
     private void TarihSaatiGuncelle()
@@ -104,13 +109,15 @@ public partial class HomeView : UserControl
     private void VeriyiYenile()
     {
         var veri = AnaSayfaVeriServisi.Yukle();
-        var depo = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol) == KullaniciRolleri.Depo;
+        var rol = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol);
+        var rolOdakli = rol is KullaniciRolleri.Depo or KullaniciRolleri.Atolye
+            or KullaniciRolleri.Sef or KullaniciRolleri.Saha;
 
         KarsilamayiGuncelle();
         QuickActions.RolIcinAyarla(OturumYoneticisi.AktifKullanici?.Rol);
-        BtnRaporOlustur.Visibility = depo ? Visibility.Collapsed : Visibility.Visible;
-        LineChart.Visibility = depo ? Visibility.Collapsed : Visibility.Visible;
-        DonutChart.Visibility = depo ? Visibility.Collapsed : Visibility.Visible;
+        BtnRaporOlustur.Visibility = rolOdakli ? Visibility.Collapsed : Visibility.Visible;
+        LineChart.Visibility = rolOdakli ? Visibility.Collapsed : Visibility.Visible;
+        DonutChart.Visibility = rolOdakli ? Visibility.Collapsed : Visibility.Visible;
 
         StatGrid.Children.Clear();
         StatGrid.Columns = Math.Max(1, veri.Istatistikler.Count);
@@ -121,7 +128,7 @@ public partial class HomeView : UserControl
             StatGrid.Children.Add(kart);
         }
 
-        if (!depo)
+        if (!rolOdakli)
         {
             LineChart.Bagla(veri.AylikHarcama);
             DonutChart.Bagla(veri.HarcamaDagilimi);

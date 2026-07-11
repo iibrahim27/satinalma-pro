@@ -191,17 +191,11 @@ object TalepKuyrugu {
 
     fun onayGecmisi(t: TalepItem): Boolean = yonetimOnayGecmisinde(t)
 
-    /** Şef/Saha: yalnızca kendi talepleri (masaüstü RequiresRequesterScope ile aynı). */
-    fun taleplerim(t: TalepItem, uid: String = "", ad: String = "", rol: String? = null): Boolean {
-        if (!kayitli(t)) return false
-        if (!sahaModu(rol)) return true
-        return talepSahibi(t, uid, ad)
-    }
+    /** Firma içi tüm kayıtlı talepler (düzenleme/silme sahiplikle ayrı kontrol edilir). */
+    fun taleplerim(t: TalepItem, uid: String = "", ad: String = "", rol: String? = null): Boolean =
+        kayitli(t)
 
-    private fun requesterScopeUygula(t: TalepItem, uid: String, ad: String, rol: String?): Boolean {
-        if (!sahaModu(rol)) return true
-        return talepSahibi(t, uid, ad)
-    }
+    private fun requesterScopeUygula(t: TalepItem, uid: String, ad: String, rol: String?): Boolean = true
 
     fun filtre(
         queue: com.satinalmapro.android.core.model.TalepQueue,

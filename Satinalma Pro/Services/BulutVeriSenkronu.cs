@@ -34,6 +34,22 @@ public static class BulutVeriSenkronu
 
     public static bool BuluttanYuklendi { get; private set; }
 
+    /// <summary>Firma değişiminde bekleyen yazmaları ve senkron durumunu sıfırlar.</summary>
+    public static void KiraciDegisti()
+    {
+        lock (BekleyenKayitlar)
+            BekleyenKayitlar.Clear();
+
+        lock (BosYazmayaIzinliAnahtarlar)
+            BosYazmayaIzinliAnahtarlar.Clear();
+
+        _zamanlayici?.Stop();
+        YoklamayiDurdur();
+        BuluttanYuklendi = false;
+        _senkronYukleniyor = false;
+        _yoklamaDongusu = 0;
+    }
+
     public static void Planla(string anahtar)
     {
         if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
@@ -58,6 +74,10 @@ public static class BulutVeriSenkronu
         if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
             return;
 
+        var senkronTenantId = KiracıOturumu.TenantId;
+        if (string.IsNullOrWhiteSpace(senkronTenantId))
+            return;
+
         _senkronYukleniyor = true;
         var toplam = BelgeHaritasi.Count + 1;
         var tamamlanan = 0;
@@ -67,6 +87,9 @@ public static class BulutVeriSenkronu
             foreach (var (anahtar, yol) in BelgeHaritasiSirali())
             {
                 iptal.ThrowIfCancellationRequested();
+                if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                    return;
+
                 ilerleme?.Report((tamamlanan, toplam, SenkronAdimMetni(anahtar)));
 
                 try
@@ -74,6 +97,10 @@ public static class BulutVeriSenkronu
                     var (bulutJson, _) = await OturumYoneticisi.Firestore
                         .BelgeOkuAsync(yol, iptal)
                         .ConfigureAwait(false);
+
+                    if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                        return;
+
                     var yerelJson = YerelJsonOku(anahtar);
 
                     // Belge Firestore'da varsa (boş [] dahil) bulutu uygula — aksi halde PC2 eski veriyi geri yükler
@@ -94,6 +121,8 @@ public static class BulutVeriSenkronu
                     {
                         await UiThreaddeCalistirAsync(() =>
                         {
+                            if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                                return;
                             Uygula(anahtar, bulutJson!);
                             YerelBirlesikDurumuKaydet(anahtar);
                         });
@@ -101,16 +130,27 @@ public static class BulutVeriSenkronu
                     }
                     else if (yereldeVar && yerelJson is not null)
                     {
-                        await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
-                            yol, yerelJson, OturumYoneticisi.Auth?.Uid, iptal)
-                            .ConfigureAwait(false);
+                        // Yeni firmanın boş imza ayarını buluta şablon olarak yazma.
+                        if (anahtar == "satinalma_ayarlar" && SatinalmaAyarlariBosMu(yerelJson))
+                        {
+                            // Yerelde temiz iskelet varsa buluta yazma; firma kendi ayarını kaydedince gider.
+                        }
+                        else
+                        {
+                            await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
+                                yol, yerelJson, OturumYoneticisi.Auth?.Uid, iptal)
+                                .ConfigureAwait(false);
+                        }
                     }
                     else if (yerelJson is not null)
                     {
                         // Yerel sıfırlandı, bulutta kayıt yok — boş durumu buluta yaz
-                        await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
-                            yol, yerelJson, OturumYoneticisi.Auth?.Uid, iptal)
-                            .ConfigureAwait(false);
+                        if (anahtar != "satinalma_ayarlar" || !SatinalmaAyarlariBosMu(yerelJson))
+                        {
+                            await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
+                                yol, yerelJson, OturumYoneticisi.Auth?.Uid, iptal)
+                                .ConfigureAwait(false);
+                        }
                     }
                 }
                 catch (OperationCanceledException)
@@ -727,7 +767,8 @@ public static class BulutVeriSenkronu
                     SatinalmaDepo.TalepleriBirlestirVeYukle(json);
                     break;
                 case "satinalma_ayarlar":
-                    SatinalmaDepo.AyarlarYukle(json);
+                    // Bulut bu kiracının kaynağı — birleştirme diğer firmanın imza isimlerini sızdırıyordu.
+                    SatinalmaDepo.AyarlarYukle(json, birlestir: false);
                     break;
                 case "finansman":
                     FinansmanVeriDeposu.GelirleriYukle(json);
@@ -799,7 +840,46 @@ public static class BulutVeriSenkronu
             }
         }
 
+        if (anahtar == "satinalma_ayarlar")
+            return !SatinalmaAyarlariBosMu(json);
+
         return trimmed.Length > 2;
+    }
+
+    /// <summary>Yeni firma iskeleti: imza/şartname/sayaç yok — buluta şablon yazılmasın.</summary>
+    private static bool SatinalmaAyarlariBosMu(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return true;
+
+        try
+        {
+            var ayar = JsonSerializer.Deserialize<SatinalmaAyarlar>(json, JsonSecenekleri);
+            if (ayar is null)
+                return true;
+
+            if (ayar.ImzaAyarleriTemiz)
+                return ayar.SonTalepSira <= 0
+                       && ayar.SonSiparisSira <= 0
+                       && ayar.SonIadeSira <= 0
+                       && (ayar.SilinenTalepIdleri is null || ayar.SilinenTalepIdleri.Count == 0)
+                       && string.IsNullOrWhiteSpace(ayar.SartnameMetni)
+                       && string.IsNullOrWhiteSpace(ayar.TeklifIstemeSartnameleri);
+
+            var sef = ayar.SefImzalari?.Count ?? 0;
+            var yonetim = ayar.YonetimImzalari?.Count ?? 0;
+            return sef == 0 && yonetim == 0
+                   && ayar.SonTalepSira <= 0
+                   && ayar.SonSiparisSira <= 0
+                   && ayar.SonIadeSira <= 0
+                   && (ayar.SilinenTalepIdleri is null || ayar.SilinenTalepIdleri.Count == 0)
+                   && string.IsNullOrWhiteSpace(ayar.SartnameMetni)
+                   && string.IsNullOrWhiteSpace(ayar.TeklifIstemeSartnameleri);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static bool ListeModuluMu(string anahtar) =>
@@ -878,7 +958,7 @@ public static class BulutVeriSenkronu
 
         try
         {
-            SatinalmaDepo.AyarlarYukle(File.ReadAllText(yol));
+            SatinalmaDepo.AyarlarYukle(File.ReadAllText(yol), birlestir: false);
         }
         catch
         {
@@ -896,7 +976,7 @@ public static class BulutVeriSenkronu
             var (json, _) = await OturumYoneticisi.Firestore
                 .BelgeOkuAsync(KiraciliBulutYolu(BelgeHaritasi["satinalma_ayarlar"]), iptal);
             if (!string.IsNullOrWhiteSpace(json))
-                SatinalmaDepo.AyarlarYukle(json);
+                SatinalmaDepo.AyarlarYukle(json, birlestir: false);
         }
         catch
         {

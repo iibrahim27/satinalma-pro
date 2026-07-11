@@ -32,6 +32,26 @@ public partial class ErpQuickActionsPanel : UserControl
             return;
         }
 
+        if (key is KullaniciRolleri.Sef or KullaniciRolleri.Saha)
+        {
+            Ekle("Yeni Talep", DashboardIconKind.ShoppingCart, "Satınalma");
+            Ekle("Talepler", DashboardIconKind.ClipboardList, "Satınalma");
+            Ekle("Onay / Sipariş", DashboardIconKind.Package, "Satınalma");
+            Ekle("Yoldaki Malzeme", DashboardIconKind.Warehouse, "Satınalma");
+            Ekle("Stok Durumu", DashboardIconKind.Warehouse, "Stok Yönetimi");
+            Ekle("Panosu", DashboardIconKind.FileBarChart, "Satınalma");
+            return;
+        }
+
+        if (key == KullaniciRolleri.Atolye)
+        {
+            Ekle("Stok Durumu", DashboardIconKind.Warehouse, "Stok Yönetimi");
+            Ekle("Stok Hareket", DashboardIconKind.FileBarChart, "Stok Yönetimi");
+            Ekle("Yoldaki Malzeme", DashboardIconKind.Package, "Satınalma");
+            Ekle("Stok Kartı", DashboardIconKind.ClipboardList, "Stok Yönetimi");
+            return;
+        }
+
         Ekle("Yeni Talep", DashboardIconKind.ShoppingCart, "Satınalma");
         Ekle("Teklif Girişi", DashboardIconKind.ClipboardList, "Satınalma");
         Ekle("Malzeme Kaydı", DashboardIconKind.Package, "Alınan Malzemeler");

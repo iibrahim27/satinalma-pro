@@ -30,7 +30,24 @@ public partial class AppSidebarView : UserControl
     public AppSidebarView()
     {
         InitializeComponent();
-        Loaded += (_, _) => Yenile();
+        Loaded += (_, _) =>
+        {
+            Yenile();
+            MedyaBulutSenkronu.MedyaGuncellendi -= OnMedyaGuncellendi;
+            MedyaBulutSenkronu.MedyaGuncellendi += OnMedyaGuncellendi;
+        };
+        Unloaded += (_, _) => MedyaBulutSenkronu.MedyaGuncellendi -= OnMedyaGuncellendi;
+    }
+
+    private void OnMedyaGuncellendi()
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.Invoke(LogoGuncelle);
+            return;
+        }
+
+        LogoGuncelle();
     }
 
     public void AktifOgeyiAyarla(string baslik)
@@ -137,7 +154,10 @@ public partial class AppSidebarView : UserControl
 
     private void LogoGuncelle()
     {
-        var yol = UygulamaAyarDeposu.Ayarlar.AnasayfaLogoDosyaYolu;
+        var ayar = UygulamaAyarDeposu.Ayarlar;
+        var yol = ayar.AnasayfaLogoDosyaYolu;
+        if (string.IsNullOrWhiteSpace(SatinalmaProLogoDeposu.TamYol(yol)))
+            yol = ayar.LogoDosyaYolu;
         var bitmap = LogoGorselYardimcisi.Yukle(yol) ?? LogoGorselYardimcisi.VarsayilanLogo();
         ImgLogo.Source = bitmap;
         ImgLogo.Visibility = bitmap is null ? Visibility.Collapsed : Visibility.Visible;

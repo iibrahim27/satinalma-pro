@@ -51,9 +51,18 @@ $kurulumUrl = "https://github.com/$GitHubKullanici/$RepoAdi/releases/download/$t
 $zipUrl = "https://github.com/$GitHubKullanici/$RepoAdi/releases/download/$tag/SatinalmaYonetici.zip"
 $notMetni = if ($Notes) { $Notes } else { "Satinalma Yonetici $Version" }
 
+$yeniBuild = 1
+$eskiManifest = Join-Path $repoKok "version-yonetici.json"
+if (Test-Path $eskiManifest) {
+    try {
+        $eski = Get-Content $eskiManifest -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($eski.build) { $yeniBuild = [int]$eski.build + 1 }
+    } catch { }
+}
+
 $manifest = [ordered]@{
     version        = $Version
-    build          = 1
+    build          = $yeniBuild
     downloadUrl    = $kurulumUrl
     downloadUrlZip = $zipUrl
     notes          = $notMetni

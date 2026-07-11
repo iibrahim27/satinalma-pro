@@ -186,10 +186,12 @@ public static class ProcurementRouteMatcher
             [
                 new("Satınalma Panosu", SatinalmaRoutes.Panosu),
                 new("Talep Oluşturma", SatinalmaRoutes.TalepForm),
-                new("Taleplerim", SatinalmaRoutes.Taleplerim),
+                new("Talepler", SatinalmaRoutes.Taleplerim),
+                new("Onay Bekleyen", SatinalmaRoutes.OnayBekleyen),
                 new("Onaylananlar", SatinalmaRoutes.OnaylananTaleplerSaha),
                 new("Reddedilenler", SatinalmaRoutes.YonetimRedVerilen),
                 new("Yoldaki Malzemeler", SatinalmaRoutes.SatinalmaSiparis),
+                new("Mal Kabul Edilmiş", SatinalmaRoutes.SatinalmaMalKabul),
                 new("Güncel Stok Durumu", "stok-durum")
             ]));
             return gruplar;

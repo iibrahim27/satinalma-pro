@@ -32,10 +32,8 @@ object TabFilterManager {
         }
     }
 
-    fun requiresRequesterScope(role: String?): Boolean {
-        val key = normalizeRole(role)
-        return key == "sef" || key == "saha"
-    }
+    /** Liste sorgularında oluşturan filtresi yok — firma içi tüm talepler görünür. */
+    fun requiresRequesterScope(role: String?): Boolean = false
 
     fun getVisibleTabs(role: String?): List<ProcurementTab> {
         return when (normalizeRole(role)) {

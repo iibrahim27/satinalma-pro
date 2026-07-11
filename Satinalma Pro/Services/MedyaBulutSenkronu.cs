@@ -16,6 +16,9 @@ public static class MedyaBulutSenkronu
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
+    /// <summary>Logo indirme/uygulama sonrası sidebar yenilemesi için.</summary>
+    public static event Action? MedyaGuncellendi;
+
     public static async Task SenkronizeEtAsync(CancellationToken iptal = default)
     {
         if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
@@ -31,13 +34,22 @@ public static class MedyaBulutSenkronu
                 var paket = JsonSerializer.Deserialize<MedyaPaketi>(bulutJson, Json) ?? new MedyaPaketi();
                 if (LogoVar(paket))
                 {
-                    if (YerelLogoBosMu())
+                    // Bulutta logo varsa yerelde yoksa/eksikse indir — boş yereli buluta yazma.
+                    if (YerelLogoBosMu() || YerelDosyaEksikMi())
                     {
-                        await BulutaYukleAsync(iptal);
+                        await UiThreaddeCalistirAsync(() =>
+                        {
+                            Uygula(paket);
+                            MedyaGuncellendi?.Invoke();
+                        });
                         return;
                     }
 
-                    await UiThreaddeCalistirAsync(() => Uygula(paket));
+                    await UiThreaddeCalistirAsync(() =>
+                    {
+                        Uygula(paket);
+                        MedyaGuncellendi?.Invoke();
+                    });
                     return;
                 }
             }
@@ -59,6 +71,9 @@ public static class MedyaBulutSenkronu
             return;
 
         var paket = YerelPaketOlustur();
+        if (!LogoVar(paket))
+            return;
+
         var json = JsonSerializer.Serialize(paket, Json);
         await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
             BelgeYolu, json, OturumYoneticisi.Auth?.Uid, iptal);
@@ -113,7 +128,7 @@ public static class MedyaBulutSenkronu
         }
 
         if (degisti)
-            UygulamaAyarDeposu.Kaydet();
+            UygulamaAyarDeposu.KaydetYerel();
     }
 
     private static string Base64DenKaydet(string base64, string? dosyaAdi, string onEk)
@@ -157,6 +172,18 @@ public static class MedyaBulutSenkronu
             && !string.IsNullOrWhiteSpace(SatinalmaProLogoDeposu.TamYol(ayarlar.AnasayfaLogoDosyaYolu)))
             return false;
         return true;
+    }
+
+    private static bool YerelDosyaEksikMi()
+    {
+        var ayarlar = UygulamaAyarDeposu.Ayarlar;
+        if (!string.IsNullOrWhiteSpace(ayarlar.LogoDosyaYolu)
+            && string.IsNullOrWhiteSpace(SatinalmaProLogoDeposu.TamYol(ayarlar.LogoDosyaYolu)))
+            return true;
+        if (!string.IsNullOrWhiteSpace(ayarlar.AnasayfaLogoDosyaYolu)
+            && string.IsNullOrWhiteSpace(SatinalmaProLogoDeposu.TamYol(ayarlar.AnasayfaLogoDosyaYolu)))
+            return true;
+        return false;
     }
 
     private static Task UiThreaddeCalistirAsync(Action islem)

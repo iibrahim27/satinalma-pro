@@ -555,14 +555,12 @@ public partial class AyarlarView : UserControl
     private void SefImzaSil_Click(object sender, RoutedEventArgs e)
     {
         if (SefImzaGrid.SelectedItem is not ImzaAyari imza) return;
-        if (!SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz && SatinalmaDepo.Ayarlar.SefImzalari.Count <= 1)
-        {
-            MessageBox.Show("En az bir şef imza alanı bulunmalıdır.", UygulamaBilgisi.Ad,
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
 
+        ImzaDuzenlemesiniBaslat();
         SatinalmaDepo.Ayarlar.SefImzalari.Remove(imza);
+        if (SatinalmaDepo.Ayarlar.SefImzalari.Count == 0
+            && SatinalmaDepo.Ayarlar.YonetimImzalari.Count == 0)
+            SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz = true;
         ImzaGridleriYenile();
         SatinalmaDepo.Kaydet();
     }
@@ -582,14 +580,12 @@ public partial class AyarlarView : UserControl
     private void YonetimImzaSil_Click(object sender, RoutedEventArgs e)
     {
         if (YonetimImzaGrid.SelectedItem is not ImzaAyari imza) return;
-        if (!SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz && SatinalmaDepo.Ayarlar.YonetimImzalari.Count <= 1)
-        {
-            MessageBox.Show("En az bir yönetim imza alanı bulunmalıdır.", UygulamaBilgisi.Ad,
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
 
+        ImzaDuzenlemesiniBaslat();
         SatinalmaDepo.Ayarlar.YonetimImzalari.Remove(imza);
+        if (SatinalmaDepo.Ayarlar.SefImzalari.Count == 0
+            && SatinalmaDepo.Ayarlar.YonetimImzalari.Count == 0)
+            SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz = true;
         ImzaGridleriYenile();
         SatinalmaDepo.Kaydet();
     }

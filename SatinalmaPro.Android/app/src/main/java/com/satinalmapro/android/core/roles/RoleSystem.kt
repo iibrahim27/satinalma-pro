@@ -120,12 +120,12 @@ object RolNavigasyon {
             )
             KullaniciRolleri.SEF -> listOf(
                 satinalmaPanosu, yeniTalep, taleplerim, onayBekleyen, onaylananTalepler,
-                redTalepler, satinalmaSiparis,
+                redTalepler, satinalmaSiparis, satinalmaMalKabul,
                 stokDurum, stokHareket, agrega, cimento, bildirimler
             )
             KullaniciRolleri.SAHA -> listOf(
                 satinalmaPanosu, yeniTalep, taleplerim, onayBekleyen, onaylananTalepler,
-                redTalepler, satinalmaSiparis,
+                redTalepler, satinalmaSiparis, satinalmaMalKabul,
                 stokDurum, stokHareket, agrega, cimento, bildirimler
             )
             // Atölye: stok + yoldaki

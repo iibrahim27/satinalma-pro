@@ -34,7 +34,7 @@ public static class SatinalmaDepo
     };
 
     public static ObservableCollection<SatinalmaTalep> Talepler { get; } = [];
-    public static SatinalmaAyarlar Ayarlar { get; private set; } = SatinalmaAyarlar.VarsayilanOlustur();
+    public static SatinalmaAyarlar Ayarlar { get; private set; } = SatinalmaAyarlar.SifirlanmisOlustur();
 
     /// <summary>Formda düzenlenen boş taslak — senkron sırasında silinmez.</summary>
     public static Guid? KorunanBosTaslakId { get; set; }
@@ -51,7 +51,8 @@ public static class SatinalmaDepo
         _yuklendi = false;
         _yuklenenTenantId = null;
         Talepler.Clear();
-        Ayarlar = SatinalmaAyarlar.VarsayilanOlustur();
+        // Yeni/boş firma: diğer firmanın varsayılan ünvan+isimleri taşınmasın.
+        Ayarlar = SatinalmaAyarlar.SifirlanmisOlustur();
         KorunanBosTaslakId = null;
         TaleplerGuncellendi?.Invoke();
     }
@@ -89,7 +90,7 @@ public static class SatinalmaDepo
         if (_yuklendi && !string.Equals(_yuklenenTenantId, tid, StringComparison.Ordinal))
         {
             Talepler.Clear();
-            Ayarlar = SatinalmaAyarlar.VarsayilanOlustur();
+            Ayarlar = SatinalmaAyarlar.SifirlanmisOlustur();
         }
 
         _yuklendi = true;
@@ -102,12 +103,17 @@ public static class SatinalmaDepo
             {
                 var json = File.ReadAllText(AyarDosyasi);
                 Ayarlar = JsonSerializer.Deserialize<SatinalmaAyarlar>(json, JsonSecenekleri)
-                          ?? SatinalmaAyarlar.VarsayilanOlustur();
+                          ?? SatinalmaAyarlar.SifirlanmisOlustur();
             }
             catch
             {
-                Ayarlar = SatinalmaAyarlar.VarsayilanOlustur();
+                Ayarlar = SatinalmaAyarlar.SifirlanmisOlustur();
             }
+        }
+        else
+        {
+            // Yeni kiracıda yerel dosya yok — varsayılan ünvan/isim seed etme.
+            Ayarlar = SatinalmaAyarlar.SifirlanmisOlustur();
         }
 
         ImzalariHazirla(Ayarlar);
@@ -274,7 +280,7 @@ public static class SatinalmaDepo
 
     public static SatinalmaAyarlar AyarlariHazirla(SatinalmaAyarlar? ayarlar = null)
     {
-        ayarlar ??= Ayarlar ?? SatinalmaAyarlar.VarsayilanOlustur();
+        ayarlar ??= Ayarlar ?? SatinalmaAyarlar.SifirlanmisOlustur();
         ayarlar.SefImzalari ??= [];
         ayarlar.YonetimImzalari ??= [];
         ayarlar.Sartnameler ??= [];
@@ -285,7 +291,7 @@ public static class SatinalmaDepo
     public static void AyarlarYukle(string json, bool birlestir = true)
     {
         var gelen = JsonSerializer.Deserialize<SatinalmaAyarlar>(json, JsonSecenekleri)
-                    ?? SatinalmaAyarlar.VarsayilanOlustur();
+                    ?? SatinalmaAyarlar.SifirlanmisOlustur();
 
         if (birlestir)
         {
@@ -328,11 +334,52 @@ public static class SatinalmaDepo
             return;
         }
 
-        if (Ayarlar.ImzaAyarleriTemiz)
+        // Yerel temiz (yeni firma) iken gelen doluysa birleştirme yapma — doğrudan al.
+        // Aksi halde aynı ünvan anahtarlarına başka firmanın AdSoyad değerleri sızıyordu.
+        if (Ayarlar.ImzaAyarleriTemiz
+            || (Ayarlar.SefImzalari.Count == 0 && Ayarlar.YonetimImzalari.Count == 0))
+        {
+            ImzaListeleriniDegistir(gelen);
+            Ayarlar.ImzaAyarleriTemiz = false;
             return;
+        }
 
         ImzaListeleriniBirlestir(Ayarlar.SefImzalari, gelen.SefImzalari);
         ImzaListeleriniBirlestir(Ayarlar.YonetimImzalari, gelen.YonetimImzalari);
+    }
+
+    private static void ImzaListeleriniDegistir(SatinalmaAyarlar gelen)
+    {
+        Ayarlar.SefImzalari ??= [];
+        Ayarlar.YonetimImzalari ??= [];
+        Ayarlar.SefImzalari.Clear();
+        Ayarlar.YonetimImzalari.Clear();
+
+        if (gelen.SefImzalari is not null)
+        {
+            foreach (var imza in gelen.SefImzalari)
+            {
+                Ayarlar.SefImzalari.Add(new ImzaAyari
+                {
+                    Unvan = imza.Unvan?.Trim() ?? "",
+                    AdSoyad = imza.AdSoyad?.Trim() ?? "",
+                    Aktif = imza.Aktif
+                });
+            }
+        }
+
+        if (gelen.YonetimImzalari is not null)
+        {
+            foreach (var imza in gelen.YonetimImzalari)
+            {
+                Ayarlar.YonetimImzalari.Add(new ImzaAyari
+                {
+                    Unvan = imza.Unvan?.Trim() ?? "",
+                    AdSoyad = imza.AdSoyad?.Trim() ?? "",
+                    Aktif = imza.Aktif
+                });
+            }
+        }
     }
 
     public static void ImzaAyarlariniOzellestir()
@@ -752,31 +799,7 @@ public static class SatinalmaDepo
             }
         }
 
-        if (ayarlar.SefImzalari.Count == 0 && ayarlar.YonetimImzalari.Count == 0)
-        {
-            var varsayilan = SatinalmaAyarlar.VarsayilanOlustur();
-            foreach (var imza in varsayilan.SefImzalari)
-            {
-                ayarlar.SefImzalari.Add(new ImzaAyari
-                {
-                    Unvan = imza.Unvan,
-                    AdSoyad = imza.AdSoyad,
-                    Aktif = imza.Aktif
-                });
-            }
-
-            foreach (var imza in varsayilan.YonetimImzalari)
-            {
-                ayarlar.YonetimImzalari.Add(new ImzaAyari
-                {
-                    Unvan = imza.Unvan,
-                    AdSoyad = imza.AdSoyad,
-                    Aktif = imza.Aktif
-                });
-            }
-        }
-
-        ImzaVarsayilanlariniKontrolEt(ayarlar);
+        // Yeni/boş firmaya "Tünel Şefi" vb. şablon ünvanları ve isimleri otomatik eklenmez.
         ayarlar.Imzalar = null;
     }
 
@@ -785,16 +808,4 @@ public static class SatinalmaDepo
             unvan.Contains("Yönetim", StringComparison.OrdinalIgnoreCase) ||
             unvan.Contains("Proje Müdürü", StringComparison.OrdinalIgnoreCase) ||
             unvan.Contains("Proje Muduru", StringComparison.OrdinalIgnoreCase));
-
-    private static void ImzaVarsayilanlariniKontrolEt(SatinalmaAyarlar ayarlar)
-    {
-        if (ayarlar.SefImzalari.Count == 0)
-        {
-            foreach (var unvan in new[] { "Satınalma", "Tünel Şefi", "Şantiye Şefi" })
-                ayarlar.SefImzalari.Add(new ImzaAyari { Unvan = unvan, Aktif = true });
-        }
-
-        if (ayarlar.YonetimImzalari.Count == 0)
-            ayarlar.YonetimImzalari.Add(new ImzaAyari { Unvan = "Proje Müdürü", Aktif = true });
-    }
 }

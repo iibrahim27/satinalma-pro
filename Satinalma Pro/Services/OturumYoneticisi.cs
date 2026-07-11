@@ -106,6 +106,7 @@ public static class OturumYoneticisi
         EpostaSablonDeposu.KiraciDegisti();
         BildirimDeposu.KiraciDegisti();
         BulutSenkronZamani.KiraciDegisti();
+        BulutVeriSenkronu.KiraciDegisti();
         KiracıOturumu.Ayarla(sonuc.TenantId, sonuc.TenantAd, sonuc.Lisans);
 
         if (!await ProfiliYukleAsync(iptal))
@@ -239,6 +240,7 @@ public static class OturumYoneticisi
         EpostaSablonDeposu.KiraciDegisti();
         BildirimDeposu.KiraciDegisti();
         BulutSenkronZamani.KiraciDegisti();
+        BulutVeriSenkronu.KiraciDegisti();
         OturumDosyasiniSil();
     }
 
@@ -299,6 +301,7 @@ public static class OturumYoneticisi
         EpostaSablonDeposu.KiraciDegisti();
         BildirimDeposu.KiraciDegisti();
         BulutSenkronZamani.KiraciDegisti();
+        BulutVeriSenkronu.KiraciDegisti();
         OturumDosyasiniSil();
         OturumDegisti?.Invoke();
     }
