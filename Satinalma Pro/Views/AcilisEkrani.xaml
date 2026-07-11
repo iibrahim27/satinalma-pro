@@ -42,7 +42,7 @@
                     VerticalScrollBarVisibility="Auto"
                     HorizontalScrollBarVisibility="Disabled">
         <StackPanel VerticalAlignment="Center" Margin="0,8,0,0">
-          <controls:UygulamaIkonAnimasyonu IkonBoyutu="96" HorizontalAlignment="Center" Margin="0,0,0,20" />
+          <controls:UygulamaIkonAnimasyonu IkonBoyutu="96" GirisModu="True" HorizontalAlignment="Center" Margin="0,0,0,20" />
 
           <TextBlock Text="Satınalma Pro"
                      FontSize="24"

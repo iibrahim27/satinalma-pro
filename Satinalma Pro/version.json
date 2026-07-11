@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.64",
-    "build":  132,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.64/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.64/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.64/SatinalmaPro.apk",
-    "notes":  "Bildirim sistemi duzeltmesi (masaustu polling toast, inbox filtreleme; Android tenant FCM); fiyat karsilastirma PDF 2. sayfa alim gecmisi; Excel tedarikci alias + bos guncelleme",
+    "version":  "2.1.65",
+    "build":  133,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.65/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.65/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.65/SatinalmaPro.apk",
+    "notes":  "Acilis ekrani uygulama ikonu duzeltmesi (splash opacity + app.png)",
     "zorunlu":  false
 }

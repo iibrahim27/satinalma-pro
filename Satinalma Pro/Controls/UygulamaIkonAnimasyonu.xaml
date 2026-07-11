@@ -63,7 +63,7 @@
           <RotateTransform x:Name="IkonEgim" Angle="0" />
         </TransformGroup>
       </Border.RenderTransform>
-      <Image x:Name="IkonGorsel" Source="pack://application:,,,/Assets/app.ico" Opacity="0"
+      <Image x:Name="IkonGorsel" Source="pack://application:,,,/Assets/app.png" Opacity="0"
              Width="{Binding IkonBoyutu, ElementName=Root}"
              Height="{Binding IkonBoyutu, ElementName=Root}"
              Stretch="Uniform">

@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.0.17",
-    "build":  18,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.17/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.17/SatinalmaYonetici.zip",
-    "notes":  "Platform yonetim 1.0.17 - Pro 2.1.64 bildirim/PDF/Excel ile birlikte",
+    "version":  "1.0.18",
+    "build":  19,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.18/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.18/SatinalmaYonetici.zip",
+    "notes":  "Platform yonetim 1.0.18 - Pro 2.1.65 splash ikon duzeltmesi ile birlikte",
     "zorunlu":  false
 }

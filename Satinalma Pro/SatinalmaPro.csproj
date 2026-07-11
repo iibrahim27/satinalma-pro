@@ -12,10 +12,10 @@
     <AssemblyTitle>Satınalma Pro</AssemblyTitle>
     <Company>Satınalma Pro</Company>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>2.1.64</Version>
-    <AssemblyVersion>2.1.64.0</AssemblyVersion>
-    <FileVersion>2.1.64.0</FileVersion>
-    <InformationalVersion>2.1.64</InformationalVersion>
+    <Version>2.1.65</Version>
+    <AssemblyVersion>2.1.65.0</AssemblyVersion>
+    <FileVersion>2.1.65.0</FileVersion>
+    <InformationalVersion>2.1.65</InformationalVersion>
     <RootNamespace>SatinalmaPro</RootNamespace>
   </PropertyGroup>
 
@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <Resource Include="Assets\app.ico" />
+    <Resource Include="Assets\app.png" />
   </ItemGroup>
 
   <ItemGroup>

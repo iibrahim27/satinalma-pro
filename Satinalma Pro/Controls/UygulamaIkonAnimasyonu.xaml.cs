@@ -31,11 +31,15 @@ public partial class UygulamaIkonAnimasyonu : UserControl
 
     private void GirisModuBaslat()
     {
-        if (!IsLoaded || !GirisModu)
+        if (!IsLoaded)
             return;
 
+        // Giriş animasyonu her kullanımda çalışır; aksi halde Opacity=0'da kalır (splash'ta ikon kayboluyordu).
         if (FindResource("IkonGirisAnimasyonu") is Storyboard giris)
             giris.Begin(this, true);
+
+        if (!GirisModu)
+            return;
 
         if (FindResource("IkonNefesAnimasyonu") is Storyboard nefes)
             nefes.Begin(this, true);
