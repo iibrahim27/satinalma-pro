@@ -215,6 +215,9 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
 
     private void ExcelYukle_Click(object sender, RoutedEventArgs e)
     {
+        if (KullaniciYetkileri.YazmaIslemiEngellendi("Alınan Malzemeler"))
+            return;
+
         var dialog = new OpenFileDialog
         {
             Title = "Excel Dosyası Seç",
@@ -230,6 +233,46 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
             if (yeniKayitlar.Count == 0)
             {
                 MessageBox.Show("Dosyada aktarılacak kayıt bulunamadı.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var secim = MessageBox.Show(
+                $"{yeniKayitlar.Count} satır okundu.\n\n" +
+                "Evet = Boş tedarikçileri Excel'den doldur (çift kayıt oluşturmaz)\n" +
+                "Hayır = Yeni kayıt olarak ekle\n" +
+                "İptal = Vazgeç\n\n" +
+                "Öneri: Daha önce yüklediğiniz kayıtların tedarikçisi boşsa «Evet» seçin. Modül sıfırlamayın.",
+                "Excel Yükleme",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
+
+            if (secim == MessageBoxResult.Cancel)
+                return;
+
+            if (secim == MessageBoxResult.Yes)
+            {
+                ModulVeriDeposu.BeginBatch();
+                int guncellenen;
+                try
+                {
+                    foreach (var kayit in yeniKayitlar)
+                        kayit.Tarih = TarihYardimcisi.Normalize(kayit.Tarih);
+
+                    guncellenen = AlinanMalzemeExcelService.BosTedarikcileriGuncelle(Kayitlar, yeniKayitlar);
+                }
+                finally
+                {
+                    ModulVeriDeposu.EndBatch();
+                }
+
+                VeriGuncellendi();
+                MessageBox.Show(
+                    guncellenen > 0
+                        ? $"{guncellenen} kaydın tedarikçi bilgisi Excel'den güncellendi."
+                        : "Eşleşen ve tedarikçisi boş kayıt bulunamadı. Excel'de tarih / malzeme / miktar / birim fiyat aynı olmalı.",
+                    UygulamaBilgisi.Ad,
+                    MessageBoxButton.OK,
+                    guncellenen > 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
                 return;
             }
 

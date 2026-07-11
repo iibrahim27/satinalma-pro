@@ -134,16 +134,35 @@ public static class BildirimRolPolitikasi
             yield return (null, talepOlusturanUid);
     }
 
-    public static string NormalizeTip(string tip) => tip.Trim().ToLowerInvariant() switch
+    public static string NormalizeTip(string tip)
     {
-        "yonetimegonderildi" => BildirimTipleri.YonetimeGonderildi,
-        "teklifistendi" => BildirimTipleri.TeklifIstendi,
-        "teklifonayda" => BildirimTipleri.TeklifOnayda,
-        "teklifduzeltmeistendi" => BildirimTipleri.TeklifDuzeltmeIstendi,
-        "onaylandi" => BildirimTipleri.Onaylandi,
-        "reddedildi" => BildirimTipleri.Reddedildi,
-        "siparisolusturuldu" => BildirimTipleri.SiparisOlusturuldu,
-        "malkabuledildi" => BildirimTipleri.MalKabulEdildi,
-        _ => tip.Trim().ToLowerInvariant()
-    };
+        var t = tip.Trim().ToLowerInvariant();
+        // Event kodları (talep.olusturuldu …)
+        t = t switch
+        {
+            "talep.yonetime_gonderildi" or "talep.olusturuldu"
+                or "talep.sla_yaklasiyor" or "talep.sla_asildi" => BildirimTipleri.YonetimeGonderildi,
+            "teklif.istendi" => BildirimTipleri.TeklifIstendi,
+            "teklif.yonetime_gonderildi" => BildirimTipleri.TeklifOnayda,
+            "teklif.duzeltme_istendi" => BildirimTipleri.TeklifDuzeltmeIstendi,
+            "talep.onaylandi" => BildirimTipleri.Onaylandi,
+            "talep.reddedildi" => BildirimTipleri.Reddedildi,
+            "siparis.olusturuldu" => BildirimTipleri.SiparisOlusturuldu,
+            "depo.mal_kabul_yapildi" => BildirimTipleri.MalKabulEdildi,
+            _ => t
+        };
+
+        return t switch
+        {
+            "yonetimegonderildi" or "yonetime_gonderildi" => BildirimTipleri.YonetimeGonderildi,
+            "teklifistendi" or "teklif_istendi" => BildirimTipleri.TeklifIstendi,
+            "teklifonayda" or "teklif_onayda" => BildirimTipleri.TeklifOnayda,
+            "teklifduzeltmeistendi" or "teklif_duzeltme_istendi" => BildirimTipleri.TeklifDuzeltmeIstendi,
+            "onaylandi" => BildirimTipleri.Onaylandi,
+            "reddedildi" => BildirimTipleri.Reddedildi,
+            "siparisolusturuldu" or "siparis_olusturuldu" => BildirimTipleri.SiparisOlusturuldu,
+            "malkabuledildi" or "mal_kabul_edildi" => BildirimTipleri.MalKabulEdildi,
+            _ => t
+        };
+    }
 }

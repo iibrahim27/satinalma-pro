@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.0.16",
-    "build":  17,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.16/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.16/SatinalmaYonetici.zip",
-    "notes":  "Platform yonetim 1.0.16 - Pro 2.1.63 imza izolasyonu ve Sef/Saha ile birlikte",
+    "version":  "1.0.17",
+    "build":  18,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.17/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.17/SatinalmaYonetici.zip",
+    "notes":  "Platform yonetim 1.0.17 - Pro 2.1.64 bildirim/PDF/Excel ile birlikte",
     "zorunlu":  false
 }

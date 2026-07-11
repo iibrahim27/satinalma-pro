@@ -434,7 +434,7 @@ class AppContainer(private val context: Context) {
         TenantSession.clear()
         clearInMemoryTenantData()
         offlineCache.clearAll()
-        prefs.edit().remove(KEY_SESSION).remove("saved_tenant_id").apply()
+        prefs.edit().remove(KEY_SESSION).remove("saved_tenant_id").remove(KEY_PROFILE).apply()
         unregisterFcm(uid)
     }
 
@@ -537,10 +537,14 @@ class AppContainer(private val context: Context) {
     private fun forceLicenseLogout() {
         BildirimLog.w("LISANS", "Lisans süresi doldu — oturum kapatılıyor")
         val uid = auth.uid
+        runCatching { FcmSubscriptionHelper(context).unsubscribeAllRoleTopics() }
+        runCatching { FirebaseAuthBridge.signOut() }
+        runCatching { BackgroundSyncScheduler.cancel(context) }
         auth.clear()
         TenantSession.clear()
         clearInMemoryTenantData()
-        prefs.edit().remove(KEY_SESSION).remove("saved_tenant_id").apply()
+        offlineCache.clearAll()
+        prefs.edit().remove(KEY_SESSION).remove("saved_tenant_id").remove(KEY_PROFILE).apply()
         unregisterFcm(uid)
     }
 
@@ -583,7 +587,8 @@ class AppContainer(private val context: Context) {
             firmaAdi = firma,
             sefImzalari = sat.sefImzalari.filter { it.aktif },
             yonetimImzalari = sat.yonetimImzalari.filter { it.aktif },
-            logoBytes = firmaLogoBytes
+            logoBytes = firmaLogoBytes,
+            alinanMalzemeler = _alinanMalzemeKayitlari.value
         )
     }
 

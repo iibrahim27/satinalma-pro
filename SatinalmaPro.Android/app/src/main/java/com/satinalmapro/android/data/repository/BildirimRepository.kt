@@ -416,13 +416,17 @@ class BildirimRepository(
         val talepId = record.talepId?.trim().orEmpty()
         if (talepId.isBlank()) return false
 
-        val talep = talepler.firstOrNull { it.id.equals(talepId, true) } ?: return false
+        val talep = talepler.firstOrNull { it.id.equals(talepId, true) }
+        // Talep henüz senkron değilse düşürme — FCM/inbox bildirimi kaçmasın.
+        if (talep == null) return true
+
         val tamamlandi = talep.resolvedEnterpriseStatus() == ProcurementStatus.COMPLETED
         return when (tip) {
             BildirimTipleri.YONETIME_GONDERILDI ->
                 !tamamlandi && (
                     TalepKuyrugu.yonetimTalepler(talep) ||
-                        TalepKuyrugu.onayBekleyen(talep)
+                        TalepKuyrugu.onayBekleyen(talep) ||
+                        talep.durum == TalepDurumlari.HAZIRLANIYOR
                     )
             BildirimTipleri.TEKLIF_ISTENDI ->
                 !tamamlandi &&
@@ -450,16 +454,21 @@ class BildirimRepository(
     private fun talepBaglantili(tip: String): Boolean =
         tip in TALEP_BAGLANTILI_TIPLER
 
-    private fun normalizeTip(tip: String): String = when (tip.lowercase(Locale.ROOT)) {
-        "yonetimegonderildi" -> BildirimTipleri.YONETIME_GONDERILDI
-        "teklifistendi" -> BildirimTipleri.TEKLIF_ISTENDI
-        "teklifonayda" -> BildirimTipleri.TEKLIF_ONAYDA
-        "teklifduzeltmeistendi" -> BildirimTipleri.TEKLIF_DUZELTME_ISTENDI
-        "onaylandi" -> BildirimTipleri.ONAYLANDI
-        "reddedildi" -> BildirimTipleri.REDDEDILDI
-        "siparisolusturuldu" -> BildirimTipleri.SIPARIS_OLUSTURULDU
-        "malkabuledildi" -> BildirimTipleri.MAL_KABUL_EDILDI
-        else -> tip.lowercase(Locale.ROOT)
+    private fun normalizeTip(tip: String): String {
+        val lower = tip.lowercase(Locale.ROOT)
+        val fromEvent = mapEventCodeToTip(lower)
+        if (fromEvent in TALEP_BAGLANTILI_TIPLER) return fromEvent
+        return when (lower) {
+            "yonetimegonderildi", "yonetime_gonderildi" -> BildirimTipleri.YONETIME_GONDERILDI
+            "teklifistendi", "teklif_istendi" -> BildirimTipleri.TEKLIF_ISTENDI
+            "teklifonayda", "teklif_onayda" -> BildirimTipleri.TEKLIF_ONAYDA
+            "teklifduzeltmeistendi", "teklif_duzeltme_istendi" -> BildirimTipleri.TEKLIF_DUZELTME_ISTENDI
+            "onaylandi" -> BildirimTipleri.ONAYLANDI
+            "reddedildi" -> BildirimTipleri.REDDEDILDI
+            "siparisolusturuldu", "siparis_olusturuldu" -> BildirimTipleri.SIPARIS_OLUSTURULDU
+            "malkabuledildi", "mal_kabul_edildi" -> BildirimTipleri.MAL_KABUL_EDILDI
+            else -> lower
+        }
     }
 
     private suspend fun tumInboxSayfalari(uid: String, limit: Int = 200): List<org.json.JSONObject> =

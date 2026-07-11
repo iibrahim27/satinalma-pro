@@ -9,6 +9,8 @@ public static class BildirimYoneticisi
 {
     private static DispatcherTimer? _zamanlayici;
     private static bool _kontrolEdiliyor;
+    private static bool _ilkSenkronTamam;
+    private static readonly HashSet<Guid> BilinenBildirimIds = [];
 
     public static event Action? BildirimlerDegisti;
 
@@ -38,10 +40,12 @@ public static class BildirimYoneticisi
             return;
 
         Durdur();
+        _ilkSenkronTamam = false;
+        BilinenBildirimIds.Clear();
 
-        // Periyodik kontrol yalnızca temizler; geçmiş bildirimleri toast ile yeniden basmaz.
+        // Periyodik kontrol: inbox'tan gelen yenileri toast eder (açılışta geçmiş basılmaz).
         _zamanlayici = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        _zamanlayici.Tick += async (_, _) => await KontrolEtAsync(hatirlatmaGoster: false);
+        _zamanlayici.Tick += async (_, _) => await KontrolEtAsync();
         _zamanlayici.Start();
 
         _ = IlkYukleAsync();
@@ -53,6 +57,8 @@ public static class BildirimYoneticisi
     {
         _zamanlayici?.Stop();
         _zamanlayici = null;
+        _ilkSenkronTamam = false;
+        BilinenBildirimIds.Clear();
     }
 
     public static async Task EkleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
@@ -60,7 +66,10 @@ public static class BildirimYoneticisi
         var yeni = await BildirimDeposu.EkleAsync(bildirim, iptal);
         BildirimlerDegisti?.Invoke();
         if (yeni)
+        {
+            BilinenBildirimIds.Add(bildirim.Id);
             ToastGoster(bildirim, ilkGosterim: true);
+        }
     }
 
     public static async Task CokluEkleAsync(IReadOnlyList<BildirimKaydi> bildirimler, CancellationToken iptal = default)
@@ -76,7 +85,10 @@ public static class BildirimYoneticisi
             return;
 
         foreach (var bildirim in bildirimler.Where(b => ToastGosterilmeli(b, kullanici)))
+        {
+            BilinenBildirimIds.Add(bildirim.Id);
             ToastGoster(bildirim, ilkGosterim: true);
+        }
     }
 
     public static async Task OkunduIsaretleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
@@ -177,8 +189,11 @@ public static class BildirimYoneticisi
 
     private static async Task IlkYukleAsync()
     {
-        // Açılışta eski okunmamışları toast ile tekrar basma; yalnızca geçersizleri temizle.
+        // Açılış: geçmiş toast basılmaz; bilinen id'ler işaretlenir, sonraki poll yenileri gösterir.
         await KontrolEtAsync(hatirlatmaGoster: false);
+        foreach (var b in KullaniciBildirimleri())
+            BilinenBildirimIds.Add(b.Id);
+        _ilkSenkronTamam = true;
         BildirimlerDegisti?.Invoke();
     }
 
@@ -247,14 +262,23 @@ public static class BildirimYoneticisi
             if (kullanici is null)
                 return;
 
-            // Toast yalnızca yeni eklenen bildirimlerde (EkleAsync); açılış/polling geçmişi basmaz.
-            if (hatirlatmaGoster)
+            var gecerli = KullaniciBildirimleri().ToList();
+
+            // İlk senkron sonrası: inbox'tan yeni gelenleri toast et (diğer PC / CF fan-out).
+            if (_ilkSenkronTamam || hatirlatmaGoster)
             {
-                foreach (var bildirim in KullaniciBildirimleri()
-                             .Where(b => ToastGosterilmeli(b, kullanici))
-                             .ToList())
-                    ToastGoster(bildirim);
+                foreach (var bildirim in gecerli.Where(b => ToastGosterilmeli(b, kullanici)))
+                {
+                    if (!_ilkSenkronTamam)
+                        continue;
+                    if (!BilinenBildirimIds.Add(bildirim.Id))
+                        continue;
+                    ToastGoster(bildirim, ilkGosterim: true);
+                }
             }
+
+            foreach (var b in gecerli)
+                BilinenBildirimIds.Add(b.Id);
 
             BildirimlerDegisti?.Invoke();
         }

@@ -35,7 +35,7 @@ public static class BildirimFiltreleme
         var tip = BildirimRolPolitikasi.NormalizeTip(bildirim.Tip);
         if (!TalepBaglantiliMi(tip))
         {
-            // Cloud event kodları inbox'ta kalır; legacy listede şişirmesin.
+            // Bilinmeyen event kodları (noktalı) legacy listede şişirmesin.
             if (tip.Contains('.', StringComparison.Ordinal))
                 return false;
             if (string.IsNullOrWhiteSpace(tip) && bildirim.TalepId is null)
@@ -47,9 +47,9 @@ public static class BildirimFiltreleme
             return false;
 
         var talep = talepler.FirstOrDefault(t => t.Id == tid);
-        // Talep yoksa eski bildirimi canlı tutma (açılışta geçmiş bildirim yağmurunu önler).
+        // Talep henüz senkron değilse düşürme — CF bildirimi kaçmasın.
         if (talep is null)
-            return false;
+            return true;
 
         // Mal kabul/stok tamamlanan talepler için eski bildirimler kalıcı olmasın.
         var tamamlandi = ProcurementStatusResolver.Resolve(talep)

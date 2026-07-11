@@ -222,7 +222,7 @@ class FirestoreClient(
     }
 
     suspend fun listUsersAdmin(adminToken: String): List<JSONObject> {
-        val response = HttpClients.get("$root/users", adminToken)
+        val response = HttpClients.get("${tenantRoot()}/users", adminToken)
         if (response.isBlank()) return emptyList()
         val docs = JSONObject(response).optJSONArray("documents") ?: return emptyList()
         return buildList {
@@ -231,7 +231,7 @@ class FirestoreClient(
     }
 
     suspend fun readUserAdmin(adminToken: String, uid: String): JSONObject? {
-        val response = HttpClients.get("$root/users/$uid", adminToken)
+        val response = HttpClients.get("${tenantRoot()}/users/$uid", adminToken)
         return if (response.isBlank()) null else JSONObject(response).optJSONObject("fields")
     }
 

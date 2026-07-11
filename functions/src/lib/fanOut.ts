@@ -9,6 +9,13 @@ import {
 import { tenantUsersPath } from "./saas";
 
 function eventCodeToLegacyTip(eventCode: string): string {
+  if (
+    eventCode === "talep.olusturuldu" ||
+    eventCode === "talep.sla_yaklasiyor" ||
+    eventCode === "talep.sla_asildi"
+  ) {
+    return "yonetime_gonderildi";
+  }
   const found = Object.entries(LEGACY_TIP_TO_EVENT).find(([, event]) => event === eventCode);
   return found?.[0] ?? eventCode;
 }

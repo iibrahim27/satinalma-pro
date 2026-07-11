@@ -332,6 +332,11 @@ public static class SatinalmaPdfOlusturucu
                     }
                 });
             });
+
+            // Sayfa 2+: karşılaştırma kalemlerinin son alım geçmişi
+            var alimSatirlari = KarsilastirmaAlimGecmisiYardimcisi.MalzemeBazliAlimlariTopla(
+                kalemler, ModulVeriDeposu.AlinanMalzemeler);
+            KarsilastirmaAlimGecmisiSayfasiEkle(container, talep, ayarlar, alimSatirlari, yonetimFormu);
         }).GeneratePdf(dosya);
             });
         }
@@ -339,6 +344,111 @@ public static class SatinalmaPdfOlusturucu
         {
             PdfHataKaydet(ex, "KarsilastirmaPdf");
         }
+    }
+
+    private static void KarsilastirmaAlimGecmisiSayfasiEkle(
+        IDocumentContainer container,
+        SatinalmaTalep talep,
+        SatinalmaAyarlar ayarlar,
+        IReadOnlyList<KarsilastirmaAlimGecmisiYardimcisi.AlimSatiri> satirlari,
+        bool yonetimFormu)
+    {
+        container.Page(page =>
+        {
+            page.Size(PageSizes.A4.Landscape());
+            page.Margin(yonetimFormu ? 16 : 28);
+            page.DefaultTextStyle(x => x.FontSize(yonetimFormu ? 7.5f : 9).FontFamily("Segoe UI"));
+
+            page.Header().Element(c =>
+                BaslikOlustur(c, ayarlar, "SON ALIMLAR (KARŞILAŞTIRMA REFERANSI)", yonetimFormu));
+
+            page.Content().Column(col =>
+            {
+                col.Spacing(yonetimFormu ? 3 : 6);
+
+                col.Item().Row(row =>
+                {
+                    row.RelativeItem().Text($"Talep No: {talep.TalepNo}");
+                    row.RelativeItem().AlignRight().Text($"Tarih: {talep.Tarih}");
+                });
+
+                col.Item().Text("Son 2 aydaki alımlar listelenir; kayıt yoksa en son 2 alım gösterilir.")
+                    .FontColor(Colors.Grey.Darken1)
+                    .FontSize(yonetimFormu ? 7f : 8f);
+
+                col.Item().PaddingTop(yonetimFormu ? 2 : 4).Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(yonetimFormu ? 22 : 28);
+                        columns.RelativeColumn(2.4f);
+                        columns.ConstantColumn(yonetimFormu ? 58 : 68);
+                        columns.ConstantColumn(yonetimFormu ? 52 : 60);
+                        columns.ConstantColumn(yonetimFormu ? 40 : 48);
+                        columns.ConstantColumn(yonetimFormu ? 72 : 84);
+                        columns.RelativeColumn(1.8f);
+                    });
+
+                    static void BaslikHucre(TableDescriptor t, string metin, bool kompakt) =>
+                        t.Cell().Element(c => HucreBaslik(c, false, kompakt)).AlignCenter().Text(metin).SemiBold();
+
+                    BaslikHucre(table, "No", yonetimFormu);
+                    BaslikHucre(table, "Malzeme", yonetimFormu);
+                    BaslikHucre(table, "Tarih", yonetimFormu);
+                    BaslikHucre(table, "Miktar", yonetimFormu);
+                    BaslikHucre(table, "Birim", yonetimFormu);
+                    BaslikHucre(table, "Birim Fiyat", yonetimFormu);
+                    BaslikHucre(table, "Tedarikçi", yonetimFormu);
+
+                    if (satirlari.Count == 0)
+                    {
+                        table.Cell().ColumnSpan(7).Element(c => HucreVeri(c, false, yonetimFormu))
+                            .Text("Karşılaştırma kalemleri için alım kaydı bulunamadı.");
+                        return;
+                    }
+
+                    var oncekiMalzeme = "";
+                    foreach (var satir in satirlari)
+                    {
+                        var malzemeDegisti = !string.Equals(
+                            oncekiMalzeme, satir.Malzeme, StringComparison.OrdinalIgnoreCase);
+                        oncekiMalzeme = satir.Malzeme;
+
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu))
+                            .Text(malzemeDegisti ? satir.KalemSiraNo.ToString() : "");
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu))
+                            .Text(malzemeDegisti ? satir.Malzeme : "");
+
+                        if (satir.KayitYok)
+                        {
+                            table.Cell().ColumnSpan(5).Element(c => HucreVeri(c, false, yonetimFormu))
+                                .Text("Alım kaydı yok").FontColor(Colors.Grey.Darken1).Italic();
+                            continue;
+                        }
+
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu)).AlignCenter()
+                            .Text(satir.Tarih);
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu)).AlignRight()
+                            .Text(satir.Miktar.ToString("N2", Tr));
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu)).AlignCenter()
+                            .Text(satir.Birim);
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu)).AlignRight()
+                            .Text(TlGosterim(satir.BirimFiyati));
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu))
+                            .Text(satir.SonIkiAlimYedegi
+                                ? $"{satir.Tedarikci} *"
+                                : satir.Tedarikci);
+                    }
+                });
+
+                if (satirlari.Any(s => s.SonIkiAlimYedegi))
+                {
+                    col.Item().Text("* Son 2 ayda alım yok; en son 2 alım gösterildi.")
+                        .FontSize(yonetimFormu ? 6.5f : 7.5f)
+                        .FontColor(Colors.Grey.Darken1);
+                }
+            });
+        });
     }
 
     public static void YonetimOnayBelgesiYazdir(SatinalmaTalep talep, SatinalmaAyarlar ayarlar)

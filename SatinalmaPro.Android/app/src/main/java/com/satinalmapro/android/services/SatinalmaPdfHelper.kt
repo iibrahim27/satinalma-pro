@@ -191,8 +191,109 @@ object SatinalmaPdfHelper {
         duzen.y += 20f
         SatinalmaPdfCizim.yonetimImzaCiz(duzen, baglam.yonetimImzalari.filter { it.aktif })
 
+        // Sayfa 2+: son alımlar (karşılaştırma referansı)
+        karsilastirmaAlimGecmisiCiz(duzen, talep, kalemler, baglam)
+
         duzen.bitir()
         return doc
+    }
+
+    private fun karsilastirmaAlimGecmisiCiz(
+        duzen: PdfSayfaDuzeni,
+        talep: TalepItem,
+        kalemler: List<com.satinalmapro.android.core.model.TalepKalem>,
+        baglam: SatinalmaPdfBaglam
+    ) {
+        val satirlari = KarsilastirmaAlimGecmisiYardimcisi.malzemeBazliAlimlariTopla(
+            kalemler,
+            baglam.alinanMalzemeler
+        )
+
+        duzen.yeniSayfa()
+        SatinalmaPdfCizim.baslikCiz(duzen, baglam, "SON ALIMLAR (KARŞILAŞTIRMA REFERANSI)", kompakt = false)
+
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 9f
+            color = Color.BLACK
+        }
+        duzen.alanGerekli(16f)
+        duzen.canvas.drawText("Talep No: ${talep.talepNo}", duzen.margin, duzen.y, paint)
+        paint.textAlign = Paint.Align.RIGHT
+        duzen.canvas.drawText("Tarih: ${talep.tarih}", duzen.genislik - duzen.margin, duzen.y, paint)
+        paint.textAlign = Paint.Align.LEFT
+        duzen.y += 14f
+
+        SatinalmaPdfCizim.metinCiz(
+            duzen,
+            "Son 2 aydaki alımlar listelenir; kayıt yoksa en son 2 alım gösterilir.",
+            boyut = 8f
+        )
+        duzen.y += 4f
+
+        val kolonGenislikleri = listOf(28f, 180f, 68f, 60f, 48f, 84f, duzen.icerikGenisligi - 28f - 180f - 68f - 60f - 48f - 84f)
+        val basliklar = listOf("No", "Malzeme", "Tarih", "Miktar", "Birim", "Birim Fiyat", "Tedarikçi")
+        SatinalmaPdfCizim.tabloCiz(
+            duzen,
+            kolonGenislikleri,
+            basliklar = basliklar,
+            satirlar = emptyList(),
+            baslikCiz = true
+        )
+
+        if (satirlari.isEmpty()) {
+            SatinalmaPdfCizim.tabloSatirCiz(
+                duzen,
+                kolonGenislikleri,
+                listOf("—", "Karşılaştırma kalemleri için alım kaydı bulunamadı.", "", "", "", "", "")
+            )
+            return
+        }
+
+        var oncekiMalzeme = ""
+        for (satir in satirlari) {
+            val malzemeDegisti = !oncekiMalzeme.equals(satir.malzeme, ignoreCase = true)
+            oncekiMalzeme = satir.malzeme
+
+            if (satir.kayitYok) {
+                SatinalmaPdfCizim.tabloSatirCiz(
+                    duzen,
+                    kolonGenislikleri,
+                    listOf(
+                        if (malzemeDegisti) satir.kalemSiraNo.toString() else "",
+                        if (malzemeDegisti) satir.malzeme else "",
+                        "Alım kaydı yok",
+                        "",
+                        "",
+                        "",
+                        ""
+                    )
+                )
+                continue
+            }
+
+            SatinalmaPdfCizim.tabloSatirCiz(
+                duzen,
+                kolonGenislikleri,
+                listOf(
+                    if (malzemeDegisti) satir.kalemSiraNo.toString() else "",
+                    if (malzemeDegisti) satir.malzeme else "",
+                    satir.tarih,
+                    SatinalmaPdfFormats.miktar(satir.miktar),
+                    satir.birim,
+                    SatinalmaPdfFormats.tl(satir.birimFiyati),
+                    if (satir.sonIkiAlimYedegi) "${satir.tedarikci} *" else satir.tedarikci
+                )
+            )
+        }
+
+        if (satirlari.any { it.sonIkiAlimYedegi }) {
+            duzen.y += 6f
+            SatinalmaPdfCizim.metinCiz(
+                duzen,
+                "* Son 2 ayda alım yok; en son 2 alım gösterildi.",
+                boyut = 7.5f
+            )
+        }
     }
 
     private fun karsilastirmaTablosuCiz(

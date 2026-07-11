@@ -18,16 +18,20 @@ public sealed class BildirimInboxServisi
 
     public static BildirimKaydi InboxtenBildirimeDonustur(NotificationInboxEntry e)
     {
-        Guid? talepId = Guid.TryParse(e.EntityId, out var id) ? id : null;
-        var tip = EventCodeToLegacyTip(e.EventCode);
+        var entityOrTalep = !string.IsNullOrWhiteSpace(e.EntityId) ? e.EntityId : e.TalepId;
+        Guid? talepId = Guid.TryParse(entityOrTalep, out var id) ? id : null;
+        var tip = CozLegacyTip(e.EventCode, e.Tip, e.Type);
 
         return new BildirimKaydi
         {
             Id = BildirimMantikAnahtari.InboxDocIddenGuid(e.DocId),
-            Baslik = e.Title,
-            Mesaj = e.Message,
+            Baslik = FirstNonEmpty(e.Title, e.Baslik),
+            Mesaj = FirstNonEmpty(e.Message, e.Mesaj),
             Tip = tip,
             TalepId = talepId,
+            HedefRol = FirstNonEmpty(e.HedefRol, e.TargetRole),
+            HedefUid = FirstNonEmpty(e.HedefUid, e.TargetUid),
+            OlusturanUid = FirstNonEmpty(e.OlusturanUid, e.CreatedBy),
             OlusturmaTarihi = e.CreatedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "",
             Okundu = e.IsRead,
             GuncellemeUtc = e.CreatedAt.HasValue
@@ -40,9 +44,37 @@ public sealed class BildirimInboxServisi
         };
     }
 
+    /// <summary>Event kodunu legacy tip sabitine çevirir (filtreleme / toast).</summary>
+    public static string EventCodeToLegacyTipPublic(string? eventCode) =>
+        EventCodeToLegacyTip(eventCode ?? "");
+
+    private static string CozLegacyTip(string? eventCode, string? tip, string? type)
+    {
+        var fromEvent = EventCodeToLegacyTip(eventCode ?? "");
+        if (BildirimFiltreleme.TalepBaglantiliMi(fromEvent))
+            return BildirimRolPolitikasi.NormalizeTip(fromEvent);
+
+        var raw = FirstNonEmpty(tip, type);
+        if (BildirimFiltreleme.TalepBaglantiliMi(raw))
+            return BildirimRolPolitikasi.NormalizeTip(raw);
+
+        // type alanı APPROVAL/INFO olabilir — event'ten gelen (veya noktalı kod) kalsın.
+        if (string.Equals(raw, "APPROVAL", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(raw, "INFO", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(raw, "TASK", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(raw, "WARNING", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(raw, "REMINDER", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(raw, "URGENT", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(raw, "CRITICAL", StringComparison.OrdinalIgnoreCase))
+            return string.IsNullOrWhiteSpace(fromEvent) ? raw : fromEvent;
+
+        return string.IsNullOrWhiteSpace(raw) ? fromEvent : BildirimRolPolitikasi.NormalizeTip(raw);
+    }
+
     private static string EventCodeToLegacyTip(string eventCode) => eventCode switch
     {
-        "talep.yonetime_gonderildi" => BildirimTipleri.YonetimeGonderildi,
+        "talep.yonetime_gonderildi" or "talep.olusturuldu"
+            or "talep.sla_yaklasiyor" or "talep.sla_asildi" => BildirimTipleri.YonetimeGonderildi,
         "teklif.istendi" => BildirimTipleri.TeklifIstendi,
         "teklif.yonetime_gonderildi" => BildirimTipleri.TeklifOnayda,
         "teklif.duzeltme_istendi" => BildirimTipleri.TeklifDuzeltmeIstendi,
@@ -52,4 +84,15 @@ public sealed class BildirimInboxServisi
         "depo.mal_kabul_yapildi" => BildirimTipleri.MalKabulEdildi,
         _ => eventCode
     };
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var v in values)
+        {
+            if (!string.IsNullOrWhiteSpace(v))
+                return v.Trim();
+        }
+
+        return "";
+    }
 }

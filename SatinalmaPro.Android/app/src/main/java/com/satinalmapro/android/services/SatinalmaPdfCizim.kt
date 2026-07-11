@@ -14,7 +14,9 @@ data class SatinalmaPdfBaglam(
     val sefImzalari: List<ImzaAyari> = emptyList(),
     val yonetimImzalari: List<ImzaAyari> = emptyList(),
     /** Kiracıya özel firma logosu (PDF başlığı); yoksa yalnızca metin. */
-    val logoBytes: ByteArray? = null
+    val logoBytes: ByteArray? = null,
+    /** Karşılaştırma PDF 2. sayfa — alınan malzemeler geçmişi. */
+    val alinanMalzemeler: List<com.satinalmapro.android.core.model.AlinanMalzemeKaydi> = emptyList()
 )
 
 internal class PdfSayfaDuzeni(

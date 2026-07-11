@@ -17,9 +17,12 @@ public static class MasaustuBildirimFiltreleme
     public static bool GecerliMi(DesktopBildirimKaydi bildirim, IEnumerable<DesktopSatinalmaTalep> talepler)
     {
         var tip = NormalizeTip(bildirim.Tip);
+        if (!TalepBaglantiliMi(tip) && !string.IsNullOrWhiteSpace(bildirim.EventCode))
+            tip = NormalizeTip(BildirimInboxServisi.EventCodeToLegacyTipPublic(bildirim.EventCode));
+
         if (!TalepBaglantiliMi(tip))
         {
-            // Cloud event kodları (talep.olusturuldu …) inbox'ta kalır; legacy listede şişirmesin.
+            // Bilinmeyen event kodları (noktalı) listeyi şişirmesin; düz bilgi bildirimleri kalsın.
             if (tip.Contains('.', StringComparison.Ordinal))
                 return false;
             if (string.IsNullOrWhiteSpace(tip) && bildirim.TalepId is null)
@@ -31,9 +34,9 @@ public static class MasaustuBildirimFiltreleme
             return false;
 
         var talep = talepler.FirstOrDefault(t => t.Id == tid);
-        // Talep yoksa (silinmiş / henüz senkron değil) eski bildirimi canlı tutma.
+        // Talep henüz senkron değilse düşürme/arşivleme — CF bildirimi kaçmasın.
         if (talep is null)
-            return false;
+            return true;
 
         var tamamlandi = ProcurementTalepAdapter.ResolveStatus(talep)
             .Equals(ProcurementStatus.Completed, StringComparison.OrdinalIgnoreCase);
