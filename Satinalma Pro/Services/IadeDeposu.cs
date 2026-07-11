@@ -129,6 +129,12 @@ public static class IadeDeposu
         Kayitlar.AddRange(liste);
     }
 
+    /// <summary>Bulut senkronundan gelen JSON'u belleğe uygular.</summary>
+    public static void BuluttanYukle(string json) => KayitlariUygula(json);
+
+    /// <summary>Bellekteki iade listesini JSON olarak üretir.</summary>
+    public static string JsonOlustur() => JsonSerializer.Serialize(Kayitlar, Json);
+
     private static async Task YerelKaydetAsync(CancellationToken iptal)
     {
         SatinalmaProKlasor.Olustur();

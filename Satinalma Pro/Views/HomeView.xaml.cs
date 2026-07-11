@@ -93,8 +93,6 @@ public partial class HomeView : UserControl
         VeriyiYenile();
     }
 
-    public void AnasayfaLogosunuYenile() { }
-
     private void VeriyiYenile()
     {
         var veri = AnaSayfaVeriServisi.Yukle();

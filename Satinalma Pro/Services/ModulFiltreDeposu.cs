@@ -32,6 +32,9 @@ public static class ModulFiltreDeposu
     }
 
     public static void Sil(string modulAdi) => Depo.Remove(modulAdi);
+
+    /// <summary>Firma değişiminde / çıkışta filtre sızıntısını önler.</summary>
+    public static void KiraciDegisti() => Depo.Clear();
 }
 
 public sealed class ErpModulFiltreDurumu

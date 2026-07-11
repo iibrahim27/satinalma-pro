@@ -20,8 +20,10 @@ public static class SatinalmaBildirimleri
 
 
     private static (string uid, string ad) Olusturan() =>
-
-        (OturumYoneticisi.Auth?.Uid ?? "", OturumYoneticisi.AktifKullanici?.AdSoyad ?? "");
+        (OturumYoneticisi.Auth?.Uid
+            ?? OturumYoneticisi.AktifKullanici?.Uid
+            ?? "",
+         OturumYoneticisi.AktifKullanici?.AdSoyad ?? "");
 
 
 

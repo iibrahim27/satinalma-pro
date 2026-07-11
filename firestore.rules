@@ -86,6 +86,14 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/tenants/$(tenantId)/users/$(request.auth.uid)).data.aktif != false;
     }
 
+    /** Kiracı aktif ve lisans süresi dolmamış olmalı. */
+    function tenantLicenseOk(tenantId) {
+      let t = get(/databases/$(database)/documents/tenants/$(tenantId)).data;
+      return t.aktif != false
+        && t.lisansSuresiDoldu != true
+        && (!('lisansBitis' in t) || t.lisansBitis == null || request.time < t.lisansBitis);
+    }
+
     function tenantUserDoc(tenantId) {
       return get(/databases/$(database)/documents/tenants/$(tenantId)/users/$(request.auth.uid)).data;
     }
@@ -95,7 +103,9 @@ service cloud.firestore {
     }
 
     function isTenantActiveUser(tenantId) {
-      return belongsToTenant(tenantId);
+      return belongsToTenant(tenantId)
+        && exists(/databases/$(database)/documents/tenants/$(tenantId))
+        && tenantLicenseOk(tenantId);
     }
 
     function onlyChangedFields(allowedFields) {

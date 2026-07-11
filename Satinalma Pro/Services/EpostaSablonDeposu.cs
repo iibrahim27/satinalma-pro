@@ -1,6 +1,5 @@
 using System.Text.Json;
 using SatinalmaPro.Models;
-
 using SatinalmaPro.Shared;
 
 namespace SatinalmaPro.Services;
@@ -17,6 +16,9 @@ public static class EpostaSablonDeposu
 
     public static EpostaSablonAyarlari Ayarlar { get; private set; } = new();
 
+    /// <summary>Firma değişiminde / çıkışta önceki kiracı şablonunu bellekten siler.</summary>
+    public static void KiraciDegisti() => Ayarlar = new EpostaSablonAyarlari();
+
     public static async Task YukleAsync(CancellationToken iptal = default)
     {
         if (OturumYoneticisi.Firestore is null)
@@ -30,9 +32,9 @@ public static class EpostaSablonDeposu
 
             Ayarlar = JsonSerializer.Deserialize<EpostaSablonAyarlari>(json, Json) ?? new EpostaSablonAyarlari();
         }
-        catch
+        catch (Exception ex)
         {
-            // varsayılan şablon
+            HataGunlugu.Kaydet(ex, "EpostaSablonDeposu.Yukle");
         }
     }
 

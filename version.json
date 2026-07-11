@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.60",
-    "build":  127,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.60/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.60/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.60/SatinalmaPro.apk",
-    "notes":  "Android PDF firma logosu duzeltmesi: paylasmadan once medya yenileme, PdfDocument bitmap cizimi",
+    "version":  "2.1.61",
+    "build":  128,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.61/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.61/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.61/SatinalmaPro.apk",
+    "notes":  "Bildirim fan-out geri acildi; kiraci izolasyonu, SaaS kullanici yonetimi, Android menu parity, lisans/sync duzeltmeleri",
     "zorunlu":  false
 }

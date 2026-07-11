@@ -191,8 +191,17 @@ object TalepKuyrugu {
 
     fun onayGecmisi(t: TalepItem): Boolean = yonetimOnayGecmisinde(t)
 
-    /** Talep açabilen roller tüm kayıtlı talepleri görür; süreç takibi ortak. */
-    fun taleplerim(t: TalepItem): Boolean = kayitli(t)
+    /** Şef/Saha: yalnızca kendi talepleri (masaüstü RequiresRequesterScope ile aynı). */
+    fun taleplerim(t: TalepItem, uid: String = "", ad: String = "", rol: String? = null): Boolean {
+        if (!kayitli(t)) return false
+        if (!sahaModu(rol)) return true
+        return talepSahibi(t, uid, ad)
+    }
+
+    private fun requesterScopeUygula(t: TalepItem, uid: String, ad: String, rol: String?): Boolean {
+        if (!sahaModu(rol)) return true
+        return talepSahibi(t, uid, ad)
+    }
 
     fun filtre(
         queue: com.satinalmapro.android.core.model.TalepQueue,
@@ -202,29 +211,31 @@ object TalepKuyrugu {
         rol: String?,
         malzemelerOnbellek: List<com.satinalmapro.android.core.model.OnaylananMalzemeSatiri>? = null
     ): List<TalepItem> {
-        val normalized = KullaniciRolleri.normalize(rol)
         val malzemeler = malzemelerOnbellek ?: OnaylananMalzemeOlusturucu.olustur(list)
         return when (queue) {
             com.satinalmapro.android.core.model.TalepQueue.TALEPLERIM ->
-                list.filter { taleplerim(it) }.sortedByDescending { it.guncellemeUtc }
+                list.filter { taleplerim(it, uid, ad, rol) }.sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.ONAY_BEKLEYEN ->
-                list.filter { onayBekleyenListede(it, talepSahibiModu = true) }
-                    .sortedByDescending { it.guncellemeUtc }
+                list.filter {
+                    onayBekleyenListede(it, talepSahibiModu = true) && requesterScopeUygula(it, uid, ad, rol)
+                }.sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.ONAYLANAN_TALEPLER ->
-                list.filter { onaylanmis(it) }
+                list.filter { onaylanmis(it) && requesterScopeUygula(it, uid, ad, rol) }
                     .sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.GELEN_TALEPLER ->
                 list.filter { yonetimTalepler(it) }.sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.TEKLIF_BEKLEYEN ->
                 list.filter { yonetimTeklifBekleyen(it) }.sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.GECMIS_TALEPLER ->
-                list.filter { gecmisTalep(it) }.sortedByDescending { it.guncellemeUtc }
+                list.filter { gecmisTalep(it) && requesterScopeUygula(it, uid, ad, rol) }
+                    .sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.GECMIS_TEKLIFLI ->
                 list.filter { gecmisTeklifli(it) }.sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.ONAY_GECMISI ->
                 list.filter { yonetimOnayGecmisinde(it) }.sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.RED_TALEPLER ->
-                list.filter { reddedildi(it) }.sortedByDescending { it.guncellemeUtc }
+                list.filter { reddedildi(it) && requesterScopeUygula(it, uid, ad, rol) }
+                    .sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.TEKLIF_GIR ->
                 list.filter { teklifGirisi(it) }.sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.TEKLIF_KARSILASTIRMA ->
@@ -246,9 +257,13 @@ object TalepKuyrugu {
             com.satinalmapro.android.core.model.TalepQueue.SATINALMA_ONAYLANAN ->
                 list.filter { satinalmaOnaylanan(it) }.sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.SATINALMA_SIPARIS ->
-                list.filter { satinalmaSiparisBekleyen(it, malzemeler) }.sortedByDescending { it.guncellemeUtc }
+                list.filter {
+                    satinalmaSiparisBekleyen(it, malzemeler) && requesterScopeUygula(it, uid, ad, rol)
+                }.sortedByDescending { it.guncellemeUtc }
             com.satinalmapro.android.core.model.TalepQueue.SATINALMA_MAL_KABUL ->
-                list.filter { satinalmaMalKabulEdilmis(it, malzemeler) }.sortedByDescending { it.guncellemeUtc }
+                list.filter {
+                    satinalmaMalKabulEdilmis(it, malzemeler) && requesterScopeUygula(it, uid, ad, rol)
+                }.sortedByDescending { it.guncellemeUtc }
         }
     }
 

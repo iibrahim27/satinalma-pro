@@ -4,10 +4,11 @@ import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.satinalmapro.android.core.model.AppNotification
+import com.satinalmapro.android.core.model.StokKaydi
 import com.satinalmapro.android.core.model.TalepItem
 
 /**
- * Kiracıya özel offline önbellek (talep + bildirim).
+ * Kiracıya özel offline önbellek (talep + bildirim + stok).
  * Aynı cihazda firma değiştirince başka firmanın verisi asla gösterilmez.
  */
 class OfflineCache(context: Context) {
@@ -15,6 +16,7 @@ class OfflineCache(context: Context) {
     private val gson = Gson()
     private val talepType = object : TypeToken<List<TalepItem>>() {}.type
     private val notifType = object : TypeToken<List<AppNotification>>() {}.type
+    private val stokType = object : TypeToken<List<StokKaydi>>() {}.type
 
     fun saveTalepler(tenantId: String, list: List<TalepItem>) {
         val tid = tenantId.trim()
@@ -53,6 +55,23 @@ class OfflineCache(context: Context) {
         }.getOrDefault(emptyList())
     }
 
+    fun saveStok(tenantId: String, list: List<StokKaydi>) {
+        val tid = tenantId.trim()
+        if (tid.isBlank()) return
+        prefs.edit()
+            .putString(stokKey(tid), gson.toJson(list))
+            .apply()
+    }
+
+    fun loadStok(tenantId: String): List<StokKaydi> {
+        val tid = tenantId.trim()
+        if (tid.isBlank()) return emptyList()
+        val json = prefs.getString(stokKey(tid), null) ?: return emptyList()
+        return runCatching {
+            gson.fromJson<List<StokKaydi>>(json, stokType) ?: emptyList()
+        }.getOrDefault(emptyList())
+    }
+
     /** Firma değişiminde veya çıkışta tüm önbelleği sil. */
     fun clearAll() {
         prefs.edit().clear().apply()
@@ -64,11 +83,13 @@ class OfflineCache(context: Context) {
         prefs.edit()
             .remove(taleplerKey(tid))
             .remove(notificationsKey(tid))
+            .remove(stokKey(tid))
             .apply()
     }
 
     private fun taleplerKey(tenantId: String) = "talepler_json_$tenantId"
     private fun notificationsKey(tenantId: String) = "notifications_json_$tenantId"
+    private fun stokKey(tenantId: String) = "stok_json_$tenantId"
 
     companion object {
         private const val KEY_LEGACY_TALEPLER = "talepler_json"

@@ -39,9 +39,8 @@ class FcmPushService(
 
         val accountStream = openServiceAccount()
         if (accountStream == null) {
-            val mesaj = "fcm-service-account.json bulunamadı — push gönderilemedi"
-            BildirimLog.e("FCM_PUSH", mesaj)
-            return PushResult(false, 0, 0, 0, listOf(mesaj), emptyList())
+            // Service account yoksa yine de kullanıcı token'ı ile inbox yazmayı dene.
+            return pushInboxOnlyWithUserToken(record, olusturanUid, hatalar, uyarilar)
         }
 
         val accessToken = try {
@@ -52,10 +51,16 @@ class FcmPushService(
         } catch (ex: Exception) {
             val mesaj = "Service account kimlik doğrulama hatası"
             BildirimLog.e("FCM_PUSH", mesaj, ex)
-            return PushResult(false, 0, 0, 0, listOf("$mesaj: ${ex.message}"), emptyList())
+            return pushInboxOnlyWithUserToken(
+                record,
+                olusturanUid,
+                hatalar,
+                uyarilar,
+                listOf("$mesaj: ${ex.message}")
+            )
         }
 
-        val targets = resolveTargets(record, olusturanUid, accessToken, uyarilar, hatalar)
+        val targets = resolveTargets(record, olusturanUid, accessToken, uyarilar, hatalar, requireToken = false)
         if (targets.isEmpty()) {
             val mesaj = "Push hedefi bulunamadı (rol=${record.hedefRol}, uid=${record.hedefUid})"
             uyarilar.add(mesaj)
@@ -78,6 +83,11 @@ class FcmPushService(
                 BildirimLog.e("FCM_PUSH", mesaj, ex)
             }
 
+            if (target.token.isBlank()) {
+                uyarilar.add("FCM token yok uid=${target.uid} — yalnızca inbox yazıldı")
+                continue
+            }
+
             try {
                 val route = BildirimRota.hedefRoute(mapTip(record.tip), record.talepId, target.rol)
                 send(accessToken, target.token, record, route, target.rol, olusturanUid, docId)
@@ -90,7 +100,7 @@ class FcmPushService(
             }
         }
 
-        val basarili = fcmGonderilen > 0
+        val basarili = inboxYazilan > 0 || fcmGonderilen > 0
         val sonuc = PushResult(basarili, targets.size, inboxYazilan, fcmGonderilen, hatalar, uyarilar)
         BildirimLog.pushSonuc(sonuc)
         BildirimLog.kaydetContext(context, if (basarili) "INFO" else "ERROR", "FCM_PUSH",
@@ -98,12 +108,40 @@ class FcmPushService(
         return sonuc
     }
 
+    private suspend fun pushInboxOnlyWithUserToken(
+        record: BildirimRecord,
+        olusturanUid: String,
+        hatalar: MutableList<String>,
+        uyarilar: MutableList<String>,
+        ekstraHatalar: List<String> = emptyList()
+    ): PushResult {
+        hatalar.addAll(ekstraHatalar)
+        uyarilar.add("fcm-service-account yok/hatalı — yalnızca kullanıcı token ile inbox deneniyor")
+        val targets = resolveTargetsUserToken(record, olusturanUid, uyarilar, hatalar)
+        if (targets.isEmpty()) {
+            BildirimLog.e("FCM_PUSH", "Inbox-only hedef yok")
+            return PushResult(false, 0, 0, 0, hatalar, uyarilar)
+        }
+        val docId = BildirimMantikAnahtari.olustur(record)
+        var inboxYazilan = 0
+        for (target in targets) {
+            try {
+                firestore.writeInboxEntry(target.uid, docId, record)
+                inboxYazilan++
+            } catch (ex: Exception) {
+                hatalar.add("Inbox (user) yazılamadı uid=${target.uid}: ${ex.message}")
+            }
+        }
+        return PushResult(inboxYazilan > 0, targets.size, inboxYazilan, 0, hatalar, uyarilar)
+    }
+
     private suspend fun resolveTargets(
         record: BildirimRecord,
         olusturanUid: String,
         adminToken: String,
         uyarilar: MutableList<String>,
-        hatalar: MutableList<String>
+        hatalar: MutableList<String>,
+        requireToken: Boolean = true
     ): List<PushTarget> {
         if (!record.hedefUid.isNullOrBlank()) {
             if (record.hedefUid.equals(olusturanUid, ignoreCase = true)) {
@@ -120,7 +158,7 @@ class FcmPushService(
             val token = user.optJSONObject("fcmToken")?.optString("stringValue").orEmpty()
             val rol = user.optJSONObject("rol")?.optString("stringValue")
                 ?: user.optJSONObject("role")?.optString("stringValue").orEmpty()
-            if (token.isBlank()) {
+            if (requireToken && token.isBlank()) {
                 uyarilar.add("Hedef kullanıcının FCM token'ı yok: ${record.hedefUid}")
                 return emptyList()
             }
@@ -137,11 +175,12 @@ class FcmPushService(
                 return emptyList()
             }
 
-            val targets = users.mapNotNull { doc -> parsePushTarget(doc, olusturanUid, hedefRol) }
-                .distinctBy { it.token }
+            val targets = users.mapNotNull { doc ->
+                parsePushTarget(doc, olusturanUid, hedefRol, requireToken)
+            }.distinctBy { it.uid }
 
             if (targets.isEmpty()) {
-                uyarilar.add("Rol '$hedefRol' için aktif FCM token'lı kullanıcı bulunamadı (toplam kullanıcı: ${users.size})")
+                uyarilar.add("Rol '$hedefRol' için aktif kullanıcı bulunamadı (toplam: ${users.size})")
             }
             return targets
         }
@@ -150,22 +189,36 @@ class FcmPushService(
         return emptyList()
     }
 
+    private suspend fun resolveTargetsUserToken(
+        record: BildirimRecord,
+        olusturanUid: String,
+        uyarilar: MutableList<String>,
+        hatalar: MutableList<String>
+    ): List<PushTarget> {
+        // Kullanıcı token ile yalnızca hedefUid biliniyorsa güvenli yazım mümkün.
+        val uid = record.hedefUid?.takeIf { it.isNotBlank() } ?: return emptyList()
+        if (uid.equals(olusturanUid, ignoreCase = true)) return emptyList()
+        return listOf(PushTarget(uid, "", record.hedefRol.orEmpty()))
+    }
+
     private fun parsePushTarget(
         doc: JSONObject,
         olusturanUid: String,
-        hedefRol: String
+        hedefRol: String,
+        requireToken: Boolean = true
     ): PushTarget? {
         val fields = doc.optJSONObject("fields") ?: return null
         fun s(k: String) = fields.optJSONObject(k)?.optString("stringValue").orEmpty()
         val uid = doc.optString("name").substringAfterLast('/')
-        if (uid.isBlank() || uid == olusturanUid) return null
+        if (uid.isBlank() || uid.equals(olusturanUid, ignoreCase = true)) return null
         val rol = KullaniciRolleri.normalize(s("rol").ifBlank { s("role") })
         if (rol != hedefRol) return null
         val aktif = fields.optJSONObject("aktif")?.optBoolean("booleanValue")
             ?: fields.optJSONObject("active")?.optBoolean("booleanValue") ?: true
         if (!aktif) return null
         val token = s("fcmToken")
-        return if (token.isBlank()) null else PushTarget(uid, token, rol)
+        if (requireToken && token.isBlank()) return null
+        return PushTarget(uid, token, rol)
     }
 
     private suspend fun send(

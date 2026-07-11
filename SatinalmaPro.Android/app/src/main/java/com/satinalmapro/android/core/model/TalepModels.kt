@@ -1,5 +1,7 @@
 package com.satinalmapro.android.core.model
 
+import com.google.gson.annotations.SerializedName
+
 /** Gson reflection Kotlin non-null alanlara null yazabiliyor; runtime NPE önlemi. */
 @Suppress("UNCHECKED_CAST", "USELESS_ELVIS", "UNNECESSARY_SAFE_CALL")
 internal object GsonNulls {
@@ -106,6 +108,8 @@ data class TalepItem(
     val satinalmaOnerisiElleSecildi: Boolean = false,
     val siparisNo: String = "",
     val firmaSiparisNolari: Map<String, String> = emptyMap(),
+    @SerializedName(value = "hasReturnFlag", alternate = ["HasReturnFlag"])
+    val hasReturnFlag: Boolean = false,
     val kalemler: List<TalepKalem> = emptyList(),
     val teklifler: List<TeklifItem> = emptyList()
 ) {

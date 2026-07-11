@@ -43,7 +43,10 @@ import com.satinalmapro.android.core.roles.RolNavigasyon
 import com.satinalmapro.android.core.saas.TenantSession
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.LocalFragmentActivity
+import com.satinalmapro.android.ui.procurement.AgregaListScreen
+import com.satinalmapro.android.ui.procurement.CimentoListScreen
 import com.satinalmapro.android.ui.procurement.DashboardScreen
+import com.satinalmapro.android.ui.procurement.IadeListScreen
 import com.satinalmapro.android.ui.procurement.MaterialsScreen
 import com.satinalmapro.android.ui.procurement.NewRequestScreen
 import com.satinalmapro.android.ui.procurement.NotificationsScreen
@@ -57,6 +60,7 @@ import com.satinalmapro.android.ui.procurement.StokGirisScreen
 import com.satinalmapro.android.ui.procurement.StokHareketScreen
 import com.satinalmapro.android.ui.procurement.TalepDetayScreen
 import com.satinalmapro.android.ui.procurement.TalepListScreen
+import com.satinalmapro.android.ui.procurement.TedarikciListScreen
 import com.satinalmapro.android.ui.procurement.TeklifGirisScreen
 import com.satinalmapro.android.ui.procurement.TeklifKarsilastirmaScreen
 import com.satinalmapro.android.ui.procurement.TeklifOnayDetayScreen
@@ -306,6 +310,13 @@ private fun RouteHost(route: String, viewModel: AppViewModel) {
         "stok-hareket" -> StokHareketScreen(viewModel)
         "stok-giris" -> StokGirisScreen(viewModel)
         "stok-cikis" -> StokCikisScreen(viewModel)
+        "satinalma-panosu" -> DashboardScreen(viewModel)
+        "satinalma-onay-gecmisi" -> OnayGecmisiScreen(viewModel)
+        "yonetim-red-verilen" -> TalepListScreen(viewModel, TalepQueue.RED_TALEPLER)
+        "agrega" -> AgregaListScreen(viewModel)
+        "cimento" -> CimentoListScreen(viewModel)
+        "satinalma-tedarikciler" -> TedarikciListScreen(viewModel)
+        "satinalma-iade" -> IadeListScreen(viewModel)
         else -> DashboardScreen(viewModel)
     }
 }

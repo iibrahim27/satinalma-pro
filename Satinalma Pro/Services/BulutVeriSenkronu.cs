@@ -117,9 +117,10 @@ public static class BulutVeriSenkronu
                 {
                     throw;
                 }
-                catch
+                catch (Exception ex)
                 {
                     // Tek kayıt hatası tüm senkronu durdurmasın
+                    HataGunlugu.Kaydet(ex, $"BulutVeriSenkronu.IkiliSenkron.{anahtar}");
                 }
 
                 tamamlanan++;
@@ -136,9 +137,9 @@ public static class BulutVeriSenkronu
             {
                 throw;
             }
-            catch
+            catch (Exception ex)
             {
-                // logo senkronu isteğe bağlı
+                HataGunlugu.Kaydet(ex, "BulutVeriSenkronu.MedyaSenkron");
             }
 
             tamamlanan++;
@@ -268,6 +269,14 @@ public static class BulutVeriSenkronu
             if (talepBirlesikJson is not null)
                 SatinalmaDepo.TalepleriBirlestirVeYukle(talepBirlesikJson);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            HataGunlugu.Kaydet(ex, $"BulutVeriSenkronu.AnahtarBulutaGonder.{anahtar}");
+        }
         finally
         {
             BulutYazmaKilidi.Release();
@@ -371,6 +380,17 @@ public static class BulutVeriSenkronu
 
         try
         {
+            if (!LisansHalaGecerliMi())
+            {
+                YoklamayiDurdur();
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher is null || dispatcher.CheckAccess())
+                    LisansSuresiDolduCikis();
+                else
+                    _ = dispatcher.InvokeAsync(LisansSuresiDolduCikis);
+                return;
+            }
+
             var tamTarama = ++_yoklamaDongusu % 5 == 0;
             var anahtarlar = tamTarama
                 ? BelgeHaritasi.Keys.ToArray()
@@ -386,34 +406,73 @@ public static class BulutVeriSenkronu
         }
     }
 
+    private static bool LisansHalaGecerliMi()
+    {
+        var lisans = KiracıOturumu.Lisans;
+        if (lisans is null)
+            return true;
+        lisans.KalanGunHesapla();
+        return !lisans.SuresiDoldu && lisans.Aktif;
+    }
+
+    private static void LisansSuresiDolduCikis()
+    {
+        try
+        {
+            MessageBox.Show(
+                "Firmanızın lisans süresi doldu. Oturum kapatılıyor.\nSatınalma Yönetici üzerinden lisans yenileyin.",
+                "Lisans süresi doldu",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+        catch
+        {
+            // UI yoksa sessiz çıkış
+        }
+
+        OturumYoneticisi.CikisYap();
+    }
+
     private static async Task BuluttanCekAsync(IEnumerable<string> anahtarlar, CancellationToken iptal = default)
     {
         foreach (var anahtar in anahtarlar.OrderBy(a => BulutGonderimOnceligi(a)))
         {
-            if (!BelgeHaritasi.TryGetValue(anahtar, out var relYol))
-                continue;
-
-            var yol = KiraciliBulutYolu(relYol);
-
-            if (anahtar == "satinalma_talepler")
-                await SatinalmaAyarlariniBuluttanOncelikleAsync(iptal);
-
-            var (json, guncelleme) = await OturumYoneticisi.Firestore!.BelgeOkuAsync(yol, iptal);
-            if (json is null)
-                continue;
-
-            if (!BulutSenkronZamani.YeniVeriVar(anahtar, guncelleme))
-                continue;
-
-            _senkronYukleniyor = true;
-            await UiThreaddeCalistirAsync(() =>
+            try
             {
-                Uygula(anahtar, json);
-                YerelBirlesikDurumuKaydet(anahtar);
-                if (guncelleme.HasValue)
-                    BulutSenkronZamani.Kaydet(anahtar, guncelleme.Value);
-            });
-            _senkronYukleniyor = false;
+                if (!BelgeHaritasi.TryGetValue(anahtar, out var relYol))
+                    continue;
+
+                var yol = KiraciliBulutYolu(relYol);
+
+                if (anahtar == "satinalma_talepler")
+                    await SatinalmaAyarlariniBuluttanOncelikleAsync(iptal);
+
+                var (json, guncelleme) = await OturumYoneticisi.Firestore!.BelgeOkuAsync(yol, iptal);
+                if (json is null)
+                    continue;
+
+                if (!BulutSenkronZamani.YeniVeriVar(anahtar, guncelleme))
+                    continue;
+
+                _senkronYukleniyor = true;
+                await UiThreaddeCalistirAsync(() =>
+                {
+                    Uygula(anahtar, json);
+                    YerelBirlesikDurumuKaydet(anahtar);
+                    if (guncelleme.HasValue)
+                        BulutSenkronZamani.Kaydet(anahtar, guncelleme.Value);
+                });
+                _senkronYukleniyor = false;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _senkronYukleniyor = false;
+                HataGunlugu.Kaydet(ex, $"BulutVeriSenkronu.BuluttanCek.{anahtar}");
+            }
         }
     }
 
@@ -565,7 +624,8 @@ public static class BulutVeriSenkronu
         ["satinalma_talepler"] = "veri/satinalma_talepler",
         ["satinalma_ayarlar"] = "veri/satinalma_ayarlar",
         ["finansman"] = "veri/finansman_gelir",
-        ["uygulama_ayarlar"] = "veri/uygulama_ayarlar"
+        ["uygulama_ayarlar"] = "veri/uygulama_ayarlar",
+        ["iade_kayitlari"] = "veri/iade_kayitlari"
     };
 
     private static string YerelDosyaYolu(string anahtar)
@@ -592,6 +652,7 @@ public static class BulutVeriSenkronu
             "satinalma_ayarlar" => Dosya("satinalma_ayarlar.json"),
             "finansman" => Dosya("finansman_gelir.json"),
             "uygulama_ayarlar" => Dosya("uygulama_ayarlar.json"),
+            "iade_kayitlari" => Dosya("iade_kayitlari.json"),
             _ => Dosya($"{anahtar}.json")
         };
     }
@@ -629,6 +690,7 @@ public static class BulutVeriSenkronu
         "satinalma_ayarlar" => JsonSerializer.Serialize(SatinalmaDepo.Ayarlar, JsonSecenekleri),
         "finansman" => JsonSerializer.Serialize(FinansmanVeriDeposu.Gelirler.ToList(), JsonSecenekleri),
         "uygulama_ayarlar" => JsonSerializer.Serialize(UygulamaAyarDeposu.Ayarlar, JsonSecenekleri),
+        "iade_kayitlari" => IadeDeposu.JsonOlustur(),
         _ => "[]"
     };
 
@@ -672,6 +734,9 @@ public static class BulutVeriSenkronu
                     break;
                 case "uygulama_ayarlar":
                     UygulamaAyarDeposu.BuluttanYukle(json);
+                    break;
+                case "iade_kayitlari":
+                    IadeDeposu.BuluttanYukle(json);
                     break;
             }
         }

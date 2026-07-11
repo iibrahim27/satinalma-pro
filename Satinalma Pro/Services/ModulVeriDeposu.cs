@@ -301,9 +301,11 @@ public static class ModulVeriDeposu
                     FiloZimmetleri.Add(zimmet);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            FiloOrnekVeri();
+            HataGunlugu.Kaydet(ex, "ModulVeriDeposu.FiloOku");
+            if (!OturumYoneticisi.BulutAktif)
+                FiloOrnekVeri();
         }
     }
 

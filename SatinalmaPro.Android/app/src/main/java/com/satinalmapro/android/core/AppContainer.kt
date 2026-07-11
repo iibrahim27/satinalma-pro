@@ -155,6 +155,7 @@ class AppContainer(private val context: Context) {
         // Process yeniden doğunca disk cache'i hemen belleğe al (splash beklemeden).
         if (hasPersistedSession()) {
             runCatching { hydrateFromOfflineCache() }
+                .onFailure { BildirimLog.e("CACHE", "hydrateFromOfflineCache", it) }
         }
     }
 
@@ -193,6 +194,13 @@ class AppContainer(private val context: Context) {
                 BildirimLog.i("CACHE", "Offline bildirimler yüklendi: ${cachedNotif.size}")
             }
         }
+        if (_stok.value.isEmpty()) {
+            val cachedStok = offlineCache.loadStok(tenantId)
+            if (cachedStok.isNotEmpty()) {
+                _stok.value = cachedStok
+                BildirimLog.i("CACHE", "Offline stok yüklendi: ${cachedStok.size}")
+            }
+        }
     }
 
     suspend fun restoreSession(): Boolean {
@@ -229,8 +237,8 @@ class AppContainer(private val context: Context) {
                     tip = obj.optString("lisansTip", "deneme"),
                     bitisUtc = obj.optString("lisansBitisUtc").ifBlank { null },
                     kalanGun = if (obj.has("lisansKalanGun")) obj.optInt("lisansKalanGun") else null,
-                    suresiDoldu = obj.optInt("lisansKalanGun", 1) <= 0
-                )
+                    suresiDoldu = false
+                ).yenidenHesapla()
             } else null
             if (lisans?.suresiDoldu == true) {
                 clearBrokenSession()
@@ -445,6 +453,7 @@ class AppContainer(private val context: Context) {
         _satinalmaAyarlar.value = SatinalmaAyarlar()
         _settingsUsers.value = emptyList()
         firmaLogoBytes = null
+        draftStore.clearAll()
     }
 
     private fun unregisterFcm(uid: String?) {
@@ -459,6 +468,10 @@ class AppContainer(private val context: Context) {
     suspend fun syncData() {
         if (!syncMutex.tryLock()) return
         try {
+            if (!lisansHalaGecerliMi()) {
+                forceLicenseLogout()
+                return
+            }
             val uid = auth.uid ?: return
             runCatching { loadMaterialNames() }
                 .onFailure { BildirimLog.e("SYNC", "loadMaterialNames", it) }
@@ -488,6 +501,10 @@ class AppContainer(private val context: Context) {
     suspend fun syncLiveData() {
         if (!liveSyncMutex.tryLock()) return
         try {
+            if (!lisansHalaGecerliMi()) {
+                forceLicenseLogout()
+                return
+            }
             val uid = auth.uid ?: return
             runCatching { loadTalepler() }
                 .onFailure { BildirimLog.e("SYNC", "live loadTalepler", it) }
@@ -497,9 +514,34 @@ class AppContainer(private val context: Context) {
                 .onFailure { BildirimLog.e("SYNC", "live loadUygulamaAyarlar", it) }
             runCatching { loadMedya() }
                 .onFailure { BildirimLog.e("SYNC", "live loadMedya", it) }
+            runCatching { loadStok() }
+                .onFailure { BildirimLog.e("SYNC", "live loadStok", it) }
         } finally {
             liveSyncMutex.unlock()
         }
+    }
+
+    private fun lisansHalaGecerliMi(): Boolean {
+        val lisans = TenantSession.license()?.yenidenHesapla() ?: return true
+        if (lisans.suresiDoldu) {
+            TenantSession.set(
+                TenantSession.tenantId().orEmpty(),
+                TenantSession.tenantName(),
+                lisans
+            )
+            return false
+        }
+        return true
+    }
+
+    private fun forceLicenseLogout() {
+        BildirimLog.w("LISANS", "Lisans süresi doldu — oturum kapatılıyor")
+        val uid = auth.uid
+        auth.clear()
+        TenantSession.clear()
+        clearInMemoryTenantData()
+        prefs.edit().remove(KEY_SESSION).remove("saved_tenant_id").apply()
+        unregisterFcm(uid)
     }
 
     suspend fun loadUygulamaAyarlar() {
@@ -576,6 +618,7 @@ class AppContainer(private val context: Context) {
     private suspend fun loadStok() {
         val prevStok = _stok.value
         val prevHareket = _stokHareketleri.value
+        val tenantId = TenantSession.tenantId().orEmpty()
         _stok.value = runCatching { stokRepo.loadStok() }
             .getOrElse {
                 BildirimLog.w("SESSION", "Stok okunamadı, son veri korunuyor: ${it.message}")
@@ -586,6 +629,9 @@ class AppContainer(private val context: Context) {
                 BildirimLog.w("SESSION", "Stok hareketleri okunamadı, son veri korunuyor: ${it.message}")
                 prevHareket
             }
+        if (tenantId.isNotBlank()) {
+            offlineCache.saveStok(tenantId, _stok.value)
+        }
     }
 
     private suspend fun loadModulKayitlari() {
@@ -1593,16 +1639,17 @@ class AppContainer(private val context: Context) {
         if (tenantId.isNotBlank()) {
             offlineCache.saveNotifications(tenantId, _notifications.value)
         }
+        // FCM kaçarsa tek seferlik tray yedek (okunmuş / daha önce gösterilmiş atlanır).
         trayBildirimleriniGoster(mergedRecords, user)
     }
 
-    /** FCM ulaşmazsa periyodik senkron ile tray bildirimi (masaüstü → Android). */
+    /** FCM ulaşmazsa tek seferlik tray yedek (saatlik hatırlatma yok). */
     private fun trayBildirimleriniGoster(records: List<BildirimRecord>, user: UserProfile?) {
         if (user == null) return
         for (record in records) {
             if (record.okundu) continue
             if (!bildirimler.kullaniciyaMi(record, user)) continue
-            if (!hatirlatmaDeposu.gosterilebilirMi(record)) continue
+            if (hatirlatmaDeposu.dahaOnceGosterildiMi(record)) continue
             val route = BildirimRota.hedefRoute(
                 BildirimRota.normalizeTip(record.tip),
                 record.talepId,

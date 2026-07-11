@@ -20,22 +20,39 @@ export const onLegacyTalepWrite = onDocumentWritten(
     const changes = diffTalepChanges(beforeList, afterList);
 
     for (const { before, after } of changes) {
-      await dualWriteToEnterprise(after, tenantId);
+      try {
+        await dualWriteToEnterprise(after, tenantId);
+      } catch (err) {
+        console.error(
+          `dualWriteToEnterprise failed tenant=${tenantId} talep=${after?.id ?? "?"}`,
+          err
+        );
+      }
 
       const eventCode = statusTransitionEvent(before?.durum ?? null, after.durum ?? "");
       if (!eventCode || !after.id) continue;
 
-      await fanOutNotification({
-        tenantId,
-        eventCode,
-        entityType: "procurement_request",
-        entityId: after.id,
-        talepNo: after.talepNo,
-        talepEden: after.talepEden,
-        talepEdenUid: after.talepEdenUid,
-        siparisNo: after.siparisNo,
-        saha: after.saha,
-      });
+      try {
+        await fanOutNotification({
+          tenantId,
+          eventCode,
+          entityType: "procurement_request",
+          entityId: after.id,
+          talepNo: after.talepNo,
+          talepEden: after.talepEden,
+          talepEdenUid: after.talepEdenUid || after.olusturanUid,
+          // İşlemi yapan bilinmiyorsa oluşturanı hariç tutma (yanlışlıkla alıcıyı kesmesin).
+          // Red/onayda talepEdenUid hedefleme zaten actor dışı kalır.
+          createdBy: undefined,
+          siparisNo: after.siparisNo,
+          saha: after.saha,
+        });
+      } catch (err) {
+        console.error(
+          `fanOutNotification failed tenant=${tenantId} event=${eventCode} talep=${after.id}`,
+          err
+        );
+      }
     }
   }
 );

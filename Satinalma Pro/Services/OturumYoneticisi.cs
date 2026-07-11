@@ -101,7 +101,11 @@ public static class OturumYoneticisi
         ModulVeriDeposu.KiraciDegisti();
         FinansmanVeriDeposu.KiraciDegisti();
         IadeDeposu.KiraciDegisti();
-        BildirimDeposu.Sil(_ => true);
+        ModulFiltreDeposu.KiraciDegisti();
+        BildirimHatirlatmaDeposu.KiraciDegisti();
+        EpostaSablonDeposu.KiraciDegisti();
+        BildirimDeposu.KiraciDegisti();
+        BulutSenkronZamani.KiraciDegisti();
         KiracıOturumu.Ayarla(sonuc.TenantId, sonuc.TenantAd, sonuc.Lisans);
 
         if (!await ProfiliYukleAsync(iptal))
@@ -230,6 +234,11 @@ public static class OturumYoneticisi
         ModulVeriDeposu.KiraciDegisti();
         FinansmanVeriDeposu.KiraciDegisti();
         IadeDeposu.KiraciDegisti();
+        ModulFiltreDeposu.KiraciDegisti();
+        BildirimHatirlatmaDeposu.KiraciDegisti();
+        EpostaSablonDeposu.KiraciDegisti();
+        BildirimDeposu.KiraciDegisti();
+        BulutSenkronZamani.KiraciDegisti();
         OturumDosyasiniSil();
     }
 
@@ -280,6 +289,16 @@ public static class OturumYoneticisi
         Auth?.OturumuKapat();
         AktifKullanici = null;
         KiracıOturumu.Temizle();
+        SatinalmaDepo.KiraciDegisti();
+        UygulamaAyarDeposu.KiraciDegisti();
+        ModulVeriDeposu.KiraciDegisti();
+        FinansmanVeriDeposu.KiraciDegisti();
+        IadeDeposu.KiraciDegisti();
+        ModulFiltreDeposu.KiraciDegisti();
+        BildirimHatirlatmaDeposu.KiraciDegisti();
+        EpostaSablonDeposu.KiraciDegisti();
+        BildirimDeposu.KiraciDegisti();
+        BulutSenkronZamani.KiraciDegisti();
         OturumDosyasiniSil();
         OturumDegisti?.Invoke();
     }

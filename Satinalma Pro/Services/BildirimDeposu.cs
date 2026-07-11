@@ -41,6 +41,14 @@ public static class BildirimDeposu
             Bildirimler.RemoveAll(b => predicate(b));
     }
 
+    /// <summary>Firma değişiminde / çıkışta bildirim belleğini temizler.</summary>
+    public static void KiraciDegisti()
+    {
+        lock (Bildirimler)
+            Bildirimler.Clear();
+        _sonYukleme = null;
+    }
+
     private static DateTime? _sonYukleme;
     private static readonly TimeSpan YuklemeBekleme = TimeSpan.FromSeconds(12);
 
@@ -328,14 +336,14 @@ public static class BildirimDeposu
         var mevcut = MevcutOkunmamis(bildirim);
         if (mevcut is not null)
         {
-            var yenidenAktif = mevcut.Okundu;
+            // Okunmuş bildirim bir daha asla gönderilmez / yeniden açılmaz.
+            if (mevcut.Okundu)
+                return false;
+
             mevcut.Baslik = bildirim.Baslik;
             mevcut.Mesaj = bildirim.Mesaj;
-            mevcut.Okundu = false;
             mevcut.GuncellemeUtc = bildirim.GuncellemeUtc;
             await KaydetAsync(iptal);
-            if (yenidenAktif)
-                await FcmPushGonderAsync(mevcut, iptal);
             return false;
         }
 
@@ -367,13 +375,13 @@ public static class BildirimDeposu
                 var mevcut = MevcutOkunmamis(b);
                 if (mevcut is not null)
                 {
-                    var yenidenAktif = mevcut.Okundu;
-                    mevcut.Baslik = b.Baslik;
-                    mevcut.Mesaj = b.Mesaj;
-                    mevcut.Okundu = false;
-                    mevcut.GuncellemeUtc = b.GuncellemeUtc;
-                    if (yenidenAktif)
-                        yeniKayitlar.Add(mevcut);
+                    // Okunmuş → bir daha push yok; okunmamış → yalnızca metin güncelle.
+                    if (!mevcut.Okundu)
+                    {
+                        mevcut.Baslik = b.Baslik;
+                        mevcut.Mesaj = b.Mesaj;
+                        mevcut.GuncellemeUtc = b.GuncellemeUtc;
+                    }
                     continue;
                 }
 
@@ -405,9 +413,7 @@ public static class BildirimDeposu
             : null;
         var legacyKey = FirebaseAyarDeposu.Ayarlar.FcmServerKey;
         var v1 = FcmV1Api.ServiceAccountMevcut(saYolu);
-
-        if (!v1 && string.IsNullOrWhiteSpace(legacyKey))
-            return;
+        var fcmHazir = v1 || !string.IsNullOrWhiteSpace(legacyKey);
 
         try
         {
@@ -415,12 +421,13 @@ public static class BildirimDeposu
                 ? await FcmV1Api.ServiceAccountErisimTokeniAlAsync(saYolu!, iptal)
                 : null;
 
-            var hedefler = await HedefleriAlAsync(bildirim, adminToken, iptal);
+            // Inbox için token şart değil; FCM için token gerekir.
+            var hedefler = await HedefleriAlAsync(bildirim, adminToken, fcmZorunlu: false, iptal);
             if (hedefler.Count == 0)
             {
                 HataGunlugu.Kaydet(
                     new InvalidOperationException(
-                        $"FCM hedef bulunamadı tip={bildirim.Tip} rol={bildirim.HedefRol} uid={bildirim.HedefUid}"),
+                        $"Bildirim hedefi bulunamadı tip={bildirim.Tip} rol={bildirim.HedefRol} uid={bildirim.HedefUid}"),
                     "FCM.HedefYok");
                 return;
             }
@@ -447,11 +454,14 @@ public static class BildirimDeposu
                                 hedef.Uid, inboxDocId, bildirim, iptal);
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // inbox isteğe bağlı
+                        HataGunlugu.Kaydet(ex, $"Inbox yazılamadı uid={hedef.Uid}");
                     }
                 }
+
+                if (!fcmHazir || string.IsNullOrWhiteSpace(hedef.Token))
+                    continue;
 
                 if (v1)
                 {
@@ -499,6 +509,7 @@ public static class BildirimDeposu
     private static async Task<List<FcmHedef>> HedefleriAlAsync(
         BildirimKaydi bildirim,
         string? adminToken,
+        bool fcmZorunlu,
         CancellationToken iptal)
     {
         if (OturumYoneticisi.Firestore is null)
@@ -515,10 +526,13 @@ public static class BildirimDeposu
             else
                 profil = await OturumYoneticisi.Firestore.KullaniciOkuAsync(bildirim.HedefUid, iptal);
 
-            if (string.IsNullOrWhiteSpace(profil?.FcmToken))
+            if (profil is null)
                 return [];
 
-            return [new FcmHedef(profil.FcmToken, profil.Rol ?? "", profil.Uid)];
+            if (fcmZorunlu && string.IsNullOrWhiteSpace(profil.FcmToken))
+                return [];
+
+            return [new FcmHedef(profil.FcmToken ?? "", profil.Rol ?? "", profil.Uid)];
         }
 
         if (string.IsNullOrWhiteSpace(bildirim.HedefRol))
@@ -532,11 +546,12 @@ public static class BildirimDeposu
 
         var rol = KullaniciRolleri.Normalize(bildirim.HedefRol);
         return tum
-            .Where(k => k.Aktif && k.Uid != bildirim.OlusturanUid &&
-                        KullaniciRolleri.Normalize(k.Rol) == rol &&
-                        !string.IsNullOrWhiteSpace(k.FcmToken))
-            .Select(k => new FcmHedef(k.FcmToken!, k.Rol ?? "", k.Uid))
-            .GroupBy(h => h.Token)
+            .Where(k => k.Aktif
+                && !string.Equals(k.Uid, bildirim.OlusturanUid, StringComparison.OrdinalIgnoreCase)
+                && KullaniciRolleri.Normalize(k.Rol) == rol
+                && (!fcmZorunlu || !string.IsNullOrWhiteSpace(k.FcmToken)))
+            .Select(k => new FcmHedef(k.FcmToken ?? "", k.Rol ?? "", k.Uid))
+            .GroupBy(h => h.Uid)
             .Select(g => g.First())
             .ToList();
     }

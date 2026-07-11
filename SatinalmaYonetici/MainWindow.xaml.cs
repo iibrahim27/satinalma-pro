@@ -148,6 +148,7 @@ public partial class MainWindow : Window
         FirmaAd.Text = _seciliFirma.Ad;
         FirmaAktif.IsChecked = _seciliFirma.Aktif;
         LisansTipiniSec(_seciliFirma.LisansTipi);
+        LisansTarihleriniDoldur(_seciliFirma);
         FirmaLisansDurum.Text = LisansDurumMetni(_seciliFirma);
         KullaniciBaslik.Text = $"Kullanıcılar — {_seciliFirma.Ad}";
         _ = KullanicilariYukleAsync();
@@ -161,7 +162,10 @@ public partial class MainWindow : Window
         FirmaAd.Text = "";
         FirmaAktif.IsChecked = true;
         LisansTipiniSec(LisansTipleri.Deneme);
-        FirmaLisansDurum.Text = "Yeni firmaya otomatik 30 gün deneme verilir.";
+        var bugun = DateTime.Today;
+        FirmaLisansBaslangic.SelectedDate = bugun;
+        FirmaLisansBitis.SelectedDate = bugun.AddDays(30);
+        FirmaLisansDurum.Text = "Yeni firmaya otomatik 30 gün deneme verilir. Tarihleri elle de ayarlayabilirsiniz.";
         KullaniciGrid.ItemsSource = null;
         KullaniciBaslik.Text = "Kullanıcılar";
         DurumMetni.Text = "Yeni firma formu hazır.";
@@ -265,10 +269,13 @@ public partial class MainWindow : Window
                 Kod = FirmaKod.Text.Trim(),
                 Ad = FirmaAd.Text.Trim(),
                 Aktif = lisansYenile || FirmaAktif.IsChecked == true,
-                LisansTipi = tip
+                LisansTipi = tip,
+                LisansBaslangic = FirmaLisansBaslangic.SelectedDate?.ToUniversalTime().ToString("o"),
+                LisansBitis = FirmaLisansBitis.SelectedDate?.ToUniversalTime().ToString("o")
             }, lisansYenile);
 
             await FirmalariYukleAsync();
+            LisansTarihleriniDoldur(kayit);
             FirmaLisansDurum.Text = LisansDurumMetni(kayit);
             DurumMetni.Text = lisansYenile
                 ? $"Lisans yenilendi: {kayit.Ad}"
@@ -300,6 +307,30 @@ public partial class MainWindow : Window
                 return;
             }
         }
+    }
+
+    private void LisansTarihleriniDoldur(KiracıKaydi? f)
+    {
+        if (f is null)
+        {
+            FirmaLisansBaslangic.SelectedDate = null;
+            FirmaLisansBitis.SelectedDate = null;
+            return;
+        }
+
+        FirmaLisansBaslangic.SelectedDate = TarihOku(f.LisansBaslangic);
+        FirmaLisansBitis.SelectedDate = TarihOku(f.LisansBitis);
+    }
+
+    private static DateTime? TarihOku(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return null;
+        if (DateTime.TryParse(raw, null, System.Globalization.DateTimeStyles.RoundtripKind, out var dt))
+            return dt.Kind == DateTimeKind.Utc ? dt.ToLocalTime().Date : dt.Date;
+        if (DateTime.TryParse(raw[..Math.Min(10, raw.Length)], out var gun))
+            return gun.Date;
+        return null;
     }
 
     private static string LisansDurumMetni(KiracıKaydi f)

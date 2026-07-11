@@ -24,9 +24,10 @@ public static class SatinalmaKayitYardimcisi
         {
             await BulutVeriSenkronu.TalepleriHemenGonderAsync();
         }
-        catch
+        catch (Exception ex)
         {
             // bulut gecikse yerel kayıt korunur
+            HataGunlugu.Kaydet(ex, "SatinalmaKayitYardimcisi.BulutaHemenGonder");
         }
     }
 
@@ -39,9 +40,9 @@ public static class SatinalmaKayitYardimcisi
         {
             await BulutVeriSenkronu.MalKabulSonrasiHemenGonderAsync();
         }
-        catch
+        catch (Exception ex)
         {
-            // bulut gecikse yerel kayıt korunur
+            HataGunlugu.Kaydet(ex, "SatinalmaKayitYardimcisi.MalKabulSonrasiBulutaGonder");
         }
     }
 }

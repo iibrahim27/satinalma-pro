@@ -1,60 +1,71 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
-import { fanOutNotification } from "../lib/fanOut";
-import { parseLegacyTalepler } from "../lib/legacyTalep";
 import { tenantUsersPath } from "../lib/saas";
 
-const WARN_H = Number(process.env.SLA_APPROVAL_WARN_HOURS ?? "24");
-const CRIT_H = Number(process.env.SLA_APPROVAL_CRIT_HOURS ?? "48");
-
-export const checkApprovalSla = onSchedule("every 60 minutes", async () => {
-  const tenants = await admin.firestore().collection("tenants").where("aktif", "==", true).get();
-  const now = Date.now();
-
-  for (const tenant of tenants.docs) {
-    const tenantId = tenant.id;
-    const doc = await admin.firestore().doc(`tenants/${tenantId}/veri/satinalma_talepler`).get();
-    const talepler = parseLegacyTalepler(doc.data()?.json as string | undefined);
-
-    for (const t of talepler) {
-      if (!t.id || t.durum !== "Yönetim Onayında") continue;
-
-      const refDate = t.guncellemeTarihi ?? t.olusturmaTarihi;
-      if (!refDate) continue;
-      const hours = (now - new Date(refDate).getTime()) / 3600000;
-
-      const slaDoc = await admin
-        .firestore()
-        .collection("sla_tracking")
-        .doc(`${tenantId}_approval_${t.id}`)
-        .get();
-      const lastLevel = slaDoc.data()?.lastLevel as string | undefined;
-
-      if (hours >= CRIT_H && lastLevel !== "critical") {
-        await fanOutNotification({
-          tenantId,
-          eventCode: "talep.sla_asildi",
-          entityType: "procurement_request",
-          entityId: t.id,
-          talepNo: t.talepNo,
-          saha: t.saha,
-        });
-        await slaDoc.ref.set({ lastLevel: "critical", checkedAt: new Date(), tenantId }, { merge: true });
-      } else if (hours >= WARN_H && lastLevel !== "warn" && lastLevel !== "critical") {
-        await fanOutNotification({
-          tenantId,
-          eventCode: "talep.sla_yaklasiyor",
-          entityType: "procurement_request",
-          entityId: t.id,
-          talepNo: t.talepNo,
-          saha: t.saha,
-        });
-        await slaDoc.ref.set({ lastLevel: "warn", checkedAt: new Date(), tenantId }, { merge: true });
-      }
-    }
+function toDate(value: unknown): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (value instanceof admin.firestore.Timestamp) return value.toDate();
+  if (typeof value === "string" || typeof value === "number") {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
   }
+  return null;
+}
+
+function kalanGun(bitis: Date | null): number | null {
+  if (!bitis) return null;
+  return Math.ceil((bitis.getTime() - Date.now()) / 86400000);
+}
+
+/**
+ * Tüm kiracıları tarar; süresi dolmuşları pasife alır.
+ * Hatırlatma / SLA / günlük özet push YOK — yalnızca lisans.
+ */
+export const checkTenantLicenses = onSchedule("every 6 hours", async () => {
+  const snap = await admin.firestore().collection("tenants").get();
+  let expired = 0;
+
+  for (const doc of snap.docs) {
+    const data = doc.data() as {
+      aktif?: boolean;
+      lisansBitis?: admin.firestore.Timestamp | string | Date | null;
+      lisansSuresiDoldu?: boolean;
+    };
+    if (data.aktif === false) continue;
+
+    const bitis = toDate(data.lisansBitis);
+    const kalan = kalanGun(bitis);
+    if (bitis === null || kalan === null || kalan > 0) continue;
+
+    await doc.ref.set(
+      {
+        aktif: false,
+        lisansSuresiDoldu: true,
+        guncelleme: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    const users = await admin
+      .firestore()
+      .collection(tenantUsersPath(doc.id))
+      .where("aktif", "==", true)
+      .get();
+    if (!users.empty) {
+      const batch = admin.firestore().batch();
+      for (const u of users.docs) {
+        batch.set(u.ref, { aktif: false, lisansPasifeAlindi: true }, { merge: true });
+      }
+      await batch.commit();
+    }
+    expired++;
+  }
+
+  console.log(`checkTenantLicenses: ${expired} kiracı pasife alındı`);
 });
 
+/** Depolama temizliği — bildirim göndermez. */
 export const cleanupTempStorage = onSchedule("every 24 hours", async () => {
   const bucket = admin.storage().bucket();
   const [files] = await bucket.getFiles({ prefix: "temp/" });
@@ -69,74 +80,15 @@ export const cleanupTempStorage = onSchedule("every 24 hours", async () => {
   }
 });
 
+/**
+ * Eski SLA / günlük özet hatırlatmaları kapatıldı.
+ * Gece/sabah telefona "hatırlatma" push gitmesin.
+ * Export isimleri deploy uyumluluğu için korunur; gövde no-op.
+ */
+export const checkApprovalSla = onSchedule("every 60 minutes", async () => {
+  console.log("checkApprovalSla: disabled (no reminder pushes)");
+});
+
 export const dailyDigest = onSchedule("0 8 * * *", async () => {
-  const tenants = await admin.firestore().collection("tenants").where("aktif", "==", true).get();
-  const yesterday = new Date(Date.now() - 86400000);
-  /** Yalnızca aksiyon bekleyen bildirimler günlük özete girer. */
-  const actionable = new Set([
-    "talep.olusturuldu",
-    "talep.yonetime_gonderildi",
-    "talep.imzaya_gonderildi",
-    "teklif.istendi",
-    "teklif.girildi",
-    "teklif.yonetime_gonderildi",
-    "teklif.duzeltme_istendi",
-    "talep.onaylandi",
-    "talep.reddedildi",
-    "talep.sla_yaklasiyor",
-    "talep.sla_asildi",
-  ]);
-
-  for (const tenant of tenants.docs) {
-    const tenantId = tenant.id;
-    const users = await admin.firestore().collection(tenantUsersPath(tenantId)).where("aktif", "==", true).get();
-
-    for (const user of users.docs) {
-      const inbox = await user.ref
-        .collection("notification_inbox")
-        .where("createdAt", ">=", yesterday)
-        .where("isRead", "==", false)
-        .limit(50)
-        .get();
-
-      if (inbox.empty) continue;
-
-      const count = inbox.docs.filter((d) => {
-        const data = d.data() as { eventCode?: string; tip?: string; type?: string };
-        const code = String(data.eventCode ?? data.tip ?? data.type ?? "").trim();
-        if (!code) return false;
-        // Tamamlanmış sipariş / mal kabul özetini şişirmesin.
-        if (
-          code === "siparis.olusturuldu" ||
-          code === "depo.mal_kabul_yapildi" ||
-          code === "mal_kabul_edildi" ||
-          code === "siparis_olusturuldu"
-        ) {
-          return false;
-        }
-        return actionable.has(code) || code.startsWith("teklif.") || code.startsWith("talep.");
-      }).length;
-
-      if (count <= 0) continue;
-
-      await admin.firestore().collection("notification_dispatch_queue").add({
-        uid: user.id,
-        tenantId,
-        title: "Günlük Özet",
-        body: `${count} okunmamış bildiriminiz var`,
-        data: {
-          module: "system",
-          screen: "inbox",
-          action: "open",
-          entityType: "inbox",
-          entityId: user.id,
-          deepLink: "metrik://system/inbox",
-          eventCode: "system.daily_digest",
-          tenantId,
-        },
-        status: "pending",
-        createdAt: new Date(),
-      });
-    }
-  }
+  console.log("dailyDigest: disabled (no reminder pushes)");
 });

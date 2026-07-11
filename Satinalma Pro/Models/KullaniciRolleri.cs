@@ -32,12 +32,9 @@ public static class KullaniciRolleri
     {
         rol = Normalize(rol);
 
-        // Admin tüm modülleri görür; Ayarlar yalnızca Satınalma'ya aittir.
+        // Admin tüm modülleri görür (Ayarlar dahil — kiracı operasyonu).
         if (AdminMi(rol))
-            return ModuleCatalog.All
-                .Where(m => !m.Title.Equals("Ayarlar", StringComparison.OrdinalIgnoreCase))
-                .Select(m => m.Title)
-                .ToList();
+            return ModuleCatalog.All.Select(m => m.Title).ToList();
 
         return SatinalmaPro.Shared.Services.MasaustuRolHaritasi.MasaustuModulleri(rol).ToList();
     }

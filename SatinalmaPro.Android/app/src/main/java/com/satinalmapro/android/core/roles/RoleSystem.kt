@@ -80,8 +80,14 @@ object RolNavigasyon {
     private val satinalmaTeklifGirilen = MenuItem("Teklif İnceleme & Onay", "satinalma-teklif-girilen", "Teklif")
     private val satinalmaTeklifDuzeltme = MenuItem("Düzeltme Bekleyen", "satinalma-teklif-duzeltme", "Teklif")
     private val satinalmaOnaylanan = MenuItem("Sipariş Bekleyen", "satinalma-onaylanan", "Malzeme")
-    private val satinalmaSiparis = MenuItem("Sipariş Verilen", "satinalma-siparis", "Malzeme")
+    private val satinalmaSiparis = MenuItem("Yoldaki Malzemeler", "satinalma-siparis", "Malzeme")
     private val satinalmaMalKabul = MenuItem("Mal Kabul", "satinalma-mal-kabul", "Malzeme")
+    private val satinalmaIade = MenuItem("İade İşlemleri", "satinalma-iade", "Malzeme")
+    private val satinalmaTedarikciler = MenuItem("Tedarikçiler", "satinalma-tedarikciler", "Malzeme")
+    private val satinalmaPanosu = MenuItem("Satınalma Panosu", "satinalma-panosu", "Talep")
+    private val satinalmaOnayGecmisi = MenuItem("Geçmiş Onaylananlar", "satinalma-onay-gecmisi", "Talep")
+    private val agrega = MenuItem("Agrega", "agrega", "Malzeme")
+    private val cimento = MenuItem("Çimento", "cimento", "Malzeme")
     private val ayarlar = MenuItem("Ayarlar", "ayarlar", "Yönetim")
     private val stokDurum = MenuItem("Stok Durumu", "stok-durum", "Stok")
     private val stokHareket = MenuItem("Stok Hareketleri", "stok-hareket", "Stok")
@@ -92,36 +98,40 @@ object RolNavigasyon {
         val normalized = KullaniciRolleri.normalize(role)
         val items = when (normalized) {
             KullaniciRolleri.ADMIN -> listOf(
-                yeniTalep, taleplerim, onayBekleyen, onaylananTalepler, gelenTalepler, teklifBekleyen,
+                satinalmaPanosu, yeniTalep, taleplerim, onayBekleyen, onaylananTalepler, gelenTalepler, teklifBekleyen,
                 yonetimTeklifGirilen, yonetimDirekOnaylanan, satinalmaTeklifIstenen, teklifGir, teklifKarsilastirma,
                 teklifsizFirmaFiyat, satinalmaTeklifGirilen, satinalmaTeklifDuzeltme, teklifOnay, onaylananTeklifler, onayGecmisi,
-                satinalmaOnaylanan, onaylananMalzemeler, satinalmaSiparis, satinalmaMalKabul,
+                satinalmaOnaylanan, onaylananMalzemeler, satinalmaSiparis, satinalmaMalKabul, satinalmaIade, satinalmaTedarikciler,
+                satinalmaOnayGecmisi, agrega, cimento,
                 stokDurum, stokHareket, stokGiris, stokCikis,
-                redTalepler, gecmisTalepler, gecmisTeklifli, bildirimler
+                redTalepler, gecmisTalepler, gecmisTeklifli, bildirimler, ayarlar
             )
             KullaniciRolleri.YONETIM -> listOf(
-                gelenTalepler, teklifBekleyen, yonetimTeklifGirilen, yonetimDirekOnaylanan,
-                onayGecmisi, onaylananTeklifler, gecmisTalepler, redTalepler, stokDurum, bildirimler
+                satinalmaPanosu, gelenTalepler, teklifBekleyen, yonetimTeklifGirilen, yonetimDirekOnaylanan,
+                onayGecmisi, onaylananTeklifler, gecmisTalepler, redTalepler, stokDurum, agrega, cimento, bildirimler
             )
             KullaniciRolleri.SATINALMA -> listOf(
-                yeniTalep, taleplerim, gelenTalepler,
+                satinalmaPanosu, yeniTalep, taleplerim, gelenTalepler,
                 satinalmaTeklifIstenen, yonetimTeklifGirilen, satinalmaTeklifDuzeltme, teklifKarsilastirma, teklifsizFirmaFiyat,
-                satinalmaOnaylanan, satinalmaSiparis, satinalmaMalKabul, onaylananMalzemeler,
+                satinalmaOnaylanan, satinalmaSiparis, satinalmaMalKabul, onaylananMalzemeler, satinalmaIade,
+                satinalmaOnayGecmisi, redTalepler, agrega, cimento,
                 stokDurum, stokHareket, stokGiris, stokCikis,
                 bildirimler, ayarlar
             )
             KullaniciRolleri.SEF -> listOf(
-                yeniTalep, taleplerim, onayBekleyen, onaylananTalepler,
-                stokDurum, stokHareket, bildirimler
+                satinalmaPanosu, yeniTalep, taleplerim, onayBekleyen, onaylananTalepler,
+                redTalepler, satinalmaSiparis,
+                stokDurum, stokHareket, agrega, cimento, bildirimler
             )
             KullaniciRolleri.SAHA -> listOf(
-                yeniTalep, taleplerim, onayBekleyen, onaylananTalepler,
-                stokDurum, stokHareket, bildirimler
+                satinalmaPanosu, yeniTalep, taleplerim, onayBekleyen, onaylananTalepler,
+                redTalepler, satinalmaSiparis,
+                stokDurum, stokHareket, agrega, cimento, bildirimler
             )
-            // Atölye: satınalma yok — yalnızca stok durumu
-            KullaniciRolleri.ATOLYE -> listOf(stokDurum, bildirimler)
-            // Depo: satınalma yok — stok giriş/çıkış/hareket/durum
-            KullaniciRolleri.DEPO -> listOf(stokDurum, stokGiris, stokCikis, stokHareket, bildirimler)
+            // Atölye: stok + yoldaki
+            KullaniciRolleri.ATOLYE -> listOf(stokDurum, satinalmaSiparis, bildirimler)
+            // Depo: stok + yoldaki
+            KullaniciRolleri.DEPO -> listOf(stokDurum, stokGiris, stokCikis, stokHareket, satinalmaSiparis, bildirimler)
             else -> listOf(yeniTalep, taleplerim, bildirimler)
         }
         return listOf(dashboard) + items + profil
@@ -248,6 +258,14 @@ object RolNavigasyon {
                             KullaniciRolleri.ADMIN, KullaniciRolleri.SATINALMA, KullaniciRolleri.DEPO
                         )
                     )
+            "ayarlar" ->
+                KullaniciRolleri.isAdmin(role) ||
+                    KullaniciRolleri.normalize(role) == KullaniciRolleri.SATINALMA ||
+                    menus.contains("ayarlar")
+            "satinalma-panosu", "agrega", "cimento", "satinalma-tedarikciler", "satinalma-iade",
+            "satinalma-onay-gecmisi", "yonetim-red-verilen" -> menus.contains(base) ||
+                (base == "yonetim-red-verilen" && menus.contains("red-talepler")) ||
+                (base == "satinalma-onay-gecmisi" && menus.contains("onay-gecmisi"))
             else -> false
         }
     }

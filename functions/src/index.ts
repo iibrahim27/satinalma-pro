@@ -6,7 +6,7 @@ setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
 
 export { onLegacyTalepWrite } from "./triggers/legacyTalep";
 export { onNotificationDispatchCreate } from "./triggers/notificationDispatch";
-export { checkApprovalSla, cleanupTempStorage, dailyDigest } from "./scheduled/jobs";
+export { checkApprovalSla, cleanupTempStorage, dailyDigest, checkTenantLicenses } from "./scheduled/jobs";
 export {
   seedNotificationTemplates,
   migrateLegacyBatch,

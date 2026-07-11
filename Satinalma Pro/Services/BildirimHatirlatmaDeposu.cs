@@ -47,7 +47,24 @@ public static class BildirimHatirlatmaDeposu
             Kaydet();
     }
 
-    private static string DosyaYolu => SatinalmaProKlasor.DosyaYolu("bildirim_hatirlatma.json");
+    private static string DosyaYolu
+    {
+        get
+        {
+            var tid = SatinalmaPro.Shared.SaaS.KiracıOturumu.TenantId;
+            var ad = string.IsNullOrWhiteSpace(tid)
+                ? "bildirim_hatirlatma.json"
+                : $"bildirim_hatirlatma_{tid}.json";
+            return SatinalmaProKlasor.DosyaYolu(ad);
+        }
+    }
+
+    /// <summary>Firma değişiminde / çıkışta bellek sızıntısını önler.</summary>
+    public static void KiraciDegisti()
+    {
+        _sonGosterim.Clear();
+        _yuklendi = false;
+    }
 
     private static void Yukle()
     {

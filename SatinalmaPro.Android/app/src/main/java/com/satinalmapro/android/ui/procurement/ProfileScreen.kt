@@ -262,7 +262,8 @@ fun ProfileScreen(viewModel: AppViewModel) {
 
         Spacer(Modifier.height(16.dp))
 
-        if (KullaniciRolleri.normalize(profile.role) == KullaniciRolleri.SATINALMA) {
+        if (KullaniciRolleri.normalize(profile.role) == KullaniciRolleri.SATINALMA ||
+            KullaniciRolleri.isAdmin(profile.role)) {
 
             AppCard(onClick = { viewModel.navigateFromMenu("ayarlar") }) {
 

@@ -202,8 +202,26 @@
                     <ComboBoxItem Tag="yillik" Content="Yıllık lisans (365 gün)" />
                   </ComboBox>
 
+                  <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="10" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                      <TextBlock Text="Lisans başlangıç" Style="{StaticResource FieldLabelStyle}" />
+                      <DatePicker x:Name="FirmaLisansBaslangic" Height="40" FontSize="14"
+                                  BorderBrush="#CBD5E1" Margin="0,0,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                      <TextBlock Text="Lisans bitiş" Style="{StaticResource FieldLabelStyle}" />
+                      <DatePicker x:Name="FirmaLisansBitis" Height="40" FontSize="14"
+                                  BorderBrush="#CBD5E1" Margin="0,0,0,0" />
+                    </StackPanel>
+                  </Grid>
+
                   <TextBlock x:Name="FirmaLisansDurum" Style="{StaticResource HintTextStyle}"
-                             Text="Yeni firmaya otomatik 30 gün deneme verilir." Margin="0,0,0,10" />
+                             Text="Yeni firmaya otomatik 30 gün deneme verilir. Tarihleri elle de ayarlayabilirsiniz." Margin="0,0,0,10" />
 
                   <CheckBox x:Name="FirmaAktif" Content="Aktif" IsChecked="True" Margin="0,0,0,12" />
                   <StackPanel Orientation="Horizontal">

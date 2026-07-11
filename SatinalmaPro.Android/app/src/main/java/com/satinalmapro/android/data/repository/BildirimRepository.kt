@@ -54,21 +54,18 @@ class BildirimRepository(
             )
             val mevcut = mevcutMantikKayit(list, stamped)
             if (mevcut != null) {
+                // Okunmuş bildirim aynı işlem için bir daha asla push edilmez.
+                if (mevcut.okundu) return@forEach
                 val index = list.indexOfFirst { it.id.equals(mevcut.id, true) }
                 if (index >= 0) {
-                    val asamaDegisti = mevcut.tip != stamped.tip
-                    val icerikDegisti = mevcut.baslik != stamped.baslik || mevcut.mesaj != stamped.mesaj
                     val guncel = mevcut.copy(
                         baslik = stamped.baslik,
                         mesaj = stamped.mesaj,
-                        okundu = if (asamaDegisti || icerikDegisti) false else mevcut.okundu,
                         guncellemeUtc = stamped.guncellemeUtc,
                         inboxDocId = mevcut.inboxDocId?.takeIf { it.isNotBlank() } ?: stamped.inboxDocId
                     )
                     list[index] = guncel
-                    if (asamaDegisti || icerikDegisti) {
-                        pushed.add(guncel)
-                    }
+                    // Okunmamış aynı anahtar → yalnızca içerik güncelle, tekrar push yok.
                 }
             } else {
                 val index = list.indexOfFirst { it.id.equals(stamped.id, true) }

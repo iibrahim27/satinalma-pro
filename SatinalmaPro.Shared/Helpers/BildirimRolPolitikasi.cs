@@ -8,10 +8,15 @@ namespace SatinalmaPro.Shared.Helpers;
 /// </summary>
 public static class BildirimRolPolitikasi
 {
-    public static bool IslemYapanKendisiMi(BildirimKaydi bildirim, KullaniciProfili? kullanici) =>
-        kullanici is not null
-        && !string.IsNullOrWhiteSpace(bildirim.OlusturanUid)
-        && bildirim.OlusturanUid == kullanici.Uid;
+    public static bool IslemYapanKendisiMi(BildirimKaydi bildirim, KullaniciProfili? kullanici)
+    {
+        if (kullanici is null || string.IsNullOrWhiteSpace(kullanici.Uid))
+            return false;
+        if (!string.IsNullOrWhiteSpace(bildirim.OlusturanUid)
+            && string.Equals(bildirim.OlusturanUid, kullanici.Uid, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
 
     /// <summary>WhatsApp/Instagram kuralı: işlemi yapan kişiye kayıt/push oluşturulmaz.</summary>
     public static bool KayitGonderilmeli(string? hedefRol, string? hedefUid, string? islemYapanUid)

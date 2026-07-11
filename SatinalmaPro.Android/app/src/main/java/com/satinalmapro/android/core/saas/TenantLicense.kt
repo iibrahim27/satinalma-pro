@@ -1,5 +1,8 @@
 package com.satinalmapro.android.core.saas
 
+import java.time.Instant
+import kotlin.math.ceil
+
 data class TenantLicense(
     val tip: String = "deneme",
     val baslangicUtc: String? = null,
@@ -10,13 +13,14 @@ data class TenantLicense(
 ) {
     val kisaDurumMetni: String
         get() {
-            if (suresiDoldu || !aktif || kalanGun == null || kalanGun <= 0) {
+            val guncel = yenidenHesapla()
+            if (guncel.suresiDoldu || !guncel.aktif || guncel.kalanGun == null || guncel.kalanGun <= 0) {
                 return "Lisans süresi doldu"
             }
-            return if (kalanGun <= 7) {
-                "Lisans: $kalanGun gün kaldı"
+            return if (guncel.kalanGun <= 7) {
+                "Lisans: ${guncel.kalanGun} gün kaldı"
             } else {
-                "Lisans: $kalanGun gün"
+                "Lisans: ${guncel.kalanGun} gün"
             }
         }
 
@@ -25,4 +29,18 @@ data class TenantLicense(
             "yillik" -> "Yıllık lisans"
             else -> "30 günlük deneme"
         }
+
+    /** bitisUtc üzerinden kalan günü yeniden hesaplar (oturum açıkken süre dolumu). */
+    fun yenidenHesapla(): TenantLicense {
+        val bitis = bitisUtc?.let { raw ->
+            runCatching { Instant.parse(raw) }.getOrNull()
+        } ?: return this
+
+        val kalan = ceil((bitis.toEpochMilli() - Instant.now().toEpochMilli()) / 86_400_000.0).toInt()
+        return copy(
+            kalanGun = kalan,
+            suresiDoldu = kalan <= 0,
+            aktif = if (kalan <= 0) false else aktif
+        )
+    }
 }

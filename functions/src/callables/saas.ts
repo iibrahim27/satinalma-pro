@@ -209,10 +209,16 @@ function parseLisansaInput(data: Record<string, unknown> | undefined, existing?:
   let bitis = toDate(data?.lisansBitis) ?? toDate(existing?.lisansBitis);
 
   const yenile = data?.lisansYenile === true;
-  if (yenile || !baslangic || !bitis) {
-    baslangic = new Date();
-    bitis = tip === "yillik" ? addDays(baslangic, 365) : addDays(baslangic, 30);
-  }
+    // Elle verilen tarihler korunur; yenileme veya eksik tarihte tip süresine göre hesaplanır.
+    if (yenile || !baslangic || !bitis) {
+      baslangic = yenile || !baslangic ? new Date() : baslangic;
+      bitis =
+        yenile || !bitis
+          ? tip === "yillik"
+            ? addDays(baslangic, 365)
+            : addDays(baslangic, 30)
+          : bitis;
+    }
 
   return { tip, baslangic, bitis };
 }
@@ -442,8 +448,23 @@ export const platformSaveTenant = onCall(async (request) => {
     );
   }
 
-  // Lisans yenilendiğinde süre dolumuyla pasife alınan kullanıcıları geri aç.
-  if (lisansYenile && aktif && !lisansOzetiHesap.suresiDoldu) {
+  // Manuel pasif: tüm aktif kullanıcıları da kapat.
+  if (aktif === false && existing?.aktif !== false) {
+    const aktifler = await db()
+      .collection(tenantUsersPath(tenantRef.id))
+      .where("aktif", "==", true)
+      .get();
+    if (!aktifler.empty) {
+      const batch = db().batch();
+      for (const doc of aktifler.docs) {
+        batch.set(doc.ref, { aktif: false, lisansPasifeAlindi: true }, { merge: true });
+      }
+      await batch.commit();
+    }
+  }
+
+  // Lisans yenilendiğinde / firma yeniden açıldığında süre dolumuyla pasife alınan kullanıcıları geri aç.
+  if (aktif && !lisansOzetiHesap.suresiDoldu && (lisansYenile || existing?.aktif === false)) {
     const pasifler = await db()
       .collection(tenantUsersPath(tenantRef.id))
       .where("lisansPasifeAlindi", "==", true)

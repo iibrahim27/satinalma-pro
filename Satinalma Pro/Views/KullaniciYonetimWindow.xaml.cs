@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
+using SatinalmaPro.Shared.SaaS;
 
 namespace SatinalmaPro.Views;
 
@@ -19,10 +20,12 @@ public partial class KullaniciYonetimWindow : Window
     private readonly List<ModulYetkiSatir> _modulSatirlari = [];
     private KullaniciProfili? _seciliKullanici;
     private bool _formDolduruluyor;
+    private readonly bool _saasModu;
 
     public KullaniciYonetimWindow()
     {
         InitializeComponent();
+        _saasModu = !string.IsNullOrWhiteSpace(KiracıOturumu.TenantId);
         ModulYetkiSatirlariniOlustur();
 
         foreach (var rol in KullaniciRolleri.Tum)
@@ -30,7 +33,53 @@ public partial class KullaniciYonetimWindow : Window
         CmbYeniRol.SelectedItem = KullaniciRolleri.Satinalma;
         RolVarsayilaniniSec();
 
+        if (_saasModu)
+            SaaSModunuUygula();
+
         _ = YukleAsync();
+    }
+
+    private void SaaSModunuUygula()
+    {
+        var uyari =
+            "SaaS kiracı modunda kullanıcı oluşturma, düzenleme ve silme " +
+            "Satınalma Yönetici uygulamasından yapılır.\n\n" +
+            "Bu ekran yalnızca mevcut kullanıcıları görüntülemek içindir.";
+
+        MessageBox.Show(uyari, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+
+        TxtFormBaslik.Text = "Kullanıcı yönetimi (Satınalma Yönetici)";
+        TxtFormIpucu.Text =
+            "Firma kullanıcıları Satınalma Yönetici uygulamasından eklenir ve düzenlenir. " +
+            "Pro içinden Auth/usernames yazımı kapalıdır.";
+
+        TxtYeniAd.IsEnabled = false;
+        TxtYeniEposta.IsEnabled = false;
+        TxtYeniSifre.IsEnabled = false;
+        CmbYeniRol.IsEnabled = false;
+        ChkAktif.IsEnabled = false;
+        BtnEkle.IsEnabled = false;
+        BtnGuncelle.IsEnabled = false;
+        BtnSil.IsEnabled = false;
+        foreach (var satir in _modulSatirlari)
+        {
+            satir.Okuma.IsEnabled = false;
+            satir.Yazma.IsEnabled = false;
+            foreach (var sekme in satir.SekmeKutulari)
+                sekme.IsEnabled = false;
+        }
+    }
+
+    private bool SaaSYazmaEngelliMi()
+    {
+        if (!_saasModu)
+            return false;
+
+        MessageBox.Show(
+            "SaaS kiracı modunda kullanıcı işlemleri Satınalma Yönetici uygulamasından yapılır.\n" +
+            "Pro içinden kullanıcı oluşturma/güncelleme/silme kapalıdır.",
+            UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+        return true;
     }
 
     private async Task YukleAsync()
@@ -186,12 +235,15 @@ public partial class KullaniciYonetimWindow : Window
             ? "Rol ve yetkileri değiştirin, ardından «Değişiklikleri Kaydet (Güncelle)» butonuna basın."
             : "Yeni kayıt için alanları doldurup «Kullanıcı Ekle»ye basın.";
 
-        BtnGuncelle.IsEnabled = duzenleme;
-        BtnSil.IsEnabled = duzenleme;
-        BtnSifreSifir.IsEnabled = duzenleme;
-        BtnEkle.IsEnabled = !duzenleme;
-        TxtYeniSifre.IsEnabled = !duzenleme;
-        TxtYeniEposta.IsReadOnly = duzenleme;
+        BtnGuncelle.IsEnabled = duzenleme && !_saasModu;
+        BtnSil.IsEnabled = duzenleme && !_saasModu;
+        BtnSifreSifir.IsEnabled = duzenleme && !_saasModu;
+        BtnEkle.IsEnabled = !duzenleme && !_saasModu;
+        TxtYeniSifre.IsEnabled = !duzenleme && !_saasModu;
+        TxtYeniEposta.IsReadOnly = duzenleme || _saasModu;
+        TxtYeniAd.IsEnabled = !_saasModu;
+        CmbYeniRol.IsEnabled = !_saasModu;
+        ChkAktif.IsEnabled = !_saasModu;
 
         if (!duzenleme)
         {
@@ -424,6 +476,9 @@ public partial class KullaniciYonetimWindow : Window
 
     private async void KullaniciEkle_Click(object sender, RoutedEventArgs e)
     {
+        if (SaaSYazmaEngelliMi())
+            return;
+
         if (OturumYoneticisi.Auth is null || OturumYoneticisi.Firestore is null)
             return;
 
@@ -466,6 +521,9 @@ public partial class KullaniciYonetimWindow : Window
 
     private async Task GuncelleAsync()
     {
+        if (SaaSYazmaEngelliMi())
+            return;
+
         if (_seciliKullanici is null || OturumYoneticisi.Firestore is null)
         {
             MessageBox.Show("Düzenlemek için listeden bir kullanıcı seçin.", UygulamaBilgisi.Ad,
@@ -529,12 +587,15 @@ public partial class KullaniciYonetimWindow : Window
         }
         finally
         {
-            BtnGuncelle.IsEnabled = true;
+            BtnGuncelle.IsEnabled = !_saasModu && _seciliKullanici is not null;
         }
     }
 
     private async void Sil_Click(object sender, RoutedEventArgs e)
     {
+        if (SaaSYazmaEngelliMi())
+            return;
+
         if (_seciliKullanici is null || OturumYoneticisi.Firestore is null)
             return;
 
@@ -567,6 +628,9 @@ public partial class KullaniciYonetimWindow : Window
 
     private async void SifreSifir_Click(object sender, RoutedEventArgs e)
     {
+        if (SaaSYazmaEngelliMi())
+            return;
+
         if (_seciliKullanici is null || OturumYoneticisi.Auth is null)
             return;
 
