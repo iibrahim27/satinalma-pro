@@ -11,8 +11,23 @@ public class TeklifFiyatSatir : INotifyPropertyChanged
 
     public Guid KalemId { get; init; }
     public string Malzeme { get; init; } = "";
-    public double Miktar { get; init; }
     public string Birim { get; init; } = "";
+
+    private double _miktar;
+
+    public double Miktar
+    {
+        get => _miktar;
+        set
+        {
+            if (Math.Abs(_miktar - value) < 0.0001)
+                return;
+            _miktar = value;
+            OnChanged();
+            OnChanged(nameof(MiktarMetni));
+            GuncelleSatirToplam();
+        }
+    }
 
     private string _marka = "";
     private string _paraBirimi = ParaBirimleri.Try;

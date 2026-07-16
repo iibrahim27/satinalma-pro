@@ -280,8 +280,7 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
                 ParaBirimi = satir.ParaBirimi,
                 KdvOrani = satir.KdvOrani
             };
-            var kalem = _kalemler.First(k => k.Id == satir.KalemId);
-            fiyat.Hesapla(kalem.Miktar, usd, eur);
+            fiyat.Hesapla(satir.Miktar, usd, eur);
             ara += fiyat.ToplamTutar;
             kdv += fiyat.KdvTutari;
             genel += fiyat.ToplamKdvDahil;
@@ -329,6 +328,10 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
 
         foreach (var satir in _satirlar)
         {
+            var kalem = _kalemler.First(k => k.Id == satir.KalemId);
+            if (satir.Miktar > 0)
+                kalem.Miktar = satir.Miktar;
+
             var fiyat = _teklif.Fiyatlar.First(f => f.KalemId == satir.KalemId);
             fiyat.Marka = satir.Marka.Trim();
             fiyat.ParaBirimi = satir.ParaBirimi;

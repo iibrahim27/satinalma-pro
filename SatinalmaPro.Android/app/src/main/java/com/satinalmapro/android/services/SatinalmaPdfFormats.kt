@@ -36,12 +36,14 @@ object SatinalmaPdfFormats {
         return "${sayi(birimFiyat)} $sembol (${sayi(tlDeger)} ₺)"
     }
 
-    private fun tlCevir(birimFiyat: Double, paraBirimi: String, usdKuru: Double, eurKuru: Double): Double =
-        when (paraBirimi) {
+    fun tlCevir(birimFiyat: Double, paraBirimi: String?, usdKuru: Double, eurKuru: Double): Double {
+        val pb = (paraBirimi?.trim()?.uppercase(Locale.ROOT)).orEmpty().ifBlank { "TRY" }
+        return when (pb) {
             "USD" -> if (usdKuru > 0) round(birimFiyat * usdKuru * 10000.0) / 10000.0 else birimFiyat
             "EUR" -> if (eurKuru > 0) round(birimFiyat * eurKuru * 10000.0) / 10000.0 else birimFiyat
             else -> birimFiyat
         }
+    }
 
     fun markaSutunuGoster(teklifler: List<TeklifItem>): Boolean {
         teklifler.forEach { teklif ->

@@ -69,6 +69,9 @@ public partial class TeklifGirisView : UserControl
         talep.Kalemler ??= [];
         talep.Teklifler ??= [];
         KalemTablosu.ItemsSource = talep.Kalemler.OrderBy(k => k.SiraNo).ToList();
+        var kalemDuzenlenebilir = KullaniciYetkileri.SatinalmaTalepKalemDuzenleyebilir(talep)
+            && SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(talep);
+        KalemTablosu.IsReadOnly = !kalemDuzenlenebilir;
         TeklifListesiniYenile();
         SatinalmaOnerisiniGuncelle();
 
@@ -305,10 +308,13 @@ public partial class TeklifGirisView : UserControl
         if (!TeklifPenceresiAc(_seciliTeklif))
             return;
 
+        SatinalmaTalepYardimcisi.TalepKalemleriniTekliflerleSenkronla(talep);
         SatinalmaDepo.TeklifDegisikligiIsle(talep);
         _ = SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
         TeklifListesiniYenile();
         SatinalmaOnerisiniGuncelle();
+        KalemOneriPaneliniGuncelle();
+        ArayuzuGuncelle();
         Degisti?.Invoke();
     }
 
@@ -401,14 +407,34 @@ public partial class TeklifGirisView : UserControl
         SatinalmaPdfOlusturucu.KarsilastirmaYazdir(talep, SatinalmaDepo.Ayarlar);
     }
 
+    private void KalemTablosu_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+    {
+        if (e.EditAction != DataGridEditAction.Commit)
+            return;
+
+        if (e.EditingElement is TextBox textBox)
+            textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            var talep = GuncelTalep();
+            if (talep is null)
+                return;
+
+            SatinalmaTalepYardimcisi.TalepKalemleriniTekliflerleSenkronla(talep);
+            TeklifListesiniYenile();
+            SatinalmaOnerisiniGuncelle();
+            KalemOneriPaneliniGuncelle();
+        });
+    }
+
     private async void Kaydet_Click(object sender, RoutedEventArgs e)
     {
         var talep = GuncelTalep();
         if (talep is null)
             return;
 
-        foreach (var teklif in talep.Teklifler ?? [])
-            teklif.FiyatlariHesapla(talep.Kalemler);
+        SatinalmaTalepYardimcisi.TalepKalemleriniTekliflerleSenkronla(talep);
 
         if ((talep.Teklifler?.Count ?? 0) > 0
             && talep.Durum is SatinalmaTalepDurumlari.TeklifGirisi

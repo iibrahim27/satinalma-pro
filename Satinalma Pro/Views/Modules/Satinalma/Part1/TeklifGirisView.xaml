@@ -90,11 +90,13 @@
         <Expander Grid.Row="2" Header="Talep kalemleri" IsExpanded="False"
                   Margin="0,0,0,8" FontSize="12" Foreground="{StaticResource SatModInkBrush}">
           <DataGrid x:Name="KalemTablosu" Style="{StaticResource SatModDataGrid}"
-                    MaxHeight="140" Margin="0,6,0,0">
+                    MaxHeight="140" Margin="0,6,0,0"
+                    CanUserAddRows="False" SelectionMode="Single"
+                    CellEditEnding="KalemTablosu_CellEditEnding">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" />
-              <DataGridTextColumn Header="Miktar" Binding="{Binding MiktarGosterim}" Width="90" />
-              <DataGridTextColumn Header="Birim" Binding="{Binding Birim}" Width="90" />
+              <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" IsReadOnly="True" />
+              <DataGridTextColumn Header="Miktar" Binding="{Binding Miktar, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+              <DataGridTextColumn Header="Birim" Binding="{Binding Birim}" Width="90" IsReadOnly="True" />
             </DataGrid.Columns>
           </DataGrid>
         </Expander>

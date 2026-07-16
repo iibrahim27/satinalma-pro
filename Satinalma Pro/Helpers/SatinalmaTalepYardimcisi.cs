@@ -46,8 +46,20 @@ public static class SatinalmaTalepYardimcisi
     public static bool FormDuzenlenebilir(SatinalmaTalep talep) =>
         talep.Durum == SatinalmaTalepDurumlari.Taslak || GonderimOncesiDuzenlenebilir(talep);
 
+    /// <summary>
+    /// Teklif girişi / imza sürecinde henüz teklif yokken de kalem miktarı düzeltilebilir
+    /// (TeklifDuzenlemeDevamEdiyor gerçek teklif ister).
+    /// </summary>
+    public static bool TeklifAsamasindaKalemDuzenlenebilir(SatinalmaTalep talep) =>
+        !talep.YonetimOnayKilitli
+        && !talep.HerhangiKalemOnayli
+        && talep.Durum is SatinalmaTalepDurumlari.TeklifGirisi
+            or SatinalmaTalepDurumlari.ImzaSurecinde;
+
     public static bool TalepKalemleriDuzenlenebilir(SatinalmaTalep talep) =>
-        FormDuzenlenebilir(talep) || TeklifDuzenlemeDevamEdiyor(talep);
+        FormDuzenlenebilir(talep)
+        || TeklifDuzenlemeDevamEdiyor(talep)
+        || TeklifAsamasindaKalemDuzenlenebilir(talep);
 
     /// <summary>Talep sahibi düzenleme sonrası süreci başa alır (teklifler ve onaylar temizlenir).</summary>
     public static void SahipDuzenlemeSonrasiHazirla(SatinalmaTalep talep)

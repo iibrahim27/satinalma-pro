@@ -294,6 +294,75 @@ object SatinalmaPdfHelper {
                 boyut = 7.5f
             )
         }
+
+        val karsilastirmaSatirlari = KarsilastirmaAlimGecmisiYardimcisi.malzemeBazliFiyatKarsilastirmasiTopla(
+            kalemler,
+            talep.teklifler,
+            satirlari
+        )
+
+        duzen.y += 10f
+        SatinalmaPdfCizim.metinCiz(
+            duzen,
+            "Son alınan birim fiyat × en düşük teklif birim fiyat",
+            boyut = 9.5f,
+            kalin = true
+        )
+        SatinalmaPdfCizim.metinCiz(
+            duzen,
+            "Artış = (en düşük teklif − son alınan) / son alınan. Negatif değer düşüşü gösterir.",
+            boyut = 8f
+        )
+        duzen.y += 4f
+
+        val karsKolonlar = listOf(
+            24f, 140f, 40f, 78f, 78f, 100f, 70f,
+            (duzen.icerikGenisligi - 24f - 140f - 40f - 78f - 78f - 100f - 70f).coerceAtLeast(48f)
+        )
+        SatinalmaPdfCizim.tabloCiz(
+            duzen,
+            karsKolonlar,
+            basliklar = listOf(
+                "No", "Malzeme", "Birim", "Son Alınan BF", "En Düşük Teklif BF", "Firma", "Fark (TL)", "Artış %"
+            ),
+            satirlar = emptyList(),
+            baslikCiz = true
+        )
+
+        if (karsilastirmaSatirlari.isEmpty()) {
+            SatinalmaPdfCizim.tabloSatirCiz(
+                duzen,
+                karsKolonlar,
+                listOf("—", "Karşılaştırma için kalem bulunamadı.", "", "", "", "", "", "")
+            )
+            return
+        }
+
+        for (satir in karsilastirmaSatirlari) {
+            val farkMetin = satir.farkTl?.let {
+                val isaret = if (it >= 0) "+" else ""
+                "$isaret${SatinalmaPdfFormats.sayi(it)} ₺"
+            } ?: "—"
+            val yuzdeMetin = satir.artisYuzde?.let {
+                val isaret = if (it >= 0) "+" else ""
+                "$isaret${SatinalmaPdfFormats.sayi(it)} %"
+            } ?: "—"
+
+            SatinalmaPdfCizim.tabloSatirCiz(
+                duzen,
+                karsKolonlar,
+                listOf(
+                    satir.kalemSiraNo.toString(),
+                    satir.malzeme,
+                    satir.birim,
+                    satir.sonAlinanBirimFiyat?.let { SatinalmaPdfFormats.tl(it) } ?: "—",
+                    satir.enDusukTeklifBirimFiyat?.let { SatinalmaPdfFormats.tl(it) } ?: "—",
+                    if (satir.teklifYok) "—" else satir.enDusukTeklifFirma,
+                    farkMetin,
+                    yuzdeMetin
+                )
+            )
+        }
     }
 
     private fun karsilastirmaTablosuCiz(

@@ -158,7 +158,8 @@ public static class SatinalmaPart1Servisi
         if (pencere.ShowDialog() != true)
             return false;
 
-        teklif.FiyatlariHesapla(kalemler.ToList());
+        var kalemListesi = kalemler.ToList();
+        teklif.FiyatlariHesapla(kalemListesi);
         return true;
     }
 

@@ -2,10 +2,12 @@ package com.satinalmapro.android.services
 
 import com.satinalmapro.android.core.model.AlinanMalzemeKaydi
 import com.satinalmapro.android.core.model.TalepKalem
+import com.satinalmapro.android.core.model.TeklifItem
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlin.math.round
 
 /** Masaüstü KarsilastirmaAlimGecmisiYardimcisi ile aynı seçim kuralı. */
 object KarsilastirmaAlimGecmisiYardimcisi {
@@ -20,6 +22,19 @@ object KarsilastirmaAlimGecmisiYardimcisi {
         val tedarikci: String = "",
         val kayitYok: Boolean = false,
         val sonIkiAlimYedegi: Boolean = false
+    )
+
+    data class FiyatKarsilastirmaSatiri(
+        val kalemSiraNo: Int,
+        val malzeme: String,
+        val birim: String = "",
+        val sonAlinanBirimFiyat: Double? = null,
+        val enDusukTeklifBirimFiyat: Double? = null,
+        val enDusukTeklifFirma: String = "",
+        val farkTl: Double? = null,
+        val artisYuzde: Double? = null,
+        val sonAlimYok: Boolean = false,
+        val teklifYok: Boolean = false
     )
 
     fun malzemeBazliAlimlariTopla(
@@ -65,6 +80,67 @@ object KarsilastirmaAlimGecmisiYardimcisi {
             yedek.forEach { (kayit, _) ->
                 sonuc += alimdanSatir(kalem.siraNo, malzemeAdi, kayit, sonIkiAlimYedegi = true)
             }
+        }
+        return sonuc
+    }
+
+    fun malzemeBazliFiyatKarsilastirmasiTopla(
+        kalemler: List<TalepKalem>,
+        teklifler: List<TeklifItem>,
+        alimSatirlari: List<AlimSatiri>
+    ): List<FiyatKarsilastirmaSatiri> {
+        val sonAlimlar = linkedMapOf<String, AlimSatiri>()
+        for (satir in alimSatirlari) {
+            if (satir.kayitYok || satir.malzeme.isBlank()) continue
+            val anahtar = satir.malzeme.lowercase(Locale("tr", "TR"))
+            if (!sonAlimlar.containsKey(anahtar)) sonAlimlar[anahtar] = satir
+        }
+
+        val sonuc = mutableListOf<FiyatKarsilastirmaSatiri>()
+        for (kalem in kalemler.sortedBy { it.siraNo }) {
+            val malzemeAdi = kalem.malzeme.trim()
+            if (malzemeAdi.isBlank()) continue
+
+            val sonAlim = sonAlimlar[malzemeAdi.lowercase(Locale("tr", "TR"))]
+            val sonFiyat = sonAlim?.birimFiyati?.takeIf { it > 0 }
+            val sonAlimYok = sonFiyat == null
+
+            var enDusuk: Double? = null
+            var enDusukFirma = ""
+            for (teklif in teklifler) {
+                val fiyat = teklif.fiyatlar.firstOrNull { it.kalemId == kalem.id } ?: continue
+                if (fiyat.birimFiyat <= 0) continue
+                val tl = SatinalmaPdfFormats.tlCevir(
+                    fiyat.birimFiyat,
+                    fiyat.paraBirimi,
+                    teklif.usdKuru,
+                    teklif.eurKuru
+                )
+                if (tl <= 0) continue
+                if (enDusuk == null || tl < enDusuk) {
+                    enDusuk = tl
+                    enDusukFirma = teklif.firmaAdi.trim().ifBlank { "—" }
+                }
+            }
+
+            val teklifYok = enDusuk == null
+            val fark = if (sonFiyat != null && enDusuk != null) enDusuk - sonFiyat else null
+            val yuzde = if (fark != null && sonFiyat != null && sonFiyat > 0)
+                round(fark / sonFiyat * 10000.0) / 100.0
+            else null
+
+            sonuc += FiyatKarsilastirmaSatiri(
+                kalemSiraNo = kalem.siraNo,
+                malzeme = malzemeAdi,
+                birim = kalem.birim.trim().ifBlank { "—" },
+                sonAlinanBirimFiyat = sonFiyat,
+                enDusukTeklifBirimFiyat = enDusuk,
+                enDusukTeklifFirma = enDusukFirma,
+                farkTl = fark,
+                artisYuzde = yuzde,
+                sonAlimYok = sonAlimYok,
+                teklifYok = teklifYok
+            )
         }
         return sonuc
     }

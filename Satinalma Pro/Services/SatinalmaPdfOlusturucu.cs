@@ -447,6 +447,80 @@ public static class SatinalmaPdfOlusturucu
                         .FontSize(yonetimFormu ? 6.5f : 7.5f)
                         .FontColor(Colors.Grey.Darken1);
                 }
+
+                var karsilastirmaSatirlari = KarsilastirmaAlimGecmisiYardimcisi.MalzemeBazliFiyatKarsilastirmasiTopla(
+                    talep.Kalemler, talep.Teklifler, satirlari);
+
+                col.Item().PaddingTop(yonetimFormu ? 8 : 12)
+                    .Text("Son alınan birim fiyat × en düşük teklif birim fiyat")
+                    .SemiBold()
+                    .FontSize(yonetimFormu ? 8f : 9.5f);
+
+                col.Item().Text("Artış = (en düşük teklif − son alınan) / son alınan. Negatif değer düşüşü gösterir.")
+                    .FontColor(Colors.Grey.Darken1)
+                    .FontSize(yonetimFormu ? 7f : 8f);
+
+                col.Item().PaddingTop(yonetimFormu ? 2 : 4).Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(yonetimFormu ? 22 : 28);
+                        columns.RelativeColumn(2.2f);
+                        columns.ConstantColumn(yonetimFormu ? 36 : 44);
+                        columns.ConstantColumn(yonetimFormu ? 72 : 84);
+                        columns.ConstantColumn(yonetimFormu ? 72 : 84);
+                        columns.RelativeColumn(1.4f);
+                        columns.ConstantColumn(yonetimFormu ? 64 : 72);
+                        columns.ConstantColumn(yonetimFormu ? 52 : 60);
+                    });
+
+                    static void BaslikHucre2(TableDescriptor t, string metin, bool kompakt) =>
+                        t.Cell().Element(c => HucreBaslik(c, false, kompakt)).AlignCenter().Text(metin).SemiBold();
+
+                    BaslikHucre2(table, "No", yonetimFormu);
+                    BaslikHucre2(table, "Malzeme", yonetimFormu);
+                    BaslikHucre2(table, "Birim", yonetimFormu);
+                    BaslikHucre2(table, "Son Alınan BF", yonetimFormu);
+                    BaslikHucre2(table, "En Düşük Teklif BF", yonetimFormu);
+                    BaslikHucre2(table, "Firma", yonetimFormu);
+                    BaslikHucre2(table, "Fark (TL)", yonetimFormu);
+                    BaslikHucre2(table, "Artış %", yonetimFormu);
+
+                    if (karsilastirmaSatirlari.Count == 0)
+                    {
+                        table.Cell().ColumnSpan(8).Element(c => HucreVeri(c, false, yonetimFormu))
+                            .Text("Karşılaştırma için kalem bulunamadı.");
+                        return;
+                    }
+
+                    foreach (var satir in karsilastirmaSatirlari)
+                    {
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu))
+                            .Text(satir.KalemSiraNo.ToString());
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu))
+                            .Text(satir.Malzeme);
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu)).AlignCenter()
+                            .Text(satir.Birim);
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu)).AlignRight()
+                            .Text(satir.SonAlinanBirimFiyat is > 0
+                                ? TlGosterim(satir.SonAlinanBirimFiyat.Value)
+                                : "—");
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu)).AlignRight()
+                            .Text(satir.EnDusukTeklifBirimFiyat is > 0
+                                ? TlGosterim(satir.EnDusukTeklifBirimFiyat.Value)
+                                : "—");
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu))
+                            .Text(satir.TeklifYok ? "—" : satir.EnDusukTeklifFirma);
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu)).AlignRight()
+                            .Text(satir.FarkTl is { } fark
+                                ? $"{(fark >= 0 ? "+" : "")}{fark.ToString("N2", Tr)} ₺"
+                                : "—");
+                        table.Cell().Element(c => HucreVeri(c, false, yonetimFormu)).AlignRight()
+                            .Text(satir.ArtisYuzde is { } yuzde
+                                ? $"{(yuzde >= 0 ? "+" : "")}{yuzde.ToString("N2", Tr)} %"
+                                : "—");
+                    }
+                });
             });
         });
     }

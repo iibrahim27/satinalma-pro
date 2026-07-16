@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.65",
-    "build":  133,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.65/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.65/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.65/SatinalmaPro.apk",
-    "notes":  "Acilis ekrani uygulama ikonu duzeltmesi (splash opacity + app.png)",
+    "version":  "2.1.66",
+    "build":  135,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.66/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.66/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.66/SatinalmaPro.apk",
+    "notes":  "Satinalma teklif akisinda miktar duzeltme; karsilastirma PDF 2. sayfada son alim vs en dusuk teklif artis (TL/%) tablosu",
     "zorunlu":  false
 }

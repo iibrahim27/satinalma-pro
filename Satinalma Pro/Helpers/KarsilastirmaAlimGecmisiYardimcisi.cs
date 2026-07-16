@@ -91,6 +91,95 @@ public static class KarsilastirmaAlimGecmisiYardimcisi
             SonIkiAlimYedegi = sonIkiAlimYedegi
         };
 
+    /// <summary>
+    /// Malzeme bazında: en son alınan birim fiyat × teklifteki en düşük TL birim fiyat.
+    /// </summary>
+    public sealed class FiyatKarsilastirmaSatiri
+    {
+        public int KalemSiraNo { get; init; }
+        public string Malzeme { get; init; } = "";
+        public string Birim { get; init; } = "";
+        public decimal? SonAlinanBirimFiyat { get; init; }
+        public decimal? EnDusukTeklifBirimFiyat { get; init; }
+        public string EnDusukTeklifFirma { get; init; } = "";
+        public decimal? FarkTl { get; init; }
+        public decimal? ArtisYuzde { get; init; }
+        public bool SonAlimYok { get; init; }
+        public bool TeklifYok { get; init; }
+    }
+
+    public static List<FiyatKarsilastirmaSatiri> MalzemeBazliFiyatKarsilastirmasiTopla(
+        IEnumerable<SatinalmaTalepKalemi> kalemler,
+        IEnumerable<SatinalmaTeklif> teklifler,
+        IReadOnlyList<AlimSatiri> alimSatirlari)
+    {
+        var sonAlimlar = new Dictionary<string, AlimSatiri>(StringComparer.OrdinalIgnoreCase);
+        foreach (var satir in alimSatirlari)
+        {
+            if (satir.KayitYok || string.IsNullOrWhiteSpace(satir.Malzeme))
+                continue;
+            if (!sonAlimlar.ContainsKey(satir.Malzeme))
+                sonAlimlar[satir.Malzeme] = satir;
+        }
+
+        var teklifListesi = (teklifler ?? []).ToList();
+        var sonuc = new List<FiyatKarsilastirmaSatiri>();
+
+        foreach (var kalem in kalemler.OrderBy(k => k.SiraNo))
+        {
+            var malzemeAdi = (kalem.Malzeme ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(malzemeAdi))
+                continue;
+
+            var sonAlimYok = !sonAlimlar.TryGetValue(malzemeAdi, out var sonAlim);
+            decimal? sonFiyat = sonAlimYok ? null : sonAlim!.BirimFiyati;
+
+            decimal? enDusuk = null;
+            var enDusukFirma = "";
+            foreach (var teklif in teklifListesi)
+            {
+                var fiyat = (teklif.Fiyatlar ?? []).FirstOrDefault(f => f.KalemId == kalem.Id);
+                if (fiyat is null || fiyat.BirimFiyat <= 0)
+                    continue;
+
+                var tl = fiyat.TlBirimFiyat(teklif.UsdKuru, teklif.EurKuru);
+                if (tl <= 0)
+                    continue;
+
+                if (enDusuk is null || tl < enDusuk.Value)
+                {
+                    enDusuk = tl;
+                    enDusukFirma = string.IsNullOrWhiteSpace(teklif.FirmaAdi) ? "—" : teklif.FirmaAdi.Trim();
+                }
+            }
+
+            var teklifYok = enDusuk is null;
+            decimal? fark = null;
+            decimal? yuzde = null;
+            if (sonFiyat is > 0 && enDusuk is not null)
+            {
+                fark = enDusuk.Value - sonFiyat.Value;
+                yuzde = Math.Round(fark.Value / sonFiyat.Value * 100m, 2);
+            }
+
+            sonuc.Add(new FiyatKarsilastirmaSatiri
+            {
+                KalemSiraNo = kalem.SiraNo,
+                Malzeme = malzemeAdi,
+                Birim = string.IsNullOrWhiteSpace(kalem.Birim) ? "—" : kalem.Birim.Trim(),
+                SonAlinanBirimFiyat = sonFiyat,
+                EnDusukTeklifBirimFiyat = enDusuk,
+                EnDusukTeklifFirma = enDusukFirma,
+                FarkTl = fark,
+                ArtisYuzde = yuzde,
+                SonAlimYok = sonAlimYok || sonFiyat is null or <= 0,
+                TeklifYok = teklifYok
+            });
+        }
+
+        return sonuc;
+    }
+
     private static DateTime TarihCoz(string? tarih)
     {
         if (string.IsNullOrWhiteSpace(tarih))

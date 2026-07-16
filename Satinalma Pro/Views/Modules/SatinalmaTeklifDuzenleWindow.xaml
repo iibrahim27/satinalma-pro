@@ -91,7 +91,8 @@
               PreparingCellForEdit="FiyatGrid_PreparingCellForEdit">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" IsReadOnly="True" />
-        <DataGridTextColumn Header="Miktar" Binding="{Binding MiktarMetni}" Width="90" IsReadOnly="True" />
+        <DataGridTextColumn Header="Miktar" Binding="{Binding Miktar, UpdateSourceTrigger=PropertyChanged}" Width="70" />
+        <DataGridTextColumn Header="Birim" Binding="{Binding Birim}" Width="60" IsReadOnly="True" />
         <DataGridTextColumn Header="Marka" Binding="{Binding Marka, UpdateSourceTrigger=PropertyChanged}" Width="110" />
         <DataGridComboBoxColumn x:Name="ParaBirimiSutunu" Header="Para" Width="72"
                                 SelectedItemBinding="{Binding ParaBirimi, UpdateSourceTrigger=PropertyChanged}" />
