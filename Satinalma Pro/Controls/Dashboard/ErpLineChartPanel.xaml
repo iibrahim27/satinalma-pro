@@ -10,9 +10,9 @@
       <Grid Margin="0,0,0,12">
         <TextBlock Text="Aylık Harcama Grafiği" FontSize="15" FontWeight="SemiBold"
                    Foreground="{StaticResource DashTextBrush}" />
-        <ComboBox HorizontalAlignment="Right" Width="90" IsEnabled="False" SelectedIndex="0">
-          <ComboBoxItem Content="2024" />
-        </ComboBox>
+        <TextBlock x:Name="TxtYil" HorizontalAlignment="Right" VerticalAlignment="Center"
+                   FontSize="13" FontWeight="SemiBold"
+                   Foreground="{StaticResource DashTextSecondaryBrush}" Text="—" />
       </Grid>
       <Canvas x:Name="ChartCanvas" Grid.Row="1" ClipToBounds="True" />
     </Grid>

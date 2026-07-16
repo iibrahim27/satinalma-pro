@@ -102,8 +102,13 @@ public static class SatinalmaSiparisIslemleri
         if (!KullaniciYetkileri.SatinalmaFirmaOnayiDuzenlenebilir())
             throw new InvalidOperationException("Bu onayı geri alma yetkiniz yok.");
 
-        if (!talep.HerhangiKalemOnayli && talep.Durum != SatinalmaTalepDurumlari.Onaylandi)
-            throw new InvalidOperationException("Geri alınacak firma onayı bulunamadı.");
+        if (talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu)
+            throw new InvalidOperationException("Sipariş verilmiş taleplerde onay geri alınamaz.");
+
+        if (!talep.HerhangiKalemOnayli
+            && !talep.YonetimOnayKilitli
+            && talep.Durum != SatinalmaTalepDurumlari.Onaylandi)
+            throw new InvalidOperationException("Geri alınacak onay bulunamadı.");
 
         talep.Kalemler ??= [];
         talep.Teklifler ??= [];
@@ -121,8 +126,22 @@ public static class SatinalmaSiparisIslemleri
         talep.OnaylananTeklifId = null;
         talep.FirmaSiparisNolari?.Clear();
         talep.SiparisNo = "";
-        talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
+        talep.TeklifsizYonetimOnayi = false;
         talep.YonetimOnayKilitli = false;
+        talep.YonetimOnaylayanAd = "";
+        talep.YonetimOnaylayanEposta = "";
+        talep.YonetimOnayTarihi = "";
+
+        if ((talep.Teklifler?.Count ?? 0) > 0)
+        {
+            talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
+            talep.Status = ProcurementStatus.Comparison;
+        }
+        else
+        {
+            talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
+            talep.Status = ProcurementStatus.QuoteEntry;
+        }
 
         SatinalmaTalepYardimcisi.Dokun(talep);
         SatinalmaDepo.Kaydet();

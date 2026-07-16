@@ -17,6 +17,10 @@ public partial class OnaylananTalepDetayView : UserControl
 
     public event Action? Geri;
     public event Action? Degisti;
+    /// <summary>Onay geri alındıktan sonra düzenleme/yeniden gönderim ekranına yönlendirme.</summary>
+    public event Action<string>? Yonlendir;
+
+    public SatinalmaTalep? AktifTalep => GuncelTalep();
 
     public OnaylananTalepDetayView() => InitializeComponent();
 
@@ -57,6 +61,13 @@ public partial class OnaylananTalepDetayView : UserControl
             && KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol)
                 is KullaniciRolleri.Satinalma or KullaniciRolleri.Admin;
 
+        var onayiGeriAlabilir = satinalmaModu
+            && KullaniciYetkileri.SatinalmaFirmaOnayiDuzenlenebilir()
+            && talep.Durum != SatinalmaTalepDurumlari.SiparisOlusturuldu
+            && (talep.YonetimOnayKilitli || talep.HerhangiKalemOnayli
+                || talep.Durum == SatinalmaTalepDurumlari.Onaylandi);
+
+        BtnOnayiGeriAl.Visibility = onayiGeriAlabilir ? Visibility.Visible : Visibility.Collapsed;
         BtnFirmaFiyat.Visibility = teklifsizBekliyor && satinalmaModu
             ? Visibility.Visible
             : Visibility.Collapsed;
@@ -187,6 +198,42 @@ public partial class OnaylananTalepDetayView : UserControl
         await SatinalmaPart1Servisi.SiparisVerAsync(talep);
         Degisti?.Invoke();
         Geri?.Invoke();
+    }
+
+    private async void OnayiGeriAl_Click(object sender, RoutedEventArgs e)
+    {
+        var talep = GuncelTalep();
+        if (talep is null)
+            return;
+
+        var onay = MessageBox.Show(
+            $"{talep.TalepNo} onayını geri almak istiyor musunuz?\n\n" +
+            "Onay kaldırılır; teklifleri düzenleyip yönetime yeniden gönderebilirsiniz.",
+            UygulamaBilgisi.Ad,
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (onay != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            await SatinalmaSiparisIslemleri.FirmaOnaylariniGeriAlAsync(talep);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        MessageBox.Show(
+            "Onay geri alındı. Karşılaştırma / teklif ekranından düzenleyip yönetime yeniden gönderebilirsiniz.",
+            UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+
+        Degisti?.Invoke();
+        var hedef = (talep.Teklifler?.Count ?? 0) > 0
+            ? SatinalmaPart1Menusu.SatinalmaKarsilastirma
+            : SatinalmaPart1Menusu.SatinalmaTeklifIstenen;
+        Yonlendir?.Invoke(hedef);
     }
 
     private void Geri_Click(object sender, RoutedEventArgs e) => Geri?.Invoke();

@@ -463,6 +463,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
         var detay = new OnaylananTalepDetayView();
         detay.Geri += ListeyeDon;
         detay.Degisti += IcerikYenile;
+        detay.Yonlendir += route => RouteAc(route, detay.AktifTalep?.Id);
         return detay;
     }
 

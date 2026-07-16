@@ -65,8 +65,9 @@ public partial class TeklifOnayDetayPage : ContentPage
         talep.SatinalmaOnerisiMigrasyonu();
 
         var duzenlemeModu = SatinalmaOnayYetkisi.FirmaOnayiDuzenlenebilir(_oturum.Depo.AktifKullanici)
-            && talep.HerhangiKalemOnayli
-            && (talep.YonetimOnayKilitli || talep.Durum == SatinalmaTalepDurumlari.Onaylandi);
+            && talep.Durum != SatinalmaTalepDurumlari.SiparisOlusturuldu
+            && (talep.HerhangiKalemOnayli || talep.YonetimOnayKilitli
+                || talep.Durum == SatinalmaTalepDurumlari.Onaylandi);
         var onayBekliyor = SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep) && !duzenlemeModu;
         var onayVerebilir = SatinalmaOnayYetkisi.TeklifOnayVerebilir(_oturum.Depo.AktifKullanici);
 

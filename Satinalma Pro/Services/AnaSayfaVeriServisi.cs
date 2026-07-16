@@ -134,6 +134,7 @@ public static class AnaSayfaVeriServisi
         var oncekiStokDegeri = stokDegeri * 0.97;
         var aylikSeri = AylikHarcamaSerisi(alimlar);
         var sparkGenel = aylikSeri.Select(x => x.Deger).ToList();
+        var buAyGelir = BuAyFinansmanGeliri(buAy, buYil);
 
         return new AnaSayfaVeri
         {
@@ -201,7 +202,7 @@ public static class AnaSayfaVeriServisi
             HarcamaDagilimi = HarcamaDagiliminiOlustur(buAyAlimlar),
             AcikKayitlar = AcikKayitlariOlustur(kaynak, sorgu),
             Hatirlatmalar = HatirlatmalariOlustur(kaynak, onayBekleyen, kritikStok),
-            FinansOzet = FinansOzetiniOlustur(toplamHarcama, oncekiHarcama),
+            FinansOzet = FinansOzetiniOlustur(buAyGelir, toplamHarcama),
             TopUrunler = TopUrunleriOlustur(buAyAlimlar)
         };
     }
@@ -643,9 +644,24 @@ public static class AnaSayfaVeriServisi
         return liste;
     }
 
-    private static AnaSayfaFinansOzet FinansOzetiniOlustur(double gider, double oncekiGider)
+    /// <summary>Finansman modülündeki gerçek gelir kayıtları (hakediş vb.); sahte tahmin yok.</summary>
+    private static double BuAyFinansmanGeliri(int ay, int yil)
     {
-        var gelir = oncekiGider * 1.12;
+        try
+        {
+            FinansmanVeriDeposu.Yukle();
+            return FinansmanVeriDeposu.Gelirler
+                .Where(g => TarihAy(g.Tarih) == ay && TarihYil(g.Tarih) == yil)
+                .Sum(g => (double)g.Tutar);
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    private static AnaSayfaFinansOzet FinansOzetiniOlustur(double gelir, double gider)
+    {
         var kar = gelir - gider;
         var marj = gelir <= 0 ? 0 : kar / gelir * 100;
         return new AnaSayfaFinansOzet

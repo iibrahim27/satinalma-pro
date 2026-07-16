@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.66",
-    "build":  135,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.66/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.66/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.66/SatinalmaPro.apk",
-    "notes":  "Satinalma teklif akisinda miktar duzeltme; karsilastirma PDF 2. sayfada son alim vs en dusuk teklif artis (TL/%) tablosu",
+    "version":  "2.1.67",
+    "build":  136,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.67/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.67/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.67/SatinalmaPro.apk",
+    "notes":  "Satinalma onay geri alma/duzenleme/yeniden gonder; dashboard yil duzeltmesi; finans ozeti gercek gelir (hakedis)",
     "zorunlu":  false
 }

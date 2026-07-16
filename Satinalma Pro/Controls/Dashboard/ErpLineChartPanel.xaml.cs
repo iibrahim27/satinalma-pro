@@ -17,6 +17,7 @@ public partial class ErpLineChartPanel : UserControl
     public ErpLineChartPanel()
     {
         InitializeComponent();
+        TxtYil.Text = DateTime.Now.Year.ToString();
         Loaded += (_, _) => Ciz();
         SizeChanged += (_, _) => Ciz();
     }
@@ -24,6 +25,7 @@ public partial class ErpLineChartPanel : UserControl
     public void Bagla(IReadOnlyList<AnaSayfaAylikNokta> noktalar)
     {
         _noktalar = noktalar;
+        TxtYil.Text = DateTime.Now.Year.ToString();
         _sonGenislik = 0;
         _sonYukseklik = 0;
         Ciz();
