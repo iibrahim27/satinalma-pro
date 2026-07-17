@@ -10,9 +10,12 @@ import android.graphics.pdf.PdfDocument
 import android.os.Environment
 import androidx.core.content.FileProvider
 import com.satinalmapro.android.core.model.TalepItem
+import com.satinalmapro.android.core.model.TeklifFiyat
 import com.satinalmapro.android.core.model.TeklifItem
+import com.satinalmapro.android.core.roles.KalemFirmaAtamaYardimcisi
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.math.roundToLong
 
 object SatinalmaPdfHelper {
 
@@ -567,14 +570,20 @@ object SatinalmaPdfHelper {
         SatinalmaPdfCizim.metinCiz(duzen, "Talep No: ${talep.talepNo}", kalin = true, boyut = 9f)
         SatinalmaPdfCizim.metinCiz(duzen, "Onaylayan: ${talep.yonetimOnaylayanAd.ifBlank { "—" }}", boyut = 9f)
         SatinalmaPdfCizim.metinCiz(duzen, "Durum: ${talep.durum}", boyut = 9f)
+        val atamaOzeti = onayAtamaOzeti(talep)
+        if (atamaOzeti.isNotBlank()) {
+            SatinalmaPdfCizim.metinCiz(duzen, "Onaylanan atama: $atamaOzeti", kalin = true, boyut = 8.5f)
+        }
         duzen.y += 4f
         val kolonlar = listOf(duzen.icerikGenisligi - 220f, 70f, 90f, 70f)
         val basliklar = listOf("Malzeme", "Miktar", "Firma", "Toplam")
-        val satirlar = talep.kalemler.sortedBy { it.siraNo }.map { kalem ->
-            val firma = kalem.onaylananTeklifId?.let { tid ->
-                talep.teklifler.firstOrNull { it.id == tid }?.firmaAdi
-            }.orEmpty().ifBlank { "Teklifsiz" }
-            listOf(kalem.malzeme, "${SatinalmaPdfFormats.miktar(kalem.miktar)} ${kalem.birim}", firma, "")
+        val satirlar = onayAtamaSatirlari(talep).map { s ->
+            listOf(
+                s.malzeme,
+                "${SatinalmaPdfFormats.miktar(s.miktar)} ${s.birim}",
+                s.firma,
+                s.toplam
+            )
         }
         SatinalmaPdfCizim.tabloCiz(duzen, kolonlar, basliklar, satirlar, kompakt = true)
         SatinalmaPdfCizim.yonetimImzaCiz(duzen, baglam.yonetimImzalari.filter { it.aktif }, kompakt = true)
@@ -598,15 +607,81 @@ object SatinalmaPdfHelper {
         duzen.y += 4f
         val kolonlar = listOf(duzen.icerikGenisligi - 220f, 70f, 90f, 70f)
         val basliklar = listOf("Malzeme", "Miktar", "Firma", "Toplam (KDV Hariç)")
-        val satirlar = talep.kalemler.sortedBy { it.siraNo }.map { kalem ->
-            val teklif = kalem.onaylananTeklifId?.let { tid -> talep.teklifler.firstOrNull { it.id == tid } }
-            val fiyat = teklif?.fiyatlar?.firstOrNull { it.kalemId == kalem.id }
-            val firma = teklif?.firmaAdi.orEmpty().ifBlank { "—" }
-            val tutar = fiyat?.toplamTutar?.let { SatinalmaPdfFormats.tl(it) } ?: "—"
-            listOf(kalem.malzeme, "${SatinalmaPdfFormats.miktar(kalem.miktar)} ${kalem.birim}", firma, tutar)
+        val satirlar = onayAtamaSatirlari(talep).map { s ->
+            listOf(
+                s.malzeme,
+                "${SatinalmaPdfFormats.miktar(s.miktar)} ${s.birim}",
+                s.firma,
+                s.toplam
+            )
         }
         SatinalmaPdfCizim.tabloCiz(duzen, kolonlar, basliklar, satirlar)
         duzen.bitir()
         return doc
+    }
+
+    private data class OnayPdfSatiri(
+        val malzeme: String,
+        val miktar: Double,
+        val birim: String,
+        val firma: String,
+        val toplam: String
+    )
+
+    private fun onayAtamaSatirlari(talep: TalepItem): List<OnayPdfSatiri> {
+        val satirlar = mutableListOf<OnayPdfSatiri>()
+        for (kalem in talep.kalemler.sortedBy { it.siraNo }) {
+            val atamalar = KalemFirmaAtamaYardimcisi.etkinAtamalar(kalem)
+            if (atamalar.isEmpty()) {
+                satirlar += OnayPdfSatiri(
+                    malzeme = kalem.malzeme,
+                    miktar = kalem.miktar,
+                    birim = kalem.birim,
+                    firma = "Teklifsiz",
+                    toplam = "—"
+                )
+                continue
+            }
+            for (atama in atamalar) {
+                val teklif = talep.teklifler.firstOrNull { it.id == atama.teklifId }
+                val fiyat = teklif?.fiyatlar?.firstOrNull { it.kalemId == kalem.id }
+                val birimTl = fiyat?.let { tlBirimFiyat(it, teklif) } ?: 0.0
+                val ara = if (birimTl > 0) {
+                    (birimTl * atama.miktar * 100.0).roundToLong() / 100.0
+                } else null
+                satirlar += OnayPdfSatiri(
+                    malzeme = kalem.malzeme,
+                    miktar = atama.miktar,
+                    birim = kalem.birim,
+                    firma = teklif?.firmaAdi.orEmpty().ifBlank { "—" },
+                    toplam = ara?.let { SatinalmaPdfFormats.tl(it) } ?: "—"
+                )
+            }
+        }
+        return satirlar
+    }
+
+    private fun onayAtamaOzeti(talep: TalepItem): String {
+        val parcalar = mutableListOf<String>()
+        for (kalem in talep.kalemler.sortedBy { it.siraNo }) {
+            val atamalar = KalemFirmaAtamaYardimcisi.etkinAtamalar(kalem)
+            if (atamalar.isEmpty()) continue
+            val ozet = atamalar.joinToString(" + ") { a ->
+                val firma = talep.teklifler.firstOrNull { it.id == a.teklifId }?.firmaAdi ?: "?"
+                "${SatinalmaPdfFormats.miktar(a.miktar)} $firma"
+            }
+            parcalar += if (atamalar.size > 1) "${kalem.malzeme}: $ozet" else ozet
+        }
+        return parcalar.distinct().joinToString(" | ")
+    }
+
+    private fun tlBirimFiyat(fiyat: TeklifFiyat, teklif: TeklifItem?): Double {
+        val kurUsd = teklif?.usdKuru ?: 0.0
+        val kurEur = teklif?.eurKuru ?: 0.0
+        return when (fiyat.paraBirimi.uppercase()) {
+            "USD" -> fiyat.birimFiyat * kurUsd
+            "EUR" -> fiyat.birimFiyat * kurEur
+            else -> fiyat.birimFiyat
+        }
     }
 }

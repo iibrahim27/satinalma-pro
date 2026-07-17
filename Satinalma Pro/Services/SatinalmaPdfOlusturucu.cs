@@ -273,37 +273,50 @@ public static class SatinalmaPdfOlusturucu
                                 var fiyat = fiyatlar[i];
                                 var onerilen = onerilenTeklif != null && teklif.Id == onerilenTeklif.Id;
                                 var dusuk = fiyat != null && fiyat.ToplamTutar > 0 && fiyat.ToplamTutar == enDusuk;
-                                var onayli = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
-                                    .Any(a => a.TeklifId == teklif.Id);
+                                var atamaMiktar = FirmaAtamaMiktari(kalem, teklif.Id);
+                                var onayli = atamaMiktar > 0;
                                 var vurgula = onayKaydiVar
                                     ? onayli
                                     : SatinalmaOneriYardimcisi.HucreOneriVurgula(talep, kalem, teklif, onerilenTeklif, dusuk);
+                                var birimMetin = fiyat?.BirimFiyatGosterim(teklif.UsdKuru, teklif.EurKuru) ?? "—";
+                                if (onayKaydiVar && onayli && Math.Abs(atamaMiktar - kalem.Miktar) > 0.0001)
+                                    birimMetin = $"{birimMetin}\n→ {atamaMiktar.ToString("N2", Tr)} {kalem.Birim}";
                                 table.Cell().Element(c => HucreVeri(c, vurgula, yonetimFormu)).AlignRight()
-                                    .Text(fiyat?.BirimFiyatGosterim(teklif.UsdKuru, teklif.EurKuru) ?? "—");
+                                    .Text(birimMetin);
                                 if (markaGoster)
                                 {
                                     table.Cell().Element(c => HucreVeri(c, vurgula, yonetimFormu))
                                         .Text(string.IsNullOrWhiteSpace(fiyat?.Marka) ? "—" : fiyat!.Marka);
                                 }
+
+                                string toplamMetin;
+                                if (fiyat is null)
+                                    toplamMetin = "—";
+                                else if (onayKaydiVar && onayli)
+                                    toplamMetin = TlGosterim(FirmaKalemTutarlari(teklif, kalem).Ara);
+                                else
+                                    toplamMetin = TlGosterim(fiyat.ToplamTutar);
                                 table.Cell().Element(c => HucreVeri(c, vurgula, yonetimFormu)).AlignRight()
-                                    .Text(fiyat != null ? TlGosterim(fiyat.ToplamTutar) : "—");
+                                    .Text(toplamMetin);
                             }
                         }
 
-                        KarsilastirmaToplamSatirleriEkle(table, teklifler, onerilenTeklif, yonetimFormu, markaGoster);
+                        if (onayKaydiVar)
+                            YonetimOnayToplamSatirleriEkle(table, talep, teklifler, markaGoster);
+                        else
+                            KarsilastirmaToplamSatirleriEkle(table, teklifler, onerilenTeklif, yonetimFormu, markaGoster);
                     });
 
                     if (onayKaydiVar)
                     {
-                        var onayliTeklifler = teklifler.Where(t => TeklifOnayliMi(talep, t)).ToList();
-                        if (onayliTeklifler.Count > 0)
+                        var onayOzeti = OnaylananAtamaOzeti(talep);
+                        if (!string.IsNullOrWhiteSpace(onayOzeti))
                         {
                             col.Item().Border(1).BorderColor(Colors.Green.Medium).Background(Colors.Green.Lighten5)
                                 .Padding(6).Text(text =>
                                 {
-                                    text.Span("Onaylanan Firma(lar): ").SemiBold();
-                                    text.Span(string.Join(" · ", onayliTeklifler.Select(t => t.FirmaAdi))).SemiBold()
-                                        .FontColor(Colors.Green.Darken2);
+                                    text.Span("Onaylanan atama: ").SemiBold();
+                                    text.Span(onayOzeti).SemiBold().FontColor(Colors.Green.Darken2);
                                 });
                         }
 
@@ -592,15 +605,14 @@ public static class SatinalmaPdfOlusturucu
                     if (talep.TalepTuru == TalepTurleri.Acil)
                         col.Item().Text("Talep Türü: Acil / teklifsiz alım").FontColor(Colors.Orange.Darken2).SemiBold();
 
-                    var onayliTeklifler = teklifler.Where(t => TeklifOnayliMi(talep, t)).ToList();
-                    if (onayliTeklifler.Count > 0)
+                    var onayOzeti = OnaylananAtamaOzeti(talep);
+                    if (!string.IsNullOrWhiteSpace(onayOzeti))
                     {
                         col.Item().Border(1).BorderColor(Colors.Green.Medium).Background(Colors.Green.Lighten5)
                             .Padding(6).Text(text =>
                             {
-                                text.Span("Onaylanan Firma(lar): ").SemiBold();
-                                text.Span(string.Join(" · ", onayliTeklifler.Select(t => t.FirmaAdi))).SemiBold()
-                                    .FontColor(Colors.Green.Darken2);
+                                text.Span("Onaylanan atama: ").SemiBold();
+                                text.Span(onayOzeti).SemiBold().FontColor(Colors.Green.Darken2);
                             });
                     }
 
@@ -621,9 +633,13 @@ public static class SatinalmaPdfOlusturucu
                         {
                             var fiyatlar = teklifler.Select(t =>
                                 t.Fiyatlar.FirstOrDefault(f => f.KalemId == kalem.Id)).ToList();
+                            var atamaOzeti = KalemAtamaOzeti(talep, kalem);
 
                             table.Cell().Element(c => HucreVeri(c, false, true)).Text(kalem.SiraNo.ToString());
-                            table.Cell().Element(c => HucreVeri(c, false, true)).Text(kalem.Malzeme);
+                            table.Cell().Element(c => HucreVeri(c, false, true)).Text(
+                                string.IsNullOrWhiteSpace(atamaOzeti) || atamaOzeti.Split('+').Length <= 1
+                                    ? kalem.Malzeme
+                                    : $"{kalem.Malzeme}\n({atamaOzeti})");
                             table.Cell().Element(c => HucreVeri(c, false, true)).AlignRight()
                                 .Text(kalem.Miktar.ToString("N2", Tr));
                             table.Cell().Element(c => HucreVeri(c, false, true)).Text(kalem.Birim);
@@ -632,22 +648,38 @@ public static class SatinalmaPdfOlusturucu
                             {
                                 var teklif = teklifler[i];
                                 var fiyat = fiyatlar[i];
-                                var onayli = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
-                                    .Any(a => a.TeklifId == teklif.Id);
+                                var atamaMiktar = FirmaAtamaMiktari(kalem, teklif.Id);
+                                var onayli = atamaMiktar > 0;
+                                var birimMetin = fiyat?.BirimFiyatGosterim(teklif.UsdKuru, teklif.EurKuru) ?? "—";
+                                if (onayli && Math.Abs(atamaMiktar - kalem.Miktar) > 0.0001)
+                                    birimMetin = $"{birimMetin}\n→ {atamaMiktar.ToString("N2", Tr)} {kalem.Birim}";
+
                                 table.Cell().Element(c => HucreVeri(c, onayli, true)).AlignRight()
-                                    .Text(fiyat?.BirimFiyatGosterim(teklif.UsdKuru, teklif.EurKuru) ?? "—");
+                                    .Text(birimMetin);
                                 if (markaGoster)
                                 {
                                     table.Cell().Element(c => HucreVeri(c, onayli, true))
                                         .Text(string.IsNullOrWhiteSpace(fiyat?.Marka) ? "—" : fiyat!.Marka);
                                 }
+
+                                var toplamMetin = "—";
+                                if (fiyat != null)
+                                {
+                                    if (onayli)
+                                    {
+                                        var (ara, _, _) = FirmaKalemTutarlari(teklif, kalem);
+                                        toplamMetin = TlGosterim(ara);
+                                    }
+                                    else
+                                        toplamMetin = TlGosterim(fiyat.ToplamTutar);
+                                }
+
                                 table.Cell().Element(c => HucreVeri(c, onayli, true)).AlignRight()
-                                    .Text(fiyat != null ? TlGosterim(fiyat.ToplamTutar) : "—");
+                                    .Text(toplamMetin);
                             }
                         }
 
-                        KarsilastirmaToplamSatirleriEkle(table, teklifler,
-                            teklifler.FirstOrDefault(t => t.Id == talep.OnaylananTeklifId), true, markaGoster);
+                        YonetimOnayToplamSatirleriEkle(table, talep, teklifler, markaGoster);
                     });
 
                     col.Item().PaddingTop(6).Border(1).BorderColor(Colors.Grey.Lighten1).Padding(8)
@@ -771,6 +803,64 @@ public static class SatinalmaPdfOlusturucu
         var kdvOran = fiyat.KdvOrani > 0 ? fiyat.KdvOrani : teklif.KdvOrani;
         var kdv = Math.Round(ara * (decimal)kdvOran / 100m, 2);
         return (ara, kdv, ara + kdv);
+    }
+
+    private static string KalemAtamaOzeti(SatinalmaTalep talep, SatinalmaTalepKalemi kalem)
+    {
+        var atamalar = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem);
+        if (atamalar.Count == 0)
+            return "";
+
+        return string.Join(" + ", atamalar.Select(a =>
+        {
+            var firma = talep.Teklifler.FirstOrDefault(t => t.Id == a.TeklifId)?.FirmaAdi ?? "?";
+            return $"{a.Miktar.ToString("N2", Tr)} {firma}";
+        }));
+    }
+
+    private static string OnaylananAtamaOzeti(SatinalmaTalep talep)
+    {
+        talep.Kalemler ??= [];
+        var onayliKalemler = talep.Kalemler
+            .Where(KalemFirmaAtamaYardimcisi.OnayliMi)
+            .OrderBy(k => k.SiraNo)
+            .ToList();
+        if (onayliKalemler.Count == 0)
+        {
+            return string.Join(" · ",
+                (talep.Teklifler ?? []).Where(t => TeklifOnayliMi(talep, t)).Select(t => t.FirmaAdi));
+        }
+
+        var bolunenVar = onayliKalemler.Any(k => KalemFirmaAtamaYardimcisi.EtkinAtamalar(k).Count > 1);
+        if (!bolunenVar && onayliKalemler.Count == 1)
+            return KalemAtamaOzeti(talep, onayliKalemler[0]);
+
+        if (!bolunenVar)
+        {
+            return string.Join(" · ",
+                (talep.Teklifler ?? []).Where(t => TeklifOnayliMi(talep, t)).Select(t => t.FirmaAdi));
+        }
+
+        return string.Join(" | ", onayliKalemler.Select(k =>
+            $"{k.Malzeme}: {KalemAtamaOzeti(talep, k)}"));
+    }
+
+    private static void YonetimOnayToplamSatirleriEkle(
+        TableDescriptor table,
+        SatinalmaTalep talep,
+        List<SatinalmaTeklif> teklifler,
+        bool markaGoster)
+    {
+        var grupSutun = TeklifGrupSutunSayisi(markaGoster);
+        table.Cell().ColumnSpan(4).Element(c => HucreBaslik(c, false, true))
+            .Text("ARA TOPLAM (KDV Hariç) — onay miktarı");
+        foreach (var teklif in teklifler)
+        {
+            var ara = (talep.Kalemler ?? []).Sum(k => FirmaKalemTutarlari(teklif, k).Ara);
+            var onayli = TeklifOnayliMi(talep, teklif);
+            table.Cell().ColumnSpan((uint)grupSutun).Element(c => HucreVeri(c, onayli, true))
+                .AlignCenter().Text(TlGosterim(ara));
+        }
     }
 
     private static void YonetimOnayTabloBasliklariEkle(TableDescriptor table, List<SatinalmaTeklif> teklifler,

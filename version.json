@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.70",
-    "build":  139,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.70/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.70/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.70/SatinalmaPro.apk",
-    "notes":  "Yonetim teklif onayinda kalem miktarini firmalara bolme (80/20+); siparis/mal kabul atama satirlari; PDF toplamlar",
+    "version":  "2.1.71",
+    "build":  140,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.71/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.71/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.71/SatinalmaPro.apk",
+    "notes":  "Yonetim onay PDF: kalem miktar firma bolme (80/20+) atama ozeti, oranli tutarlar ve Android onay/siparis satirlari",
     "zorunlu":  false
 }
