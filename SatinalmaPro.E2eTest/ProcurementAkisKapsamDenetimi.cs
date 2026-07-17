@@ -1,6 +1,7 @@
 using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Models;
 using SatinalmaPro.Shared.Procurement;
+using SatinalmaPro.Shared.Services;
 
 namespace SatinalmaPro.E2eTest;
 
@@ -26,14 +27,14 @@ public static class ProcurementAkisKapsamDenetimi
     {
         [ProcurementStatus.Draft] = [KullaniciRolleri.Sef, KullaniciRolleri.Saha],
         [ProcurementStatus.Submitted] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Sef, KullaniciRolleri.Saha],
-        [ProcurementStatus.QuoteRequested] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma],
-        [ProcurementStatus.QuoteEntry] = [KullaniciRolleri.Satinalma],
-        [ProcurementStatus.Comparison] = [KullaniciRolleri.Satinalma],
-        [ProcurementStatus.ManagementQuoteReview] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma],
+        [ProcurementStatus.QuoteRequested] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Sef, KullaniciRolleri.Saha],
+        [ProcurementStatus.QuoteEntry] = [KullaniciRolleri.Satinalma, KullaniciRolleri.Sef, KullaniciRolleri.Saha],
+        [ProcurementStatus.Comparison] = [KullaniciRolleri.Satinalma, KullaniciRolleri.Sef, KullaniciRolleri.Saha],
+        [ProcurementStatus.ManagementQuoteReview] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Sef, KullaniciRolleri.Saha],
         [ProcurementStatus.Approved] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Sef, KullaniciRolleri.Saha],
-        [ProcurementStatus.Ordered] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Depo, KullaniciRolleri.Sef, KullaniciRolleri.Saha, KullaniciRolleri.Atolye],
+        [ProcurementStatus.Ordered] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Sef, KullaniciRolleri.Saha],
         [ProcurementStatus.Rejected] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Sef, KullaniciRolleri.Saha],
-        [ProcurementStatus.Completed] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Admin]
+        [ProcurementStatus.Completed] = [KullaniciRolleri.Yonetim, KullaniciRolleri.Satinalma, KullaniciRolleri.Sef, KullaniciRolleri.Saha]
     };
 
     public static E2eTestSonuc Calistir()
@@ -69,7 +70,9 @@ public static class ProcurementAkisKapsamDenetimi
                          && rol is not KullaniciRolleri.Admin
                          && rol is not KullaniciRolleri.Satinalma)
                 {
-                    sonuc.Uyar($"{rol} beklenmeyen şekilde {status} görüyor: {string.Join(", ", gorunenRoute)}");
+                    sonuc.Bekle(false,
+                        "",
+                        $"{rol} beklenmeyen şekilde {status} görüyor: {string.Join(", ", gorunenRoute)}");
                 }
             }
         }
@@ -102,7 +105,7 @@ public static class ProcurementAkisKapsamDenetimi
         return sonuc;
     }
 
-    /// <summary>TabFilterManager (Android) ile masaüstü menü farklarını raporla.</summary>
+    /// <summary>Rol kapsamının masaüstü route ve Android sekmelerinde aynı kalmasını doğrular.</summary>
     public static E2eTestSonuc PlatformMenuUyumu()
     {
         var sonuc = new E2eTestSonuc();
@@ -113,26 +116,82 @@ public static class ProcurementAkisKapsamDenetimi
             var desktop = ProcurementRouteMatcher.GetFlatMenu(TabFilterManager.NormalizeRole(rol))
                 .Select(i => i.Route).OrderBy(r => r).ToList();
             var androidTabs = TabFilterManager.GetVisibleTabs(rol);
-            // Android TabFilterManager sef/saha'ya full tabs veriyor — desktop kısıtlı
             if (rol is KullaniciRolleri.Sef or KullaniciRolleri.Saha)
             {
                 var desktopHasTaleplerim = desktop.Contains(SatinalmaRoutes.Taleplerim);
                 var androidHasManagement = androidTabs.Contains(ProcurementTab.ManagementApproval);
-                sonuc.Bekle(desktopHasTaleplerim && !androidHasManagement == false,
-                    $"{rol}: desktop Taleplerim={desktopHasTaleplerim}, Android ManagementApproval={androidHasManagement}",
-                    "");
-                if (androidHasManagement && desktop.All(r => r != SatinalmaRoutes.YonetimGelenTalepler))
-                    sonuc.Uyar($"{rol}: Android TabFilterManager yönetim sekmeleri gösteriyor, masaüstü göstermiyor (bilinen fark — Android shell ayrı menü kullanabilir)");
+                sonuc.Bekle(desktopHasTaleplerim && !androidHasManagement
+                             && !TabFilterManager.RequiresRequesterScope(rol),
+                    $"{rol}: tüm talepleri izleme kapsamı masaüstü ve Android'de uyumlu",
+                    $"{rol}: liste görünürlüğü hâlâ talep sahibiyle sınırlandırılmış veya onay sekmesine erişebiliyor");
+            }
+
+            if (rol == KullaniciRolleri.Depo)
+            {
+                sonuc.Bekle(!desktop.Any()
+                             && androidTabs.SequenceEqual([ProcurementTab.StockStatus, ProcurementTab.StockMovements]),
+                    "Depo: satınalma listeleri kapalı, yalnız stok sekmeleri açık",
+                    "Depo: satınalma sürecine veya yanlış stok kapsamına erişebiliyor");
             }
 
             if (rol == KullaniciRolleri.Atolye)
             {
-                var desktopYoldaki = desktop.Contains(SatinalmaRoutes.SatinalmaSiparis);
-                var androidYoldaki = androidTabs.Contains(ProcurementTab.ApprovedOrders);
-                if (desktopYoldaki && !androidYoldaki)
-                    sonuc.Uyar("Atölye: masaüstünde Yoldaki Malzemeler var, Android TabFilterManager'da ApprovedOrders yok — Android AtolyeShell kontrol edilmeli");
+                sonuc.Bekle(!desktop.Any()
+                             && androidTabs.SequenceEqual([ProcurementTab.StockStatus]),
+                    "Atölye: yalnız stok durumu erişimi açık",
+                    "Atölye: stok durumu dışındaki ekrana erişebiliyor");
             }
         }
+
+        return sonuc;
+    }
+
+    /// <summary>Kullanıcı tarafından tanımlanan masaüstü modül ve stok sekmesi matrisi.</summary>
+    public static E2eTestSonuc MasaustuModulMatrisi()
+    {
+        var sonuc = new E2eTestSonuc();
+        sonuc.Adim("=== Masaüstü rol / modül matrisi ===");
+
+        var tumOperasyonModulleri = new[]
+        {
+            "Alınan Malzemeler", "Stok Yönetimi", "Agrega", "Çimento", "Akaryakıt Takip",
+            "Araç Filo Takip", "Finansman Raporlama", "Satınalma", "Raporlamalar"
+        };
+
+        var beklentiler = new Dictionary<string, IReadOnlyList<string>>
+        {
+            [KullaniciRolleri.Yonetim] = tumOperasyonModulleri,
+            [KullaniciRolleri.Sef] = tumOperasyonModulleri,
+            [KullaniciRolleri.Satinalma] = [.. tumOperasyonModulleri, "Ayarlar"],
+            [KullaniciRolleri.Saha] = ["Satınalma", "Stok Yönetimi"],
+            [KullaniciRolleri.Depo] = ["Stok Yönetimi"],
+            [KullaniciRolleri.Atolye] = ["Stok Yönetimi"]
+        };
+
+        foreach (var (rol, beklenen) in beklentiler)
+        {
+            var gercek = MasaustuRolHaritasi.MasaustuModulleri(rol);
+            sonuc.Bekle(
+                gercek.OrderBy(x => x).SequenceEqual(beklenen.OrderBy(x => x), StringComparer.OrdinalIgnoreCase),
+                $"{rol}: masaüstü modül kapsamı doğru",
+                $"{rol}: masaüstü modül kapsamı beklenen rolle uyuşmuyor");
+        }
+
+        sonuc.Bekle(
+            MasaustuRolHaritasi.StokSekmeleri(KullaniciRolleri.Saha)
+                .SequenceEqual(["Stok Durumu", "Stok Hareketleri"]),
+            "Saha: stok durumu ve stok hareketleri açık",
+            "Saha: stok yönetiminde yetkisiz sekme açık");
+        sonuc.Bekle(
+            MasaustuRolHaritasi.StokSekmeleri(KullaniciRolleri.Sef)
+                .SequenceEqual(["Stok Durumu", "Stok Hareketleri"]),
+            "Şef: stok durumu ve stok hareketleri açık",
+            "Şef: stok yönetiminde yetkisiz sekme açık");
+        sonuc.Bekle(
+            MasaustuRolHaritasi.StokSekmeleri(KullaniciRolleri.Atolye)
+                .SequenceEqual(["Stok Durumu"]),
+            "Atölye: yalnız stok durumu açık",
+            "Atölye: stok yönetiminde yetkisiz sekme açık");
 
         return sonuc;
     }

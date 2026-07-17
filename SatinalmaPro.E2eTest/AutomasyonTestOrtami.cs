@@ -251,8 +251,9 @@ public sealed class AutomasyonTestOrtami
         talep.Status = ProcurementStatus.ManagementQuoteReview;
         talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
         Kaydet(talep);
-        foreach (var (hedefRol, _) in BildirimRolPolitikasi.TeklifOnaydaHedefleri())
-            BildirimVeFcm(BildirimTipleri.TeklifOnayda, talep, hedefRol: hedefRol);
+        foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.TeklifOnaydaHedefleri(
+                     talep.OlusturanUid, talep.OlusturanRol, user.Uid))
+            BildirimVeFcm(BildirimTipleri.TeklifOnayda, talep, hedefRol: hedefRol, hedefUid: hedefUid);
     }
 
     public void SiparisOlustur(SatinalmaTalep talep, KullaniciProfili user)
@@ -262,13 +263,14 @@ public sealed class AutomasyonTestOrtami
         talep.Durum = SatinalmaTalepDurumlari.SiparisOlusturuldu;
         talep.SiparisNo = YeniSiparisNo();
         Kaydet(talep);
-        BildirimVeFcm(BildirimTipleri.SiparisOlusturuldu, talep, hedefRol: KullaniciRolleri.Depo);
-        BildirimVeFcm(BildirimTipleri.SiparisOlusturuldu, talep, hedefUid: talep.OlusturanUid);
+        foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.SiparisOlusturulduHedefleri(
+                     talep.OlusturanUid, user.Uid))
+            BildirimVeFcm(BildirimTipleri.SiparisOlusturuldu, talep, hedefRol: hedefRol, hedefUid: hedefUid);
     }
 
-    public void DepoMalKabulTamamla(SatinalmaTalep talep)
+    public void SatinalmaMalKabulTamamla(SatinalmaTalep talep)
     {
-        OturumAc(Depo);
+        OturumAc(Satinalma);
         foreach (var kalem in talep.Kalemler)
         {
             var onceki = Stocks.GetValueOrDefault(kalem.Malzeme);
@@ -282,7 +284,7 @@ public sealed class AutomasyonTestOrtami
                 MaterialName = kalem.Malzeme,
                 Quantity = kalem.Miktar,
                 RequestId = talep.Id.ToString(),
-                CreatedByUid = Depo.Uid
+                CreatedByUid = Satinalma.Uid
             });
 
             kalem.KabulEdilenMiktar = kalem.Miktar;
@@ -291,8 +293,9 @@ public sealed class AutomasyonTestOrtami
 
         talep.Status = ProcurementStatus.Completed;
         Kaydet(talep);
-        BildirimVeFcm(BildirimTipleri.MalKabulEdildi, talep, hedefRol: KullaniciRolleri.Depo);
-        BildirimVeFcm(BildirimTipleri.MalKabulEdildi, talep, hedefUid: talep.OlusturanUid);
+        foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.MalKabulEdildiHedefleri(
+                     talep.OlusturanUid, Satinalma.Uid))
+            BildirimVeFcm(BildirimTipleri.MalKabulEdildi, talep, hedefRol: hedefRol, hedefUid: hedefUid);
     }
 
     public FirestoreGuvenlikSimulasyonu.IslemSonucu StockMovementYazmayiDene(KullaniciProfili user)
@@ -377,18 +380,18 @@ public sealed class AutomasyonTestOrtami
         {
             case PurchaseRequestDetailAction.DirectApprove:
             case PurchaseRequestDetailAction.ApproveQuote:
-                BildirimVeFcm(BildirimTipleri.Onaylandi, talep, hedefRol: KullaniciRolleri.Satinalma);
-                BildirimVeFcm(BildirimTipleri.Onaylandi, talep, hedefUid: talep.OlusturanUid);
+                foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.OnaylandiHedefleri(
+                             talep.OlusturanUid, AktifKullanici?.Uid))
+                    BildirimVeFcm(BildirimTipleri.Onaylandi, talep, hedefRol, hedefUid);
                 break;
             case PurchaseRequestDetailAction.StartQuoteProcess:
                 BildirimVeFcm(BildirimTipleri.TeklifIstendi, talep, hedefRol: KullaniciRolleri.Satinalma);
-                if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
-                    BildirimVeFcm(BildirimTipleri.TeklifIstendi, talep, hedefUid: talep.OlusturanUid);
                 break;
             case PurchaseRequestDetailAction.RejectRequest:
             case PurchaseRequestDetailAction.RejectEntireRequest:
-                BildirimVeFcm(BildirimTipleri.Reddedildi, talep, hedefRol: KullaniciRolleri.Satinalma);
-                BildirimVeFcm(BildirimTipleri.Reddedildi, talep, hedefUid: talep.OlusturanUid);
+                foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.ReddedildiHedefleri(
+                             talep.OlusturanUid, AktifKullanici?.Uid))
+                    BildirimVeFcm(BildirimTipleri.Reddedildi, talep, hedefRol, hedefUid);
                 break;
             case PurchaseRequestDetailAction.SendQuotesForRevision:
                 BildirimVeFcm(BildirimTipleri.TeklifDuzeltmeIstendi, talep, hedefRol: KullaniciRolleri.Satinalma);

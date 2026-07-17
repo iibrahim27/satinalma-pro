@@ -7,7 +7,8 @@ public sealed class BildirimDinleyici : IDisposable
 {
     private readonly OturumServisi _oturum;
     private Timer? _zamanlayici;
-    private bool _kontrolEdiliyor;
+    private int _kontrolEdiliyor;
+    private bool _ilkSenkronTamam;
 
     public event Action? BildirimlerDegisti;
 
@@ -19,20 +20,23 @@ public sealed class BildirimDinleyici : IDisposable
     public void Baslat()
     {
         Durdur();
+        _ilkSenkronTamam = false;
         _zamanlayici = new Timer(
             _ => _ = KontrolEtAsync(yalnizcaBildirim: true),
             null,
             TimeSpan.FromSeconds(2),
-            TimeSpan.FromSeconds(5));
+            TimeSpan.FromMinutes(1));
     }
 
     public void Durdur()
     {
         _zamanlayici?.Dispose();
         _zamanlayici = null;
+        _ilkSenkronTamam = false;
     }
 
-    public Task IlkKontrolAsync() => KontrolEtAsync(bildirimGoster: true, agYenile: true);
+    /// <summary>İlk yükleme yalnızca gelen kutusunu eşitler; geçmiş kayıtlar yeniden toast edilmez.</summary>
+    public Task IlkKontrolAsync() => KontrolEtAsync(bildirimGoster: false, agYenile: true);
 
     public Task SenkronizeVeGosterAsync() =>
         KontrolEtAsync(bildirimGoster: true, agYenile: true);
@@ -48,10 +52,9 @@ public sealed class BildirimDinleyici : IDisposable
         bool agYenile = true,
         bool yalnizcaBildirim = false)
     {
-        if (_kontrolEdiliyor || !_oturum.GirisYapildi)
+        if (!_oturum.GirisYapildi || Interlocked.CompareExchange(ref _kontrolEdiliyor, 1, 0) != 0)
             return;
 
-        _kontrolEdiliyor = true;
         try
         {
             if (agYenile)
@@ -76,9 +79,18 @@ public sealed class BildirimDinleyici : IDisposable
                 return;
 
             var toastGoster = bildirimGoster;
+            var ilkSenkron = !_ilkSenkronTamam;
 
             foreach (var bildirim in _oturum.Bildirimler.KullaniciBildirimleri(kullanici))
             {
+                // Uygulama yeniden açıldığında var olan bildirimleri yalnızca bilinen olarak işaretle.
+                // Sonraki poll/FCM turunda yalnız gerçekten yeni kayıtlar toast olur.
+                if (ilkSenkron)
+                {
+                    BildirimGosterimKaydi.Isaretle(bildirim.Id);
+                    continue;
+                }
+
                 if (!toastGoster
                     || !BildirimFiltreleme.ToastGosterilmeli(bildirim, kullanici, _oturum.Depo.Talepler))
                     continue;
@@ -92,6 +104,8 @@ public sealed class BildirimDinleyici : IDisposable
                     YerelBildirimGosterici.Goster(bildirim, kullanici.Rol));
             }
 
+            _ilkSenkronTamam = true;
+
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 _oturum.VeriGuncellendiBildir();
@@ -104,7 +118,7 @@ public sealed class BildirimDinleyici : IDisposable
         }
         finally
         {
-            _kontrolEdiliyor = false;
+            Volatile.Write(ref _kontrolEdiliyor, 0);
         }
     }
 

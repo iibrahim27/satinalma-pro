@@ -18,6 +18,7 @@ try
     Console.WriteLine("\n=== Kapsam Denetimi (status × rol × sekme) ===\n");
     tumSonuclar.Add(ProcurementAkisKapsamDenetimi.Calistir());
     tumSonuclar.Add(ProcurementAkisKapsamDenetimi.PlatformMenuUyumu());
+    tumSonuclar.Add(ProcurementAkisKapsamDenetimi.MasaustuModulMatrisi());
 
     var otomasyonEksik = otomasyonSonuclari.Sum(s => s.Eksikler.Count);
     Console.WriteLine($"\n=== Otomasyon Özet: {otomasyonEksik} eksik ===\n");

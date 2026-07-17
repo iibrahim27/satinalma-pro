@@ -34,6 +34,7 @@ public sealed class BildirimInboxServisi
             OlusturanUid = FirstNonEmpty(e.OlusturanUid, e.CreatedBy),
             OlusturmaTarihi = e.CreatedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "",
             Okundu = e.IsRead,
+            Arsivlendi = e.IsDismissed,
             GuncellemeUtc = e.CreatedAt.HasValue
                 ? new DateTimeOffset(e.CreatedAt.Value).ToUnixTimeMilliseconds()
                 : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),

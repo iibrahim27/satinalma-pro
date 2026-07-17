@@ -12,7 +12,7 @@ public static class BildirimMantikAnahtari
         // Inbox kaynaklı / talepsiz kayıtlar: docId ile sabitle — her yüklemede Guid.NewGuid()
         // ile şişen veri/bildirimler belgesini önler.
         if (!string.IsNullOrWhiteSpace(bildirim.InboxDocId))
-            return $"inbox:{bildirim.InboxDocId.Trim()}";
+            return bildirim.InboxDocId.Trim();
 
         if (bildirim.TalepId is not { } talepId)
             return $"id:{bildirim.Id}";

@@ -128,6 +128,7 @@ public static class SatinalmaSiparisIslemleri
         talep.SiparisNo = "";
         talep.TeklifsizYonetimOnayi = false;
         talep.YonetimOnayKilitli = false;
+        talep.YonetimOnaylayanUid = "";
         talep.YonetimOnaylayanAd = "";
         talep.YonetimOnaylayanEposta = "";
         talep.YonetimOnayTarihi = "";
@@ -168,7 +169,7 @@ public static class SatinalmaSiparisIslemleri
         string? sahaHedef = null)
     {
         if (!KullaniciYetkileri.MalKabulVeStokAktarYapabilir())
-            throw new InvalidOperationException("Mal kabul işlemi yalnızca Satınalma veya Depo rolü tarafından yapılabilir.");
+            throw new InvalidOperationException("Mal kabul işlemi yalnızca Satınalma rolü tarafından yapılabilir.");
 
         if (miktar <= 0)
             throw new InvalidOperationException("Miktar sıfırdan büyük olmalıdır.");
@@ -227,10 +228,94 @@ public static class SatinalmaSiparisIslemleri
             _ = BildirimYoneticisi.GecersizleriOkunduYapAsync();
     }
 
+    /// <summary>
+    /// Teklifte mal kabulü bekleyen tüm kalemleri kalan sipariş miktarlarıyla tek fiş altında kabul eder.
+    /// Her kalemin kendi onaylı teklifindeki firma ve birim fiyat kullanılır.
+    /// </summary>
+    public static int TumKalemleriMalKabulVeDepoyaKaydet(
+        Guid talepId,
+        Guid teklifId,
+        string kategori,
+        string tarih,
+        string fisNo,
+        string teslimAlan,
+        string depoSaha,
+        string? aciklama = null,
+        bool sahayaDirekt = false,
+        string? sahaHedef = null)
+    {
+        if (!KullaniciYetkileri.MalKabulVeStokAktarYapabilir())
+            throw new InvalidOperationException("Mal kabul işlemi yalnızca Satınalma rolü tarafından yapılabilir.");
+
+        var talep = SatinalmaDepo.Talepler.FirstOrDefault(t => t.Id == talepId)
+            ?? throw new InvalidOperationException("Talep bulunamadı.");
+
+        var satirlar = SatinalmaDepo.OnaylananMalzemeleriOlustur()
+            .Where(s => s.TalepId == talep.Id)
+            .Where(s => s.TeklifId == teklifId)
+            .Where(s => !s.SiparisTamamlandi && s.KalanMiktar > 0.0001)
+            .ToList();
+
+        if (satirlar.Count == 0)
+            throw new InvalidOperationException("Mal kabulü bekleyen kalem bulunamadı.");
+
+        var indirildigiSaha = sahayaDirekt && !string.IsNullOrWhiteSpace(sahaHedef)
+            ? sahaHedef.Trim()
+            : depoSaha;
+
+        foreach (var satir in satirlar)
+        {
+            var kalem = talep.Kalemler.FirstOrDefault(k => k.Id == satir.KalemId)
+                ?? throw new InvalidOperationException("Kalem bulunamadı.");
+            var miktar = Math.Max(0, kalem.Miktar - kalem.KabulEdilenMiktar);
+            if (miktar <= 0.0001)
+                continue;
+
+            kalem.KabulEdilenMiktar += miktar;
+            kalem.SiparisTamamlandi = true;
+            satir.KabulEdilenMiktar = kalem.KabulEdilenMiktar;
+            satir.SiparisTamamlandi = true;
+
+            MalzemeKategoriDeposu.Ekle(kategori);
+
+            var kayit = satir.AlinanMalzemeKaydinaDonustur(
+                miktar, kategori, tarih, fisNo, teslimAlan, indirildigiSaha, aciklama,
+                satir.Firma, satir.BirimFiyati);
+            ModulVeriDeposu.AlinanMalzemeler.Add(kayit);
+
+            AlinanMalzemeAktarimServisi.StogaGirisKaydet(
+                satir, miktar, kategori, tarih, teslimAlan, depoSaha, sahayaDirekt, sahaHedef);
+        }
+
+        ModulVeriDeposu.KaydetAlinanMalzemeler();
+        ModulVeriDeposu.KaydetStok();
+        ModulVeriDeposu.KaydetStokHareketleri();
+
+        SatinalmaTalepYardimcisi.Dokun(talep);
+        SatinalmaDepo.Kaydet();
+        _ = SatinalmaKayitYardimcisi.MalKabulSonrasiBulutaGonderAsync();
+
+        try
+        {
+            _ = SatinalmaBildirimleri.MalKabulEdildiAsync(
+                talep, $"{satirlar.Count} kalemin tamamı kabul edildi");
+        }
+        catch
+        {
+            // bildirim hatası mal kabulü engellemez
+        }
+
+        if (ProcurementTalepAdapter.ResolveStatus(talep)
+                .Equals(ProcurementStatus.Completed, StringComparison.OrdinalIgnoreCase))
+            _ = BildirimYoneticisi.GecersizleriOkunduYapAsync();
+
+        return satirlar.Count;
+    }
+
     public static void SevkiyatiTamamla(OnaylananMalzemeSatiri satir)
     {
         if (!KullaniciYetkileri.MalKabulVeStokAktarYapabilir())
-            throw new InvalidOperationException("Bu işlem yalnızca Satınalma veya Depo rolü tarafından yapılabilir.");
+            throw new InvalidOperationException("Bu işlem yalnızca Satınalma rolü tarafından yapılabilir.");
 
         var talep = SatinalmaDepo.Talepler.FirstOrDefault(t => t.Id == satir.TalepId)
             ?? throw new InvalidOperationException("Talep bulunamadı.");

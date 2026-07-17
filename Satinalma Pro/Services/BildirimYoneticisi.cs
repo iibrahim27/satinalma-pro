@@ -28,8 +28,8 @@ public static class BildirimYoneticisi
 
         // Yalnızca işlem bekleyen (okunmamış + hâlâ geçerli) bildirimler.
         return BildirimDeposu.AnlikListe()
-            .Where(b => KullaniciyaMi(b, kullanici)
-                        && !b.Okundu
+            .Where(b => !b.Arsivlendi
+                        && KullaniciyaMi(b, kullanici)
                         && MasaustuBildirimFiltreleme.GecerliMi(b, SatinalmaDepo.Talepler))
             .ToList();
     }
@@ -106,7 +106,7 @@ public static class BildirimYoneticisi
         if (kullanici is null)
             return;
 
-        foreach (var b in BildirimDeposu.AnlikListe().Where(x => KullaniciyaMi(x, kullanici)))
+        foreach (var b in BildirimDeposu.AnlikListe().Where(x => !x.Arsivlendi && KullaniciyaMi(x, kullanici)))
         {
             b.Okundu = true;
             b.GuncellemeUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -172,9 +172,8 @@ public static class BildirimYoneticisi
         foreach (var b in BildirimDeposu.AnlikListe().Where(x => KullaniciyaMi(x, kullanici) && !Korunmali(x)))
             BildirimHatirlatmaDeposu.Temizle(b);
 
-        BildirimDeposu.Sil(b => KullaniciyaMi(b, kullanici) && !Korunmali(b));
-        await BildirimDeposu.KaydetYerelAsync(iptal);
         await BildirimDeposu.InboxTemizleAsync(iptal);
+        await BildirimDeposu.YukleAsync(zorla: true, iptal);
         BildirimlerDegisti?.Invoke();
     }
 

@@ -234,6 +234,82 @@ public sealed class FirestoreVeriServisi
         await Http.SendAsync(patch, iptal);
     }
 
+    public async Task InboxArsivleAsync(string uid, string inboxDocId, CancellationToken iptal = default)
+    {
+        var token = await _auth.GecerliTokenAlAsync(iptal);
+        var now = DateTime.UtcNow.ToString("o");
+        var govde = new
+        {
+            fields = new Dictionary<string, object>
+            {
+                ["isRead"] = new { booleanValue = true },
+                ["isArchived"] = new { booleanValue = true },
+                ["dismissedAt"] = new { timestampValue = now },
+                ["archivedAt"] = new { timestampValue = now }
+            }
+        };
+
+        using var patch = new HttpRequestMessage(HttpMethod.Patch,
+            $"{Kok}/{FirestoreYollari.UserNotificationInbox(uid)}/{inboxDocId}" +
+            "?updateMask.fieldPaths=isRead&updateMask.fieldPaths=isArchived" +
+            "&updateMask.fieldPaths=dismissedAt&updateMask.fieldPaths=archivedAt")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(govde), Encoding.UTF8, "application/json")
+        };
+        patch.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        await Http.SendAsync(patch, iptal);
+    }
+
+    public async Task InboxEkleBearerIleAsync(
+        string bearerToken,
+        string uid,
+        string docId,
+        BildirimKaydi bildirim,
+        CancellationToken iptal = default)
+    {
+        if (string.IsNullOrWhiteSpace(uid) || string.IsNullOrWhiteSpace(docId))
+            return;
+
+        var now = DateTime.UtcNow.ToString("o");
+        var talepId = bildirim.TalepId?.ToString() ?? "";
+        var govde = new
+        {
+            fields = new Dictionary<string, object>
+            {
+                ["title"] = new { stringValue = bildirim.Baslik },
+                ["baslik"] = new { stringValue = bildirim.Baslik },
+                ["message"] = new { stringValue = bildirim.Mesaj },
+                ["mesaj"] = new { stringValue = bildirim.Mesaj },
+                ["tip"] = new { stringValue = bildirim.Tip },
+                ["type"] = new { stringValue = bildirim.Tip },
+                ["talepId"] = new { stringValue = talepId },
+                ["entityId"] = new { stringValue = talepId },
+                ["entityType"] = new { stringValue = "talep" },
+                ["eventCode"] = new { stringValue = bildirim.EventCode ?? bildirim.Tip },
+                ["hedefRol"] = new { stringValue = bildirim.HedefRol ?? "" },
+                ["targetRole"] = new { stringValue = bildirim.HedefRol ?? "" },
+                ["hedefUid"] = new { stringValue = bildirim.HedefUid ?? "" },
+                ["targetUid"] = new { stringValue = bildirim.HedefUid ?? "" },
+                ["olusturanUid"] = new { stringValue = bildirim.OlusturanUid },
+                ["createdBy"] = new { stringValue = bildirim.OlusturanUid },
+                ["isRead"] = new { booleanValue = false },
+                ["okundu"] = new { booleanValue = false },
+                ["createdAt"] = new { timestampValue = now },
+                ["guncellemeUtc"] = new { integerValue = bildirim.GuncellemeUtc.ToString() }
+            }
+        };
+
+        using var istek = new HttpRequestMessage(HttpMethod.Post,
+            $"{Kok}/{FirestoreYollari.UserNotificationInbox(uid)}?documentId={Uri.EscapeDataString(docId)}")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(govde), Encoding.UTF8, "application/json")
+        };
+        istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+        var yanit = await Http.SendAsync(istek, iptal);
+        if (!yanit.IsSuccessStatusCode && yanit.StatusCode != System.Net.HttpStatusCode.Conflict)
+            throw new InvalidOperationException(await yanit.Content.ReadAsStringAsync(iptal));
+    }
+
     private static NotificationInboxEntry InboxParseEt(string docId, JsonElement alanlar) => new()
     {
         DocId = docId,
@@ -261,6 +337,8 @@ public sealed class FirestoreVeriServisi
         OlusturanUid = AlanOku(alanlar, "olusturanUid") ?? "",
         CreatedBy = AlanOku(alanlar, "createdBy") ?? "",
         IsRead = alanlar.TryGetProperty("isRead", out var r) && r.TryGetProperty("booleanValue", out var rb) && rb.GetBoolean(),
+        IsArchived = alanlar.TryGetProperty("isArchived", out var a) && a.TryGetProperty("booleanValue", out var ab) && ab.GetBoolean(),
+        DismissedAt = TimestampOku(alanlar, "dismissedAt"),
         CreatedAt = TimestampOku(alanlar, "createdAt")
     };
 

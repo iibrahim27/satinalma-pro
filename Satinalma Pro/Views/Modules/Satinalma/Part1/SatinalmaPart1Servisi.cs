@@ -248,6 +248,60 @@ public static class SatinalmaPart1Servisi
         return true;
     }
 
+    public static bool TopluMalKabulGoster(
+        Window? owner,
+        SatinalmaTalep talep,
+        OnaylananMalzemeSatiri seciliKalem)
+    {
+        if (!KullaniciYetkileri.MalKabulVeStokAktarYapabilir())
+        {
+            MessageBox.Show(
+                "Mal kabul işlemi yalnızca Satınalma rolü tarafından yapılabilir.",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        var satirlar = SatinalmaDepo.OnaylananMalzemeleriOlustur()
+            .Where(s => s.TalepId == talep.Id)
+            .Where(s => s.TeklifId == seciliKalem.TeklifId)
+            .Where(s => !s.SiparisTamamlandi && s.KalanMiktar > 0.0001)
+            .ToList();
+        if (satirlar.Count < 2)
+            return false;
+
+        var pencere = new TopluMalKabulWindow(satirlar)
+        {
+            Owner = owner
+        };
+        if (pencere.ShowDialog() != true)
+            return false;
+
+        try
+        {
+            var kabulEdilenKalemSayisi = SatinalmaSiparisIslemleri.TumKalemleriMalKabulVeDepoyaKaydet(
+                talep.Id,
+                seciliKalem.TeklifId,
+                pencere.SecilenKategori,
+                pencere.GirilenTarih,
+                pencere.GirilenFisNo,
+                pencere.GirilenTeslimAlan,
+                pencere.GirilenDepo,
+                pencere.GirilenAciklama,
+                pencere.SahayaDirekt,
+                pencere.GirilenSahaHedef);
+
+            MessageBox.Show(
+                $"{kabulEdilenKalemSayisi:N0} kalemin mal kabulü tamamlandı; Alınan Malzemeler ve depo stokları güncellendi.",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Error);
+            return false;
+        }
+    }
+
     public static bool SevkiyatiTamamlaGoster(Window? owner, OnaylananMalzemeSatiri satir)
     {
         if (!KullaniciYetkileri.MalKabulVeStokAktarYapabilir())

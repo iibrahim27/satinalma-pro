@@ -47,9 +47,9 @@ public static class PurchaseModuleAutomationTest
 
         var baskaTalep = ortam.TalepOlustur(AutomasyonTestOrtami.Saha, ProcurementPriority.Normal, "Başka Saha Malzeme");
         var sefGorur = ortam.RouteTalepleri(SatinalmaRoutes.Taleplerim, AutomasyonTestOrtami.Sef).ToList();
-        sonuc.Bekle(sefGorur.Any(t => t.Id == talep.Id) && !sefGorur.Any(t => t.Id == baskaTalep.Id),
-            "Şef yalnızca kendi talebini görüyor (requesterUid filtresi)",
-            "KRİTİK: Şef sahiplik filtresi çalışmıyor");
+        sonuc.Bekle(sefGorur.Any(t => t.Id == talep.Id) && sefGorur.Any(t => t.Id == baskaTalep.Id),
+            "Şef tüm talepleri görüyor (liste görünürlüğü)",
+            "KRİTİK: Şef liste görünürlüğü talep sahibiyle sınırlandırılmış");
 
         // 2 — Yönetim
         ortam.OturumAc(AutomasyonTestOrtami.Yonetim);
@@ -194,33 +194,29 @@ public static class PurchaseModuleAutomationTest
         sonuc.Bekle(talep.Status == ProcurementStatus.Ordered,
             "Durum ordered", $"Sipariş durumu hatalı: {talep.Status}");
 
-        var depoTopic = FcmTopicKayitcisi.TopicForRole(KullaniciRolleri.Depo);
-        var sefTopicPush = FcmTopicKayitcisi.TopicForRole(KullaniciRolleri.Sef);
-        sonuc.Bekle(ortam.Fcm.PushGittiMi(depoTopic, BildirimTipleri.SiparisOlusturuldu, talep.Id),
-            $"Depo kanalına ({depoTopic}) SiparisOlusturuldu bildirimi",
-            "Depo FCM bildirimi yok");
         sonuc.Bekle(
             ortam.Fcm.Pushlar.Any(p => p.Tip == BildirimTipleri.SiparisOlusturuldu && p.TalepId == talep.Id
                 && (p.Topic.Contains("sef") || p.Topic.Contains("saha") || p.Topic.Contains("user-"))),
             "Saha/Şef kanalına sipariş bildirimi gitti",
             "Talep sahibine sipariş bildirimi yok");
 
-        // 7 — Depo mal kabul
+        // 7 — Satınalma mal kabul
         ortam.OturumAc(AutomasyonTestOrtami.Depo);
-        sonuc.Bekle(ortam.SekmeGorunur(SatinalmaRoutes.SatinalmaSiparis, AutomasyonTestOrtami.Depo),
-            "Depo Yoldaki Malzemeler sekmesi görünür",
-            "Depo satinalma-siparis sekmesi gizli");
-        sonuc.Bekle(ortam.RouteTalepleri(SatinalmaRoutes.SatinalmaSiparis, AutomasyonTestOrtami.Depo)
-                .Any(t => t.Id == talep.Id),
-            "Sipariş Yoldaki Malzemeler listesinde",
-            "Depo sipariş listesinde talep yok");
+        sonuc.Bekle(!ortam.SekmeGorunur(SatinalmaRoutes.SatinalmaSiparis, AutomasyonTestOrtami.Depo),
+            "Depo satınalma sipariş listesine erişemez",
+            "Depo satınalma sipariş listesine erişebiliyor");
+        sonuc.Bekle(ortam.SekmeGorunur(SatinalmaRoutes.SatinalmaSiparis, AutomasyonTestOrtami.Satinalma)
+                     && ortam.RouteTalepleri(SatinalmaRoutes.SatinalmaSiparis, AutomasyonTestOrtami.Satinalma)
+                         .Any(t => t.Id == talep.Id),
+            "Satınalma sipariş ve mal kabul listesinde talebi görür",
+            "Satınalma sipariş listesinde talep yok");
 
         var malzemeAdi = talep.Kalemler[0].Malzeme;
         var oncekiStok = ortam.Stocks.GetValueOrDefault(malzemeAdi);
-        ortam.DepoMalKabulTamamla(talep);
+        ortam.SatinalmaMalKabulTamamla(talep);
         talep = ortam.GuncelTalep(talep.Id);
 
-        sonuc.Adim($"7. Depo mal kabul tamamladı → status={talep.Status}");
+        sonuc.Adim($"7. Satınalma mal kabul tamamladı → status={talep.Status}");
         sonuc.Bekle(ortam.StockMovements.Any(m => m.Type == "IN" && m.RequestId == talep.Id.ToString()),
             "stock_movements koleksiyonuna IN hareketi yazıldı",
             "IN stock_movement kaydı yok");
@@ -307,9 +303,9 @@ public static class PurchaseModuleAutomationTest
         sonuc.Bekle(!ortam.SekmeGorunur(SatinalmaRoutes.YonetimGelenTalepler, AutomasyonTestOrtami.Atolye),
             "Atölye yönetim sekmelerine erişemez",
             "Atölye yönetim sekmesi görünür");
-        sonuc.Bekle(ortam.SekmeGorunur(SatinalmaRoutes.SatinalmaSiparis, AutomasyonTestOrtami.Atolye),
-            "Atölye Yoldaki Malzemeler (read-only) sekmesi görünür",
-            "Atölye sipariş sekmesi gizli");
+        sonuc.Bekle(!ortam.SekmeGorunur(SatinalmaRoutes.SatinalmaSiparis, AutomasyonTestOrtami.Atolye),
+            "Atölye satınalma sipariş sekmesine erişemez",
+            "Atölye satınalma sipariş sekmesine erişebiliyor");
 
         return sonuc;
     }

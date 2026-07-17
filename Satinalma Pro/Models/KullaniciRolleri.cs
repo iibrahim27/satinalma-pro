@@ -28,14 +28,12 @@ public static class KullaniciRolleri
     public static bool SatinalmaTeklifGirebilir(string? rol) =>
         SatinalmaPro.Shared.Models.KullaniciRolleri.SatinalmaTeklifGirebilir(rol);
 
+    public static bool KendiTalepleriniTakipEder(string? rol) =>
+        SatinalmaPro.Shared.Models.KullaniciRolleri.KendiTalepleriniTakipEder(rol);
+
     public static IReadOnlyList<string> VarsayilanModuller(string? rol)
     {
         rol = Normalize(rol);
-
-        // Admin tüm modülleri görür (Ayarlar dahil — kiracı operasyonu).
-        if (AdminMi(rol))
-            return ModuleCatalog.All.Select(m => m.Title).ToList();
-
         return SatinalmaPro.Shared.Services.MasaustuRolHaritasi.MasaustuModulleri(rol).ToList();
     }
 }

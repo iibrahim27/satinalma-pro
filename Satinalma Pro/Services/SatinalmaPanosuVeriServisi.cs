@@ -58,7 +58,7 @@ public static class SatinalmaPanosuVeriServisi
         var malKabul = new List<SatinalmaTalep>();
         var tamamlandi = new List<SatinalmaTalep>();
 
-        foreach (var talep in SatinalmaDepo.Talepler)
+        foreach (var talep in GorunenTalepler())
         {
             if (BekleyenTalep(talep)) bekleyen.Add(talep);
             if (TeklifBekleniyor(talep)) teklifBekleniyor.Add(talep);
@@ -85,7 +85,7 @@ public static class SatinalmaPanosuVeriServisi
 
     public static IReadOnlyList<SatinalmaPanosuOzetKpi> OzetKpi()
     {
-        var t = SatinalmaDepo.Talepler;
+        var t = GorunenTalepler();
         var siparis = t.Count(x => x.Durum == SharedTalepDurumlari.SiparisOlusturuldu);
         var teklifSurecinde = t.Count(x => x.Durum is SharedTalepDurumlari.TeklifGirisi or SharedTalepDurumlari.Karsilastirma);
         var malKabul = t.Count(MalKabulAsamasi);
@@ -103,7 +103,7 @@ public static class SatinalmaPanosuVeriServisi
     }
 
     public static IReadOnlyList<SatinalmaPanosuTalepSatir> SonTalepler(int adet = 12) =>
-        SatinalmaDepo.Talepler
+        GorunenTalepler()
             .OrderByDescending(x => TarihYardimcisi.SiralamaDegeri(x.Tarih))
             .Take(adet)
             .Select(SatirOlustur)
@@ -117,7 +117,7 @@ public static class SatinalmaPanosuVeriServisi
         {
             var ay = simdi.AddMonths(-i);
             var etiket = ay.ToString("MMM", Tr);
-            var adet = SatinalmaDepo.Talepler.Count(t => AyEslesir(t.Tarih, ay));
+            var adet = GorunenTalepler().Count(t => AyEslesir(t.Tarih, ay));
             liste.Add(new AnaSayfaAylikNokta { Etiket = etiket, Deger = adet });
         }
 
@@ -126,7 +126,7 @@ public static class SatinalmaPanosuVeriServisi
 
     public static IReadOnlyList<AnaSayfaDagilim> KategoriDagilimi()
     {
-        var gruplar = SatinalmaDepo.Talepler
+        var gruplar = GorunenTalepler()
             .SelectMany(t => t.Kalemler.Select(k => KategoriBul(k.Malzeme)))
             .GroupBy(x => x, StringComparer.OrdinalIgnoreCase)
             .OrderByDescending(g => g.Count())
@@ -143,6 +143,12 @@ public static class SatinalmaPanosuVeriServisi
             Yuzde = Math.Round((double)g.Count() / toplam * 100d, 1),
             RenkHex = renkler[i % renkler.Length]
         }).ToList();
+    }
+
+    private static IReadOnlyList<SatinalmaTalep> GorunenTalepler()
+    {
+        // Panodaki görünürlük tüm taleplerdir; düzenleme/silme sahiplik denetimiyle sınırlıdır.
+        return SatinalmaDepo.Talepler.ToList();
     }
 
     private static SatinalmaWorkflowAdim Adim(

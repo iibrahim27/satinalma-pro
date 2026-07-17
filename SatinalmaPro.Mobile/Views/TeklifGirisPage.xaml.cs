@@ -1,6 +1,5 @@
 using System.Globalization;
 using SatinalmaPro.Mobile.Helpers;
-using SatinalmaPro.Mobile.Helpers;
 using SatinalmaPro.Mobile.Services;
 using SatinalmaPro.Shared.Models;
 

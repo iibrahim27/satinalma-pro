@@ -47,6 +47,7 @@ public partial class SiparisVerilenTalepDetayView : UserControl
         var malKabulYapabilir = KullaniciYetkileri.MalKabulVeStokAktarYapabilir();
         BtnMalKabul.Visibility = malKabulYapabilir ? Visibility.Visible : Visibility.Collapsed;
         BtnSevkiyatiTamamla.Visibility = malKabulYapabilir ? Visibility.Visible : Visibility.Collapsed;
+        BtnTopluMalKabul.Visibility = malKabulYapabilir ? Visibility.Visible : Visibility.Collapsed;
 
         if (_seciliKalem is not null && kalemler.All(k => k.Kaynak.KalemId != _seciliKalem.KalemId))
             _seciliKalem = null;
@@ -57,6 +58,15 @@ public partial class SiparisVerilenTalepDetayView : UserControl
     private void ButonlariGuncelle()
     {
         var malKabulYapabilir = KullaniciYetkileri.MalKabulVeStokAktarYapabilir();
+        var topluKabulYapilabilir = _seciliKalem is { } seciliKalem
+            && GuncelTalep() is { } talep
+            && SatinalmaDepo.OnaylananMalzemeleriOlustur()
+                .Count(s => s.TalepId == talep.Id
+                    && s.TeklifId == seciliKalem.TeklifId
+                    && !s.SiparisTamamlandi
+                    && s.KalanMiktar > 0.0001) > 1;
+        BtnTopluMalKabul.IsEnabled = malKabulYapabilir && topluKabulYapilabilir;
+
         if (_seciliKalem is null)
         {
             BtnMalKabul.IsEnabled = false;
@@ -92,6 +102,24 @@ public partial class SiparisVerilenTalepDetayView : UserControl
     }
 
     private void MalKabul_Click(object sender, RoutedEventArgs e) => MalKabulYap();
+
+    private void TopluMalKabul_Click(object sender, RoutedEventArgs e)
+    {
+        var talep = GuncelTalep();
+        if (talep is null)
+            return;
+
+        if (_seciliKalem is null
+            || !SatinalmaPart1Servisi.TopluMalKabulGoster(Window.GetWindow(this), talep, _seciliKalem))
+            return;
+
+        _seciliKalem = null;
+        ArayuzuGuncelle();
+        Degisti?.Invoke();
+
+        if (GuncelTalep() is { } guncel && SatinalmaPart1Filtreleri.MalKabulTamam(guncel))
+            Geri?.Invoke();
+    }
 
     private void SevkiyatiTamamla_Click(object sender, RoutedEventArgs e)
     {

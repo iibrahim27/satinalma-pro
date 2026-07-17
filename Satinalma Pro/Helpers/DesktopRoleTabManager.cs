@@ -165,8 +165,8 @@ public static class DesktopRoleTabManager
             StokRoutes.StokHareketleri
         ],
         "atolye" => [StokRoutes.StokDurumu],
-        "sef" or "saha" => [StokRoutes.StokDurumu],
-        "admin" or "satinalma" =>
+        "sef" or "saha" => [StokRoutes.StokDurumu, StokRoutes.StokHareketleri],
+        "admin" or "yonetim" or "satinalma" =>
         [
             StokRoutes.StokDurumu,
             StokRoutes.StokGirisi,
@@ -222,4 +222,4 @@ public sealed class RoleTabSession
     public Func<SatinalmaTalep, bool>? FilterFor(string route) =>
         DesktopRoleTabManager.GetDataFilter(route, RoleKey, CurrentUid);
 }
-
+

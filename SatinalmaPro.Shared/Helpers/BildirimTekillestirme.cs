@@ -17,15 +17,19 @@ public static class BildirimTekillestirme
 
     private static BildirimKaydi BirlestirGrup(IEnumerable<BildirimKaydi> grup)
     {
-        var sirali = grup
+        var kayitlar = grup.ToList();
+        var inboxKayitlari = kayitlar
+            .Where(b => !string.IsNullOrWhiteSpace(b.InboxDocId))
+            .ToList();
+        var okunmaKaynagi = inboxKayitlari.Count > 0 ? inboxKayitlari : kayitlar;
+        var sirali = okunmaKaynagi
             .OrderByDescending(b => b.Okundu)
             .ThenByDescending(b => b.GuncellemeUtc)
             .ToList();
 
         var birincil = Kopyala(sirali[0]);
-        foreach (var diger in sirali.Skip(1))
+        foreach (var diger in kayitlar.Where(b => !ReferenceEquals(b, sirali[0])))
         {
-            birincil.Okundu = birincil.Okundu || diger.Okundu;
             birincil.GuncellemeUtc = Math.Max(birincil.GuncellemeUtc, diger.GuncellemeUtc);
 
             if (string.IsNullOrWhiteSpace(birincil.InboxDocId) && !string.IsNullOrWhiteSpace(diger.InboxDocId))
@@ -36,6 +40,8 @@ public static class BildirimTekillestirme
                 birincil.Mesaj = diger.Mesaj;
         }
 
+        birincil.Okundu = okunmaKaynagi.Any(b => b.Okundu);
+        birincil.Arsivlendi = okunmaKaynagi.Any(b => b.Arsivlendi);
         return birincil;
     }
 
@@ -52,6 +58,7 @@ public static class BildirimTekillestirme
         OlusturanAd = kaynak.OlusturanAd,
         OlusturmaTarihi = kaynak.OlusturmaTarihi,
         Okundu = kaynak.Okundu,
+        Arsivlendi = kaynak.Arsivlendi,
         GuncellemeUtc = kaynak.GuncellemeUtc,
         InboxDocId = kaynak.InboxDocId,
         DeepLink = kaynak.DeepLink,

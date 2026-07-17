@@ -115,7 +115,7 @@
   <Style x:Key="SatModSideNavGroup" TargetType="TextBlock">
     <Setter Property="FontSize" Value="11" />
     <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Foreground" Value="{StaticResource InkMutedBrush}" />
+    <Setter Property="Foreground" Value="#91C9D4" />
     <Setter Property="Margin" Value="14,18,14,6" />
   </Style>
 
@@ -149,7 +149,7 @@
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-              <Setter TargetName="Shell" Property="Background" Value="#F8FAFC" />
+              <Setter TargetName="Shell" Property="Background" Value="#24516D" />
             </Trigger>
             <Trigger Property="Tag" Value="Active">
               <Setter TargetName="Shell" Property="Background" Value="{StaticResource SatModNavActiveGradient}" />
@@ -164,7 +164,7 @@
 
   <Style x:Key="SatModSideNavLabel" TargetType="TextBlock">
     <Setter Property="FontSize" Value="13" />
-    <Setter Property="Foreground" Value="{StaticResource InkSoftBrush}" />
+    <Setter Property="Foreground" Value="#D3E5EB" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
@@ -179,7 +179,7 @@
     <Setter Property="Height" Value="20" />
     <Setter Property="CornerRadius" Value="10" />
     <Setter Property="Padding" Value="6,0" />
-    <Setter Property="Background" Value="#DBEAFE" />
+    <Setter Property="Background" Value="#FCE7A5" />
     <Setter Property="HorizontalAlignment" Value="Right" />
     <Setter Property="VerticalAlignment" Value="Center" />
     <Setter Property="Visibility" Value="Collapsed" />

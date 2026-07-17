@@ -114,8 +114,9 @@ public static class SatinalmaBildirimleri
     public static Task TeklifOnaydaAsync(SatinalmaTalep talep)
     {
         var (baslik, mesaj) = Metin(SharedBildirimTipleri.TeklifOnayda, talep);
+        var actorUid = Olusturan().uid;
         return BildirimYoneticisi.CokluEkleAsync(
-            BildirimRolPolitikasi.TeklifOnaydaHedefleri()
+            BildirimRolPolitikasi.TeklifOnaydaHedefleri(talep.OlusturanUid, talep.OlusturanRol, actorUid)
                 .Select(h => Kayit(talep, SharedBildirimTipleri.TeklifOnayda, baslik, mesaj, h.HedefRol, h.HedefUid))
                 .ToList());
     }
@@ -123,7 +124,20 @@ public static class SatinalmaBildirimleri
     public static Task TeklifDuzeltmeyeGonderildiAsync(SatinalmaTalep talep, string? not = null)
     {
         var (baslik, mesaj) = Metin(SharedBildirimTipleri.TeklifDuzeltmeIstendi, talep, ek: not);
-        return BildirimYoneticisi.EkleAsync(Kayit(talep, SharedBildirimTipleri.TeklifDuzeltmeIstendi, baslik, mesaj, hedefRol: KullaniciRolleri.Satinalma));
+        var actorUid = Olusturan().uid;
+        return BildirimYoneticisi.CokluEkleAsync(
+            BildirimRolPolitikasi.TeklifDuzeltmeIstendiHedefleri(
+                    talep.OlusturanUid,
+                    talep.OlusturanRol,
+                    actorUid)
+                .Select(h => Kayit(
+                    talep,
+                    SharedBildirimTipleri.TeklifDuzeltmeIstendi,
+                    baslik,
+                    mesaj,
+                    h.HedefRol,
+                    h.HedefUid))
+                .ToList());
     }
 
 
@@ -144,7 +158,8 @@ public static class SatinalmaBildirimleri
     public static async Task OnaylandiBildirimleriGonderAsync(SatinalmaTalep talep, string? firmaAdi = null)
     {
         var onaylayanRol = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol);
-        foreach (var (hedefRol, hedefUid) in OnayBildirimYardimcisi.OnaylandiHedefleri(talep.OlusturanUid, onaylayanRol))
+        var actorUid = OturumYoneticisi.AktifKullanici?.Uid;
+        foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.OnaylandiHedefleri(talep.OlusturanUid, actorUid))
         {
             try
             {

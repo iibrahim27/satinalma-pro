@@ -20,11 +20,11 @@ public static class RolNavigasyonu
             ? AdminMenuleriTam
             : rol switch
             {
-                KullaniciRolleri.Yonetim => YonetimMenuleri.Concat(ModulKayitMenuleri).ToList(),
+                KullaniciRolleri.Yonetim => YonetimMenuleri,
                 KullaniciRolleri.Satinalma => SatinalmaMenuleri,
-                KullaniciRolleri.Sef => SefMenuleri.Concat(ModulKayitMenuleri).ToList(),
+                KullaniciRolleri.Sef => SefMenuleri,
                 KullaniciRolleri.Atolye => AtolyeMenuleri,
-                KullaniciRolleri.Saha => SahaMenuleri.Concat(ModulKayitMenuleri).ToList(),
+                KullaniciRolleri.Saha => SahaMenuleri,
                 KullaniciRolleri.Depo => DepoMenuleri,
                 _ => SahaMenuleri.Concat(ModulKayitMenuleri).ToList()
             };
@@ -76,27 +76,28 @@ public static class RolNavigasyonu
     private static readonly IReadOnlyList<MenuOgesi> YonetimMenuleri =
     [
         GelenTalepler, TeklifOnay, GecmisTalepler, GecmisTeklifliOnaylar, RedTalepler,
-        StokDurum, Bildirimler
+        Bildirimler
     ];
 
     private static readonly IReadOnlyList<MenuOgesi> SatinalmaMenuleri =
         new List<MenuOgesi>
         {
-            YeniTalep, Taleplerim, GelenTalepler, OnayBekleyenTalepler, OnaylananTalepler, RedTalepler,
+            GelenTalepler, OnayBekleyenTalepler, OnaylananTalepler, RedTalepler,
             TeklifBekleyen, TeklifGir, TeklifKarsilastirma, TeklifOnay,
             OnaylananTeklifler, OnayGecmisi, OnaylananMalzemeler,
-            StokDurum, StokHareket, StokGiris, StokCikis, StokSayim, Bildirimler
-        }.Concat(ModulKayitMenuleri).ToList();
+            Bildirimler
+        };
 
     private static readonly IReadOnlyList<MenuOgesi> SahaMenuleri =
-        [YeniTalep, Taleplerim, OnayBekleyenTalepler, OnaylananTalepler, StokDurum, StokHareket, Bildirimler];
+        [YeniTalep, Taleplerim, OnayBekleyenTalepler, OnaylananTalepler, OnaylananMalzemeler,
+         StokDurum, StokHareket, Bildirimler];
 
     private static readonly IReadOnlyList<MenuOgesi> AtolyeMenuleri =
-        [StokDurum, Bildirimler];
+        [StokDurum];
 
     private static readonly IReadOnlyList<MenuOgesi> SefMenuleri =
-        [YeniTalep, Taleplerim, OnayBekleyenTalepler, OnaylananTalepler, OnaylananMalzemeler, StokDurum, StokHareket, Bildirimler];
+        SahaMenuleri;
 
     private static readonly IReadOnlyList<MenuOgesi> DepoMenuleri =
-        [StokDurum, StokGiris, StokCikis, StokHareket, SatinalmaSiparis, Bildirimler];
+        [StokDurum, StokGiris, StokCikis, StokHareket];
 }

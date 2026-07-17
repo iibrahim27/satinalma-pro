@@ -12,11 +12,6 @@ public static class OturumYonlendirmeServisi
         var oturum = services.GetRequiredService<OturumServisi>();
         oturum.AyarlariYenile();
 
-#if ANDROID
-        if (OturumServisi.KayitliOturumVar())
-            BildirimForegroundService.Baslat(global::Android.App.Application.Context);
-#endif
-
         if (!OturumServisi.KayitliOturumVar())
         {
             ilerle?.Invoke(100, "Hazır", "Giriş ekranı açılıyor...");

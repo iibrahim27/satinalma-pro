@@ -1,5 +1,6 @@
 using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Models;
+using SatinalmaPro.Shared.Procurement;
 using SatinalmaPro.Shared.Services;
 
 namespace SatinalmaPro.E2eTest;
@@ -40,9 +41,9 @@ public static class E2eAkisTestleri
             "Yönetime YonetimeGonderildi bildirimi oluştu",
             "Yönetime bildirim gitmedi");
 
-        sonuc.Bekle(!ortam.KullaniciBildirimleri(BellekTestOrtami.Satinalma).Any(b => b.Tip == BildirimTipleri.YonetimeGonderildi),
-            "Satınalmaya YonetimeGonderildi bildirimi gitmedi (yönetim işi)",
-            "Satınalmaya gereksiz gelen talep bildirimi gitti");
+        sonuc.Bekle(ortam.KullaniciBildirimleri(BellekTestOrtami.Satinalma).Any(b => b.Tip == BildirimTipleri.YonetimeGonderildi),
+            "Satınalma gelen talep bildirimini aldı (ortak karar yetkisi)",
+            "Satınalma gelen talep bildirimi almadı");
 
         var yonetimRoute = BildirimRotaServisi.HedefRoute(
             ortam.Bildirimler.First(b => b.Tip == BildirimTipleri.YonetimeGonderildi && b.HedefRol == KullaniciRolleri.Yonetim),
@@ -70,8 +71,9 @@ public static class E2eAkisTestleri
         sonuc.Bekle(satinalmaTeklifRoute == $"teklif-gir?id={talep.Id}",
             $"Android TeklifIstendi → teklif-gir?id= ({satinalmaTeklifRoute})",
             $"Android TeklifIstendi rota hatalı: {satinalmaTeklifRoute}");
-        if (masaustuTeklifRoute != satinalmaTeklifRoute)
-            sonuc.Uyar($"Masaüstü TeklifIstendi rota ({masaustuTeklifRoute}) Android ({satinalmaTeklifRoute}) ile farklı — bilinen fark");
+        sonuc.Bekle(masaustuTeklifRoute == satinalmaTeklifRoute,
+            $"TeklifIstendi rotası hizalı (M/A): {masaustuTeklifRoute}",
+            $"TeklifIstendi rota uyumsuz M={masaustuTeklifRoute} A={satinalmaTeklifRoute}");
 
         sonuc.Bekle(AndroidAyna.AndroidCanAccess(satinalmaTeklifRoute, KullaniciRolleri.Satinalma),
             "Satınalma teklif-gir?id rotasına erişebiliyor",
@@ -80,6 +82,12 @@ public static class E2eAkisTestleri
         sonuc.Bekle(MasaustuPart1Ayna.TalepListede(talep, "satinalma-teklif-istenen", null, null, KullaniciRolleri.Satinalma),
             "Talep satınalma teklif istenen listesinde",
             "Talep satinalma-teklif-istenen listesinde DEĞİL");
+        sonuc.Bekle(ortam.KullaniciBildirimleri(BellekTestOrtami.Satinalma)
+                .Any(b => b.Tip == BildirimTipleri.TeklifIstendi && b.TalepId == talep.Id)
+            && !ortam.KullaniciBildirimleri(BellekTestOrtami.Saha)
+                .Any(b => b.Tip == BildirimTipleri.TeklifIstendi && b.TalepId == talep.Id),
+            "Teklif istemi yalnızca satınalmaya gitti",
+            "KRİTİK: Teklif istemi talep sahibine veya yanlış role gitti");
 
         // 3. Satınalma 2 teklif gir
         var teklifA = ortam.TeklifEkle(talep, "E2E Firma A", 100);
@@ -109,6 +117,14 @@ public static class E2eAkisTestleri
         sonuc.Bekle(AndroidAyna.AndroidCanAccess(teklifOnayRoute, KullaniciRolleri.Yonetim),
             "Yönetim teklif-onay-detay erişimi OK",
             "Yönetim teklif-onay-detay erişemiyor");
+        sonuc.Bekle(ortam.KullaniciBildirimleri(BellekTestOrtami.Yonetim)
+                .Any(b => b.Tip == BildirimTipleri.TeklifOnayda && b.TalepId == talep.Id)
+            && !ortam.KullaniciBildirimleri(BellekTestOrtami.Saha)
+                .Any(b => b.Tip == BildirimTipleri.TeklifOnayda && b.TalepId == talep.Id)
+            && !ortam.KullaniciBildirimleri(BellekTestOrtami.Satinalma)
+                .Any(b => b.Tip == BildirimTipleri.TeklifOnayda && b.TalepId == talep.Id),
+            "Teklif girişi yöneticiye gitti; işlemi yapan satınalmaya gitmedi",
+            "KRİTİK: Teklif girişi bildirimi talep sahibine veya işlemi yapan kullanıcıya gitti");
 
         var satTeklifGirilenRoute = $"teklif-onay-detay?id={talep.Id}";
         sonuc.Bekle(AndroidAyna.AndroidCanAccess(satTeklifGirilenRoute, KullaniciRolleri.Satinalma),
@@ -122,10 +138,17 @@ public static class E2eAkisTestleri
         sonuc.Bekle(talep.Durum == SatinalmaTalepDurumlari.Onaylandi && talep.YonetimOnayKilitli,
             "Durum: Onaylandı + kilitli", "Onay sonrası durum hatalı");
 
-        var onayRouteSat = AndroidAyna.AndroidBildirimRoute(BildirimTipleri.Onaylandi, talep.Id, KullaniciRolleri.Satinalma);
+        sonuc.Bekle(ortam.KullaniciBildirimleri(BellekTestOrtami.Saha)
+                .Any(b => b.Tip == BildirimTipleri.Onaylandi && b.TalepId == talep.Id)
+            && !ortam.KullaniciBildirimleri(BellekTestOrtami.Satinalma)
+                .Any(b => b.Tip == BildirimTipleri.Onaylandi && b.TalepId == talep.Id),
+            "Onay bildirimi yalnızca talep sahibine gitti",
+            "KRİTİK: Onay bildirimi talep sahibi dışındaki kullanıcıya da gitti");
+
+        var onayRouteSat = AndroidAyna.AndroidBildirimRoute(BildirimTipleri.Onaylandi, talep.Id, KullaniciRolleri.Saha);
         var onayRouteMasa = BildirimRotaServisi.HedefRoute(
             new BildirimKaydi { Tip = BildirimTipleri.Onaylandi, TalepId = talep.Id },
-            KullaniciRolleri.Satinalma);
+            KullaniciRolleri.Saha);
         sonuc.Bekle(onayRouteSat == onayRouteMasa,
             $"Onaylandi rotası hizalı (M/A): {onayRouteMasa}",
             $"Onaylandi rota uyumsuz M={onayRouteMasa} A={onayRouteSat}");
@@ -149,10 +172,17 @@ public static class E2eAkisTestleri
             "Talep masaüstü sipariş listesinde (mal kabul bekleyen)",
             "Sipariş sonrası masaüstü sipariş listesinde DEĞİL");
 
-        var siparisRoute = AndroidAyna.AndroidBildirimRoute(BildirimTipleri.SiparisOlusturuldu, talep.Id, KullaniciRolleri.Satinalma);
+        sonuc.Bekle(ortam.KullaniciBildirimleri(BellekTestOrtami.Saha)
+                .Any(b => b.Tip == BildirimTipleri.SiparisOlusturuldu && b.TalepId == talep.Id)
+            && !ortam.KullaniciBildirimleri(BellekTestOrtami.Satinalma)
+                .Any(b => b.Tip == BildirimTipleri.SiparisOlusturuldu && b.TalepId == talep.Id),
+            "Sipariş bildirimi yalnızca talep sahibine gitti",
+            "KRİTİK: Sipariş bildirimi talep sahibi dışındaki kullanıcıya da gitti");
+
+        var siparisRoute = AndroidAyna.AndroidBildirimRoute(BildirimTipleri.SiparisOlusturuldu, talep.Id, KullaniciRolleri.Saha);
         var siparisRouteM = BildirimRotaServisi.HedefRoute(
             new BildirimKaydi { Tip = BildirimTipleri.SiparisOlusturuldu, TalepId = talep.Id },
-            KullaniciRolleri.Satinalma);
+            KullaniciRolleri.Saha);
         sonuc.Bekle(siparisRoute == siparisRouteM,
             $"SiparisOlusturuldu rotası hizalı (M/A): {siparisRouteM}",
             $"SiparisOlusturuldu rota uyumsuz M={siparisRouteM} A={siparisRoute}");
@@ -172,17 +202,25 @@ public static class E2eAkisTestleri
             "Talep mal kabul tamamlanan listesinde",
             "Mal kabul tamamlanan listesinde DEĞİL");
 
-        sonuc.Bekle(ortam.KullaniciBildirimleri(BellekTestOrtami.Depo).Any(b => b.Tip == BildirimTipleri.MalKabulEdildi),
-            "Depo MalKabulEdildi bildirimi aldı",
-            "Depo bildirimi yok");
+        sonuc.Bekle(ortam.KullaniciBildirimleri(BellekTestOrtami.Saha).Any(b => b.Tip == BildirimTipleri.MalKabulEdildi),
+            "Talep sahibi MalKabulEdildi bildirimini aldı",
+            "Talep sahibine mal kabul bildirimi yok");
 
-        var mkRoute = AndroidAyna.AndroidBildirimRoute(BildirimTipleri.MalKabulEdildi, talep.Id, KullaniciRolleri.Depo);
+        var mkRoute = AndroidAyna.AndroidBildirimRoute(BildirimTipleri.MalKabulEdildi, talep.Id, KullaniciRolleri.Saha);
         var mkRouteM = BildirimRotaServisi.HedefRoute(
             new BildirimKaydi { Tip = BildirimTipleri.MalKabulEdildi, TalepId = talep.Id },
-            KullaniciRolleri.Depo);
-        sonuc.Bekle(mkRoute == "stok-durum" && mkRouteM == "stok-durum",
-            $"Depo MalKabulEdildi → stok-durum (A:{mkRoute}, M:{mkRouteM})",
-            $"Depo bildirim rotası hatalı A={mkRoute} M={mkRouteM}");
+            KullaniciRolleri.Saha);
+        sonuc.Bekle(mkRoute == mkRouteM,
+            $"Talep sahibi MalKabulEdildi rotası hizalı (M/A): {mkRouteM}",
+            $"Talep sahibi mal kabul rotası uyumsuz M={mkRouteM} A={mkRoute}");
+
+        var redHedefleri = BildirimRolPolitikasi.ReddedildiHedefleri(
+                BellekTestOrtami.Saha.Uid, BellekTestOrtami.Yonetim.Uid)
+            .ToList();
+        sonuc.Bekle(redHedefleri.Count == 1 && redHedefleri[0].HedefUid == BellekTestOrtami.Saha.Uid
+            && !BildirimRolPolitikasi.KayitGonderilmeli(null, BellekTestOrtami.Yonetim.Uid, BellekTestOrtami.Yonetim.Uid),
+            "Red bildirimi yalnızca talep sahibine gider; işlemi yapana gönderilmez",
+            "KRİTİK: Red bildirimi için alıcı veya işlem yapan filtresi hatalı");
 
         return sonuc;
     }
@@ -190,7 +228,7 @@ public static class E2eAkisTestleri
     public static E2eTestSonuc SahaTalepSahiplik(BellekTestOrtami ortam)
     {
         var sonuc = new E2eTestSonuc();
-        sonuc.Adim("=== SENARYO 2: Şef/Saha talep sahipliği filtresi ===");
+        sonuc.Adim("=== SENARYO 2: Şef/Saha görünürlük ve talep sahipliği ===");
 
         var sahaTalep = ortam.SahaTalepOlustur(BellekTestOrtami.Saha, "E2E Saha Malzeme");
         var sefTalep = ortam.SahaTalepOlustur(BellekTestOrtami.Sef, "E2E Şef Malzeme");
@@ -207,13 +245,39 @@ public static class E2eAkisTestleri
         sefTalep.YonetimOnayKilitli = true;
         ortam.Kaydet(sefTalep);
 
-        var sahaGorur = SatinalmaTalepKuyrugu.Filtrele(ortam.Talepler,
-            t => SatinalmaTalepKuyrugu.Onaylanmis(t) && !SatinalmaTalepKuyrugu.OnaylananMalzeme(t)
-                 && SatinalmaTalepKuyrugu.KullanicininTalebi(t, BellekTestOrtami.Saha.Uid, BellekTestOrtami.Saha.AdSoyad));
+        var sahaGorur = TabFilterManager.FilterForTab(
+            ProcurementTab.ApprovedOrders,
+            ortam.Talepler,
+            ProcurementRequestMapper.FromTalep,
+            BellekTestOrtami.Saha.Rol,
+            BellekTestOrtami.Saha.Uid);
 
-        sonuc.Bekle(sahaGorur.Any(t => t.Id == sahaTalep.Id) && !sahaGorur.Any(t => t.Id == sefTalep.Id),
-            "Saha yalnızca kendi onaylanan talebini görüyor",
-            "KRİTİK: Saha owner filtresi çalışmıyor — başkasının talebini de görüyor veya kendininkini görmüyor");
+        sonuc.Bekle(sahaGorur.Any(t => t.Id == sahaTalep.Id) && sahaGorur.Any(t => t.Id == sefTalep.Id),
+            "Saha kendi ve diğer kullanıcıların onaylanan taleplerini görüyor",
+            "KRİTİK: Saha liste görünürlüğü istek sahibiyle sınırlandırılmış");
+
+        var yetkiTalep = ortam.SahaTalepOlustur(BellekTestOrtami.Saha, "E2E Sahiplik Yetki Testi");
+        var sahaKendiTalebiniDuzenler = SatinalmaTalepYetkileri.TalepDuzenleyebilir(
+            BellekTestOrtami.Saha.Rol, yetkiTalep, BellekTestOrtami.Saha.Uid, BellekTestOrtami.Saha.AdSoyad);
+        var sahaKendiTalebiniSiler = SatinalmaTalepYetkileri.TalepSilebilir(
+            BellekTestOrtami.Saha.Rol, yetkiTalep, BellekTestOrtami.Saha.Uid, BellekTestOrtami.Saha.AdSoyad);
+        var sefBaskaTalebiDuzenleyemez = !SatinalmaTalepYetkileri.TalepDuzenleyebilir(
+            BellekTestOrtami.Sef.Rol, yetkiTalep, BellekTestOrtami.Sef.Uid, BellekTestOrtami.Sef.AdSoyad);
+        var sefBaskaTalebiSilemez = !SatinalmaTalepYetkileri.TalepSilebilir(
+            BellekTestOrtami.Sef.Rol, yetkiTalep, BellekTestOrtami.Sef.Uid, BellekTestOrtami.Sef.AdSoyad);
+        sonuc.Bekle(
+            sahaKendiTalebiniDuzenler && sahaKendiTalebiniSiler
+            && sefBaskaTalebiDuzenleyemez && sefBaskaTalebiSilemez,
+            "Şef/Saha yalnızca kendi talebini düzenleyip silebiliyor",
+            "KRİTİK: Şef/Saha başka kullanıcının talebinde işlem yapabiliyor veya kendi talebini yönetemiyor");
+
+        var satinalmaDuzenler = SatinalmaTalepYetkileri.TalepDuzenleyebilir(
+            BellekTestOrtami.Satinalma.Rol, yetkiTalep, BellekTestOrtami.Satinalma.Uid, BellekTestOrtami.Satinalma.AdSoyad);
+        var satinalmaSiler = SatinalmaTalepYetkileri.TalepSilebilir(
+            BellekTestOrtami.Satinalma.Rol, yetkiTalep, BellekTestOrtami.Satinalma.Uid, BellekTestOrtami.Satinalma.AdSoyad);
+        sonuc.Bekle(satinalmaDuzenler && satinalmaSiler,
+            "Satınalma tüm kullanıcıların taleplerini düzenleyip silebiliyor",
+            "KRİTİK: Satınalma başka kullanıcının talebini yönetemiyor");
 
         return sonuc;
     }
@@ -244,7 +308,7 @@ public static class E2eAkisTestleri
         talep.TeklifsizYonetimOnayi = true;
         talep.YonetimOnayKilitli = true;
         ortam.Kaydet(talep);
-        ortam.BildirimEkle(BildirimTipleri.Onaylandi, talep, hedefRol: KullaniciRolleri.Satinalma);
+        ortam.BildirimEkle(BildirimTipleri.Onaylandi, talep, hedefUid: talep.OlusturanUid);
 
         sonuc.Adim("Yönetim teklifsiz onayladı");
         sonuc.Bekle(talep.TeklifsizFirmaFiyatBekliyor,

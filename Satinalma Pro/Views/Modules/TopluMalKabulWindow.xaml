@@ -1,0 +1,77 @@
+<Window x:Class="SatinalmaPro.Views.Modules.TopluMalKabulWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Toplu Mal Kabul"
+        Width="440"
+        SizeToContent="Height"
+        MaxHeight="720"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{StaticResource DashBackgroundBrush}">
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <StackPanel Grid.Row="0" Margin="0,0,0,16">
+      <TextBlock Text="Toplu Mal Kabul" FontSize="18" FontWeight="SemiBold"
+                 Foreground="{StaticResource InkBrush}" />
+      <TextBlock x:Name="TxtOzet" TextWrapping="Wrap" FontSize="13"
+                 Foreground="{StaticResource InkMutedBrush}" Margin="0,6,0,0" />
+    </StackPanel>
+
+    <Border Grid.Row="1" Style="{StaticResource ModulePageCardStyle}" Padding="24,20">
+      <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0">
+        <StackPanel>
+          <TextBlock Text="Kategori (listeden seçin veya yeni yazın)" FontSize="12"
+                     Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+          <ComboBox x:Name="CmbKategori" Style="{StaticResource FilterComboStyle}" IsEditable="True"
+                    Margin="0,0,0,14" />
+
+          <TextBlock Text="Tarih" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <TextBox x:Name="TxtTarih" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+
+          <TextBlock Text="Fiş No" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <TextBox x:Name="TxtFisNo" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+
+          <TextBlock Text="Teslim Alan" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <TextBox x:Name="TxtTeslimAlan" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+
+          <CheckBox x:Name="ChkSahayaDirekt" Content="Malzeme sahaya indi (depo giriş + çıkış)"
+                    FontSize="12" Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,10"
+                    Checked="SahayaDirekt_Changed" Unchecked="SahayaDirekt_Changed" />
+
+          <TextBlock x:Name="LblDepoSaha" Text="İndirildiği Saha / Depo" FontSize="12"
+                     Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+          <TextBox x:Name="TxtDepoSaha" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+
+          <StackPanel x:Name="PnlSahaHedef" Visibility="Collapsed">
+            <TextBlock Text="Malzemenin indiği saha" FontSize="12"
+                       Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,6" />
+            <TextBox x:Name="TxtSahaHedef" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
+          </StackPanel>
+
+          <TextBlock Text="Açıklama" FontSize="12" Foreground="{StaticResource InkMutedBrush}"
+                     Margin="0,0,0,6" />
+          <TextBox x:Name="TxtAciklama" Style="{StaticResource FilterBoxStyle}" Height="72"
+                   TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"
+                   Padding="12,10" Margin="0,0,0,4" />
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+      <Button Content="İptal" Style="{StaticResource ToolbarButtonStyle}" Width="90"
+              Margin="0,0,8,0" Click="Iptal_Click" />
+      <Button Content="Tümünü Kabul Et" Style="{StaticResource PrimaryToolbarButtonStyle}" Width="130"
+              IsDefault="True" Click="Tamam_Click" />
+    </StackPanel>
+  </Grid>
+</Window>

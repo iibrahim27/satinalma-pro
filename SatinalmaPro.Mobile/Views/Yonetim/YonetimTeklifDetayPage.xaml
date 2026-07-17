@@ -64,7 +64,7 @@
                                                 <Label Grid.Row="2" Grid.Column="1" Text="{Binding Aciklama}" Style="{StaticResource Md3Muted}" LineBreakMode="WordWrap" />
                                             </Grid>
                                             <Button Text="Bu Firmayı Onayla" Style="{StaticResource Md3BtnSuccess}"
-                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:YonetimTeklifDetayViewModel}}, Path=FirmayiOnaylaCommand}"
+                                                    Command="{Binding x:DataType='vm:YonetimTeklifDetayViewModel', Source={RelativeSource AncestorType={x:Type vm:YonetimTeklifDetayViewModel}}, Path=FirmayiOnaylaCommand}"
                                                     CommandParameter="{Binding .}" />
                                         </VerticalStackLayout>
                                     </Border>

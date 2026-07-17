@@ -18,7 +18,8 @@ public partial class SiparisVerilenTalepListesiView : UserControl
     public SiparisVerilenTalepListesiView()
     {
         InitializeComponent();
-        TxtYardim.Text = "Sipariş verilmiş ve mal kabulü devam eden talepler. Çift tıklayıp mal kabul yapın.";
+        TalepHoverOnizleme.Etkinlestir(Tablo);
+        TxtYardim.Text = "Sipariş verilmiş ve mal kabulü devam eden talepler. Satır üzerine gelerek kalemleri, firmayı ve kabul ilerlemesini görün.";
     }
 
     public void Yenile()

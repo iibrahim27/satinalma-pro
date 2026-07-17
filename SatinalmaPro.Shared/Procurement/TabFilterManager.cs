@@ -19,6 +19,16 @@ public static class TabFilterManager
         ProcurementTab.HistoryReports
     ];
 
+    private static readonly ProcurementTab[] RequesterTrackingTabs =
+    [
+        ProcurementTab.PendingDraft,
+        ProcurementTab.QuoteRequested,
+        ProcurementTab.QuoteReview,
+        ProcurementTab.ApprovedOrders,
+        ProcurementTab.Rejected,
+        ProcurementTab.HistoryReports
+    ];
+
     public static string NormalizeRole(string? role)
     {
         var normalized = KullaniciRolleri.Normalize(role);
@@ -36,10 +46,14 @@ public static class TabFilterManager
     }
 
     /// <summary>
-    /// Liste/sorgu seviyesinde oluşturan filtresi artık kullanılmaz —
-    /// Şef/Saha firma içindeki tüm talepleri görür; düzenleme/silme sahiplikle sınırlıdır.
+    /// Talep açabilen roller tüm talepleri izler. Talep sahibine ait olma koşulu
+    /// yalnızca düzenleme ve silme yetkilerinde uygulanır.
     /// </summary>
-    public static bool RequiresRequesterScope(string? role) => false;
+    public static bool RequiresRequesterScope(string? role)
+    {
+        _ = role;
+        return false;
+    }
 
     public static IReadOnlyList<ProcurementTab> GetVisibleTabs(string? role)
     {
@@ -47,13 +61,12 @@ public static class TabFilterManager
         {
             "depo" =>
             [
-                ProcurementTab.ApprovedOrders,
-                ProcurementTab.HistoryReports,
+                ProcurementTab.StockStatus,
                 ProcurementTab.StockMovements
             ],
             "atolye" => [ProcurementTab.StockStatus],
             "admin" or "yonetim" or "satinalma" => FullProcurementTabs,
-            "sef" or "saha" => FullProcurementTabs,
+            "sef" or "saha" => RequesterTrackingTabs,
             _ => FullProcurementTabs
         };
     }

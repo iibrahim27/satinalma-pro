@@ -1,4 +1,5 @@
 using SatinalmaPro.Shared.Models;
+using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Shared.Services.Firebase;
 
 namespace SatinalmaPro.Shared.Services;
@@ -34,6 +35,10 @@ public sealed class FcmPushServisi
         var hedefler = await HedefleriAlAsync(bildirim, iptal);
         var saYolu = CozumleServiceAccountYolu();
         var v1 = FcmV1Api.ServiceAccountMevcut(saYolu);
+        var servisTokeni = v1
+            ? await FcmV1Api.ServiceAccountErisimTokeniAlAsync(saYolu!, iptal)
+            : null;
+        var inboxDocId = BildirimMantikAnahtari.Olustur(bildirim);
 
         foreach (var hedef in hedefler)
         {
@@ -42,6 +47,13 @@ public sealed class FcmPushServisi
                 var veri = BildirimRotaServisi.FcmVeri(bildirim, hedef.Rol);
                 if (v1)
                 {
+                    await _firestore.InboxEkleBearerIleAsync(
+                        servisTokeni!,
+                        hedef.Uid,
+                        inboxDocId,
+                        bildirim,
+                        iptal);
+                    veri["inboxDocId"] = inboxDocId;
                     await FcmV1Api.TokenaGonderAsync(
                         saYolu!,
                         _ayarlar.ProjectId,
@@ -73,7 +85,7 @@ public sealed class FcmPushServisi
         return null;
     }
 
-    private sealed record FcmHedef(string Token, string Rol);
+    private sealed record FcmHedef(string Uid, string Token, string Rol);
 
     private async Task<List<FcmHedef>> HedefleriAlAsync(BildirimKaydi bildirim, CancellationToken iptal)
     {
@@ -86,7 +98,7 @@ public sealed class FcmPushServisi
             if (string.IsNullOrWhiteSpace(profil?.FcmToken))
                 return [];
 
-            return [new FcmHedef(profil.FcmToken, profil.Rol ?? "")];
+            return [new FcmHedef(profil.Uid, profil.FcmToken, profil.Rol ?? "")];
         }
 
         if (!string.IsNullOrWhiteSpace(bildirim.HedefRol))
@@ -94,8 +106,8 @@ public sealed class FcmPushServisi
             var kullanicilar = await _firestore.RolKullanicilariOkuAsync(bildirim.HedefRol, iptal);
             return kullanicilar
                 .Where(k => k.Uid != bildirim.OlusturanUid && !string.IsNullOrWhiteSpace(k.FcmToken))
-                .Select(k => new FcmHedef(k.FcmToken!, k.Rol ?? ""))
-                .GroupBy(h => h.Token)
+                .Select(k => new FcmHedef(k.Uid, k.FcmToken!, k.Rol ?? ""))
+                .GroupBy(h => h.Uid)
                 .Select(g => g.First())
                 .ToList();
         }

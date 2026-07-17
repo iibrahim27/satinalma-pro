@@ -19,6 +19,7 @@ public partial class OnaylananTalepListesiView : UserControl
     public OnaylananTalepListesiView()
     {
         InitializeComponent();
+        TalepHoverOnizleme.Etkinlestir(Tablo);
         GuncelleYardimMetni();
     }
 
@@ -57,9 +58,9 @@ public partial class OnaylananTalepListesiView : UserControl
         TxtYardim.Text = _route switch
         {
             SatinalmaPart1Menusu.YonetimOnayGecmisi =>
-                "Yönetimin verdiği tüm onaylar (teklifsiz + teklifli). Sipariş ve mal kabul sonrası kayıtlar dahil. Detay ve PDF için çift tıklayın veya üstteki yazdır düğmelerini kullanın.",
+                "Yönetimin verdiği tüm onaylar (teklifsiz + teklifli). Satır üzerine gelerek talep ve teklif içeriğini görün; detay ve PDF için çift tıklayın.",
             SatinalmaPart1Menusu.SatinalmaOnayGecmisi =>
-                "Tüm onaylı talep ve teklifler kalıcı arşivde. Sipariş / mal kabul sonrası kayıtlar dahil. Detayda firma teklif geçmişi, karşılaştırma PDF ve onay PDF alınabilir.",
+                "Tüm onaylı talep ve teklifler kalıcı arşivde. Satır üzerine gelerek içerik önizlemesini görün; detayda firma teklif geçmişi ve PDF'ler alınabilir.",
             SatinalmaPart1Menusu.YonetimOnaylananTeklifler =>
                 "Onayladığınız teklifli talepler. Detay ve PDF için çift tıklayın veya sağ tık menüsünü kullanın.",
             _ =>

@@ -13,6 +13,8 @@ public class BildirimKaydi
     public string OlusturanAd { get; set; } = "";
     public string OlusturmaTarihi { get; set; } = "";
     public bool Okundu { get; set; }
+    /// <summary>Yalnızca alıcının kişisel gelen kutusunda arşivlendiğini belirtir.</summary>
+    public bool Arsivlendi { get; set; }
     /// <summary>UTC ms — birleştirme ve çakışma çözümü.</summary>
     public long GuncellemeUtc { get; set; }
     /// <summary>Enterprise inbox belge kimliği (users/uid/notification_inbox).</summary>

@@ -298,6 +298,13 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
 
     private void RouteAc(string route, Guid? talepId)
     {
+        var rol = OturumYoneticisi.AktifKullanici?.Rol;
+        if (!DesktopRoleTabManager.RouteVisible(rol, route))
+        {
+            route = SatinalmaPart1Menusu.IlkRoute(rol);
+            talepId = null;
+        }
+
         _aktifRoute = route;
         var (baslik, aciklama) = SatinalmaPart1Menusu.Baslik(route);
         TxtBaslik.Text = baslik;

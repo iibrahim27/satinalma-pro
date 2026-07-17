@@ -11,7 +11,7 @@ public static class AndroidBildirimKanali
 
     public static void Olustur(Context? context = null)
     {
-        if (Build.VERSION.SdkInt < BuildVersionCodes.O)
+        if (!OperatingSystem.IsAndroidVersionAtLeast(26))
             return;
 
         context ??= global::Android.App.Application.Context;

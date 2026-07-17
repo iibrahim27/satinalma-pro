@@ -155,8 +155,6 @@ public static class PurchaseRequestDetailServisi
                     break;
                 case PurchaseRequestDetailAction.StartQuoteProcess:
                     await SatinalmaBildirimleri.TeklifIstendiAsync(talep);
-                    if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
-                        await SatinalmaBildirimleri.TeklifIstendiOlusturucuyaAsync(talep);
                     break;
                 case PurchaseRequestDetailAction.RejectRequest:
                 case PurchaseRequestDetailAction.RejectEntireRequest:

@@ -39,8 +39,6 @@ public static class SatinalmaYonetimIslemleri
         SatinalmaTalepYardimcisi.Dokun(talep);
         await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
         await BildirimGonderAsync(() => SatinalmaBildirimleri.TeklifIstendiAsync(talep));
-        if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
-            await BildirimGonderAsync(() => SatinalmaBildirimleri.TeklifIstendiOlusturucuyaAsync(talep));
         await BildirimYoneticisi.GecersizleriOkunduYapAsync();
     }
 

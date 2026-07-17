@@ -38,7 +38,7 @@
                             <Border Style="{StaticResource MetrikKpiCard}">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=KartaGitCommand}"
+                                        Command="{Binding x:DataType='vm:DashboardViewModel', Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=KartaGitCommand}"
                                         CommandParameter="{Binding .}" />
                                 </Border.GestureRecognizers>
                                 <VerticalStackLayout Spacing="6">
@@ -61,7 +61,7 @@
                                 <Grid Padding="14,12" ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                     <Grid.GestureRecognizers>
                                         <TapGestureRecognizer
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=AktiviteyeGitCommand}"
+                                            Command="{Binding x:DataType='vm:DashboardViewModel', Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=AktiviteyeGitCommand}"
                                             CommandParameter="{Binding .}" />
                                     </Grid.GestureRecognizers>
                                     <VerticalStackLayout Spacing="2">

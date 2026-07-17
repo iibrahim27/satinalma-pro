@@ -40,6 +40,7 @@ public static class BildirimBirlestirme
         var ikincil = a.GuncellemeUtc >= b.GuncellemeUtc ? b : a;
 
         birincil.Okundu = a.Okundu || b.Okundu;
+        birincil.Arsivlendi = a.Arsivlendi || b.Arsivlendi;
         birincil.GuncellemeUtc = Math.Max(a.GuncellemeUtc, b.GuncellemeUtc);
 
         if (string.IsNullOrWhiteSpace(birincil.Baslik))
@@ -63,6 +64,7 @@ public static class BildirimBirlestirme
         OlusturanAd = kaynak.OlusturanAd,
         OlusturmaTarihi = kaynak.OlusturmaTarihi,
         Okundu = kaynak.Okundu,
+        Arsivlendi = kaynak.Arsivlendi,
         GuncellemeUtc = kaynak.GuncellemeUtc,
         InboxDocId = kaynak.InboxDocId,
         DeepLink = kaynak.DeepLink,

@@ -18,6 +18,7 @@
 		<SingleProject>true</SingleProject>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
 
 		<!-- Display name -->
 		<ApplicationTitle>Satınalma Pro</ApplicationTitle>
@@ -82,8 +83,14 @@
 		<AndroidManifestMerger>legacy</AndroidManifestMerger>
 	</PropertyGroup>
 
-	<Target Name="EnsureAndroidAssetsFolder" BeforeTargets="_CreateAndroidAssets">
-		<MakeDir Directories="$(IntermediateOutputPath)assets" Condition="!Exists('$(IntermediateOutputPath)assets')" />
+	<Target Name="EnsureAndroidAssetsFolder"
+			AfterTargets="UpdateAndroidAssets"
+			BeforeTargets="_CreateBaseApkWithAapt2">
+		<PropertyGroup>
+			<!-- AAPT2 farklı bir çalışma dizininde başlatılabildiği için yol mutlak olmalı. -->
+			<MonoAndroidAssetsDirIntermediate>$([System.IO.Path]::GetFullPath('$(MonoAndroidAssetsDirIntermediate)'))</MonoAndroidAssetsDirIntermediate>
+		</PropertyGroup>
+		<MakeDir Directories="$(MonoAndroidAssetsDirIntermediate)" />
 	</Target>
 
 	<!-- Masaüstü firebase_ayarlar.json + google-services.json otomatik kopyalanır -->

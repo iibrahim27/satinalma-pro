@@ -26,8 +26,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,25 +42,26 @@ import androidx.compose.ui.unit.dp
 import com.satinalmapro.android.core.model.TalepItem
 import com.satinalmapro.android.core.model.TalepQueue
 import com.satinalmapro.android.core.model.TeklifItem
-import com.satinalmapro.android.core.roles.KullaniciRolleri
-import androidx.compose.runtime.LaunchedEffect
 import com.satinalmapro.android.core.roles.IsAkisRotalari
+import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.core.roles.TalepKuyrugu
-import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailAction
-import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailPresenter
-import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailScreen
 import com.satinalmapro.android.services.SatinalmaPdfHelper
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppCard
-import com.satinalmapro.android.ui.components.SectionTitle
-import com.satinalmapro.android.ui.components.DetailRow
-import com.satinalmapro.android.ui.components.StatusBadge
-import com.satinalmapro.android.ui.procurement.TalepListScreen
+import com.satinalmapro.android.ui.components.AppDetailTabRow
 import com.satinalmapro.android.ui.components.AppPrimaryButton
 import com.satinalmapro.android.ui.components.AppScreenContent
+import com.satinalmapro.android.ui.components.DetailRow
+import com.satinalmapro.android.ui.components.SectionTitle
+import com.satinalmapro.android.ui.components.StatusBadge
 import com.satinalmapro.android.ui.theme.AppColors
 import com.satinalmapro.android.ui.theme.AppShapes
 import com.satinalmapro.android.ui.theme.AppSpacing
+import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailAction
+import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailPresenter
+import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailScreen
+import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailUiState
+import com.satinalmapro.shared.filter.detail.PurchaseRequestQuoteRow
 
 @Composable
 fun TeklifsizFirmaFiyatScreen(viewModel: AppViewModel, talepId: String?) {
@@ -162,108 +165,139 @@ fun TeklifKarsilastirmaScreen(viewModel: AppViewModel, talepId: String?) {
 
     val item = talep!!
     val context = LocalContext.current
+    val alinan by viewModel.alinanMalzemeKayitlari.collectAsState()
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabs = listOf("Karşılaştırma", "Fiyat Analiz")
     val canSend = KullaniciRolleri.canEnterQuotes(user?.role) &&
         TalepKuyrugu.karsilastirma(item) &&
         item.durum != com.satinalmapro.android.core.roles.TalepDurumlari.YONETIM_ONAY
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-    AppScreenContent {
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(item.talepNo, style = MaterialTheme.typography.headlineMedium, color = AppColors.TextPrimary)
-            StatusBadge(item.durum, AppColors.PrimaryContainer, AppColors.Primary)
-        }
-        Text(
-            "${item.talepEden} · ${item.santiyeAdi}",
-            style = MaterialTheme.typography.bodySmall,
-            color = AppColors.TextSecondary,
-            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-        )
-        if (item.teklifler.isNotEmpty()) {
-            val oneri = item.onerilenTeklif()
-            if (oneri != null) {
-                Text(
-                    "Satınalma önerisi: ${oneri.firmaAdi} — %.2f TL".format(oneri.genelToplam),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.Primary,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+        AppScreenContent {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(item.talepNo, style = MaterialTheme.typography.headlineMedium, color = AppColors.TextPrimary)
+                StatusBadge(item.durum, AppColors.PrimaryContainer, AppColors.Primary)
             }
-            OutlinedButton(
-                onClick = {
-                    viewModel.withPdfBaglam { baglam ->
-                        SatinalmaPdfHelper.karsilastirmaPaylas(context, item, baglam)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) { Text("Karşılaştırma PDF Paylaş") }
-            Spacer(Modifier.height(8.dp))
-            OutlinedButton(
-                onClick = {
-                    viewModel.withPdfBaglam { baglam ->
-                        SatinalmaPdfHelper.tedarikciTeklifTalebiPaylas(context, item, baglam)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) { Text("Tedarikçi Teklif Talebi PDF") }
-            Spacer(Modifier.height(8.dp))
+            Text(
+                "${item.talepEden} · ${item.santiyeAdi}",
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.TextSecondary,
+                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+            )
+            AppDetailTabRow(tabs = tabs, selectedIndex = selectedTab, onTabSelected = { selectedTab = it })
         }
 
-        item.kalemler.forEach { kalem ->
-            AppCard {
-                Column {
-                    Text(kalem.malzeme, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
-                    Text("${kalem.miktar} ${kalem.birim}", color = AppColors.TextSecondary, modifier = Modifier.padding(bottom = 8.dp))
-                    HorizontalDivider(color = AppColors.Border)
-                    item.teklifler.filter { it.firmaAdi.isNotBlank() }.forEach { teklif ->
-                        val fiyat = teklif.fiyatlar.firstOrNull { it.kalemId == kalem.id }
-                        val tutar = fiyat?.toplamKdvDahil ?: 0.0
-                        Row(
-                            Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(teklif.firmaAdi, color = AppColors.TextPrimary)
-                            Text("%.2f TL".format(tutar), fontWeight = FontWeight.Medium, color = AppColors.Primary)
-                        }
+        AppScreenContent {
+            when (selectedTab) {
+                0 -> TeklifKarsilastirmaTabIcerik(
+                    item = item,
+                    talepId = talepId,
+                    canSend = canSend,
+                    error = error,
+                    context = context,
+                    viewModel = viewModel,
+                    userRole = user?.role
+                )
+                1 -> FiyatAnalizTabContent(talep = item, alinanMalzemeler = alinan)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TeklifKarsilastirmaTabIcerik(
+    item: TalepItem,
+    talepId: String,
+    canSend: Boolean,
+    error: String?,
+    context: android.content.Context,
+    viewModel: AppViewModel,
+    userRole: String?
+) {
+    if (item.teklifler.isNotEmpty()) {
+        val oneri = item.onerilenTeklif()
+        if (oneri != null) {
+            Text(
+                "Satınalma önerisi: ${oneri.firmaAdi} — %.2f TL".format(oneri.genelToplam),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.Primary,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+        OutlinedButton(
+            onClick = {
+                viewModel.withPdfBaglam { baglam ->
+                    SatinalmaPdfHelper.karsilastirmaPaylas(context, item, baglam)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Karşılaştırma PDF Paylaş") }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = {
+                viewModel.withPdfBaglam { baglam ->
+                    SatinalmaPdfHelper.tedarikciTeklifTalebiPaylas(context, item, baglam)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Tedarikçi Teklif Talebi PDF") }
+        Spacer(Modifier.height(8.dp))
+    }
+
+    item.kalemler.forEach { kalem ->
+        AppCard {
+            Column {
+                Text(kalem.malzeme, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
+                Text("${kalem.miktar} ${kalem.birim}", color = AppColors.TextSecondary, modifier = Modifier.padding(bottom = 8.dp))
+                HorizontalDivider(color = AppColors.Border)
+                item.teklifler.filter { it.firmaAdi.isNotBlank() }.forEach { teklif ->
+                    val fiyat = teklif.fiyatlar.firstOrNull { it.kalemId == kalem.id }
+                    val tutar = fiyat?.toplamKdvDahil ?: 0.0
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(teklif.firmaAdi, color = AppColors.TextPrimary)
+                        Text("%.2f TL".format(tutar), fontWeight = FontWeight.Medium, color = AppColors.Primary)
                     }
                 }
             }
-            Spacer(Modifier.height(8.dp))
         }
+        Spacer(Modifier.height(8.dp))
+    }
 
-        if (item.teklifler.isNotEmpty()) {
-            Text("Firma Toplamları", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+    if (item.teklifler.isNotEmpty()) {
+        Text("Firma Toplamları", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(8.dp))
+        item.teklifler.filter { it.firmaAdi.isNotBlank() }.forEach { teklif ->
+            TeklifOzetKarti(teklif)
             Spacer(Modifier.height(8.dp))
-            item.teklifler.filter { it.firmaAdi.isNotBlank() }.forEach { teklif ->
-                TeklifOzetKarti(teklif)
-                Spacer(Modifier.height(8.dp))
-            }
-        }
-
-        error?.let { Text(it, color = AppColors.Danger, modifier = Modifier.padding(vertical = 8.dp)) }
-
-        Button(
-            onClick = { viewModel.navigate("teklif-gir?id=$talepId") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
-        ) { Text("Teklif Düzenle / Ekle") }
-
-        if (canSend) {
-            Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = {
-                    viewModel.sendQuotesToManagement(talepId) {
-                        viewModel.navigate(IsAkisRotalari.yonetimGonderSonrasi(user?.role))
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Success)
-            ) { Text("Yönetime Gönder") }
         }
     }
+
+    error?.let { Text(it, color = AppColors.Danger, modifier = Modifier.padding(vertical = 8.dp)) }
+
+    Button(
+        onClick = { viewModel.navigate("teklif-gir?id=$talepId") },
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+    ) { Text("Teklif Düzenle / Ekle") }
+
+    if (canSend) {
+        Spacer(Modifier.height(8.dp))
+        Button(
+            onClick = {
+                viewModel.sendQuotesToManagement(talepId) {
+                    viewModel.navigate(IsAkisRotalari.yonetimGonderSonrasi(userRole))
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Success)
+        ) { Text("Yönetime Gönder") }
     }
 }
 
@@ -272,6 +306,9 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
     val talep by viewModel.talepById(talepId).collectAsState(initial = null)
     val user by viewModel.user.collectAsState()
     val error by viewModel.submitError.collectAsState()
+    val alinan by viewModel.alinanMalzemeKayitlari.collectAsState()
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabs = listOf("Teklif Onay", "Fiyat Analiz")
     var geriGonderGerekce by remember { mutableStateOf("") }
 
     if (talep == null) {
@@ -285,7 +322,7 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
     val loading by viewModel.loading.collectAsState()
     var kararVardi by remember(item.id) { mutableStateOf(false) }
 
-    androidx.compose.runtime.LaunchedEffect(canDecide, loading) {
+    LaunchedEffect(canDecide, loading) {
         if (canDecide) kararVardi = true
         if (kararVardi && !canDecide && !loading) {
             viewModel.navigate(IsAkisRotalari.teklifOnayListesi(user?.role))
@@ -334,6 +371,56 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
             color = AppColors.TextSecondary
         )
 
+        AppDetailTabRow(tabs = tabs, selectedIndex = selectedTab, onTabSelected = { selectedTab = it })
+
+        when (selectedTab) {
+            0 -> TeklifOnayTabIcerik(
+                item = item,
+                talepId = talepId,
+                canDecide = canDecide,
+                loading = loading,
+                error = error,
+                context = context,
+                viewModel = viewModel,
+                userRole = user?.role,
+                quoteReviewUi = quoteReviewUi,
+                quoteRows = quoteRows,
+                secimMap = secimMap,
+                compactPad = compactPad,
+                fieldColors = fieldColors,
+                geriGonderGerekce = geriGonderGerekce,
+                onGeriGonderGerekce = { geriGonderGerekce = it },
+                redGerekce = redGerekce,
+                onRedGerekce = { redGerekce = it }
+            )
+            1 -> FiyatAnalizTabContent(talep = item, alinanMalzemeler = alinan)
+        }
+
+        Spacer(Modifier.height(AppSpacing.md))
+    }
+}
+
+@Composable
+private fun TeklifOnayTabIcerik(
+    item: TalepItem,
+    talepId: String,
+    canDecide: Boolean,
+    loading: Boolean,
+    error: String?,
+    context: android.content.Context,
+    viewModel: AppViewModel,
+    userRole: String?,
+    quoteReviewUi: PurchaseRequestDetailUiState,
+    quoteRows: List<PurchaseRequestQuoteRow>,
+    secimMap: MutableMap<String, String>,
+    compactPad: PaddingValues,
+    fieldColors: androidx.compose.material3.TextFieldColors,
+    geriGonderGerekce: String,
+    onGeriGonderGerekce: (String) -> Unit,
+    redGerekce: String,
+    onRedGerekce: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
         if (item.teklifDuzeltmeNotu.isNotBlank()) {
             AppCard(contentPadding = AppSpacing.sm) {
                 Text("Düzeltme Notu", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge)
@@ -406,7 +493,7 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
                                             quoteId = row.quoteId
                                         ) {
                                             viewModel.navigate(
-                                                IsAkisRotalari.teklifOnaySonrasi(user?.role, talepId)
+                                                IsAkisRotalari.teklifOnaySonrasi(userRole, talepId)
                                             )
                                         }
                                     },
@@ -507,7 +594,7 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
                     }.toMap()
                     if (atamalar.isEmpty()) return@Button
                     viewModel.kalemBazliOnayla(talepId, atamalar) {
-                        viewModel.navigate(IsAkisRotalari.teklifOnaySonrasi(user?.role, talepId))
+                        viewModel.navigate(IsAkisRotalari.teklifOnaySonrasi(userRole, talepId))
                     }
                 },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
@@ -518,7 +605,7 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
 
             OutlinedTextField(
                 value = geriGonderGerekce,
-                onValueChange = { geriGonderGerekce = it },
+                onValueChange = onGeriGonderGerekce,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 label = { Text("Revize gerekçesi (isteğe bağlı)") },
                 singleLine = true,
@@ -532,7 +619,7 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
                         PurchaseRequestDetailAction.SEND_QUOTES_FOR_REVISION,
                         note = geriGonderGerekce
                     ) {
-                        viewModel.navigate(IsAkisRotalari.duzeltmeGonderSonrasi(user?.role))
+                        viewModel.navigate(IsAkisRotalari.duzeltmeGonderSonrasi(userRole))
                     }
                 },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp),
@@ -545,7 +632,7 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
 
             OutlinedTextField(
                 value = redGerekce,
-                onValueChange = { redGerekce = it },
+                onValueChange = onRedGerekce,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 label = { Text("Red gerekçesi") },
                 singleLine = true,
@@ -571,8 +658,6 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
                 Text(quoteReviewUi.labelFor(PurchaseRequestDetailAction.REJECT_ENTIRE_REQUEST))
             }
         }
-
-        Spacer(Modifier.height(AppSpacing.md))
     }
 }
 

@@ -4,7 +4,7 @@ namespace SatinalmaPro.Shared.Helpers;
 
 /// <summary>
 /// Rol × bildirim tipi matrisi — masaüstü, mobil ve Android aynı kuralları kullanır.
-/// Talep/teklif onay bildirimleri: Yönetim + Satınalma (aynı karar yetkisi).
+/// Her işlem yalnızca ilgili alıcıya gider; işlemi yapan kullanıcı kendi bildirimini almaz.
 /// </summary>
 public static class BildirimRolPolitikasi
 {
@@ -37,9 +37,6 @@ public static class BildirimRolPolitikasi
     /// <summary>Admin tüm akış bildirimlerini görür.</summary>
     public static bool RolTipGorebilirMi(string? rol, string tip)
     {
-        if (KullaniciRolleri.AdminMi(rol))
-            return true;
-
         var r = KullaniciRolleri.Normalize(rol);
         tip = NormalizeTip(tip);
 
@@ -50,14 +47,6 @@ public static class BildirimRolPolitikasi
             BildirimTipleri.TeklifOnayda =>
                 r is KullaniciRolleri.Yonetim or KullaniciRolleri.Satinalma,
             BildirimTipleri.TeklifIstendi or BildirimTipleri.TeklifDuzeltmeIstendi =>
-                r == KullaniciRolleri.Satinalma,
-            BildirimTipleri.Onaylandi =>
-                r == KullaniciRolleri.Satinalma,
-            BildirimTipleri.Reddedildi =>
-                r == KullaniciRolleri.Satinalma,
-            BildirimTipleri.SiparisOlusturuldu =>
-                r is KullaniciRolleri.Satinalma or KullaniciRolleri.Depo,
-            BildirimTipleri.MalKabulEdildi =>
                 r == KullaniciRolleri.Satinalma,
             _ => false
         };
@@ -72,8 +61,15 @@ public static class BildirimRolPolitikasi
         if (IslemYapanKendisiMi(bildirim, kullanici))
             return false;
 
+        var tip = NormalizeTip(bildirim.Tip);
         if (!string.IsNullOrWhiteSpace(bildirim.HedefUid))
+        {
+            // Süreç sonucu bildirimleri yalnızca talebi açan kullanıcıya kişisel gider.
+            // Eski sürümlerden kalan teklif/istek kişisel kayıtlarını yeniden gösterme.
+            if (TalepAkisiBildirimiMi(tip) && !KisiselSonucBildirimiMi(tip))
+                return false;
             return bildirim.HedefUid == kullanici.Uid;
+        }
 
         if (!string.IsNullOrWhiteSpace(bildirim.InboxDocId))
             return RolTipGorebilirMi(kullanici.Rol, bildirim.Tip);
@@ -97,17 +93,42 @@ public static class BildirimRolPolitikasi
         (KullaniciRolleri.Satinalma, null)
     ];
 
-    public static IEnumerable<(string? HedefRol, string? HedefUid)> TeklifOnaydaHedefleri() =>
-    [
-        (KullaniciRolleri.Yonetim, null),
-        (KullaniciRolleri.Satinalma, null)
-    ];
+    public static IEnumerable<(string? HedefRol, string? HedefUid)> TeklifOnaydaHedefleri(
+        string? talepOlusturanUid,
+        string? talepOlusturanRol,
+        string? islemYapanUid)
+    {
+        _ = talepOlusturanUid;
+        _ = talepOlusturanRol;
+        _ = islemYapanUid;
+        yield return (KullaniciRolleri.Yonetim, null);
+        yield return (KullaniciRolleri.Satinalma, null);
+    }
+
+    public static IEnumerable<(string? HedefRol, string? HedefUid)> TeklifDuzeltmeIstendiHedefleri(
+        string? talepOlusturanUid,
+        string? talepOlusturanRol,
+        string? islemYapanUid)
+    {
+        _ = talepOlusturanUid;
+        _ = talepOlusturanRol;
+        _ = islemYapanUid;
+        yield return (KullaniciRolleri.Satinalma, null);
+    }
+
+    public static IEnumerable<(string? HedefRol, string? HedefUid)> OnaylandiHedefleri(
+        string? talepOlusturanUid,
+        string? islemYapanUid)
+    {
+        if (!string.IsNullOrWhiteSpace(talepOlusturanUid)
+            && !string.Equals(talepOlusturanUid, islemYapanUid, StringComparison.OrdinalIgnoreCase))
+            yield return (null, talepOlusturanUid);
+    }
 
     public static IEnumerable<(string? HedefRol, string? HedefUid)> ReddedildiHedefleri(
         string? talepOlusturanUid,
         string? islemYapanUid)
     {
-        yield return (KullaniciRolleri.Satinalma, null);
         if (!string.IsNullOrWhiteSpace(talepOlusturanUid)
             && !string.Equals(talepOlusturanUid, islemYapanUid, StringComparison.OrdinalIgnoreCase))
             yield return (null, talepOlusturanUid);
@@ -117,8 +138,6 @@ public static class BildirimRolPolitikasi
         string? talepOlusturanUid,
         string? islemYapanUid)
     {
-        yield return (KullaniciRolleri.Satinalma, null);
-        yield return (KullaniciRolleri.Depo, null);
         if (!string.IsNullOrWhiteSpace(talepOlusturanUid)
             && !string.Equals(talepOlusturanUid, islemYapanUid, StringComparison.OrdinalIgnoreCase))
             yield return (null, talepOlusturanUid);
@@ -128,11 +147,26 @@ public static class BildirimRolPolitikasi
         string? talepOlusturanUid,
         string? islemYapanUid)
     {
-        yield return (KullaniciRolleri.Satinalma, null);
         if (!string.IsNullOrWhiteSpace(talepOlusturanUid)
             && !string.Equals(talepOlusturanUid, islemYapanUid, StringComparison.OrdinalIgnoreCase))
             yield return (null, talepOlusturanUid);
     }
+
+    private static bool TalepAkisiBildirimiMi(string tip) => tip is
+        BildirimTipleri.YonetimeGonderildi
+        or BildirimTipleri.TeklifIstendi
+        or BildirimTipleri.TeklifOnayda
+        or BildirimTipleri.TeklifDuzeltmeIstendi
+        or BildirimTipleri.Onaylandi
+        or BildirimTipleri.Reddedildi
+        or BildirimTipleri.SiparisOlusturuldu
+        or BildirimTipleri.MalKabulEdildi;
+
+    private static bool KisiselSonucBildirimiMi(string tip) => tip is
+        BildirimTipleri.Onaylandi
+        or BildirimTipleri.Reddedildi
+        or BildirimTipleri.SiparisOlusturuldu
+        or BildirimTipleri.MalKabulEdildi;
 
     public static string NormalizeTip(string tip)
     {

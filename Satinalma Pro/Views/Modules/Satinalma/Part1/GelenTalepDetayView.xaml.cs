@@ -41,12 +41,54 @@ public partial class GelenTalepDetayView : UserControl
         BtnReddet.Visibility = ui.IsActionVisible(PurchaseRequestDetailAction.RejectRequest)
             ? Visibility.Visible : Visibility.Collapsed;
         BtnReddet.Content = ui.LabelFor(PurchaseRequestDetailAction.RejectRequest);
+        BtnMiktarDuzenle.Visibility = _talep is not null
+            && KullaniciYetkileri.YonetimTalepMiktarDuzenleyebilir(_talep)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
         var aktif = ui.VisibleActions.Count > 0;
         BtnOnayla.IsEnabled = aktif;
         BtnTeklifAl.IsEnabled = aktif;
         BtnReddet.IsEnabled = aktif;
     }
     private void Geri_Click(object sender, RoutedEventArgs e) => Geri?.Invoke();
+
+    private async void MiktarDuzenle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_talep is null || !KullaniciYetkileri.YonetimTalepMiktarDuzenleyebilir(_talep))
+        {
+            MessageBox.Show(
+                "Talep miktarı yalnızca onay öncesinde Yönetim rolü tarafından düzenlenebilir.",
+                UygulamaBilgisi.Ad,
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var pencere = new TalepMiktarDuzenlemeWindow(_talep)
+        {
+            Owner = Window.GetWindow(this)
+        };
+        if (pencere.ShowDialog() != true)
+            return;
+
+        try
+        {
+            SatinalmaTalepYardimcisi.TalepKalemleriniTekliflerleSenkronla(_talep);
+            SatinalmaTalepYardimcisi.Dokun(_talep);
+            await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(_talep);
+            Yukle(_talep);
+            Degisti?.Invoke();
+            MessageBox.Show(
+                "Talep miktarları güncellendi. Teklif tutarları yeni miktarlara göre hesaplandı.",
+                UygulamaBilgisi.Ad,
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
 
     private void TalepPdf_Click(object sender, RoutedEventArgs e)
     {

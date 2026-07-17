@@ -68,6 +68,22 @@ public static class KullaniciRolleri
 
 
 
+        if (r.Equals(Yonetim, StringComparison.OrdinalIgnoreCase)
+
+            || r.Equals("Yonetim", StringComparison.OrdinalIgnoreCase))
+
+            return Yonetim;
+
+
+
+        if (r.Equals(Satinalma, StringComparison.OrdinalIgnoreCase)
+
+            || r.Equals("Satinalma", StringComparison.OrdinalIgnoreCase))
+
+            return Satinalma;
+
+
+
         if (r.Equals(Sef, StringComparison.OrdinalIgnoreCase)
 
             || r.Equals("Sef", StringComparison.OrdinalIgnoreCase))
@@ -84,7 +100,9 @@ public static class KullaniciRolleri
 
 
 
-        return Tum.FirstOrDefault(x => x.Equals(r, StringComparison.OrdinalIgnoreCase)) ?? r;
+        // Tanımsız rol, geniş erişim sağlayan bir varsayıma düşmez; en sınırlı operasyonel
+        // kapsam olan Saha ile kendi talepleri ve salt-okunur stok takibiyle sınırlandırılır.
+        return Tum.FirstOrDefault(x => x.Equals(r, StringComparison.OrdinalIgnoreCase)) ?? Saha;
 
     }
 
@@ -100,7 +118,7 @@ public static class KullaniciRolleri
 
     public static bool YazabilirMi(string? rol) =>
 
-        Normalize(rol) is Admin or Yonetim or Satinalma or Depo or Sef or Saha or Atolye;
+        Normalize(rol) is Admin or Yonetim or Satinalma or Depo or Sef or Saha;
 
 
 
@@ -108,7 +126,7 @@ public static class KullaniciRolleri
 
     public static bool TalepOlusturabilir(string? rol) =>
 
-        Normalize(rol) is Admin or Saha or Sef or Satinalma;
+        Normalize(rol) is Admin or Saha or Sef;
 
 
 

@@ -50,6 +50,8 @@
     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
       <Button x:Name="BtnSevkiyatiTamamla" Content="Sevkiyatı Tamamla" Style="{StaticResource ToolbarButtonStyle}"
               Click="SevkiyatiTamamla_Click" Padding="18,8" Margin="0,0,8,0" IsEnabled="False" />
+      <Button x:Name="BtnTopluMalKabul" Content="Teklifin Tüm Kalemlerini Kabul Et" Style="{StaticResource ToolbarButtonStyle}"
+              Click="TopluMalKabul_Click" Padding="18,8" Margin="0,0,8,0" IsEnabled="False" />
       <Button x:Name="BtnMalKabul" Content="Mal Kabul — Depoya Kaydet" Style="{StaticResource PrimaryToolbarButtonStyle}"
               Click="MalKabul_Click" Padding="18,8" IsEnabled="False" />
     </StackPanel>

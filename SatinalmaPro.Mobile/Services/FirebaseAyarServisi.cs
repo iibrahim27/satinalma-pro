@@ -55,7 +55,9 @@ public static class FirebaseAyarServisi
     private static IEnumerable<FirebaseAyarlar> TumKaynaklariDene()
     {
         yield return AppDataOku();
-        yield return GomuluKaynakOku();
+        var gomulu = GomuluKaynakOku();
+        if (gomulu is not null)
+            yield return gomulu;
         foreach (var paketAdi in new[] { DosyaAdi, $"Raw/{DosyaAdi}" })
         {
             var paket = PakettenOku(paketAdi);

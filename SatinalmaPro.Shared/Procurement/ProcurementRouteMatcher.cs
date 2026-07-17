@@ -110,23 +110,10 @@ public static class ProcurementRouteMatcher
         var gruplar = new List<ProcurementMenuGroup>();
 
         if (roleKey == "atolye")
-        {
-            gruplar.Add(new ProcurementMenuGroup(null,
-            [
-                new("Güncel Stok Durumu", "stok-durum"),
-                new("Yoldaki Malzemeler", SatinalmaRoutes.SatinalmaSiparis)
-            ]));
             return gruplar;
-        }
 
         if (roleKey == "depo")
-        {
-            gruplar.Add(new ProcurementMenuGroup(null,
-            [
-                new("Yoldaki Malzemeler", SatinalmaRoutes.SatinalmaSiparis)
-            ]));
             return gruplar;
-        }
 
         var yonetimItems = new List<ProcurementMenuItem>();
 
@@ -160,6 +147,8 @@ public static class ProcurementRouteMatcher
             var satinalmaItems = new List<ProcurementMenuItem>
             {
                 new("Satınalma Panosu", SatinalmaRoutes.Panosu),
+                new("Talep Oluşturma", SatinalmaRoutes.TalepForm),
+                new("Talepler", SatinalmaRoutes.Taleplerim),
                 new("Gelen Talepler", SatinalmaRoutes.YonetimGelenTalepler),
                 new("Teklif İstemi Yapılanlar", SatinalmaRoutes.SatinalmaTeklifIstenen),
                 new("Teklif Girişi Bekleyenler", SatinalmaRoutes.SatinalmaTeklifGirilen),
@@ -170,11 +159,9 @@ public static class ProcurementRouteMatcher
                 new("Reddedilenler", SatinalmaRoutes.YonetimRedVerilen),
                 new("Sipariş Yönetimi", SatinalmaRoutes.SatinalmaSiparis),
                 new("Mal Kabul & Sevkiyat", SatinalmaRoutes.SatinalmaMalKabul),
-                new("İade İşlemleri", SatinalmaRoutes.SatinalmaIade)
+                new("İade İşlemleri", SatinalmaRoutes.SatinalmaIade),
+                new("Tedarikçiler", SatinalmaRoutes.SatinalmaTedarikciler)
             };
-
-            if (roleKey == "admin")
-                satinalmaItems.Add(new("Tedarikçiler", SatinalmaRoutes.SatinalmaTedarikciler));
 
             gruplar.Add(new ProcurementMenuGroup(roleKey == "admin" ? "Satınalma" : null, satinalmaItems));
             return gruplar;

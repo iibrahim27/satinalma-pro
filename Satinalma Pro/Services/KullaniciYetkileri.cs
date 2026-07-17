@@ -19,13 +19,17 @@ public static class KullaniciYetkileri
         if (kullanici is null || !kullanici.Aktif)
             return false;
 
-        // Ayarlar: Satınalma + Admin (kiracı operasyonu).
+        // Ayarlar, kullanıcı tanımına göre yalnızca Satınalma rolüne açıktır.
         if (modulAdi.Equals("Ayarlar", StringComparison.OrdinalIgnoreCase))
-            return KullaniciRolleri.Normalize(kullanici.Rol) == KullaniciRolleri.Satinalma
-                || KullaniciRolleri.AdminMi(kullanici.Rol);
+            return KullaniciRolleri.Normalize(kullanici.Rol) == KullaniciRolleri.Satinalma;
 
         if (KullaniciRolleri.AdminMi(kullanici.Rol))
             return true;
+
+        var rol = KullaniciRolleri.Normalize(kullanici.Rol);
+        if (RolMatrisiYonetiyor(rol))
+            return MasaustuRolHaritasi.MasaustuModulleri(rol)
+                .Contains(modulAdi, StringComparer.OrdinalIgnoreCase);
 
         var yetki = ModulYetkisiniBul(kullanici, modulAdi);
         if (yetki is not null)
@@ -47,8 +51,7 @@ public static class KullaniciYetkileri
             return false;
 
         if (modulAdi.Equals("Ayarlar", StringComparison.OrdinalIgnoreCase))
-            return KullaniciRolleri.Normalize(kullanici.Rol) == KullaniciRolleri.Satinalma
-                || KullaniciRolleri.AdminMi(kullanici.Rol);
+            return KullaniciRolleri.Normalize(kullanici.Rol) == KullaniciRolleri.Satinalma;
 
         if (KullaniciRolleri.AdminMi(kullanici.Rol))
             return true;
@@ -58,6 +61,20 @@ public static class KullaniciYetkileri
 
         var rol = KullaniciRolleri.Normalize(kullanici.Rol);
         var satinalmaModul = modulAdi.Equals("Satınalma", StringComparison.OrdinalIgnoreCase);
+
+        if (RolMatrisiYonetiyor(rol))
+        {
+            if (satinalmaModul)
+                // Bu genel bayrak, Satınalma ekranını salt-okunur yapmamak içindir.
+                // Talep/teklif aksiyonları ayrıca rol ve sahiplik kontrolü yapar.
+                return rol is KullaniciRolleri.Satinalma or KullaniciRolleri.Yonetim
+                    or KullaniciRolleri.Sef or KullaniciRolleri.Saha;
+
+            if (modulAdi.Equals("Stok Yönetimi", StringComparison.OrdinalIgnoreCase))
+                return StokYazabilir();
+
+            return rol == KullaniciRolleri.Satinalma;
+        }
 
         if (satinalmaModul)
             return SatinalmaModuluYazabilir(kullanici, rol);
@@ -180,7 +197,9 @@ public static class KullaniciYetkileri
         if (!OturumYoneticisi.BulutAktif)
             return true;
 
-        return SatinalmaPro.Shared.Services.MobilYetkiServisi.StokYazabilir(OturumYoneticisi.AktifKullanici?.Rol);
+        var rol = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol);
+        return KullaniciRolleri.AdminMi(rol)
+            || rol is KullaniciRolleri.Satinalma or KullaniciRolleri.Depo;
     }
 
     public static bool StokYazmaIslemiEngellendi()
@@ -230,6 +249,25 @@ public static class KullaniciYetkileri
             talep,
             OturumYoneticisi.AktifKullanici?.Uid,
             AktifKullaniciAdi());
+    }
+
+    /// <summary>
+    /// Yönetim, onay öncesinde yalnız talep kalemlerinin miktarını değiştirebilir.
+    /// Malzeme, birim, talep bilgisi ve teklif alanları bu yetkinin dışındadır.
+    /// </summary>
+    public static bool YonetimTalepMiktarDuzenleyebilir(SatinalmaTalep talep)
+    {
+        if (!OturumYoneticisi.BulutAktif)
+            return true;
+
+        var kullanici = OturumYoneticisi.AktifKullanici;
+        if (kullanici is null || !kullanici.Aktif)
+            return false;
+
+        var rol = KullaniciRolleri.Normalize(kullanici.Rol);
+        return rol == KullaniciRolleri.Yonetim
+            && ModulYazabilir("Satınalma")
+            && SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(talep);
     }
 
     /// <summary>Satınalma — talep eden adı ve tarih düzenleyebilir.</summary>
@@ -283,7 +321,7 @@ public static class KullaniciYetkileri
         return false;
     }
 
-    /// <summary>Admin/satınalma: tüm talepler; şef/saha: yalnızca kendi talepleri.</summary>
+    /// <summary>Satınalma tüm talepleri, şef/saha yalnızca kendi talebini silebilir.</summary>
     public static bool SatinalmaTalepSilebilir(SatinalmaTalep? talep = null)
     {
         if (!ModulYazabilir("Satınalma"))
@@ -367,7 +405,7 @@ public static class KullaniciYetkileri
         }
     }
 
-    /// <summary>Mal kabul ve stoğa aktarım — Satınalma ve Depo.</summary>
+    /// <summary>Mal kabul ve stoğa aktarım — yalnızca Satınalma.</summary>
     public static bool MalKabulVeStokAktarYapabilir()
     {
         if (!OturumYoneticisi.BulutAktif)
@@ -375,8 +413,7 @@ public static class KullaniciYetkileri
 
         var rol = OturumYoneticisi.AktifKullanici?.Rol;
         return KullaniciRolleri.Normalize(rol) is KullaniciRolleri.Admin
-            or KullaniciRolleri.Satinalma
-            or KullaniciRolleri.Depo;
+            or KullaniciRolleri.Satinalma;
     }
 
     public static bool YonetimIslemiYapabilir()
@@ -393,7 +430,9 @@ public static class KullaniciYetkileri
         if (!OturumYoneticisi.BulutAktif)
             return true;
 
-        return SatinalmaPro.Shared.Models.KullaniciRolleri.TalepOlusturabilir(OturumYoneticisi.AktifKullanici?.Rol);
+        var rol = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol);
+        return rol == KullaniciRolleri.Satinalma
+            || SatinalmaPro.Shared.Models.KullaniciRolleri.TalepOlusturabilir(rol);
     }
 
     private static ModulYetkiKaydi? ModulYetkisiniBul(KullaniciProfili kullanici, string modulAdi) =>
@@ -403,4 +442,9 @@ public static class KullaniciYetkileri
     private static bool RolVarsayilanGorebilir(string rol, string modulAdi) =>
         KullaniciRolleri.VarsayilanModuller(rol)
             .Contains(modulAdi, StringComparer.OrdinalIgnoreCase);
+
+    private static bool RolMatrisiYonetiyor(string rol) =>
+        rol is KullaniciRolleri.Yonetim or KullaniciRolleri.Satinalma
+            or KullaniciRolleri.Sef or KullaniciRolleri.Saha
+            or KullaniciRolleri.Depo or KullaniciRolleri.Atolye;
 }

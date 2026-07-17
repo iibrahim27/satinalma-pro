@@ -24,6 +24,7 @@ public partial class SatinalmaPanosuView : UserControl
     public SatinalmaPanosuView()
     {
         InitializeComponent();
+        TalepHoverOnizleme.Etkinlestir(TalepGrid);
     }
 
     public void Yenile()
@@ -47,6 +48,7 @@ public partial class SatinalmaPanosuView : UserControl
 
                     try
                     {
+                        HizliEylemleriOlustur();
                         WorkflowOlustur(adimlar);
                         KpiOlustur(kpis);
                         _tumSatirlar = satirlar;
@@ -93,6 +95,43 @@ public partial class SatinalmaPanosuView : UserControl
 
     public void PdfYazdir() =>
         SatinalmaPanosuPdfOlusturucu.TalepListesiYazdir(GorunenSatirlar());
+
+    private void HizliEylemleriOlustur()
+    {
+        HizliEylemPanel.Children.Clear();
+
+        var rol = OturumYoneticisi.AktifKullanici?.Rol;
+        TxtPanoKapsam.Text = KullaniciRolleri.KendiTalepleriniTakipEder(rol)
+            ? "Tüm talepleri görüntüleyin; yalnızca kendi taleplerinizi düzenleyip silebilirsiniz."
+            : "Rolünüze açık bekleyen işlemlere tek tıklamayla geçin.";
+
+        var eylemler = new (string Baslik, string Route)[]
+        {
+            ("Talepleri İncele", SatinalmaPart1Menusu.YonetimGelenTalepler),
+            ("Taleplerim", SatinalmaPart1Menusu.SatinalmaTalepler),
+            ("Teklif Girişi", SatinalmaPart1Menusu.SatinalmaTeklifIstenen),
+            ("Teklif Onayı", SatinalmaPart1Menusu.YonetimTeklifGirilen),
+            ("Sipariş Takibi", SatinalmaPart1Menusu.SatinalmaSiparis),
+            ("Mal Kabul Takibi", SatinalmaPart1Menusu.SatinalmaMalKabul)
+        };
+
+        foreach (var (baslik, route) in eylemler)
+        {
+            if (!DesktopRoleTabManager.RouteVisible(rol, route))
+                continue;
+
+            var buton = new Button
+            {
+                Content = baslik,
+                Style = (Style)FindResource("ToolbarButtonStyle"),
+                Margin = new Thickness(0, 0, 8, 6),
+                Padding = new Thickness(12, 7, 12, 7),
+                ToolTip = baslik
+            };
+            buton.Click += (_, _) => RouteIstendi?.Invoke(route);
+            HizliEylemPanel.Children.Add(buton);
+        }
+    }
 
     private void WorkflowOlustur(IReadOnlyList<SatinalmaWorkflowAdim> adimlar)
     {

@@ -44,7 +44,7 @@
                             </Border.Triggers>
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:YonetimTaleplerViewModel}}, Path=FiltreSecCommand}"
+                                    Command="{Binding x:DataType='vm:YonetimTaleplerViewModel', Source={RelativeSource AncestorType={x:Type vm:YonetimTaleplerViewModel}}, Path=FiltreSecCommand}"
                                     CommandParameter="{Binding .}" />
                             </Border.GestureRecognizers>
                             <Label Text="{Binding Baslik}" FontSize="13" FontAttributes="Bold">
@@ -76,7 +76,7 @@
                                 <Border Style="{StaticResource Md3ElevatedCard}" Margin="0,0,0,10">
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:YonetimTaleplerViewModel}}, Path=TalepDetayaGitCommand}"
+                                            Command="{Binding x:DataType='vm:YonetimTaleplerViewModel', Source={RelativeSource AncestorType={x:Type vm:YonetimTaleplerViewModel}}, Path=TalepDetayaGitCommand}"
                                             CommandParameter="{Binding .}" />
                                     </Border.GestureRecognizers>
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">

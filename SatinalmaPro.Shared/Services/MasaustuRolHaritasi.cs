@@ -94,13 +94,26 @@ public static class MasaustuRolHaritasi
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-    public static IReadOnlyList<string> StokSekmeleri(string? rol) =>
-        RolNavigasyonu.Menuler(rol)
-            .Select(m => m.Route)
-            .Where(StokRouteToSekme.ContainsKey)
-            .Select(r => StokRouteToSekme[r])
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+    public static IReadOnlyList<string> StokSekmeleri(string? rol)
+    {
+        rol = KullaniciRolleri.Normalize(rol);
+
+        // Masaüstü stok alanı Android menüsünden bağımsızdır. Böylece masaüstü
+        // rolleri, eski mobil menü kayıtlarından etkilenmeden uygulanır.
+        if (KullaniciRolleri.AdminMi(rol) || rol is KullaniciRolleri.Yonetim or KullaniciRolleri.Satinalma)
+            return ["Stok Durumu", "Stok Girişi", "Stok Çıkışı", "Stok Hareketleri", "Stok Sayım"];
+
+        if (rol is KullaniciRolleri.Sef or KullaniciRolleri.Saha)
+            return ["Stok Durumu", "Stok Hareketleri"];
+
+        if (rol == KullaniciRolleri.Depo)
+            return ["Stok Durumu", "Stok Girişi", "Stok Çıkışı", "Stok Hareketleri"];
+
+        if (rol == KullaniciRolleri.Atolye)
+            return ["Stok Durumu"];
+
+        return [];
+    }
 
     public static string SatinalmaSekmeNormalize(string sekmeAdi)
     {
@@ -157,58 +170,31 @@ public static class MasaustuRolHaritasi
         KullaniciRolleri.AdminMi(rol)
         || StokSekmeleri(rol).Contains(sekmeAdi, StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Masaüstü ana modül listesi — Android menüsü + masaüstüne özel modüller.</summary>
+    /// <summary>Masaüstü ana modül listesi — rol matrisi doğrudan uygulanır.</summary>
     public static IReadOnlyList<string> MasaustuModulleri(string? rol)
     {
         rol = KullaniciRolleri.Normalize(rol);
 
-        if (KullaniciRolleri.AdminMi(rol))
-            return
-            [
-                "Alınan Malzemeler", "Stok Yönetimi", "Agrega", "Çimento", "Akaryakıt Takip",
-                "Araç Filo Takip", "Finansman Raporlama", "Satınalma", "Raporlamalar"
-            ];
+        var operasyonModulleri = new[]
+        {
+            "Alınan Malzemeler", "Stok Yönetimi", "Agrega", "Çimento", "Akaryakıt Takip",
+            "Araç Filo Takip", "Finansman Raporlama", "Satınalma", "Raporlamalar"
+        };
+
+        // Admin, teknik üst rol olarak mevcut tam erişimini korur; Ayarlar iş rolü
+        // olarak yalnızca Satınalma'na açıktır.
+        if (KullaniciRolleri.AdminMi(rol) || rol is KullaniciRolleri.Yonetim or KullaniciRolleri.Sef)
+            return operasyonModulleri;
 
         if (rol == KullaniciRolleri.Satinalma)
-            return
-            [
-                "Alınan Malzemeler", "Stok Yönetimi", "Agrega", "Çimento", "Akaryakıt Takip",
-                "Araç Filo Takip", "Finansman Raporlama", "Satınalma", "Raporlamalar", "Ayarlar"
-            ];
+            return [.. operasyonModulleri, "Ayarlar"];
 
-        if (rol == KullaniciRolleri.Yonetim)
-            return ["Satınalma", "Stok Yönetimi", "Agrega", "Çimento", "Alınan Malzemeler"];
+        if (rol == KullaniciRolleri.Saha)
+            return ["Satınalma", "Stok Yönetimi"];
 
-        var moduller = new List<string>();
-        if (SatinalmaSekmeleri(rol).Count > 0)
-            moduller.Add("Satınalma");
-        if (StokSekmeleri(rol).Count > 0)
-            moduller.Add("Stok Yönetimi");
+        if (rol is KullaniciRolleri.Depo or KullaniciRolleri.Atolye)
+            return ["Stok Yönetimi"];
 
-        if (RolNavigasyonu.Menuler(rol).Any(m =>
-                m.Route.Equals("onaylanan-malzemeler", StringComparison.OrdinalIgnoreCase)))
-            moduller.Add("Alınan Malzemeler");
-
-        if (rol == KullaniciRolleri.Sef)
-        {
-            moduller.Add("Agrega");
-            moduller.Add("Çimento");
-        }
-
-        if (rol is KullaniciRolleri.Yonetim or KullaniciRolleri.Saha or KullaniciRolleri.Admin
-            || KullaniciRolleri.AdminMi(rol))
-        {
-            if (!moduller.Contains("Agrega", StringComparer.OrdinalIgnoreCase))
-                moduller.Add("Agrega");
-            if (!moduller.Contains("Çimento", StringComparer.OrdinalIgnoreCase))
-                moduller.Add("Çimento");
-        }
-
-        if (RolNavigasyonu.Menuler(rol).Any(m =>
-                m.Route.Equals("alinan-malzemeler", StringComparison.OrdinalIgnoreCase))
-            && !moduller.Contains("Alınan Malzemeler", StringComparer.OrdinalIgnoreCase))
-            moduller.Add("Alınan Malzemeler");
-
-        return moduller.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        return [];
     }
 }

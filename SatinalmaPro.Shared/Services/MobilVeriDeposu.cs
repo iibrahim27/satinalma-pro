@@ -318,9 +318,11 @@ public sealed class MobilVeriDeposu
     {
         var json = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Bildirimler(), iptal);
         var bulut = BildirimleriOku(json);
+        var inbox = await KullaniciInboxunuYukleAsync(iptal);
         var birlesik = BildirimBirlestirme.Birlestir(Bildirimler, bulut);
+        birlesik = BildirimBirlestirme.Birlestir(inbox, birlesik);
         Bildirimler.Clear();
-        Bildirimler.AddRange(birlesik);
+        Bildirimler.AddRange(BildirimTekillestirme.Tekille(birlesik));
     }
 
     public async Task BildirimleriKaydetAsync(CancellationToken iptal = default)
@@ -328,14 +330,21 @@ public sealed class MobilVeriDeposu
         await BildirimBulutYazmaKilidi.WaitAsync(iptal);
         try
         {
+            await InboxOkunduDurumlariniSenkronizeEtAsync(iptal);
             var bulutJson = await _firestore.BelgeJsonOkuAsync(FirestoreYollari.Bildirimler(), iptal);
             var bulut = BildirimleriOku(bulutJson);
-            var birlesik = BildirimBirlestirme.Birlestir(Bildirimler, bulut);
-            Bildirimler.Clear();
-            Bildirimler.AddRange(birlesik);
+            var paylasilanKayitlar = Bildirimler
+                .Where(b => string.IsNullOrWhiteSpace(b.InboxDocId))
+                .ToList();
+            var birlesik = BildirimBirlestirme.Birlestir(paylasilanKayitlar, bulut);
 
-            var json = JsonSerializer.Serialize(Bildirimler, Json);
+            var json = JsonSerializer.Serialize(birlesik, Json);
             await _firestore.BelgeJsonYazAsync(FirestoreYollari.Bildirimler(), json, _auth.Uid, iptal);
+
+            var inbox = await KullaniciInboxunuYukleAsync(iptal);
+            var gorunum = BildirimBirlestirme.Birlestir(inbox, birlesik);
+            Bildirimler.Clear();
+            Bildirimler.AddRange(BildirimTekillestirme.Tekille(gorunum));
         }
         finally
         {
@@ -349,6 +358,58 @@ public sealed class MobilVeriDeposu
             return [];
 
         return JsonSerializer.Deserialize<List<BildirimKaydi>>(json, Json) ?? [];
+    }
+
+    public async Task BildirimleriArsivleAsync(
+        IEnumerable<BildirimKaydi> bildirimler,
+        CancellationToken iptal = default)
+    {
+        var uid = _auth.Uid;
+        if (string.IsNullOrWhiteSpace(uid))
+            return;
+
+        foreach (var bildirim in bildirimler.Where(b => !string.IsNullOrWhiteSpace(b.InboxDocId)))
+        {
+            try
+            {
+                await _firestore.InboxArsivleAsync(uid, bildirim.InboxDocId!, iptal);
+            }
+            catch
+            {
+                // Gelen kutusu temizliği sonraki senkron sırasında tekrar denenir.
+            }
+        }
+    }
+
+    private async Task<List<BildirimKaydi>> KullaniciInboxunuYukleAsync(CancellationToken iptal)
+    {
+        var uid = _auth.Uid;
+        if (string.IsNullOrWhiteSpace(uid))
+            return [];
+
+        var inbox = await _firestore.InboxOkuAsync(uid, 100, iptal);
+        return inbox
+            .Select(BildirimInboxServisi.InboxtenBildirimeDonustur)
+            .ToList();
+    }
+
+    private async Task InboxOkunduDurumlariniSenkronizeEtAsync(CancellationToken iptal)
+    {
+        var uid = _auth.Uid;
+        if (string.IsNullOrWhiteSpace(uid))
+            return;
+
+        foreach (var bildirim in Bildirimler.Where(b => b.Okundu && !string.IsNullOrWhiteSpace(b.InboxDocId)))
+        {
+            try
+            {
+                await _firestore.InboxOkunduIsaretleAsync(uid, bildirim.InboxDocId!, iptal);
+            }
+            catch
+            {
+                // Okundu durumu sonraki senkron sırasında tekrar gönderilir.
+            }
+        }
     }
 
     public async Task AlinanMalzemeleriYukleAsync(CancellationToken iptal = default)

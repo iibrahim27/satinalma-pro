@@ -47,8 +47,40 @@ public partial class OnaylananMalzemelerPage : ContentPage
             .OrderByDescending(s => s.Tarih)
             .ThenBy(s => s.TalepNo)
             .ToList();
-        Liste.ItemsSource = _liste.Select(s => new OnaylananMalzemeGorunum(s, _malKabulYapabilir)).ToList();
+        ListeyiBagla();
     }
+
+    private void ListeyiBagla()
+    {
+        var arama = TxtArama.Text?.Trim();
+        var gorunenler = string.IsNullOrWhiteSpace(arama)
+            ? _liste
+            : _liste.Where(s => string.Join(" ", s.TalepNo, s.SiparisNo, s.Malzeme, s.Firma, s.KabulDurumu)
+                .Contains(arama, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        var topluKabulBilgileri = _liste
+            .Where(s => !s.SiparisTamamlandi && s.KalanMiktar > 0.0001)
+            .GroupBy(s => (s.TalepId, s.TeklifId))
+            .ToDictionary(
+                g => g.Key,
+                g => (IlkKalemId: g.First().KalemId, KalemSayisi: g.Count()));
+
+        Liste.ItemsSource = gorunenler
+            .Select(s =>
+            {
+                var topluKabulYapilabilir = topluKabulBilgileri.TryGetValue((s.TalepId, s.TeklifId), out var bilgi)
+                    && bilgi.KalemSayisi > 1
+                    && bilgi.IlkKalemId == s.KalemId;
+                return new OnaylananMalzemeGorunum(
+                    s,
+                    _malKabulYapabilir,
+                    topluKabulYapilabilir,
+                    topluKabulYapilabilir ? bilgi.KalemSayisi : 0);
+            })
+            .ToList();
+    }
+
+    private void AramaDegisti(object sender, TextChangedEventArgs e) => ListeyiBagla();
 
     private async void MalKabul_Clicked(object sender, EventArgs e)
     {
@@ -111,6 +143,39 @@ public partial class OnaylananMalzemelerPage : ContentPage
         {
             await _oturum.Satinalma.SiparisTamamlaAsync(satir.TalepId, satir.KalemId);
             await DisplayAlert("Tamamlandı", "Sipariş kalemi tamamlandı.", "Tamam");
+            await Yukle();
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Hata", ex.Message, "Tamam");
+        }
+    }
+
+    private async void TopluMalKabul_Clicked(object sender, EventArgs e)
+    {
+        if (!_malKabulYapabilir)
+        {
+            await DisplayAlert("Yetki", "Mal kabul işlemi yalnızca Satınalma rolü tarafından yapılabilir.", "Tamam");
+            return;
+        }
+
+        if (sender is not Button { CommandParameter: OnaylananMalzemeGorunum gorunum })
+            return;
+
+        var onay = await DisplayAlert(
+            "Tüm Kalemleri Kabul Et",
+            $"{gorunum.TopluKabulOzet} kalan {gorunum.TopluKabulKalemSayisi:N0} kalemin tamamı kabul edilecek. Devam edilsin mi?",
+            "Kabul Et",
+            "İptal");
+        if (!onay)
+            return;
+
+        try
+        {
+            var kabulEdilenKalemSayisi = await _oturum.Satinalma.TumKalemleriMalKabulEtAsync(
+                gorunum.Satir.TalepId,
+                gorunum.Satir.TeklifId);
+            await DisplayAlert("Kaydedildi", $"{kabulEdilenKalemSayisi:N0} kalemin mal kabulü tamamlandı.", "Tamam");
             await Yukle();
         }
         catch (Exception ex)
@@ -198,10 +263,20 @@ public partial class OnaylananMalzemelerPage : ContentPage
     }
 }
 
-public sealed class OnaylananMalzemeGorunum(OnaylananMalzemeSatiri satir, bool islemYapabilir)
+public sealed class OnaylananMalzemeGorunum(
+    OnaylananMalzemeSatiri satir,
+    bool islemYapabilir,
+    bool topluKabulYapilabilir,
+    int topluKabulKalemSayisi)
 {
     public OnaylananMalzemeSatiri Satir { get; } = satir;
     public bool IslemYapabilir { get; } = islemYapabilir;
+    public bool TopluKabulYapabilir { get; } = islemYapabilir && topluKabulYapilabilir;
+    public int TopluKabulKalemSayisi { get; } = topluKabulKalemSayisi;
+    public string TopluKabulMetni => $"Kalan {TopluKabulKalemSayisi:N0} kalemi kabul et";
+    public string TopluKabulOzet => string.IsNullOrWhiteSpace(Satir.Firma)
+        ? $"{TalepNo} talebindeki"
+        : $"{Satir.Firma} / {TalepNo} teklifindeki";
     public string Malzeme => Satir.Malzeme;
     public string Firma => Satir.Firma;
     public string TalepNo => Satir.TalepNo;

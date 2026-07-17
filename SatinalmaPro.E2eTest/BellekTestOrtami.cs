@@ -140,7 +140,8 @@ public sealed class BellekTestOrtami
         };
         Kaydet(talep);
         SetUser(saha);
-        BildirimEkle(BildirimTipleri.YonetimeGonderildi, talep, hedefRol: KullaniciRolleri.Yonetim);
+        foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.YonetimeGonderildiHedefleri())
+            BildirimEkle(BildirimTipleri.YonetimeGonderildi, talep, hedefRol: hedefRol, hedefUid: hedefUid);
         return talep;
     }
 
@@ -150,7 +151,6 @@ public sealed class BellekTestOrtami
         talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
         Kaydet(talep);
         BildirimEkle(BildirimTipleri.TeklifIstendi, talep, hedefRol: KullaniciRolleri.Satinalma);
-        BildirimEkle(BildirimTipleri.TeklifIstendi, talep, hedefUid: talep.OlusturanUid);
     }
 
     public SatinalmaTeklif TeklifEkle(SatinalmaTalep talep, string firma, double birimFiyat)
@@ -193,8 +193,9 @@ public sealed class BellekTestOrtami
             talep.YonetimOnerilenTeklifId = oneri.Id;
         talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
         Kaydet(talep);
-        foreach (var (hedefRol, _) in BildirimRolPolitikasi.TeklifOnaydaHedefleri())
-            BildirimEkle(BildirimTipleri.TeklifOnayda, talep, hedefRol: hedefRol);
+        foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.TeklifOnaydaHedefleri(
+                     talep.OlusturanUid, talep.OlusturanRol, Satinalma.Uid))
+            BildirimEkle(BildirimTipleri.TeklifOnayda, talep, hedefRol: hedefRol, hedefUid: hedefUid);
     }
 
     public void YonetimTeklifOnayla(SatinalmaTalep talep, Guid teklifId)
@@ -210,8 +211,9 @@ public sealed class BellekTestOrtami
         talep.FirmaSiparisNolari[teklifId] = YeniSiparisNo();
         talep.SiparisNo = talep.FirmaSiparisNolari[teklifId];
         Kaydet(talep);
-        BildirimEkle(BildirimTipleri.Onaylandi, talep, hedefRol: KullaniciRolleri.Satinalma);
-        BildirimEkle(BildirimTipleri.Onaylandi, talep, hedefUid: talep.OlusturanUid);
+        foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.OnaylandiHedefleri(
+                     talep.OlusturanUid, Yonetim.Uid))
+            BildirimEkle(BildirimTipleri.Onaylandi, talep, hedefRol: hedefRol, hedefUid: hedefUid);
     }
 
     public void SiparisVer(SatinalmaTalep talep)
@@ -219,8 +221,9 @@ public sealed class BellekTestOrtami
         SetUser(Satinalma);
         talep.Durum = SatinalmaTalepDurumlari.SiparisOlusturuldu;
         Kaydet(talep);
-        BildirimEkle(BildirimTipleri.SiparisOlusturuldu, talep, hedefRol: KullaniciRolleri.Satinalma);
-        BildirimEkle(BildirimTipleri.SiparisOlusturuldu, talep, hedefUid: talep.OlusturanUid);
+        foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.SiparisOlusturulduHedefleri(
+                     talep.OlusturanUid, Satinalma.Uid))
+            BildirimEkle(BildirimTipleri.SiparisOlusturuldu, talep, hedefRol: hedefRol, hedefUid: hedefUid);
     }
 
     public void MalKabul(SatinalmaTalep talep, Guid kalemId, double miktar)
@@ -230,9 +233,9 @@ public sealed class BellekTestOrtami
         kalem.KabulEdilenMiktar += miktar;
         kalem.SiparisTamamlandi = kalem.KabulEdilenMiktar >= kalem.Miktar;
         Kaydet(talep);
-        BildirimEkle(BildirimTipleri.MalKabulEdildi, talep, hedefRol: KullaniciRolleri.Satinalma);
-        BildirimEkle(BildirimTipleri.MalKabulEdildi, talep, hedefRol: KullaniciRolleri.Depo);
-        BildirimEkle(BildirimTipleri.MalKabulEdildi, talep, hedefUid: talep.OlusturanUid);
+        foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.MalKabulEdildiHedefleri(
+                     talep.OlusturanUid, Satinalma.Uid))
+            BildirimEkle(BildirimTipleri.MalKabulEdildi, talep, hedefRol: hedefRol, hedefUid: hedefUid);
     }
 
     public void Temizle()

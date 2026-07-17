@@ -172,7 +172,6 @@ public sealed class OturumServisi
 
 #if ANDROID
             AndroidBildirimKanali.Olustur();
-            BildirimForegroundService.Baslat(global::Android.App.Application.Context);
             await Dinleyici.BildirimPollAsync();
 #endif
         }
@@ -224,9 +223,6 @@ public sealed class OturumServisi
     public void CikisYap()
     {
         Dinleyici.Durdur();
-#if ANDROID
-        BildirimForegroundService.Durdur(global::Android.App.Application.Context);
-#endif
         Auth.OturumuKapat();
         Depo.AktifKullaniciyiAyarla(null);
         UygulamaKurulumServisi.OturumVerisiniTemizle();

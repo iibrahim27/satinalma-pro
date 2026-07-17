@@ -15,14 +15,18 @@ public partial class TalepListesiView : UserControl
 
     private string _route = SatinalmaPart1Menusu.SatinalmaTalepler;
 
-    public TalepListesiView() => InitializeComponent();
+    public TalepListesiView()
+    {
+        InitializeComponent();
+        TalepHoverOnizleme.Etkinlestir(Tablo);
+    }
 
     public void Goster(string route)
     {
         _route = route;
         TxtYardim.Text = route switch
         {
-            SatinalmaRoutes.YonetimGelenTalepler => "Onay, teklif iste veya red için satıra çift tıklayın.",
+            SatinalmaRoutes.YonetimGelenTalepler => "Satırın üzerine gelerek talep/teklif içeriğini önizleyin; onay, teklif iste veya red için çift tıklayın.",
             SatinalmaRoutes.YonetimTeklifGirilen => "Teklif inceleme, onay, red veya revize için satıra çift tıklayın.",
             SatinalmaRoutes.YonetimDirekOnaylanan => "Direk onaylanan talep detayı için çift tıklayın.",
             SatinalmaRoutes.YonetimRedVerilen => "Red verilen talep detayı için çift tıklayın.",
@@ -32,7 +36,7 @@ public partial class TalepListesiView : UserControl
             SatinalmaRoutes.SatinalmaTeklifDuzeltme => "Yönetim düzeltme notu ile geri gönderdi — teklifleri düzenleyip yeniden gönderin.",
             SatinalmaRoutes.SatinalmaKarsilastirma => "Teklifleri karşılaştırmak için satıra çift tıklayın.",
             SatinalmaRoutes.Taleplerim => "Detay için satıra çift tıklayın.",
-            _ => "Detay için satıra çift tıklayın."
+            _ => "Satırın üzerine gelerek içerik önizlemesini görün; detay için çift tıklayın."
         };
         Yenile();
     }

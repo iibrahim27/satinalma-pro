@@ -11,7 +11,7 @@ public sealed class ApkKurulumServisi : IApkKurulumServisi
 {
     public bool KurulumIznineHazir()
     {
-        if (Build.VERSION.SdkInt < BuildVersionCodes.O)
+        if (!OperatingSystem.IsAndroidVersionAtLeast(26))
             return true;
 
         var context = Platform.CurrentActivity ?? Application.Context;

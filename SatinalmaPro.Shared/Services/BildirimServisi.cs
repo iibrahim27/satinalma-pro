@@ -7,6 +7,7 @@ public sealed class BildirimServisi
 {
     private readonly MobilVeriDeposu _depo;
     private readonly FcmPushServisi? _fcm;
+    private readonly SemaphoreSlim _yazmaKilidi = new(1, 1);
 
     public BildirimServisi(MobilVeriDeposu depo, FcmPushServisi? fcm = null)
     {
@@ -16,11 +17,7 @@ public sealed class BildirimServisi
 
     public async Task EkleAsync(BildirimKaydi bildirim, CancellationToken iptal = default)
     {
-        BildirimBirlestirme.Dokun(bildirim);
-        await _depo.BildirimleriYukleAsync(iptal);
-        _depo.Bildirimler.Insert(0, bildirim);
-        await _depo.BildirimleriKaydetAsync(iptal);
-        await FcmGonderAsync(bildirim, iptal);
+        await CokluEkleAsync([bildirim], iptal);
     }
 
     public async Task CokluEkleAsync(IReadOnlyList<BildirimKaydi> bildirimler, CancellationToken iptal = default)
@@ -28,16 +25,42 @@ public sealed class BildirimServisi
         if (bildirimler.Count == 0)
             return;
 
-        foreach (var b in bildirimler)
-            BildirimBirlestirme.Dokun(b);
+        var gonderilecekler = bildirimler
+            .Where(BildirimRolPolitikasi.KayitGonderilmeli)
+            .GroupBy(BildirimMantikAnahtari.Olustur, StringComparer.Ordinal)
+            .Select(grup => grup.First())
+            .ToList();
+        if (gonderilecekler.Count == 0)
+            return;
 
-        await _depo.BildirimleriYukleAsync(iptal);
-        foreach (var b in bildirimler)
-            _depo.Bildirimler.Insert(0, b);
-        await _depo.BildirimleriKaydetAsync(iptal);
+        await _yazmaKilidi.WaitAsync(iptal);
+        try
+        {
+            await _depo.BildirimleriYukleAsync(iptal);
+            var mevcutAnahtarlar = _depo.Bildirimler
+                .Select(BildirimMantikAnahtari.Olustur)
+                .ToHashSet(StringComparer.Ordinal);
+            var yeniKayitlar = gonderilecekler
+                .Where(b => !mevcutAnahtarlar.Contains(BildirimMantikAnahtari.Olustur(b)))
+                .ToList();
+            if (yeniKayitlar.Count == 0)
+                return;
 
-        foreach (var b in bildirimler)
-            await FcmGonderAsync(b, iptal);
+            foreach (var b in yeniKayitlar)
+            {
+                BildirimBirlestirme.Dokun(b);
+                _depo.Bildirimler.Insert(0, b);
+            }
+
+            await _depo.BildirimleriKaydetAsync(iptal);
+
+            foreach (var b in yeniKayitlar)
+                await FcmGonderAsync(b, iptal);
+        }
+        finally
+        {
+            _yazmaKilidi.Release();
+        }
     }
 
     public IEnumerable<BildirimKaydi> KullaniciBildirimleri(KullaniciProfili? kullanici) =>
@@ -68,13 +91,14 @@ public sealed class BildirimServisi
         await _depo.BildirimleriYukleAsync(iptal);
         await _depo.TalepleriYukleAsync(iptal);
 
-        var kalacak = _depo.Bildirimler
-            .Where(b => BildirimFiltreleme.GecerliMi(b, _depo.Talepler))
+        var silinecek = _depo.Bildirimler
+            .Where(b => !BildirimFiltreleme.GecerliMi(b, _depo.Talepler))
             .ToList();
-        if (kalacak.Count != _depo.Bildirimler.Count)
+        if (silinecek.Count > 0)
         {
-            _depo.Bildirimler.Clear();
-            _depo.Bildirimler.AddRange(kalacak);
+            var silinecekIdler = silinecek.Select(b => b.Id).ToHashSet();
+            _depo.Bildirimler.RemoveAll(b => silinecekIdler.Contains(b.Id));
+            await _depo.BildirimleriArsivleAsync(silinecek, iptal);
             await _depo.BildirimleriKaydetAsync(iptal);
         }
     }
@@ -104,17 +128,20 @@ public sealed class BildirimServisi
         await _depo.TalepleriYukleAsync(iptal);
         var silinecek = KullaniciBildirimleri(kullanici)
             .Where(b => !BildirimFiltreleme.Temizlenmemeli(b, _depo.Talepler))
-            .Select(b => b.Id)
-            .ToHashSet();
+            .ToList();
 
-        _depo.Bildirimler.RemoveAll(b => silinecek.Contains(b.Id));
+        var silinecekIdler = silinecek.Select(b => b.Id).ToHashSet();
+        _depo.Bildirimler.RemoveAll(b => silinecekIdler.Contains(b.Id));
+        await _depo.BildirimleriArsivleAsync(silinecek, iptal);
         await _depo.BildirimleriKaydetAsync(iptal);
     }
 
     public async Task TalepBildirimleriniSilAsync(Guid talepId, CancellationToken iptal = default)
     {
         await _depo.BildirimleriYukleAsync(iptal);
+        var silinecek = _depo.Bildirimler.Where(b => b.TalepId == talepId).ToList();
         _depo.Bildirimler.RemoveAll(b => b.TalepId == talepId);
+        await _depo.BildirimleriArsivleAsync(silinecek, iptal);
         await _depo.BildirimleriKaydetAsync(iptal);
     }
 

@@ -64,13 +64,14 @@ public static class BildirimDeposu
 
         var json = await OturumYoneticisi.Firestore.BelgeJsonOkuAsync(FirestoreYol, iptal);
         var bulut = Deserialize(json);
+        var yerelPaylasilan = AnlikListe()
+            .Where(b => string.IsNullOrWhiteSpace(b.InboxDocId))
+            .Select(ToShared)
+            .ToList();
+        var paylasilan = BildirimBirlestirme.Birlestir(yerelPaylasilan, bulut);
         var inbox = await InboxYukleAsync(iptal);
-        if (inbox.Count > 0)
-            bulut = InboxIleBirlestir(bulut, inbox, OturumYoneticisi.AktifKullanici);
-
-        var yerel = AnlikListe().Select(ToShared).ToList();
         var birlesik = BildirimTekillestirme.Tekille(
-            BildirimBirlestirme.Birlestir(yerel, bulut));
+            BildirimBirlestirme.Birlestir(inbox, paylasilan));
 
         await BulutYazmaKilidi.WaitAsync(iptal);
         try
@@ -81,7 +82,6 @@ public static class BildirimDeposu
                 Bildirimler.AddRange(birlesik.Select(FromShared));
             }
             _sonYukleme = DateTime.Now;
-            BudamayiUygula();
         }
         finally
         {
@@ -97,19 +97,25 @@ public static class BildirimDeposu
         await BulutYazmaKilidi.WaitAsync(iptal);
         try
         {
+            await InboxOkunduSenkronizeEtAsync(iptal);
             var bulutJson = await OturumYoneticisi.Firestore.BelgeJsonOkuAsync(FirestoreYol, iptal);
             var bulut = Deserialize(bulutJson);
-            var yerel = AnlikListe().Select(ToShared).ToList();
+            var yerel = AnlikListe()
+                .Where(b => string.IsNullOrWhiteSpace(b.InboxDocId))
+                .Select(ToShared)
+                .ToList();
             var birlesik = BildirimTekillestirme.Tekille(
-                BildirimBirlestirme.Birlestir(yerel, bulut));
+            BildirimBirlestirme.Birlestir(yerel, bulut));
+            await YerelListeyiBulutaYazAsync(birlesik, iptal);
 
+            var inbox = await InboxYukleAsync(iptal);
+            var gorunum = BildirimTekillestirme.Tekille(
+                BildirimBirlestirme.Birlestir(inbox, birlesik));
             lock (Bildirimler)
             {
                 Bildirimler.Clear();
-                Bildirimler.AddRange(birlesik.Select(FromShared));
+                Bildirimler.AddRange(gorunum.Select(FromShared));
             }
-
-            await YerelListeyiBulutaYazAsync(iptal);
         }
         finally
         {
@@ -120,19 +126,7 @@ public static class BildirimDeposu
     /// <summary>Silme / toplu okundu sonrası yerel listeyi buluta yazar; silinen kayıtları buluttan geri yüklemez.</summary>
     public static async Task KaydetYerelAsync(CancellationToken iptal = default)
     {
-        if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
-            return;
-
-        await BulutYazmaKilidi.WaitAsync(iptal);
-        try
-        {
-            await YerelListeyiBulutaYazAsync(iptal);
-            _sonYukleme = DateTime.Now;
-        }
-        finally
-        {
-            BulutYazmaKilidi.Release();
-        }
+        await KaydetAsync(iptal);
     }
 
     public static async Task GecersizleriSilAsync(CancellationToken iptal = default)
@@ -248,25 +242,29 @@ public static class BildirimDeposu
         }
     }
 
-    private static async Task YerelListeyiBulutaYazAsync(CancellationToken iptal)
+    private static async Task YerelListeyiBulutaYazAsync(
+        IEnumerable<SharedBildirim> paylasilanKayitlar,
+        CancellationToken iptal)
     {
         if (OturumYoneticisi.Firestore is null)
             return;
 
         // Legacy blob şişmesin: inbox-only / okunmuş / geçersizleri budayıp boyut sınırla.
-        BudamayiUygula();
-        var json = JsonSerializer.Serialize(AnlikListe(), Json);
+        var kayitlar = paylasilanKayitlar
+            .OrderByDescending(b => b.GuncellemeUtc)
+            .Take(150)
+            .ToList();
+        var json = JsonSerializer.Serialize(kayitlar, Json);
         const int maxBytes = 900_000;
-        if (Encoding.UTF8.GetByteCount(json) > maxBytes)
+        while (Encoding.UTF8.GetByteCount(json) > maxBytes && kayitlar.Count > 10)
         {
-            BudamayiSikistir(maxBytes);
-            json = JsonSerializer.Serialize(AnlikListe(), Json);
+            kayitlar.RemoveAt(kayitlar.Count - 1);
+            json = JsonSerializer.Serialize(kayitlar, Json);
         }
 
         await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
             FirestoreYol, json, OturumYoneticisi.Auth?.Uid, iptal);
 
-        await InboxOkunduSenkronizeEtAsync(iptal);
     }
 
     /// <summary>
@@ -453,6 +451,7 @@ public static class BildirimDeposu
                             await OturumYoneticisi.Firestore.InboxEkleAsync(
                                 hedef.Uid, inboxDocId, bildirim, iptal);
                         }
+                        veri["inboxDocId"] = inboxDocId;
                     }
                     catch (Exception ex)
                     {
@@ -577,6 +576,7 @@ public static class BildirimDeposu
         OlusturanAd = b.OlusturanAd,
         OlusturmaTarihi = b.OlusturmaTarihi,
         Okundu = b.Okundu,
+        Arsivlendi = b.Arsivlendi,
         GuncellemeUtc = b.GuncellemeUtc,
         InboxDocId = b.InboxDocId,
         DeepLink = b.DeepLink,
@@ -597,6 +597,7 @@ public static class BildirimDeposu
         OlusturanAd = b.OlusturanAd,
         OlusturmaTarihi = b.OlusturmaTarihi,
         Okundu = b.Okundu,
+        Arsivlendi = b.Arsivlendi,
         GuncellemeUtc = b.GuncellemeUtc,
         InboxDocId = b.InboxDocId,
         DeepLink = b.DeepLink,
@@ -614,7 +615,6 @@ public static class BildirimDeposu
         {
             var inbox = await OturumYoneticisi.Firestore.InboxOkuAsync(uid, 50, iptal);
             return inbox
-                .Where(e => !e.IsDismissed && !e.IsRead)
                 .Select(BildirimInboxServisi.InboxtenBildirimeDonustur)
                 .ToList();
         }

@@ -140,6 +140,7 @@ public static class MobilPdfOlusturucu
 
                 foreach (var kalem in talep.Kalemler.OrderBy(k => k.SiraNo))
                 {
+#pragma warning disable CS8602 // fiyat, yalnızca teklif içinden üretildiği için bu dalda teklif null olamaz.
                     var teklif = kalem.OnaylananTeklifId is { } tid
                         ? talep.Teklifler.FirstOrDefault(t => t.Id == tid)
                         : talep.OnaylananTeklif;
@@ -156,6 +157,7 @@ public static class MobilPdfOlusturucu
                         toplam
                     ]);
                 }
+#pragma warning restore CS8602
 
                 y += 24;
                 y = Metin(gfx, "Yönetim onayı / imza", 40, y, FontBold());

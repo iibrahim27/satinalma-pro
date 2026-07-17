@@ -40,7 +40,7 @@
                                         <Label Text="{Binding MalzemeOzeti}" Style="{StaticResource Md3Muted}" LineBreakMode="TailTruncation" />
                                         <Label Text="{Binding FirmaSayisi, StringFormat='🏢 {0} firma teklif verdi'}" Style="{StaticResource Md3Muted}" />
                                         <Button Text="İncele" Style="{StaticResource Md3BtnPrimary}"
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:YonetimTekliflerViewModel}}, Path=TeklifDetayaGitCommand}"
+                                                Command="{Binding x:DataType='vm:YonetimTekliflerViewModel', Source={RelativeSource AncestorType={x:Type vm:YonetimTekliflerViewModel}}, Path=TeklifDetayaGitCommand}"
                                                 CommandParameter="{Binding .}" />
                                     </VerticalStackLayout>
                                 </Border>

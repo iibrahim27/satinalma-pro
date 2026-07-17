@@ -29,7 +29,16 @@ public class MainActivity : MauiAppCompatActivity
         base.OnResume();
         AndroidBildirimKanali.Olustur();
         BildirimIzniIste();
+        var oturum = MauiProgram.Services?.GetService<Services.OturumServisi>();
+        if (oturum?.GirisYapildi == true)
+            oturum.Dinleyici.Baslat();
         _ = BildirimleriYenileAsync();
+    }
+
+    protected override void OnPause()
+    {
+        MauiProgram.Services?.GetService<Services.OturumServisi>()?.Dinleyici.Durdur();
+        base.OnPause();
     }
 
     private static async Task BildirimleriYenileAsync()
@@ -98,7 +107,7 @@ public class MainActivity : MauiAppCompatActivity
 
     private void BildirimIzniIste()
     {
-        if (Build.VERSION.SdkInt < BuildVersionCodes.Tiramisu)
+        if (!OperatingSystem.IsAndroidVersionAtLeast(33))
             return;
 
         if (ContextCompat.CheckSelfPermission(this, Manifest.Permission.PostNotifications) == Permission.Granted)
@@ -112,6 +121,6 @@ public class MainActivity : MauiAppCompatActivity
         if (GeriNavigasyonServisi.GeriDene())
             return;
 
-        base.OnBackPressed();
+        OnBackPressedDispatcher.OnBackPressed();
     }
 }

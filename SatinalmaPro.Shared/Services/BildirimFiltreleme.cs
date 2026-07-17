@@ -15,7 +15,7 @@ public static class BildirimFiltreleme
     public static IEnumerable<BildirimKaydi> KullaniciBildirimleri(
         IEnumerable<BildirimKaydi> kaynak,
         KullaniciProfili? kullanici) =>
-        kaynak.Where(b => KullaniciyaMi(b, kullanici));
+        kaynak.Where(b => !b.Arsivlendi && KullaniciyaMi(b, kullanici));
 
     public static bool TalepBaglantiliMi(string tip) =>
         BildirimRolPolitikasi.NormalizeTip(tip) is BildirimTipleri.YonetimeGonderildi
@@ -84,7 +84,7 @@ public static class BildirimFiltreleme
             BildirimTipleri.SiparisOlusturuldu =>
                 !tamamlandi && talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu,
             // Mal kabul bilgisi anlıktır; işlem bitince listede kalmasın.
-            BildirimTipleri.MalKabulEdildi => false,
+            BildirimTipleri.MalKabulEdildi => !bildirim.Okundu,
             _ => false
         };
     }

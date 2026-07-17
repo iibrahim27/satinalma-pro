@@ -68,7 +68,7 @@ public static class MasaustuBildirimFiltreleme
             BildirimTipleri.SiparisOlusturuldu =>
                 !tamamlandi && talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu,
             // Mal kabul bilgisi anlıktır; işlem bitince listede/toast'ta kalmasın.
-            BildirimTipleri.MalKabulEdildi => false,
+            BildirimTipleri.MalKabulEdildi => !bildirim.Okundu,
             _ => false
         };
     }
@@ -83,12 +83,13 @@ public static class MasaustuBildirimFiltreleme
         IEnumerable<DesktopBildirimKaydi> kaynak,
         DesktopKullaniciProfili? kullanici,
         IEnumerable<DesktopSatinalmaTalep> talepler) =>
-        kaynak.Count(b => KullaniciyaMi(b, kullanici) && !b.Okundu && GecerliMi(b, talepler));
+        kaynak.Count(b => !b.Arsivlendi && KullaniciyaMi(b, kullanici) && !b.Okundu && GecerliMi(b, talepler));
 
     public static bool ToastGosterilmeli(
         DesktopBildirimKaydi bildirim,
         DesktopKullaniciProfili? kullanici,
         IEnumerable<DesktopSatinalmaTalep> talepler) =>
+        !bildirim.Arsivlendi &&
         KullaniciyaMi(bildirim, kullanici) &&
         !bildirim.Okundu &&
         GecerliMi(bildirim, talepler);
@@ -128,6 +129,7 @@ public static class MasaustuBildirimFiltreleme
         OlusturanAd = b.OlusturanAd,
         OlusturmaTarihi = b.OlusturmaTarihi,
         Okundu = b.Okundu,
+        Arsivlendi = b.Arsivlendi,
         GuncellemeUtc = b.GuncellemeUtc,
         InboxDocId = b.InboxDocId
     };

@@ -6,7 +6,10 @@
              Title="Onaylanan Malzemeler">
 
     <RefreshView x:Name="RefreshView">
-        <CollectionView x:Name="Liste" SelectionMode="None">
+        <Grid RowDefinitions="Auto,*">
+            <SearchBar x:Name="TxtArama" Placeholder="Talep no, malzeme veya firma ara"
+                       TextChanged="AramaDegisti" Margin="12,8,12,4" />
+        <CollectionView x:Name="Liste" Grid.Row="1" SelectionMode="None">
             <CollectionView.EmptyView>
                 <Label Text="Onaylanmış malzeme bulunamadı." HorizontalOptions="Center" VerticalOptions="Center"
                        TextColor="{AppThemeBinding Light={StaticResource MutedTextLight}, Dark={StaticResource MutedTextDark}}" />
@@ -37,10 +40,15 @@
                                 <Button Text="Stoka Aktar" Clicked="StogaAktar_Clicked" CommandParameter="{Binding .}"
                                         Style="{StaticResource BtnSmallSuccess}" IsVisible="{Binding IslemYapabilir}" />
                             </HorizontalStackLayout>
+                            <Button Text="{Binding TopluKabulMetni}" Clicked="TopluMalKabul_Clicked" CommandParameter="{Binding .}"
+                                    BackgroundColor="{StaticResource Purple}" TextColor="{StaticResource OnPrimary}"
+                                    FontSize="11" CornerRadius="8" Padding="10,6"
+                                    IsVisible="{Binding TopluKabulYapabilir}" />
                         </VerticalStackLayout>
                     </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
+        </Grid>
     </RefreshView>
 </ContentPage>

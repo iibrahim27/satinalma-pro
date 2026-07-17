@@ -418,8 +418,14 @@ public partial class TeklifOnayDetayPage : ContentPage
                 {
                     geriAlBtn.IsEnabled = false;
                     await _oturum.Satinalma.FirmaOnaylariniGeriAlAsync(talep);
-                    await DisplayAlert("Geri alındı", "Onaylar geri alındı. Firmaları yeniden seçebilirsiniz.", "Tamam");
-                    await YukleAsync();
+                    await DisplayAlert(
+                        "Geri alındı",
+                        "Onaylar geri alındı. Teklifleri düzenleyip yeniden yönetime gönderebilirsiniz.",
+                        "Tamam");
+                    var hedefRota = talep.Teklifler.Count > 0
+                        ? "//teklif-karsilastirma"
+                        : "//teklif-gir";
+                    await ShellGuvenli.GoToAsync(hedefRota);
                 }
                 catch (Exception ex)
                 {

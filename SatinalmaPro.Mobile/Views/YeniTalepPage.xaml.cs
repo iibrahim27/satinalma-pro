@@ -43,7 +43,7 @@ public partial class YeniTalepPage : ContentPage
         if (!duzenlemeModu && !KullaniciRolleri.TalepOlusturabilir(_oturum.Rol))
         {
             await DisplayAlert("Yetki", "Talep oluşturma yetkiniz yok.", "Tamam");
-            await Shell.Current.GoToAsync("//main");
+            await ShellGuvenli.GoToAsync("//main");
             return;
         }
 
@@ -64,7 +64,7 @@ public partial class YeniTalepPage : ContentPage
         if (mevcut is null)
         {
             await DisplayAlert("Hata", "Talep bulunamadı.", "Tamam");
-            await Shell.Current.GoToAsync("..");
+            await ShellGuvenli.GoToAsync("..");
             return;
         }
 
@@ -72,7 +72,7 @@ public partial class YeniTalepPage : ContentPage
         if (!MobilYetkiServisi.TalepDuzenleyebilir(_oturum.Rol, mevcut, uid, _oturum.KullaniciAdi))
         {
             await DisplayAlert("Yetki", "Bu talep düzenlenemez.", "Tamam");
-            await Shell.Current.GoToAsync("..");
+            await ShellGuvenli.GoToAsync("..");
             return;
         }
 

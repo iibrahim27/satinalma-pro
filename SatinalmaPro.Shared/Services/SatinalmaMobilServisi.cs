@@ -153,17 +153,6 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         await _bildirimler.EkleAsync(
             BildirimKaydiOlustur(BildirimTipleri.TeklifIstendi, talep, hedefRol: KullaniciRolleri.Satinalma),
             iptal);
-
-        if (!string.IsNullOrWhiteSpace(talep.OlusturanUid))
-        {
-            await _bildirimler.EkleAsync(
-                BildirimKaydiOlustur(
-                    BildirimTipleri.TeklifIstendi,
-                    talep,
-                    hedefUid: talep.OlusturanUid,
-                    ek: OnayBildirimYardimcisi.TeklifIstemeBildirimEk(_depo.AktifKullanici?.Rol)),
-                iptal);
-        }
     }
 
     public async Task YonetimReddetAsync(SatinalmaTalep talep, string? gerekce, CancellationToken iptal = default)
@@ -205,8 +194,19 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
             kalem.OnaylananTeklifId = null;
 
         await TalepKaydetAsync(talep, iptal);
-        await _bildirimler.EkleAsync(
-            BildirimKaydiOlustur(BildirimTipleri.TeklifDuzeltmeIstendi, talep, hedefRol: KullaniciRolleri.Satinalma, ek: talep.TeklifDuzeltmeNotu),
+        var actorUid = _depo.AktifKullanici?.Uid;
+        await _bildirimler.CokluEkleAsync(
+            BildirimRolPolitikasi.TeklifDuzeltmeIstendiHedefleri(
+                    talep.OlusturanUid,
+                    talep.OlusturanRol,
+                    actorUid)
+                .Select(h => BildirimKaydiOlustur(
+                    BildirimTipleri.TeklifDuzeltmeIstendi,
+                    talep,
+                    h.HedefRol,
+                    h.HedefUid,
+                    ek: talep.TeklifDuzeltmeNotu))
+                .ToList(),
             iptal);
         await _bildirimler.GecersizleriOkunduYapAsync(iptal);
     }
@@ -220,8 +220,9 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         SatinalmaIsAkisi.YonetimeTeklifGonderiminiHazirla(talep, oneri);
         await TalepKaydetAsync(talep, iptal);
 
+        var actorUid = _depo.AktifKullanici?.Uid;
         await _bildirimler.CokluEkleAsync(
-            BildirimRolPolitikasi.TeklifOnaydaHedefleri()
+            BildirimRolPolitikasi.TeklifOnaydaHedefleri(talep.OlusturanUid, talep.OlusturanRol, actorUid)
                 .Select(h => BildirimKaydiOlustur(BildirimTipleri.TeklifOnayda, talep, h.HedefRol, h.HedefUid))
                 .ToList(),
             iptal);
@@ -293,6 +294,7 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         talep.SiparisNo = "";
         talep.TeklifsizYonetimOnayi = false;
         talep.YonetimOnayKilitli = false;
+        talep.YonetimOnaylayanUid = "";
         talep.YonetimOnaylayanAd = "";
         talep.YonetimOnaylayanEposta = "";
         talep.YonetimOnayTarihi = "";
@@ -464,7 +466,7 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
 
     /// <summary>Mobil satınalma — tüm kayıtlı talepler (boş taslak hariç).</summary>
     public IEnumerable<SatinalmaTalep> TumKayitliTalepler() =>
-        SatinalmaTalepKuyrugu.Filtrele(_depo.Talepler, SatinalmaTalepKuyrugu.KayitliTalep);
+        SatinalmaTalepKuyrugu.Filtrele(TakipEdilebilenTalepler(), SatinalmaTalepKuyrugu.KayitliTalep);
 
     public IEnumerable<SatinalmaTalep> KayitliTalepler() => TumKayitliTalepler();
 
@@ -474,16 +476,25 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         var rol = _depo.AktifKullanici?.Rol;
         var genis = KullaniciRolleri.OnayBekleyenGenisListe(rol);
 
-        return SatinalmaTalepKuyrugu.Filtrele(_depo.Talepler, t => SatinalmaTalepKuyrugu.OnayBekleyenListede(t, genis));
+        return SatinalmaTalepKuyrugu.Filtrele(
+            TakipEdilebilenTalepler(),
+            t => SatinalmaTalepKuyrugu.OnayBekleyenListede(t, genis));
     }
 
     /// <summary>Onaylanmış talepler — süreç takibi.</summary>
     public IEnumerable<SatinalmaTalep> OnaylanmisTalepler() =>
-        SatinalmaTalepKuyrugu.Filtrele(_depo.Talepler, SatinalmaTalepKuyrugu.Onaylanmis);
+        SatinalmaTalepKuyrugu.Filtrele(TakipEdilebilenTalepler(), SatinalmaTalepKuyrugu.Onaylanmis);
 
     /// <summary>Yönetim onay bekleyen toplam (gelen + teklif) — masaüstü Onay Bekleyen ile uyumlu.</summary>
     public IEnumerable<SatinalmaTalep> YonetimKararBekleyenleri() =>
         SatinalmaTalepKuyrugu.Filtrele(_depo.Talepler, SatinalmaTalepKuyrugu.YonetimKararBekleyen);
+
+    private IEnumerable<SatinalmaTalep> TakipEdilebilenTalepler()
+    {
+        // Liste görünürlüğü rol bazlı sahiplikten bağımsızdır. Sahiplik denetimi,
+        // TalepDuzenleyebilir ve TalepSilebilir akışlarında yapılır.
+        return _depo.Talepler;
+    }
 
     private static void YetkiKontrol(bool izin, string mesaj)
     {
@@ -633,7 +644,7 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
     }
 
     public List<OnaylananMalzemeSatiri> OnaylananMalzemeleriOlustur() =>
-        OnaylananMalzemeOlusturucu.Olustur(_depo.Talepler);
+        OnaylananMalzemeOlusturucu.Olustur(TakipEdilebilenTalepler());
 
     public int MalKabulBekleyenSayisi() =>
         OnaylananMalzemeleriOlustur().Count(OnaylananMalzemeOlusturucu.MalKabulBekleyen);
@@ -675,6 +686,53 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
                 .Select(h => BildirimKaydiOlustur(BildirimTipleri.MalKabulEdildi, talep, h.HedefRol, h.HedefUid, ek: ozet))
                 .ToList(),
             iptal);
+    }
+
+    /// <summary>Teklifte kabul bekleyen tüm kalemleri kalan sipariş miktarlarıyla tamamlar.</summary>
+    public async Task<int> TumKalemleriMalKabulEtAsync(
+        Guid talepId,
+        Guid teklifId,
+        CancellationToken iptal = default)
+    {
+        YetkiKontrol(
+            MobilYetkiServisi.MalKabulVeStokAktarYapabilir(_depo.AktifKullanici?.Rol),
+            "Mal kabul işlemi yalnızca Admin veya Satınalma rolü tarafından yapılabilir.");
+
+        var talep = _depo.Talepler.FirstOrDefault(t => t.Id == talepId)
+            ?? throw new InvalidOperationException("Talep bulunamadı.");
+        var teklifsiz = talep.TeklifsizYonetimOnayi && !talep.HerhangiKalemOnayli;
+        var kabulEdilecekKalemler = talep.Kalemler
+            .Where(k => !string.IsNullOrWhiteSpace(k.Malzeme))
+            .Where(k => teklifId == Guid.Empty
+                ? teklifsiz && k.OnaylananTeklifId is null
+                : k.OnaylananTeklifId == teklifId)
+            .Where(k => !k.SiparisTamamlandi && k.Miktar - k.KabulEdilenMiktar > 0.0001)
+            .ToList();
+
+        if (kabulEdilecekKalemler.Count == 0)
+            throw new InvalidOperationException("Mal kabulü bekleyen kalem bulunamadı.");
+
+        foreach (var kalem in kabulEdilecekKalemler)
+        {
+            var kalanMiktar = Math.Max(0, kalem.Miktar - kalem.KabulEdilenMiktar);
+            kalem.KabulEdilenMiktar += kalanMiktar;
+            kalem.SiparisTamamlandi = true;
+        }
+
+        await TalepKaydetAsync(talep, iptal);
+        var actorUid = _depo.AktifKullanici?.Uid;
+        await _bildirimler.CokluEkleAsync(
+            BildirimRolPolitikasi.MalKabulEdildiHedefleri(talep.OlusturanUid, actorUid)
+                .Select(h => BildirimKaydiOlustur(
+                    BildirimTipleri.MalKabulEdildi,
+                    talep,
+                    h.HedefRol,
+                    h.HedefUid,
+                    ek: $"{kabulEdilecekKalemler.Count} kalemin tamamı kabul edildi"))
+                .ToList(),
+            iptal);
+
+        return kabulEdilecekKalemler.Count;
     }
 
     public async Task SiparisTamamlaAsync(Guid talepId, Guid kalemId, CancellationToken iptal = default)
@@ -802,7 +860,8 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
     private List<BildirimKaydi> OnaylandiKayitlari(SatinalmaTalep talep, string? firmaAdi = null)
     {
         var kayitlar = new List<BildirimKaydi>();
-        foreach (var (hedefRol, hedefUid) in OnayBildirimYardimcisi.OnaylandiHedefleri(talep.OlusturanUid, _depo.AktifKullanici?.Rol))
+        foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.OnaylandiHedefleri(
+                     talep.OlusturanUid, _depo.AktifKullanici?.Uid))
             kayitlar.Add(BildirimKaydiOlustur(BildirimTipleri.Onaylandi, talep, hedefRol, hedefUid, firmaAdi));
         return kayitlar;
     }

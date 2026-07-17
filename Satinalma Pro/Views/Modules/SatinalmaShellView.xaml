@@ -3,66 +3,76 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:dash="clr-namespace:SatinalmaPro.Controls.Dashboard"
              xmlns:helpers="clr-namespace:SatinalmaPro.Helpers"
-             Background="{StaticResource SatModBgBrush}"
+             Background="#F3F7F9"
              helpers:ScrollWheelHelper.IsEnabled="True">
   <Grid>
     <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="260" />
+      <ColumnDefinition Width="276" />
       <ColumnDefinition Width="*" />
     </Grid.ColumnDefinitions>
 
-    <!-- Sol menü -->
-    <Border Grid.Column="0"
-            Background="{StaticResource DashCardBrush}"
-            BorderBrush="{StaticResource DashBorderBrush}"
-            BorderThickness="0,0,1,0"
-            Effect="{StaticResource ModuleCardShadow}">
+    <!-- Koyu operasyon menüsü -->
+    <Border Grid.Column="0" BorderBrush="#0F2A40" BorderThickness="0,0,1,0">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+          <GradientStop Color="#102B43" Offset="0" />
+          <GradientStop Color="#173F5C" Offset="0.53" />
+          <GradientStop Color="#102D43" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
       <Grid>
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto" />
           <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border Padding="18,20,18,16"
-                BorderBrush="{StaticResource DashBorderBrush}"
-                BorderThickness="0,0,0,1">
+        <StackPanel Margin="20,22,20,18">
           <StackPanel Orientation="Horizontal">
-            <Border Width="42" Height="42" CornerRadius="12" Margin="0,0,12,0"
-                    Background="{StaticResource SatModIconGradient}">
-              <dash:IconControl Kind="ShoppingCart" IconSize="20" StrokeBrush="White"
+            <Border Width="46" Height="46" CornerRadius="13" Margin="0,0,12,0" Background="#2CA58D">
+              <dash:IconControl Kind="ShoppingCart" IconSize="21" StrokeBrush="White"
                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
             <StackPanel VerticalAlignment="Center">
-              <TextBlock Text="Satınalma" FontSize="16" FontWeight="Bold"
-                         Foreground="{StaticResource DashTextBrush}" />
-              <TextBlock x:Name="TxtKullanici" FontSize="11"
-                         Foreground="{StaticResource DashTextSecondaryBrush}"
-                         Margin="0,3,0,0" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="SATINALMA" FontSize="16" FontWeight="Bold" Foreground="White" />
+              <TextBlock Text="OPERASYON MERKEZİ" FontSize="9" FontWeight="SemiBold" Foreground="#93C9D4"
+                         Margin="0,3,0,0" />
             </StackPanel>
           </StackPanel>
-        </Border>
 
-        <ScrollViewer Grid.Row="1"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled"
-                      Padding="8,10,8,16">
+          <Border Background="#214A66" CornerRadius="10" Padding="11,9" Margin="0,20,0,0">
+            <StackPanel>
+              <TextBlock Text="AKTİF KULLANICI" FontSize="9" FontWeight="SemiBold" Foreground="#93C9D4" />
+              <TextBlock x:Name="TxtKullanici" FontSize="12" FontWeight="SemiBold" Foreground="White"
+                         Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                      Padding="14,3,14,14">
           <StackPanel x:Name="NavPanel" />
         </ScrollViewer>
+
+        <Border Grid.Row="2" Margin="18,0,18,20" Padding="12,11" CornerRadius="10" Background="#17364F">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#61D2C7"
+                       Margin="0,0,8,0" />
+            <TextBlock Text="Süreçler role göre filtrelenir" FontSize="10" Foreground="#B9D7DF"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
       </Grid>
     </Border>
 
-    <!-- İçerik alanı -->
+    <!-- Çalışma alanı -->
     <Grid Grid.Column="1">
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto" />
         <RowDefinition Height="*" />
       </Grid.RowDefinitions>
 
-      <Border Grid.Row="0"
-              Style="{StaticResource ModulePageCardStyle}"
-              BorderThickness="0,0,0,1"
-              CornerRadius="0"
-              Padding="24,18">
+      <Border Grid.Row="0" Background="White" BorderBrush="#DCE5EB" BorderThickness="0,0,0,1" Padding="28,20">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -70,53 +80,39 @@
           </Grid.ColumnDefinitions>
 
           <StackPanel VerticalAlignment="Center">
-            <TextBlock x:Name="TxtBaslik" FontSize="22" FontWeight="Bold"
-                       Foreground="{StaticResource DashTextBrush}" />
-            <TextBlock x:Name="TxtAciklama" Style="{StaticResource SatModHint}" Margin="0,5,0,0" />
+            <TextBlock x:Name="TxtBaslik" FontSize="23" FontWeight="SemiBold" Foreground="#18354B" />
+            <TextBlock x:Name="TxtAciklama" Margin="0,5,0,0" FontSize="12" Foreground="#6E7F8D" />
           </StackPanel>
 
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
             <Button x:Name="BtnYeniTalep" Style="{StaticResource PrimaryToolbarButtonStyle}"
-                    Click="BtnYeniTalep_Click" Margin="0,0,8,0" Padding="16,9" Visibility="Collapsed">
+                    Click="BtnYeniTalep_Click" Margin="0,0,10,0" Padding="16,9" Visibility="Collapsed">
               <StackPanel Orientation="Horizontal">
                 <TextBlock Text="+" FontSize="15" FontWeight="Bold" Margin="0,0,8,0" />
                 <TextBlock Text="Yeni Talep" />
               </StackPanel>
             </Button>
-            <Button Style="{StaticResource ToolbarButtonStyle}" Click="Excel_Click" Margin="0,0,8,0"
-                    Padding="12,9" ToolTip="Excel">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0" />
-                <TextBlock Text="Excel" />
-              </StackPanel>
+            <Border Width="1" Height="28" Background="#DDE5EA" Margin="0,0,10,0" />
+            <Button Style="{StaticResource ToolbarButtonStyle}" Click="Excel_Click" Margin="0,0,7,0" Padding="11,8" ToolTip="Excel'e aktar">
+              <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="14" />
             </Button>
-            <Button Style="{StaticResource ToolbarButtonStyle}" Click="Pdf_Click" Margin="0,0,8,0"
-                    Padding="12,9" ToolTip="PDF">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0" />
-                <TextBlock Text="PDF" />
-              </StackPanel>
+            <Button Style="{StaticResource ToolbarButtonStyle}" Click="Pdf_Click" Margin="0,0,7,0" Padding="11,8" ToolTip="PDF oluştur">
+              <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="14" />
             </Button>
-            <Button Style="{StaticResource ToolbarButtonStyle}" Click="Yazdir_Click" Margin="0,0,8,0"
-                    Padding="12,9" ToolTip="Yazdır">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0" />
-                <TextBlock Text="Yazdır" />
-              </StackPanel>
+            <Button Style="{StaticResource ToolbarButtonStyle}" Click="Yazdir_Click" Margin="0,0,7,0" Padding="11,8" ToolTip="Yazdır">
+              <TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets" FontSize="14" />
             </Button>
-            <Button Style="{StaticResource ToolbarButtonStyle}" Click="Yenile_Click"
-                    ToolTip="Yenile (F5)" Padding="12,9" Margin="0,0,8,0">
-              <dash:IconControl Kind="TrendingUp" IconSize="16" StrokeBrush="{StaticResource DashTextSecondaryBrush}" />
+            <Button Style="{StaticResource ToolbarButtonStyle}" Click="Yenile_Click" Margin="0,0,7,0" Padding="11,8" ToolTip="Yenile (F5)">
+              <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="14" />
             </Button>
-            <Button Style="{StaticResource ToolbarButtonStyle}" Click="Bildirim_Click"
-                    Padding="12,9" ToolTip="Bildirimler">
+            <Button Style="{StaticResource ToolbarButtonStyle}" Click="Bildirim_Click" Padding="11,8" ToolTip="Bildirimler">
               <TextBlock Text="&#xE7ED;" FontFamily="Segoe MDL2 Assets" FontSize="14" />
             </Button>
           </StackPanel>
         </Grid>
       </Border>
 
-      <Border Grid.Row="1" Padding="24,18,24,20" Background="{StaticResource SatModBgBrush}">
+      <Border Grid.Row="1" Padding="26,20,26,24" Background="#F3F7F9">
         <ContentControl x:Name="IcerikAlani" />
       </Border>
     </Grid>

@@ -17,7 +17,8 @@ public partial class MalKabulTalepListesiView : UserControl
     public MalKabulTalepListesiView()
     {
         InitializeComponent();
-        TxtYardim.Text = "Mal kabulü tamamlanan taleplerin arşivi. Yeni mal kabul için «Siparişler» sekmesini kullanın.";
+        TalepHoverOnizleme.Etkinlestir(Tablo);
+        TxtYardim.Text = "Mal kabulü tamamlanan taleplerin arşivi. Satır üzerine gelerek kalem, firma ve teslim özetini görün.";
     }
 
     public void Yenile()
