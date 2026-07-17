@@ -9,9 +9,12 @@ import com.satinalmapro.android.core.model.ModulKayitTipi
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.data.firebase.FirebaseAuthClient
 import com.satinalmapro.android.data.firebase.FirestoreClient
+import org.json.JSONArray
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 class ModulRepository(
     private val firestore: FirestoreClient,
@@ -24,17 +27,27 @@ class ModulRepository(
 
     suspend fun loadAgrega(): List<AgregaKaydi> {
         val loaded: List<AgregaKaydi> = loadList(ModulKayitTipi.AGREGA.firestorePath, agregaType)
-        return loaded.map { if (it.id.isBlank()) it.copy(id = java.util.UUID.randomUUID().toString()) else it }
+        return loaded.map { if (it.id.isBlank()) it.copy(id = UUID.randomUUID().toString()) else it }
     }
 
     suspend fun loadCimento(): List<CimentoKaydi> {
         val loaded: List<CimentoKaydi> = loadList(ModulKayitTipi.CIMENTO.firestorePath, cimentoType)
-        return loaded.map { if (it.id.isBlank()) it.copy(id = java.util.UUID.randomUUID().toString()) else it }
+        return loaded.map { if (it.id.isBlank()) it.copy(id = UUID.randomUUID().toString()) else it }
     }
 
+    /**
+     * Alınan Malzemeler — masaüstü hem camelCase hem PascalCase yazabildiği için
+     * JSONObject ile çift anahtar okunur (Gson tek başına eski kayıtları boş bırakabiliyordu).
+     */
     suspend fun loadAlinanMalzemeler(): List<AlinanMalzemeKaydi> {
-        val loaded: List<AlinanMalzemeKaydi> = loadList(ModulKayitTipi.ALINAN_MALZEME.firestorePath, malzemeType)
-        return loaded.map { if (it.id.isBlank()) it.copy(id = java.util.UUID.randomUUID().toString()) else it }
+        val json = firestore.readDocumentJson(ModulKayitTipi.ALINAN_MALZEME.firestorePath)
+            ?: return emptyList()
+        val manuel = parseAlinanMalzemeler(json)
+        if (manuel.isNotEmpty()) return manuel
+        val loaded: List<AlinanMalzemeKaydi> =
+            runCatching { gson.fromJson<List<AlinanMalzemeKaydi>>(json, malzemeType) ?: emptyList() }
+                .getOrDefault(emptyList())
+        return loaded.map { if (it.id.isBlank()) it.copy(id = UUID.randomUUID().toString()) else it }
     }
 
     suspend fun saveAgrega(list: List<AgregaKaydi>, role: String?) {
@@ -72,6 +85,75 @@ class ModulRepository(
     }
 
     companion object {
+        fun parseAlinanMalzemeler(json: String): List<AlinanMalzemeKaydi> {
+            val arr = runCatching { JSONArray(json) }.getOrNull() ?: return emptyList()
+            val sonuc = ArrayList<AlinanMalzemeKaydi>(arr.length())
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                val malzeme = str(o, "malzemeHizmet", "MalzemeHizmet")
+                if (malzeme.isBlank()) continue
+                val miktar = num(o, "miktar", "Miktar")
+                var birimFiyati = num(o, "birimFiyati", "BirimFiyati")
+                val toplamTutar = num(o, "toplamTutar", "ToplamTutar")
+                if (birimFiyati <= 0 && miktar > 0 && toplamTutar > 0) {
+                    birimFiyati = toplamTutar / miktar
+                }
+                sonuc += AlinanMalzemeKaydi(
+                    id = str(o, "id", "Id").ifBlank { UUID.randomUUID().toString() },
+                    tarih = str(o, "tarih", "Tarih"),
+                    faturaNo = str(o, "faturaNo", "FaturaNo"),
+                    kategori = str(o, "kategori", "Kategori"),
+                    malzemeHizmet = malzeme,
+                    miktar = miktar,
+                    birim = str(o, "birim", "Birim"),
+                    birimFiyati = birimFiyati,
+                    toplamTutar = toplamTutar,
+                    artisYuzdesi = numOrNull(o, "artisYuzdesi", "ArtisYuzdesi"),
+                    tedarikci = str(o, "tedarikci", "Tedarikci"),
+                    indirildigiSaha = str(o, "indirildigiSaha", "IndirildigiSaha"),
+                    teslimAlan = str(o, "teslimAlan", "TeslimAlan"),
+                    aciklama = str(o, "aciklama", "Aciklama"),
+                    satinalmaTalepId = str(o, "satinalmaTalepId", "SatinalmaTalepId").ifBlank { null },
+                    satinalmaKalemId = str(o, "satinalmaKalemId", "SatinalmaKalemId").ifBlank { null }
+                )
+            }
+            return sonuc
+        }
+
+        private fun str(o: JSONObject, vararg keys: String): String {
+            for (k in keys) {
+                if (!o.has(k) || o.isNull(k)) continue
+                val v = when (val raw = o.get(k)) {
+                    is String -> raw
+                    else -> raw.toString()
+                }.trim()
+                if (v.isNotBlank() && v != "null") return v
+            }
+            return ""
+        }
+
+        private fun num(o: JSONObject, vararg keys: String): Double {
+            for (k in keys) {
+                if (!o.has(k) || o.isNull(k)) continue
+                when (val raw = o.get(k)) {
+                    is Number -> return raw.toDouble()
+                    is String -> raw.replace(',', '.').trim().toDoubleOrNull()?.let { return it }
+                }
+            }
+            return 0.0
+        }
+
+        private fun numOrNull(o: JSONObject, vararg keys: String): Double? {
+            for (k in keys) {
+                if (!o.has(k) || o.isNull(k)) continue
+                when (val raw = o.get(k)) {
+                    is Number -> return raw.toDouble()
+                    is String -> raw.replace(',', '.').trim().toDoubleOrNull()?.let { return it }
+                }
+            }
+            return null
+        }
+
         fun agregaArtisYuzdesi(list: List<AgregaKaydi>, kayit: AgregaKaydi): Double? {
             val cins = kayit.agregaCinsi.trim().lowercase()
             val onceki = list

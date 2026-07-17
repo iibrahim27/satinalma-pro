@@ -113,6 +113,28 @@ fun TeklifGirisScreen(viewModel: AppViewModel, talepId: String) {
             }
         }
         Text(item.malzemeOzeti, color = AppColors.TextSecondary)
+        if (item.teklifDuzeltmeNotu.isNotBlank() && item.durum == TalepDurumlari.KARSILASTIRMA) {
+            AppCard {
+                Text(
+                    "Revize / düzeltme — kayıtlı teklifler aşağıda. Silinmedi.",
+                    color = AppColors.Primary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    "Yönetim notu: ${item.teklifDuzeltmeNotu}",
+                    color = AppColors.TextSecondary,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                Text(
+                    "Düzenledikten sonra «Yönetime Gönder» deyin. Menü: Düzeltme Bekleyen.",
+                    color = AppColors.TextSecondary,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+        }
         if (item.durum == TalepDurumlari.YONETIM_ONAY) {
             Text(
                 "Bu talep yönetim onayında. Karşılaştırma menüsünden takip edebilirsiniz.",
@@ -248,7 +270,7 @@ fun TeklifGirisScreen(viewModel: AppViewModel, talepId: String) {
                 onClick = {
                     successMessage = null
                     viewModel.sendQuotesToManagement(talepId) {
-                        viewModel.navigate("teklif-karsilastirma?id=$talepId")
+                        viewModel.navigate("yonetim-teklif-girilen")
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

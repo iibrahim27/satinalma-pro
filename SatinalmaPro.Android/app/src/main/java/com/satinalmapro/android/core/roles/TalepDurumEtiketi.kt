@@ -62,8 +62,11 @@ object TalepDurumEtiketi {
         TalepQueue.RED_TALEPLER -> ozetSatir(talep)
         TalepQueue.TEKLIF_ONAY,
         TalepQueue.SATINALMA_TEKLIF_GIRILEN -> teklifDurumu(talep)
-        TalepQueue.SATINALMA_TEKLIF_DUZELTME ->
-            talep.teklifDuzeltmeNotu.takeIf { it.isNotBlank() } ?: "Düzeltme bekleniyor"
+        TalepQueue.SATINALMA_TEKLIF_DUZELTME -> {
+            val adet = talep.teklifler.count { it.firmaAdi.isNotBlank() }
+            val not = talep.teklifDuzeltmeNotu.takeIf { it.isNotBlank() } ?: "Düzeltme bekleniyor"
+            if (adet > 0) "$adet teklif · $not" else not
+        }
         else -> "${talep.talepEden} · ${talep.tarih}"
     }
 

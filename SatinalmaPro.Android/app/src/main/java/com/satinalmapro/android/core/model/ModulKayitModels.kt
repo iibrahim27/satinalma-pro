@@ -68,20 +68,35 @@ data class CimentoKaydi(
 /** Masaüstü alinan_malzemeler.json ile uyumlu bağımsız kayıt. */
 data class AlinanMalzemeKaydi(
     val id: String = UUID.randomUUID().toString(),
+    @SerializedName(value = "tarih", alternate = ["Tarih"])
     val tarih: String = "",
+    @SerializedName(value = "faturaNo", alternate = ["FaturaNo"])
     val faturaNo: String = "",
+    @SerializedName(value = "kategori", alternate = ["Kategori"])
     val kategori: String = "",
+    @SerializedName(value = "malzemeHizmet", alternate = ["MalzemeHizmet"])
     val malzemeHizmet: String = "",
+    @SerializedName(value = "miktar", alternate = ["Miktar"])
     val miktar: Double = 0.0,
+    @SerializedName(value = "birim", alternate = ["Birim"])
     val birim: String = "",
+    @SerializedName(value = "birimFiyati", alternate = ["BirimFiyati"])
     val birimFiyati: Double = 0.0,
+    @SerializedName(value = "toplamTutar", alternate = ["ToplamTutar"])
     val toplamTutar: Double = 0.0,
+    @SerializedName(value = "artisYuzdesi", alternate = ["ArtisYuzdesi"])
     val artisYuzdesi: Double? = null,
+    @SerializedName(value = "tedarikci", alternate = ["Tedarikci"])
     val tedarikci: String = "",
+    @SerializedName(value = "indirildigiSaha", alternate = ["IndirildigiSaha"])
     val indirildigiSaha: String = "",
+    @SerializedName(value = "teslimAlan", alternate = ["TeslimAlan"])
     val teslimAlan: String = "",
+    @SerializedName(value = "aciklama", alternate = ["Aciklama"])
     val aciklama: String = "",
+    @SerializedName(value = "satinalmaTalepId", alternate = ["SatinalmaTalepId"])
     val satinalmaTalepId: String? = null,
+    @SerializedName(value = "satinalmaKalemId", alternate = ["SatinalmaKalemId"])
     val satinalmaKalemId: String? = null
 ) {
     fun hesaplaToplam() = copy(toplamTutar = (miktar * birimFiyati * 100).toLong() / 100.0)

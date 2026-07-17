@@ -12,6 +12,8 @@ import kotlin.math.round
 /** Masaüstü KarsilastirmaAlimGecmisiYardimcisi ile aynı seçim kuralı. */
 object KarsilastirmaAlimGecmisiYardimcisi {
 
+    private val TrLocale = Locale("tr", "TR")
+
     data class AlimSatiri(
         val kalemSiraNo: Int,
         val malzeme: String,
@@ -62,11 +64,10 @@ object KarsilastirmaAlimGecmisiYardimcisi {
             val malzemeAdi = kalem.malzeme.trim()
             if (malzemeAdi.isBlank()) continue
 
-            val eslesen = alinanMalzemeler
-                .filter { it.malzemeHizmet.trim().equals(malzemeAdi, ignoreCase = true) }
+            val eslesen = eslesenKayitlar(malzemeAdi, alinanMalzemeler)
                 .map { it to tarihCoz(it.tarih) }
                 .sortedWith(compareByDescending<Pair<AlinanMalzemeKaydi, Date>> { it.second }
-                    .thenByDescending { it.first.birimFiyati })
+                    .thenByDescending { etkinBirimFiyat(it.first) })
 
             val sonIkiAy = eslesen.filter { (_, t) -> !t.before(esik) && !t.after(referans) }
             if (sonIkiAy.isNotEmpty()) {
@@ -96,7 +97,7 @@ object KarsilastirmaAlimGecmisiYardimcisi {
         val sonAlimlar = linkedMapOf<String, AlimSatiri>()
         for (satir in alimSatirlari) {
             if (satir.kayitYok || satir.malzeme.isBlank()) continue
-            val anahtar = satir.malzeme.lowercase(Locale("tr", "TR"))
+            val anahtar = malzemeAnahtar(satir.malzeme)
             if (!sonAlimlar.containsKey(anahtar)) sonAlimlar[anahtar] = satir
         }
 
@@ -105,7 +106,7 @@ object KarsilastirmaAlimGecmisiYardimcisi {
             val malzemeAdi = kalem.malzeme.trim()
             if (malzemeAdi.isBlank()) continue
 
-            val sonAlim = sonAlimlar[malzemeAdi.lowercase(Locale("tr", "TR"))]
+            val sonAlim = sonAlimlar[malzemeAnahtar(malzemeAdi)]
             val sonFiyat = sonAlim?.birimFiyati?.takeIf { it > 0 }
             val sonAlimYok = sonFiyat == null
 
@@ -154,6 +155,44 @@ object KarsilastirmaAlimGecmisiYardimcisi {
         return sonuc
     }
 
+    /** TR locale + boşluk sadeleştirme; İ/i farkını giderir. */
+    fun malzemeAnahtar(ad: String): String =
+        ad.trim()
+            .replace(Regex("\\s+"), " ")
+            .lowercase(TrLocale)
+
+    private fun malzemeSade(ad: String): String =
+        malzemeAnahtar(ad).replace(Regex("[^\\p{L}\\p{N}]+"), "")
+
+    private fun eslesenKayitlar(
+        malzemeAdi: String,
+        alinanMalzemeler: List<AlinanMalzemeKaydi>
+    ): List<AlinanMalzemeKaydi> {
+        val hedef = malzemeAnahtar(malzemeAdi)
+        if (hedef.isBlank()) return emptyList()
+
+        val kesin = alinanMalzemeler.filter { malzemeAnahtar(it.malzemeHizmet) == hedef }
+        if (kesin.isNotEmpty()) return kesin
+
+        val sadeHedef = malzemeSade(malzemeAdi)
+        if (sadeHedef.length < 3) return emptyList()
+        val sade = alinanMalzemeler.filter { malzemeSade(it.malzemeHizmet) == sadeHedef }
+        if (sade.isNotEmpty()) return sade
+
+        // Uzun isimlerde kapsama (örn. "Çimento 42,5" ↔ "Cimento 42.5 R")
+        return alinanMalzemeler.filter { kayit ->
+            val kaynak = malzemeSade(kayit.malzemeHizmet)
+            kaynak.length >= 4 && sadeHedef.length >= 4 &&
+                (kaynak.contains(sadeHedef) || sadeHedef.contains(kaynak))
+        }
+    }
+
+    private fun etkinBirimFiyat(kayit: AlinanMalzemeKaydi): Double {
+        if (kayit.birimFiyati > 0) return kayit.birimFiyati
+        if (kayit.miktar > 0 && kayit.toplamTutar > 0) return kayit.toplamTutar / kayit.miktar
+        return 0.0
+    }
+
     private fun alimdanSatir(
         siraNo: Int,
         malzeme: String,
@@ -165,17 +204,16 @@ object KarsilastirmaAlimGecmisiYardimcisi {
         tarih = kayit.tarih.ifBlank { "—" },
         miktar = kayit.miktar,
         birim = kayit.birim.ifBlank { "—" },
-        birimFiyati = kayit.birimFiyati,
+        birimFiyati = etkinBirimFiyat(kayit),
         tedarikci = kayit.tedarikci.ifBlank { "—" },
         sonIkiAlimYedegi = sonIkiAlimYedegi
     )
 
     private fun tarihCoz(tarih: String): Date {
         if (tarih.isBlank()) return Date(0)
-        val tr = Locale("tr", "TR")
         val formats = listOf(
             SimpleDateFormat("dd.MM.yyyy", Locale.US),
-            SimpleDateFormat("dd.MM.yyyy", tr),
+            SimpleDateFormat("dd.MM.yyyy", TrLocale),
             SimpleDateFormat("yyyy-MM-dd", Locale.US)
         )
         for (f in formats) {

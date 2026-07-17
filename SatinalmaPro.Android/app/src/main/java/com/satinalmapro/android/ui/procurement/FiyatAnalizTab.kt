@@ -9,6 +9,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,13 +25,18 @@ import com.satinalmapro.android.ui.theme.AppSpacing
 
 /**
  * Teklif onay / karşılaştırma ekranlarındaki «Fiyat Analiz» sekmesi.
- * Son alım (Alınan Malzemeler) × en düşük teklif birim fiyatı.
+ * Son alım (Alınan Malzemeler modülü / veri/alinan_malzemeler) × en düşük teklif birim fiyatı.
  */
 @Composable
 fun FiyatAnalizTabContent(
     talep: TalepItem,
-    alinanMalzemeler: List<AlinanMalzemeKaydi>
+    alinanMalzemeler: List<AlinanMalzemeKaydi>,
+    onRefreshAlinan: () -> Unit = {}
 ) {
+    LaunchedEffect(talep.id) {
+        onRefreshAlinan()
+    }
+
     val satirlari = remember(talep.id, talep.kalemler, talep.teklifler, alinanMalzemeler) {
         val alimlar = KarsilastirmaAlimGecmisiYardimcisi.malzemeBazliAlimlariTopla(
             talep.kalemler,
@@ -58,6 +64,16 @@ fun FiyatAnalizTabContent(
             color = AppColors.TextSecondary
         )
 
+        if (alinanMalzemeler.isEmpty()) {
+            AppCard {
+                Text(
+                    "Alınan Malzemeler kaydı henüz yüklenmedi veya liste boş. Masaüstündeki Alınan Malzemeler modülü ile senkronu kontrol edin.",
+                    color = AppColors.TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
         if (satirlari.isEmpty()) {
             AppCard {
                 Text(
@@ -81,7 +97,10 @@ fun FiyatAnalizTabContent(
 
                     if (satir.sonAlimYok) {
                         Text(
-                            "Son alım kaydı yok",
+                            if (alinanMalzemeler.isEmpty())
+                                "Son alım kaydı yok (Alınan Malzemeler listesi boş)"
+                            else
+                                "Son alım kaydı yok — bu malzeme adı Alınan Malzemeler’de bulunamadı",
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.TextSecondary
                         )

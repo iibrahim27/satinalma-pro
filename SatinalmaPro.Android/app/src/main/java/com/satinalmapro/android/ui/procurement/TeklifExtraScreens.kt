@@ -168,8 +168,9 @@ fun TeklifKarsilastirmaScreen(viewModel: AppViewModel, talepId: String?) {
     val alinan by viewModel.alinanMalzemeKayitlari.collectAsState()
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Karşılaştırma", "Fiyat Analiz")
+    val duzeltmeBekliyor = TalepKuyrugu.teklifDuzeltmeBekliyor(item)
     val canSend = KullaniciRolleri.canEnterQuotes(user?.role) &&
-        TalepKuyrugu.karsilastirma(item) &&
+        (TalepKuyrugu.karsilastirma(item) || duzeltmeBekliyor) &&
         item.durum != com.satinalmapro.android.core.roles.TalepDurumlari.YONETIM_ONAY
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -180,14 +181,43 @@ fun TeklifKarsilastirmaScreen(viewModel: AppViewModel, talepId: String?) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(item.talepNo, style = MaterialTheme.typography.headlineMedium, color = AppColors.TextPrimary)
-                StatusBadge(item.durum, AppColors.PrimaryContainer, AppColors.Primary)
+                StatusBadge(
+                    if (duzeltmeBekliyor) "Düzeltme" else item.durum,
+                    AppColors.PrimaryContainer,
+                    AppColors.Primary
+                )
             }
             Text(
-                "${item.talepEden} · ${item.santiyeAdi}",
+                "${item.talepEden} · ${item.santiyeAdi} · ${item.teklifler.size} teklif",
                 style = MaterialTheme.typography.bodySmall,
                 color = AppColors.TextSecondary,
                 modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
             )
+            if (duzeltmeBekliyor) {
+                AppCard(contentPadding = AppSpacing.sm) {
+                    Text(
+                        "Yönetim revize istedi — teklifleriniz silinmedi.",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.Primary
+                    )
+                    if (item.teklifDuzeltmeNotu.isNotBlank()) {
+                        Text(
+                            "Not: ${item.teklifDuzeltmeNotu}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.TextSecondary,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                    Text(
+                        "Aşağıda mevcut teklifler var. Düzenleyip «Yönetime Gönder» ile tekrar iletin. Liste: Düzeltme Bekleyen.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.TextSecondary,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+            }
             AppDetailTabRow(tabs = tabs, selectedIndex = selectedTab, onTabSelected = { selectedTab = it })
         }
 
@@ -202,7 +232,11 @@ fun TeklifKarsilastirmaScreen(viewModel: AppViewModel, talepId: String?) {
                     viewModel = viewModel,
                     userRole = user?.role
                 )
-                1 -> FiyatAnalizTabContent(talep = item, alinanMalzemeler = alinan)
+                1 -> FiyatAnalizTabContent(
+                    talep = item,
+                    alinanMalzemeler = alinan,
+                    onRefreshAlinan = { viewModel.refreshAlinanMalzemeler() }
+                )
             }
         }
     }
@@ -393,7 +427,11 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
                 redGerekce = redGerekce,
                 onRedGerekce = { redGerekce = it }
             )
-            1 -> FiyatAnalizTabContent(talep = item, alinanMalzemeler = alinan)
+            1 -> FiyatAnalizTabContent(
+                talep = item,
+                alinanMalzemeler = alinan,
+                onRefreshAlinan = { viewModel.refreshAlinanMalzemeler() }
+            )
         }
 
         Spacer(Modifier.height(AppSpacing.md))

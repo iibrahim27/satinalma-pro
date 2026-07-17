@@ -648,6 +648,12 @@ class AppContainer(private val context: Context) {
         _alinanMalzemeKayitlari.value = runCatching { modulRepo.loadAlinanMalzemeler() }.getOrElse { prevAlinan }
     }
 
+    /** Fiyat Analiz sekmesi açılınca Alınan Malzemeler’i taze çeker. */
+    suspend fun reloadAlinanMalzemeler() {
+        val prev = _alinanMalzemeKayitlari.value
+        _alinanMalzemeKayitlari.value = runCatching { modulRepo.loadAlinanMalzemeler() }.getOrElse { prev }
+    }
+
     fun modulBugun(): String = modulRepo.bugun()
 
     suspend fun agregaKaydet(kayit: AgregaKaydi) {

@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.68",
-    "build":  137,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.68/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.68/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.68/SatinalmaPro.apk",
-    "notes":  "Android teklif onay/karsilastirma Fiyat Analiz sekmesi; satinalma onay/miktar/mal kabul ve bildirim iyilestirmeleri",
+    "version":  "2.1.69",
+    "build":  138,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.69/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.69/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.69/SatinalmaPro.apk",
+    "notes":  "Android Fiyat Analiz Alinan Malzemeler eslestirme; teklif revize/Duzeltme Bekleyen UX",
     "zorunlu":  false
 }

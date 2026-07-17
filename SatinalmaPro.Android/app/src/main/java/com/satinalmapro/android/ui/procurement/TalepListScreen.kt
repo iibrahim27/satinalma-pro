@@ -43,8 +43,20 @@ fun TalepListScreen(viewModel: AppViewModel, queue: TalepQueue) {
             (loading || initialSyncPending) && items.isEmpty() ->
                 LoadingState(modifier = Modifier.fillMaxSize())
             filtered.isEmpty() -> EmptyState(
-                title = if (items.isEmpty()) "Bu firmada henüz kayıt yok" else "Arama sonucu bulunamadı",
-                subtitle = if (items.isEmpty()) "Yeni talep oluştuğunda burada listelenir." else "Farklı bir arama deneyin."
+                title = when {
+                    items.isNotEmpty() -> "Arama sonucu bulunamadı"
+                    queue == TalepQueue.SATINALMA_TEKLIF_DUZELTME -> "Düzeltme bekleyen talep yok"
+                    queue == TalepQueue.TEKLIF_KARSILASTIRMA -> "Karşılaştırmada talep yok"
+                    else -> "Bu firmada henüz kayıt yok"
+                },
+                subtitle = when {
+                    items.isNotEmpty() -> "Farklı bir arama deneyin."
+                    queue == TalepQueue.SATINALMA_TEKLIF_DUZELTME ->
+                        "Yönetim «Teklifleri Revizeye Gönder» dediğinde talepler burada görünür. Eklediğiniz teklifler silinmez."
+                    queue == TalepQueue.TEKLIF_KARSILASTIRMA ->
+                        "Revize istenen talepler burada değil — «Düzeltme Bekleyen» menüsüne bakın."
+                    else -> "Yeni talep oluştuğunda burada listelenir."
+                }
             )
             else -> {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {

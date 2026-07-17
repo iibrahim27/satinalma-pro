@@ -1100,6 +1100,13 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun alinanMalzemeSil(id: String, onDone: () -> Unit = {}) =
         modulIslem({ container.alinanMalzemeSil(id) }, onDone)
 
+    /** Fiyat Analiz için Alınan Malzemeler belgesini yeniden yükler. */
+    fun refreshAlinanMalzemeler() {
+        viewModelScope.launch {
+            runCatching { container.reloadAlinanMalzemeler() }
+        }
+    }
+
     private fun modulIslem(block: suspend () -> Unit, onDone: () -> Unit) {
         viewModelScope.launch {
             _submitError.value = null
