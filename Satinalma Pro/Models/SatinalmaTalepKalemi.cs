@@ -46,6 +46,8 @@ public class SatinalmaTalepKalemi : INotifyPropertyChanged
   public Guid? OnaylananTeklifId { get; set; }
     /// <summary>Satınalma önerisi — yönetime gönderilmeden önce kalem bazlı firma/fiyat seçimi.</summary>
     public Guid? OnerilenTeklifId { get; set; }
+    /// <summary>Yönetim onayında miktarın firmalara bölünmesi. Boşsa OnaylananTeklifId tek firma demektir.</summary>
+    public List<KalemFirmaAtamasi> FirmaAtamalari { get; set; } = [];
     public double KabulEdilenMiktar { get; set; }
     public bool SiparisTamamlandi { get; set; }
 

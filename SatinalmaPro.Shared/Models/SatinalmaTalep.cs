@@ -66,6 +66,15 @@ public class SatinalmaTeklif
     }
 }
 
+/// <summary>Kalem miktarının bir firmaya ayrılan kısmı (yönetim bölünmüş onayı).</summary>
+public class KalemFirmaAtamasi
+{
+    public Guid TeklifId { get; set; }
+    public double Miktar { get; set; }
+    public double KabulEdilenMiktar { get; set; }
+    public bool SiparisTamamlandi { get; set; }
+}
+
 public class SatinalmaTalepKalemi
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -77,6 +86,8 @@ public class SatinalmaTalepKalemi
     public Guid? OnaylananTeklifId { get; set; }
     /// <summary>Satınalma önerisi — kalem bazlı firma/fiyat seçimi.</summary>
     public Guid? OnerilenTeklifId { get; set; }
+    /// <summary>Yönetim onayında miktarın firmalara bölünmesi. Boşsa OnaylananTeklifId tek firma demektir.</summary>
+    public List<KalemFirmaAtamasi> FirmaAtamalari { get; set; } = [];
     public double KabulEdilenMiktar { get; set; }
     public bool SiparisTamamlandi { get; set; }
 }
@@ -124,7 +135,7 @@ public class SatinalmaTalep
         OnaylananTeklifId is { } id ? Teklifler.FirstOrDefault(t => t.Id == id) : null;
 
     public bool HerhangiKalemOnayli =>
-        Kalemler?.Any(k => k.OnaylananTeklifId != null) == true;
+        Kalemler?.Any(SatinalmaPro.Shared.Helpers.KalemFirmaAtamaYardimcisi.OnayliMi) == true;
 
     /// <summary>Satınalma teklif girip yönetime gönderdi — karşılaştırma/onay bekleniyor.</summary>
     public bool TeklifOnayiBekliyor =>
@@ -141,8 +152,15 @@ public class SatinalmaTalep
     public bool TeklifsizFirmaFiyatBekliyor =>
         TeklifsizYonetimOnayi && !HerhangiKalemOnayli;
 
-    public SatinalmaTeklif? KalemOnayTeklifi(SatinalmaTalepKalemi kalem) =>
-        kalem.OnaylananTeklifId is { } id ? Teklifler.FirstOrDefault(t => t.Id == id) : null;
+    public SatinalmaTeklif? KalemOnayTeklifi(SatinalmaTalepKalemi kalem)
+    {
+        var id = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+            .OrderByDescending(a => a.Miktar)
+            .Select(a => (Guid?)a.TeklifId)
+            .FirstOrDefault()
+            ?? kalem.OnaylananTeklifId;
+        return id is { } tid ? Teklifler.FirstOrDefault(t => t.Id == tid) : null;
+    }
 
     /// <summary>Satınalma önerisi — elle seçim yoksa KDV dahil en düşük toplam.</summary>
     public SatinalmaTeklif? OnerilenTeklif() => OnerilenTeklifFirma();

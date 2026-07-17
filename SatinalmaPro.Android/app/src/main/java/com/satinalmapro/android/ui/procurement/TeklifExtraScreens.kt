@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +26,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,12 +41,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.satinalmapro.android.core.model.KalemFirmaAtamasi
 import com.satinalmapro.android.core.model.TalepItem
+import com.satinalmapro.android.core.model.TalepKalem
 import com.satinalmapro.android.core.model.TalepQueue
 import com.satinalmapro.android.core.model.TeklifItem
 import com.satinalmapro.android.core.roles.IsAkisRotalari
+import com.satinalmapro.android.core.roles.KalemFirmaAtamaYardimcisi
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.core.roles.TalepKuyrugu
+import com.satinalmapro.android.services.SatinalmaPdfFormats
 import com.satinalmapro.android.services.SatinalmaPdfHelper
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppCard
@@ -364,10 +370,11 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
     }
     val context = LocalContext.current
     var redGerekce by remember { mutableStateOf("") }
-    val secimMap = remember(item.id) {
-        mutableStateMapOf<String, String>().apply {
+    val atamaMap = remember(item.id) {
+        mutableStateMapOf<String, List<KalemFirmaAtamasi>>().apply {
             item.kalemler.forEach { kalem ->
-                kalem.onaylananTeklifId?.let { put(kalem.id, it) }
+                val atamalar = KalemFirmaAtamaYardimcisi.etkinAtamalar(kalem)
+                if (atamalar.isNotEmpty()) put(kalem.id, atamalar)
             }
         }
     }
@@ -419,7 +426,7 @@ fun TeklifOnayDetayScreen(viewModel: AppViewModel, talepId: String) {
                 userRole = user?.role,
                 quoteReviewUi = quoteReviewUi,
                 quoteRows = quoteRows,
-                secimMap = secimMap,
+                atamaMap = atamaMap,
                 compactPad = compactPad,
                 fieldColors = fieldColors,
                 geriGonderGerekce = geriGonderGerekce,
@@ -450,7 +457,7 @@ private fun TeklifOnayTabIcerik(
     userRole: String?,
     quoteReviewUi: PurchaseRequestDetailUiState,
     quoteRows: List<PurchaseRequestQuoteRow>,
-    secimMap: MutableMap<String, String>,
+    atamaMap: MutableMap<String, List<KalemFirmaAtamasi>>,
     compactPad: PaddingValues,
     fieldColors: androidx.compose.material3.TextFieldColors,
     geriGonderGerekce: String,
@@ -458,6 +465,8 @@ private fun TeklifOnayTabIcerik(
     redGerekce: String,
     onRedGerekce: (String) -> Unit
 ) {
+    var bolDialog by remember { mutableStateOf<Pair<TalepKalem, TeklifItem>?>(null) }
+    var bolMiktar by remember { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
         if (item.teklifDuzeltmeNotu.isNotBlank()) {
             AppCard(contentPadding = AppSpacing.sm) {
@@ -566,7 +575,11 @@ private fun TeklifOnayTabIcerik(
                 OutlinedButton(
                     onClick = {
                         val oneriId = item.onerilenTeklif()!!.id
-                        item.kalemler.forEach { secimMap[it.id] = oneriId }
+                        item.kalemler.forEach { kalem ->
+                            atamaMap[kalem.id] = listOf(
+                                KalemFirmaAtamasi(teklifId = oneriId, miktar = kalem.miktar)
+                            )
+                        }
                     },
                     contentPadding = compactPad,
                     modifier = Modifier.heightIn(min = 32.dp)
@@ -576,25 +589,93 @@ private fun TeklifOnayTabIcerik(
             }
         }
         Text(
-            "Birim fiyatları karşılaştırın. Seçim için fiyat hücresine dokunun.",
+            "Dokun: tüm miktar o firmaya. Uzun bas: miktarı böl (ör. 80 A + 20 B).",
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.TextSecondary
         )
 
         YonetimTeklifKarsilastirmaTablo(
             talep = item,
-            secimMap = secimMap,
+            atamaMap = atamaMap,
             secimAktif = canDecide,
-            onKalemSec = { kalemId, teklifId -> secimMap[kalemId] = teklifId }
+            onKalemTamSec = { kalemId, teklifId ->
+                val kalem = item.kalemler.firstOrNull { it.id == kalemId } ?: return@YonetimTeklifKarsilastirmaTablo
+                atamaMap[kalemId] = listOf(KalemFirmaAtamasi(teklifId = teklifId, miktar = kalem.miktar))
+            },
+            onKalemBol = { kalemId, teklifId ->
+                val kalem = item.kalemler.firstOrNull { it.id == kalemId } ?: return@YonetimTeklifKarsilastirmaTablo
+                val teklif = item.teklifler.firstOrNull { it.id == teklifId } ?: return@YonetimTeklifKarsilastirmaTablo
+                val mevcut = atamaMap[kalemId].orEmpty()
+                    .firstOrNull { it.teklifId.equals(teklifId, true) }?.miktar
+                    ?: (kalem.miktar - atamaMap[kalemId].orEmpty()
+                        .filter { !it.teklifId.equals(teklifId, true) }
+                        .sumOf { it.miktar }).coerceAtLeast(0.0).let { if (it <= 0.0001) kalem.miktar else it }
+                bolMiktar = SatinalmaPdfFormats.miktar(mevcut)
+                bolDialog = kalem to teklif
+            }
         )
 
-        val seciliSayisi = item.kalemler.count { secimMap[it.id] != null }
+        val seciliSayisi = item.kalemler.count { !atamaMap[it.id].isNullOrEmpty() }
+        val ozet = item.kalemler
+            .filter { !atamaMap[it.id].isNullOrEmpty() }
+            .joinToString(" · ") { k ->
+                val metin = KalemFirmaAtamaYardimcisi.ozetMetni(
+                    k.copy(firmaAtamalari = atamaMap[k.id].orEmpty(), onaylananTeklifId = atamaMap[k.id]?.firstOrNull()?.teklifId),
+                    item.teklifler
+                )
+                "${k.malzeme}: $metin"
+            }
         Text(
-            if (seciliSayisi == 0) "Henüz kalem seçimi yapılmadı."
-            else "$seciliSayisi/${item.kalemler.size} kalem için firma seçildi.",
+            when {
+                seciliSayisi == 0 -> "Henüz kalem seçimi yapılmadı."
+                else -> "$seciliSayisi/${item.kalemler.size} kalem · $ozet"
+            },
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.TextSecondary
         )
+
+        bolDialog?.let { (kalem, teklif) ->
+            AlertDialog(
+                onDismissRequest = { bolDialog = null },
+                title = { Text("Miktar böl") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "${kalem.malzeme} — ${teklif.firmaAdi}\nTalep: ${SatinalmaPdfFormats.miktar(kalem.miktar)} ${kalem.birim}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        OutlinedTextField(
+                            value = bolMiktar,
+                            onValueChange = { bolMiktar = it },
+                            label = { Text("Bu firmaya miktar") },
+                            singleLine = true,
+                            shape = AppShapes.medium,
+                            colors = fieldColors
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val m = bolMiktar.replace(',', '.').toDoubleOrNull()
+                        if (m == null || m <= 0) return@TextButton
+                        try {
+                            val taslak = kalem.copy(
+                                firmaAtamalari = atamaMap[kalem.id].orEmpty(),
+                                onaylananTeklifId = atamaMap[kalem.id]?.maxByOrNull { it.miktar }?.teklifId
+                            )
+                            val guncel = KalemFirmaAtamaYardimcisi.firmaMiktariniAyarla(taslak, teklif.id, m)
+                            atamaMap[kalem.id] = guncel.firmaAtamalari
+                            bolDialog = null
+                        } catch (_: Exception) {
+                            // dialog açık kalır; kullanıcı miktarı düzeltir
+                        }
+                    }) { Text("Kaydet") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { bolDialog = null }) { Text("İptal") }
+                }
+            )
+        }
 
         Row(
             Modifier.fillMaxWidth(),
@@ -627,11 +708,18 @@ private fun TeklifOnayTabIcerik(
 
             Button(
                 onClick = {
-                    val atamalar = item.kalemler.mapNotNull { kalem ->
-                        secimMap[kalem.id]?.let { kalem.id to it }
-                    }.toMap()
-                    if (atamalar.isEmpty()) return@Button
-                    viewModel.kalemBazliOnayla(talepId, atamalar) {
+                    val firmaAtamalari = atamaMap
+                        .filterValues { it.isNotEmpty() }
+                        .mapValues { it.value }
+                    if (firmaAtamalari.isEmpty()) return@Button
+                    try {
+                        item.kalemler.filter { firmaAtamalari.containsKey(it.id) }.forEach { kalem ->
+                            KalemFirmaAtamaYardimcisi.dogrula(kalem, firmaAtamalari[kalem.id]!!)
+                        }
+                    } catch (_: Exception) {
+                        return@Button
+                    }
+                    viewModel.kalemBazliOnaylaBolunmus(talepId, firmaAtamalari) {
                         viewModel.navigate(IsAkisRotalari.teklifOnaySonrasi(userRole, talepId))
                     }
                 },

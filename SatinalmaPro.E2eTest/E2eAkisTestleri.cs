@@ -374,4 +374,92 @@ public static class E2eAkisTestleri
 
         return sonuc;
     }
+
+    /// <summary>Yönetim onayında kalem miktarını 80/20 iki firmaya bölme + mal kabul satırı/PDF tutar mantığı.</summary>
+    public static E2eTestSonuc KalemMiktarFirmaBolme(BellekTestOrtami ortam)
+    {
+        var sonuc = new E2eTestSonuc();
+        sonuc.Adim("=== SENARYO: Kalem miktarını firmalara bölerek onay (80/20) ===");
+
+        var talep = ortam.SahaTalepOlustur(BellekTestOrtami.Saha, "E2E Bölünen Çimento", 100);
+        ortam.YonetimTeklifIste(talep);
+        var teklifA = ortam.TeklifEkle(talep, "Firma A", 100);
+        var teklifB = ortam.TeklifEkle(talep, "Firma B", 110);
+        ortam.YonetimeTeklifGonder(talep);
+        talep = ortam.GuncelTalep(talep.Id);
+        var kalem = talep.Kalemler[0];
+
+        try
+        {
+            KalemFirmaAtamaYardimcisi.Dogrula(kalem,
+            [
+                new KalemFirmaAtamasi { TeklifId = teklifA.Id, Miktar = 70 },
+                new KalemFirmaAtamasi { TeklifId = teklifB.Id, Miktar = 20 }
+            ]);
+            sonuc.Eksik("70+20 eksik toplam reddedilmeliydi");
+        }
+        catch (InvalidOperationException)
+        {
+            sonuc.Ok("Eksik atama toplamı (70+20) reddedildi");
+        }
+
+        ortam.YonetimTeklifBolunmusOnayla(talep, new Dictionary<Guid, IReadOnlyList<(Guid, double)>>
+        {
+            [kalem.Id] =
+            [
+                (teklifA.Id, 80),
+                (teklifB.Id, 20)
+            ]
+        });
+        talep = ortam.GuncelTalep(talep.Id);
+        kalem = talep.Kalemler[0];
+        sonuc.Adim("1. Yönetim 80 Firma A + 20 Firma B onayladı");
+
+        var atamalar = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem);
+        sonuc.Bekle(atamalar.Count == 2, "İki firma ataması kaydedildi", "Atama sayısı yanlış");
+        sonuc.Bekle(kalem.OnaylananTeklifId == teklifA.Id,
+            "OnaylananTeklifId = en büyük miktarlı firma (A)",
+            $"OnaylananTeklifId yanlış: {kalem.OnaylananTeklifId}");
+        sonuc.Bekle(talep.Teklifler.Count(t => t.Onaylandi) == 2,
+            "Her iki teklif Onaylandi=true",
+            "Bölünen onayda teklif bayrakları eksik");
+        sonuc.Bekle(
+            talep.FirmaSiparisNolari.ContainsKey(teklifA.Id) &&
+            talep.FirmaSiparisNolari.ContainsKey(teklifB.Id),
+            "Her firma için sipariş no üretildi",
+            "FirmaSiparisNolari eksik");
+
+        ortam.SiparisVer(talep);
+        talep = ortam.GuncelTalep(talep.Id);
+        var satirlar = OnaylananMalzemeOlusturucu.Olustur(ortam.Talepler)
+            .Where(s => s.TalepId == talep.Id)
+            .ToList();
+        sonuc.Adim($"2. Mal kabul satırları: {satirlar.Count}");
+        sonuc.Bekle(satirlar.Count == 2, "Atama başına bir mal kabul satırı", $"Satır sayısı={satirlar.Count}");
+        sonuc.Bekle(satirlar.Any(s => s.TeklifId == teklifA.Id && Math.Abs(s.SiparisMiktari - 80) < 0.001),
+            "Firma A satırı SiparisMiktari=80", "Firma A miktarı yanlış");
+        sonuc.Bekle(satirlar.Any(s => s.TeklifId == teklifB.Id && Math.Abs(s.SiparisMiktari - 20) < 0.001),
+            "Firma B satırı SiparisMiktari=20", "Firma B miktarı yanlış");
+
+        var araA = satirlar.First(s => s.TeklifId == teklifA.Id).ToplamTutar;
+        var araB = satirlar.First(s => s.TeklifId == teklifB.Id).ToplamTutar;
+        sonuc.Bekle(araA == 8000m, $"PDF/sipariş toplamı A = 80×100 = {araA}", $"Firma A tutarı yanlış: {araA}");
+        sonuc.Bekle(araB == 2200m, $"PDF/sipariş toplamı B = 20×110 = {araB}", $"Firma B tutarı yanlış: {araB}");
+
+        // Geriye uyumluluk: boş FirmaAtamalari + OnaylananTeklifId
+        var eskiKalem = new SatinalmaTalepKalemi
+        {
+            Id = Guid.NewGuid(),
+            Malzeme = "Eski",
+            Miktar = 50,
+            OnaylananTeklifId = teklifA.Id,
+            FirmaAtamalari = []
+        };
+        var eskiAtama = KalemFirmaAtamaYardimcisi.EtkinAtamalar(eskiKalem);
+        sonuc.Bekle(eskiAtama.Count == 1 && Math.Abs(eskiAtama[0].Miktar - 50) < 0.001,
+            "Eski tek OnaylananTeklifId → tam miktar ataması",
+            "Geriye uyumluluk EtkinAtamalar hatalı");
+
+        return sonuc;
+    }
 }

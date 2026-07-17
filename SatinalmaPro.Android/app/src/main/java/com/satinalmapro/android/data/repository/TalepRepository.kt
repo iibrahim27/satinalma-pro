@@ -19,6 +19,7 @@ import com.satinalmapro.android.core.helpers.OnayBildirimYardimcisi
 import com.satinalmapro.android.core.model.BildirimTipleri
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.core.roles.TalepDurumlari
+import com.satinalmapro.android.core.roles.KalemFirmaAtamaYardimcisi
 import com.satinalmapro.android.core.roles.MalKabulYardimcisi
 import com.satinalmapro.android.core.roles.OnaylananMalzemeOlusturucu
 import com.satinalmapro.android.core.roles.TalepKuyrugu
@@ -533,7 +534,8 @@ class TalepRepository(
             talep.copy(
                 kalemler = talep.kalemler.map { kalem ->
                     if (!kalem.id.equals(kalemId, true)) kalem
-                    else kalem.copy(onaylananTeklifId = teklifId)
+                    else if (teklifId == null) KalemFirmaAtamaYardimcisi.temizle(kalem)
+                    else KalemFirmaAtamaYardimcisi.tekFirmayaAta(kalem, teklifId)
                 }
             )
         }
@@ -541,7 +543,8 @@ class TalepRepository(
     suspend fun kalemBazliOnayla(
         talepId: String,
         user: UserProfile,
-        kalemTeklifAtamalari: Map<String, String>? = null
+        kalemTeklifAtamalari: Map<String, String>? = null,
+        kalemFirmaAtamalari: Map<String, List<com.satinalmapro.android.core.model.KalemFirmaAtamasi>>? = null
     ): TalepItem {
         if (!KullaniciRolleri.canApproveQuotes(user.role))
             throw IllegalStateException("Teklif onay yetkiniz yok")
@@ -551,36 +554,50 @@ class TalepRepository(
             if (talep.yonetimOnayKilitli && talep.durum != TalepDurumlari.YONETIM_ONAY)
                 throw IllegalStateException("Onay kilitli talepte onay değiştirilemez")
 
-            val kalemler = if (kalemTeklifAtamalari.isNullOrEmpty()) {
-                talep.kalemler
-            } else {
-                talep.kalemler.map { kalem ->
-                    val teklifId = kalemTeklifAtamalari[kalem.id]
-                    if (teklifId == null) kalem
-                    else {
+            val kalemler = talep.kalemler.map { kalem ->
+                val bolunmus = kalemFirmaAtamalari?.get(kalem.id)
+                when {
+                    !bolunmus.isNullOrEmpty() -> {
+                        bolunmus.forEach { a ->
+                            if (!talep.teklifler.any { it.id.equals(a.teklifId, true) })
+                                throw IllegalArgumentException("Teklif bulunamadı: ${a.teklifId}")
+                        }
+                        KalemFirmaAtamaYardimcisi.uygula(kalem, bolunmus)
+                    }
+                    kalemTeklifAtamalari?.containsKey(kalem.id) == true -> {
+                        val teklifId = kalemTeklifAtamalari[kalem.id]
+                            ?: return@map KalemFirmaAtamaYardimcisi.temizle(kalem)
                         if (!talep.teklifler.any { it.id.equals(teklifId, true) })
                             throw IllegalArgumentException("Teklif bulunamadı: $teklifId")
-                        kalem.copy(onaylananTeklifId = teklifId)
+                        KalemFirmaAtamaYardimcisi.tekFirmayaAta(kalem, teklifId)
                     }
+                    KalemFirmaAtamaYardimcisi.onayliMi(kalem) ->
+                        KalemFirmaAtamaYardimcisi.uygula(kalem, KalemFirmaAtamaYardimcisi.etkinAtamalar(kalem))
+                    else -> kalem
                 }
             }
 
-            val onayliKalemler = kalemler.filter { !it.onaylananTeklifId.isNullOrBlank() }
+            val onayliKalemler = kalemler.filter { KalemFirmaAtamaYardimcisi.onayliMi(it) }
             if (onayliKalemler.isEmpty())
                 throw IllegalArgumentException("En az bir kalem için firma seçin")
 
+            val tumTeklifIdleri = onayliKalemler
+                .flatMap { KalemFirmaAtamaYardimcisi.etkinAtamalar(it).map { a -> a.teklifId } }
+                .distinct()
+
             val teklifler = talep.teklifler.map { teklif ->
-                teklif.copy(onaylandi = onayliKalemler.any { it.onaylananTeklifId == teklif.id })
+                teklif.copy(onaylandi = tumTeklifIdleri.any { it.equals(teklif.id, true) })
             }
 
             val anaTeklifId = onayliKalemler
-                .groupBy { it.onaylananTeklifId }
-                .maxByOrNull { it.value.size }
+                .flatMap { KalemFirmaAtamaYardimcisi.etkinAtamalar(it) }
+                .groupBy { it.teklifId }
+                .maxByOrNull { (_, list) -> list.sumOf { it.miktar } }
                 ?.key
                 ?: throw IllegalArgumentException("Ana teklif seçilemedi")
 
             val siparisNolari = talep.firmaSiparisNolari.toMutableMap()
-            onayliKalemler.mapNotNull { it.onaylananTeklifId }.distinct().forEach { tid ->
+            tumTeklifIdleri.forEach { tid ->
                 if (!siparisNolari.containsKey(tid)) {
                     ayarlar.sonSiparisSira += 1
                     val yil = SimpleDateFormat("yyyy", Locale("tr", "TR")).format(Date())
@@ -601,7 +618,9 @@ class TalepRepository(
         saveAyarlar(ayarlar)
 
         val anaTeklif = result.teklifler.firstOrNull { it.id == result.onaylananTeklifId }
-        val firmaSayisi = result.kalemler.mapNotNull { it.onaylananTeklifId }.distinct().size
+        val firmaSayisi = result.kalemler
+            .flatMap { KalemFirmaAtamaYardimcisi.etkinAtamalar(it).map { a -> a.teklifId } }
+            .distinct().size
         val firmaAdi = if (firmaSayisi == 1) anaTeklif?.firmaAdi else null
         val hedefler = OnayBildirimYardimcisi.onaylandiHedefleri(result.olusturanUid, user.role)
         bildirimler?.talepBildirimleriToplu(
@@ -627,7 +646,7 @@ class TalepRepository(
                 teklifDuzeltmeNotu = gerekce?.trim().orEmpty(),
                 yonetimOnayKilitli = false,
                 onaylananTeklifId = null,
-                kalemler = talep.kalemler.map { it.copy(onaylananTeklifId = null) }
+                kalemler = talep.kalemler.map { KalemFirmaAtamaYardimcisi.temizle(it) }
             )
         }
         bildirimler?.talepBildirimleri(
@@ -733,31 +752,43 @@ class TalepRepository(
         }
     }
 
-    suspend fun malKabul(talepId: String, kalemId: String, miktar: Double, user: UserProfile): TalepItem {
+    suspend fun malKabul(
+        talepId: String,
+        kalemId: String,
+        miktar: Double,
+        user: UserProfile,
+        teklifId: String? = null
+    ): TalepItem {
         if (!KullaniciRolleri.canMalKabul(user.role))
             throw IllegalStateException("Mal kabul yetkiniz yok")
         if (miktar <= 0) throw IllegalArgumentException("Miktar sıfırdan büyük olmalı")
         val satir = OnaylananMalzemeOlusturucu.olustur(loadTalepler())
-            .firstOrNull { it.talepId.equals(talepId, true) && it.kalemId.equals(kalemId, true) }
+            .firstOrNull {
+                it.talepId.equals(talepId, true) &&
+                    it.kalemId.equals(kalemId, true) &&
+                    (teklifId.isNullOrBlank() || it.teklifId.equals(teklifId, true))
+            }
             ?: throw IllegalArgumentException("Kalem bulunamadı")
         if (satir.durum != TalepDurumlari.SIPARIS)
             throw IllegalStateException("Mal kabul için önce sipariş verilmelidir")
+        val hedefTeklifId = satir.teklifId.ifBlank { teklifId.orEmpty() }
         val result = mutateTalep(talepId) { talep ->
             val kalem = talep.kalemler.firstOrNull { it.id.equals(kalemId, true) }
                 ?: throw IllegalArgumentException("Kalem bulunamadı")
-            val yeniKabul = kalem.kabulEdilenMiktar + miktar
-            var guncel = talep
-            if (yeniKabul > kalem.miktar + 0.0001) {
-                guncel = MalKabulYardimcisi.kalemMiktariniGercekleseneGoreAyarla(talep, kalemId, yeniKabul)
+            val guncelKalem = if (hedefTeklifId.isNotBlank()) {
+                KalemFirmaAtamaYardimcisi.kabulEkle(kalem, hedefTeklifId, miktar)
+            } else {
+                val yeniKabul = kalem.kabulEdilenMiktar + miktar
+                kalem.copy(
+                    kabulEdilenMiktar = yeniKabul,
+                    siparisTamamlandi = yeniKabul >= kalem.miktar - 0.0001
+                )
             }
-            val hedefKalem = guncel.kalemler.first { it.id.equals(kalemId, true) }
-            val tamamlandi = yeniKabul >= hedefKalem.miktar - 0.0001
-            val kalemler = guncel.kalemler.map { k ->
-                if (k.id.equals(kalemId, true)) {
-                    k.copy(kabulEdilenMiktar = yeniKabul, siparisTamamlandi = tamamlandi)
-                } else k
-            }
-            guncel.copy(kalemler = kalemler)
+            talep.copy(
+                kalemler = talep.kalemler.map {
+                    if (it.id.equals(kalemId, true)) guncelKalem else it
+                }
+            )
         }
         val ozet = "${satir.malzeme} · ${"%.2f".format(miktar)} ${satir.birim}"
         bildirimler?.talepBildirimleriToplu(
@@ -770,26 +801,37 @@ class TalepRepository(
         return result
     }
 
-    suspend fun sevkiyatiTamamla(talepId: String, kalemId: String, user: UserProfile): TalepItem {
+    suspend fun sevkiyatiTamamla(
+        talepId: String,
+        kalemId: String,
+        user: UserProfile,
+        teklifId: String? = null
+    ): TalepItem {
         if (!KullaniciRolleri.canMalKabul(user.role))
             throw IllegalStateException("Bu işlem için yetkiniz yok")
         val satir = OnaylananMalzemeOlusturucu.olustur(loadTalepler())
-            .firstOrNull { it.talepId.equals(talepId, true) && it.kalemId.equals(kalemId, true) }
+            .firstOrNull {
+                it.talepId.equals(talepId, true) &&
+                    it.kalemId.equals(kalemId, true) &&
+                    (teklifId.isNullOrBlank() || it.teklifId.equals(teklifId, true))
+            }
             ?: throw IllegalArgumentException("Kalem bulunamadı")
         if (!OnaylananMalzemeOlusturucu.sevkiyatTamamlanabilir(satir))
             throw IllegalStateException("Bu kalem için sevkiyat tamamlanamaz")
+        val hedefTeklifId = satir.teklifId.ifBlank { teklifId.orEmpty() }
         return mutateTalep(talepId) { talep ->
             val kalem = talep.kalemler.firstOrNull { it.id.equals(kalemId, true) }
                 ?: throw IllegalArgumentException("Kalem bulunamadı")
-            val gercekMiktar = kalem.kabulEdilenMiktar
-            var guncel = talep
-            if (gercekMiktar < kalem.miktar - 0.0001) {
-                guncel = MalKabulYardimcisi.kalemMiktariniGercekleseneGoreAyarla(talep, kalemId, gercekMiktar)
+            val guncelKalem = if (hedefTeklifId.isNotBlank()) {
+                KalemFirmaAtamaYardimcisi.sevkiyatiTamamla(kalem, hedefTeklifId)
+            } else {
+                kalem.copy(siparisTamamlandi = true)
             }
-            val kalemler = guncel.kalemler.map { k ->
-                if (k.id.equals(kalemId, true)) k.copy(siparisTamamlandi = true) else k
-            }
-            guncel.copy(kalemler = kalemler)
+            talep.copy(
+                kalemler = talep.kalemler.map {
+                    if (it.id.equals(kalemId, true)) guncelKalem else it
+                }
+            )
         }
     }
 
@@ -965,7 +1007,7 @@ class TalepRepository(
         }
 
         if (mutation.clearLineItemApprovals) {
-            updated = updated.copy(kalemler = kalemler.map { it.copy(onaylananTeklifId = null) })
+            updated = updated.copy(kalemler = kalemler.map { KalemFirmaAtamaYardimcisi.temizle(it) })
         }
 
         mutation.approvedQuoteId?.let { qid ->
@@ -973,7 +1015,7 @@ class TalepRepository(
                 onaylananTeklifId = qid,
                 yonetimOnerilenTeklifId = qid,
                 kalemler = if (mutation.applyQuoteToAllLineItems) {
-                    kalemler.map { it.copy(onaylananTeklifId = qid) }
+                    kalemler.map { KalemFirmaAtamaYardimcisi.tekFirmayaAta(it, qid) }
                 } else kalemler,
                 teklifler = teklifler.map { it.copy(onaylandi = it.id == qid) }
             )

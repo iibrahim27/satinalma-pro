@@ -335,7 +335,9 @@ fun MaterialsScreen(viewModel: AppViewModel, initialSection: String? = null) {
 
                     kalemId = satir.kalemId,
 
-                    form = form
+                    form = form,
+
+                    teklifId = satir.teklifId
 
                 ) { dialogSatir = null }
 
@@ -371,7 +373,7 @@ fun MaterialsScreen(viewModel: AppViewModel, initialSection: String? = null) {
 
                 Button(onClick = {
 
-                    viewModel.sevkiyatiTamamla(satir.talepId, satir.kalemId) {
+                    viewModel.sevkiyatiTamamla(satir.talepId, satir.kalemId, teklifId = satir.teklifId) {
 
                         sevkiyatDialogSatir = null
 

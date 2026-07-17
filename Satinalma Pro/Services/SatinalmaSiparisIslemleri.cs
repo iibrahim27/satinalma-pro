@@ -11,16 +11,30 @@ public static class SatinalmaSiparisIslemleri
         talep.Kalemler ??= [];
         talep.Teklifler ??= [];
 
-        var onayliKalemler = talep.Kalemler.Where(k => k.OnaylananTeklifId != null).ToList();
+        var onayliKalemler = talep.Kalemler.Where(KalemFirmaAtamaYardimcisi.OnayliMi).ToList();
         if (onayliKalemler.Count == 0)
             throw new InvalidOperationException("En az bir malzeme için firma seçin.");
 
+        // Tek OnaylananTeklifId kalmış atamaları normalize et; bölünmüşleri doğrula.
+        foreach (var kalem in onayliKalemler)
+        {
+            var atamalar = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem);
+            KalemFirmaAtamaYardimcisi.Uygula(kalem, atamalar);
+        }
+
+        var tumTeklifIdleri = onayliKalemler
+            .SelectMany(KalemFirmaAtamaYardimcisi.OnayliTeklifIdleri)
+            .Distinct()
+            .ToList();
+
         foreach (var teklif in talep.Teklifler)
-            teklif.Onaylandi = onayliKalemler.Any(k => k.OnaylananTeklifId == teklif.Id);
+            teklif.Onaylandi = tumTeklifIdleri.Contains(teklif.Id);
 
         var anaTeklifId = onayliKalemler
-            .GroupBy(k => k.OnaylananTeklifId!.Value)
-            .OrderByDescending(g => g.Count())
+            .SelectMany(KalemFirmaAtamaYardimcisi.EtkinAtamalar)
+            .GroupBy(a => a.TeklifId)
+            .OrderByDescending(g => g.Sum(a => a.Miktar))
+            .ThenByDescending(g => g.Count())
             .First().Key;
 
         talep.OnaylananTeklifId = anaTeklifId;
@@ -30,7 +44,7 @@ public static class SatinalmaSiparisIslemleri
         talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
 
         talep.FirmaSiparisNolari ??= [];
-        foreach (var teklifId in onayliKalemler.Select(k => k.OnaylananTeklifId!.Value).Distinct())
+        foreach (var teklifId in tumTeklifIdleri)
         {
             if (!talep.FirmaSiparisNolari.ContainsKey(teklifId))
                 talep.FirmaSiparisNolari[teklifId] = SatinalmaDepo.YeniSiparisNoOlustur();
@@ -56,12 +70,15 @@ public static class SatinalmaSiparisIslemleri
             // bildirim hatası onayı engellemez
         }
 
-        var onayliKalemler = talep.Kalemler.Where(k => k.OnaylananTeklifId != null).ToList();
+        var onayliKalemler = talep.Kalemler.Where(KalemFirmaAtamaYardimcisi.OnayliMi).ToList();
         var anaTeklifId = talep.OnaylananTeklifId;
         var anaTeklif = anaTeklifId is { } tid
             ? talep.Teklifler.FirstOrDefault(t => t.Id == tid)
             : null;
-        var firmaSayisi = onayliKalemler.Select(k => k.OnaylananTeklifId).Distinct().Count();
+        var firmaSayisi = onayliKalemler
+            .SelectMany(KalemFirmaAtamaYardimcisi.OnayliTeklifIdleri)
+            .Distinct()
+            .Count();
         var firmaAdi = firmaSayisi == 1 ? anaTeklif?.FirmaAdi : null;
 
         await SatinalmaBildirimleri.OnaylandiBildirimleriGonderAsync(talep, firmaAdi);
@@ -74,8 +91,8 @@ public static class SatinalmaSiparisIslemleri
 
         talep.FirmaSiparisNolari ??= [];
         foreach (var teklifId in talep.Kalemler
-                     .Where(k => k.OnaylananTeklifId != null)
-                     .Select(k => k.OnaylananTeklifId!.Value)
+                     .Where(KalemFirmaAtamaYardimcisi.OnayliMi)
+                     .SelectMany(KalemFirmaAtamaYardimcisi.OnayliTeklifIdleri)
                      .Distinct())
         {
             SatinalmaDepo.SiparisNoAl(talep, teklifId);
@@ -114,11 +131,7 @@ public static class SatinalmaSiparisIslemleri
         talep.Teklifler ??= [];
 
         foreach (var kalem in talep.Kalemler)
-        {
-            kalem.OnaylananTeklifId = null;
-            kalem.KabulEdilenMiktar = 0;
-            kalem.SiparisTamamlandi = false;
-        }
+            KalemFirmaAtamaYardimcisi.Temizle(kalem);
 
         foreach (var teklif in talep.Teklifler)
             teklif.Onaylandi = false;
@@ -180,16 +193,26 @@ public static class SatinalmaSiparisIslemleri
         var kalem = talep.Kalemler.FirstOrDefault(k => k.Id == satir.KalemId)
             ?? throw new InvalidOperationException("Kalem bulunamadı.");
 
-        kalem.KabulEdilenMiktar += miktar;
+        var teklifId = satir.TeklifId != Guid.Empty
+            ? satir.TeklifId
+            : kalem.OnaylananTeklifId
+              ?? throw new InvalidOperationException("Firma ataması bulunamadı.");
 
-        if (kalem.KabulEdilenMiktar > kalem.Miktar + 0.0001)
-            KalemMiktariniGercekleseneGoreAyarla(talep, kalem, kalem.KabulEdilenMiktar, satir);
+        KalemFirmaAtamaYardimcisi.KabulEkle(kalem, teklifId, miktar);
 
-        if (kalem.KabulEdilenMiktar >= kalem.Miktar - 0.0001)
-            kalem.SiparisTamamlandi = true;
-
-        satir.KabulEdilenMiktar = kalem.KabulEdilenMiktar;
-        satir.SiparisTamamlandi = kalem.SiparisTamamlandi;
+        var atama = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+            .FirstOrDefault(a => a.TeklifId == teklifId);
+        if (atama is not null)
+        {
+            satir.SiparisMiktari = atama.Miktar;
+            satir.KabulEdilenMiktar = atama.KabulEdilenMiktar;
+            satir.SiparisTamamlandi = atama.SiparisTamamlandi;
+        }
+        else
+        {
+            satir.KabulEdilenMiktar = kalem.KabulEdilenMiktar;
+            satir.SiparisTamamlandi = kalem.SiparisTamamlandi;
+        }
 
         MalzemeKategoriDeposu.Ekle(kategori);
 

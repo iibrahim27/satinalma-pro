@@ -1,5 +1,5 @@
 ﻿# Satınalma E2E Test Raporu
-Tarih: 2026-07-17 09:19
+Tarih: 2026-07-17 16:10
 
 Test verileri bellek içi simülasyon ile oluşturuldu; Firebase'e yazılmadı.
 Akış: PurchaseModuleAutomationTest (enterprise status, FCM topic, Firestore güvenlik) + legacy E2E.
@@ -173,8 +173,8 @@ Android karşılığı: `PurchaseModuleAutomationTest` (JVM) + `PurchaseModuleAu
 - ✅ Bildirim rotası gelen-talepler (M:gelen-talepler, A:gelen-talepler)
 - ✅ Talep yönetim gelen listesinde
 - ✅ Durum: Teklif Girişi
-- ✅ Android TeklifIstendi → teklif-gir?id= (teklif-gir?id=641d6bc2-882b-462c-a51c-a012fbaac121)
-- ✅ TeklifIstendi rotası hizalı (M/A): teklif-gir?id=641d6bc2-882b-462c-a51c-a012fbaac121
+- ✅ Android TeklifIstendi → teklif-gir?id= (teklif-gir?id=0c6fe8f2-729a-41c0-8bcf-cc0cdfefa1c2)
+- ✅ TeklifIstendi rotası hizalı (M/A): teklif-gir?id=0c6fe8f2-729a-41c0-8bcf-cc0cdfefa1c2
 - ✅ Satınalma teklif-gir?id rotasına erişebiliyor
 - ✅ Talep satınalma teklif istenen listesinde
 - ✅ Teklif istemi yalnızca satınalmaya gitti
@@ -182,24 +182,24 @@ Android karşılığı: `PurchaseModuleAutomationTest` (JVM) + `PurchaseModuleAu
 - ✅ Satınalma önerisi en düşük fiyat (Firma B)
 - ✅ Talep karşılaştırma listesinde
 - ✅ Durum: Yönetim Onayında
-- ✅ TeklifOnayda yönetim rotası: teklif-onay-detay?id=641d6bc2-882b-462c-a51c-a012fbaac121
+- ✅ TeklifOnayda yönetim rotası: teklif-onay-detay?id=0c6fe8f2-729a-41c0-8bcf-cc0cdfefa1c2
 - ✅ Yönetim teklif-onay-detay erişimi OK
 - ✅ Teklif girişi yöneticiye gitti; işlemi yapan satınalmaya gitmedi
 - ✅ Satınalma teklif-onay-detay (gönderilen) erişimi OK
 - ✅ Durum: Onaylandı + kilitli
 - ✅ Onay bildirimi yalnızca talep sahibine gitti
-- ✅ Onaylandi rotası hizalı (M/A): talep-detay?id=641d6bc2-882b-462c-a51c-a012fbaac121
+- ✅ Onaylandi rotası hizalı (M/A): talep-detay?id=0c6fe8f2-729a-41c0-8bcf-cc0cdfefa1c2
 - ✅ Talep satinalma-onaylanan listesinde
 - ✅ Durum: Sipariş Oluşturuldu
 - ✅ Talep Android sipariş listesinde (mal kabul bekleyen)
 - ✅ Talep masaüstü sipariş listesinde (mal kabul bekleyen)
 - ✅ Sipariş bildirimi yalnızca talep sahibine gitti
-- ✅ SiparisOlusturuldu rotası hizalı (M/A): talep-detay?id=641d6bc2-882b-462c-a51c-a012fbaac121&view=siparis
+- ✅ SiparisOlusturuldu rotası hizalı (M/A): talep-detay?id=0c6fe8f2-729a-41c0-8bcf-cc0cdfefa1c2&view=siparis
 - ✅ Kalem sipariş tamamlandı
 - ✅ Tamamlanan talep sipariş listesinden düştü
 - ✅ Talep mal kabul tamamlanan listesinde
 - ✅ Talep sahibi MalKabulEdildi bildirimini aldı
-- ✅ Talep sahibi MalKabulEdildi rotası hizalı (M/A): talep-detay?id=641d6bc2-882b-462c-a51c-a012fbaac121&view=malkabul
+- ✅ Talep sahibi MalKabulEdildi rotası hizalı (M/A): talep-detay?id=0c6fe8f2-729a-41c0-8bcf-cc0cdfefa1c2&view=malkabul
 - ✅ Red bildirimi yalnızca talep sahibine gider; işlemi yapana gönderilmez
 
 ## === SENARYO 2: Şef/Saha görünürlük ve talep sahipliği ===
@@ -222,8 +222,26 @@ Android karşılığı: `PurchaseModuleAutomationTest` (JVM) + `PurchaseModuleAu
 
 
 ### Geçen kontroller
-- ✅ TeklifDuzeltmeIstendi rotası hizalı: satinalma-teklif-duzeltme?id=e7f06474-c710-49b3-a30e-ea1bbed2adae
+- ✅ TeklifDuzeltmeIstendi rotası hizalı: satinalma-teklif-duzeltme?id=47e8c97e-891a-417a-b0db-c4121edd88d3
 - ✅ Satınalma düzeltme bildirim rotasına erişebiliyor
+
+## === SENARYO: Kalem miktarını firmalara bölerek onay (80/20) ===
+
+- 1. Yönetim 80 Firma A + 20 Firma B onayladı
+- 2. Mal kabul satırları: 2
+
+### Geçen kontroller
+- ✅ Eksik atama toplamı (70+20) reddedildi
+- ✅ İki firma ataması kaydedildi
+- ✅ OnaylananTeklifId = en büyük miktarlı firma (A)
+- ✅ Her iki teklif Onaylandi=true
+- ✅ Her firma için sipariş no üretildi
+- ✅ Atama başına bir mal kabul satırı
+- ✅ Firma A satırı SiparisMiktari=80
+- ✅ Firma B satırı SiparisMiktari=20
+- ✅ PDF/sipariş toplamı A = 80×100 = 8000
+- ✅ PDF/sipariş toplamı B = 20×110 = 2200
+- ✅ Eski tek OnaylananTeklifId → tam miktar ataması
 
 ---
 ## Genel Eksiklik Özeti

@@ -837,9 +837,13 @@ class AppContainer(private val context: Context) {
         return result
     }
 
-    suspend fun kalemBazliOnayla(talepId: String, kalemTeklifAtamalari: Map<String, String>? = null): TalepItem {
+    suspend fun kalemBazliOnayla(
+        talepId: String,
+        kalemTeklifAtamalari: Map<String, String>? = null,
+        kalemFirmaAtamalari: Map<String, List<com.satinalmapro.android.core.model.KalemFirmaAtamasi>>? = null
+    ): TalepItem {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
-        val result = talepler.kalemBazliOnayla(talepId, user, kalemTeklifAtamalari)
+        val result = talepler.kalemBazliOnayla(talepId, user, kalemTeklifAtamalari, kalemFirmaAtamalari)
         reloadTalepler()
         refreshNotifications()
         return result
@@ -902,17 +906,22 @@ class AppContainer(private val context: Context) {
         teslimAlan: String,
         depoSaha: String,
         sahayaDirekt: Boolean = false,
-        sahaHedef: String = ""
+        sahaHedef: String = "",
+        teklifId: String? = null
     ) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         val satir = OnaylananMalzemeOlusturucu.olustur(_talepler.value)
-            .firstOrNull { it.talepId.equals(talepId, true) && it.kalemId.equals(kalemId, true) }
+            .firstOrNull {
+                it.talepId.equals(talepId, true) &&
+                    it.kalemId.equals(kalemId, true) &&
+                    (teklifId.isNullOrBlank() || it.teklifId.equals(teklifId, true))
+            }
             ?: throw IllegalArgumentException("Kalem bulunamadı")
 
         val kat = kategori.trim().ifBlank { "Malzeme" }
         kategoriEkle(kat)
 
-        talepler.malKabul(talepId, kalemId, miktar, user)
+        talepler.malKabul(talepId, kalemId, miktar, user, satir.teklifId.ifBlank { teklifId })
 
         val tarih = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date())
         val indirildigiSaha = if (sahayaDirekt && sahaHedef.isNotBlank()) sahaHedef.trim() else depoSaha
@@ -963,9 +972,9 @@ class AppContainer(private val context: Context) {
         refreshNotifications()
     }
 
-    suspend fun sevkiyatiTamamla(talepId: String, kalemId: String) {
+    suspend fun sevkiyatiTamamla(talepId: String, kalemId: String, teklifId: String? = null) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
-        talepler.sevkiyatiTamamla(talepId, kalemId, user)
+        talepler.sevkiyatiTamamla(talepId, kalemId, user, teklifId)
         reloadTalepler()
         refreshNotifications()
     }

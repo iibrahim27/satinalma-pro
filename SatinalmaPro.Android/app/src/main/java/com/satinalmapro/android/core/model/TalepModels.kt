@@ -10,6 +10,18 @@ internal object GsonNulls {
     fun <K, V> map(value: Map<K, V>?): Map<K, V> = value ?: emptyMap()
 }
 
+/** Kalem miktarının bir firmaya ayrılan kısmı (yönetim bölünmüş onayı). */
+data class KalemFirmaAtamasi(
+    val teklifId: String = "",
+    val miktar: Double = 0.0,
+    val kabulEdilenMiktar: Double = 0.0,
+    val siparisTamamlandi: Boolean = false
+) {
+    fun normalized(): KalemFirmaAtamasi = copy(
+        teklifId = GsonNulls.s(teklifId as String?)
+    )
+}
+
 data class TalepKalem(
     val id: String = "",
     val siraNo: Int = 1,
@@ -18,6 +30,7 @@ data class TalepKalem(
     val birim: String = "Adet",
     val aciklama: String = "",
     val onaylananTeklifId: String? = null,
+    val firmaAtamalari: List<KalemFirmaAtamasi> = emptyList(),
     val kabulEdilenMiktar: Double = 0.0,
     val siparisTamamlandi: Boolean = false
 ) {
@@ -28,7 +41,10 @@ data class TalepKalem(
         malzeme = GsonNulls.s(malzeme as String?),
         birim = GsonNulls.s(birim as String?).ifBlank { "Adet" },
         aciklama = GsonNulls.s(aciklama as String?),
-        onaylananTeklifId = onaylananTeklifId?.takeIf { it.isNotBlank() }
+        onaylananTeklifId = onaylananTeklifId?.takeIf { it.isNotBlank() },
+        firmaAtamalari = GsonNulls.list(firmaAtamalari as List<KalemFirmaAtamasi>?)
+            .map { it.normalized() }
+            .filter { it.teklifId.isNotBlank() && it.miktar > 0.0001 }
     )
 }
 
@@ -133,7 +149,10 @@ data class TalepItem(
         } ?: ""
 
     val herhangiKalemOnayli: Boolean
-        get() = safeKalemler.any { !it.onaylananTeklifId.isNullOrBlank() }
+        get() = safeKalemler.any {
+            it.firmaAtamalari.any { a -> a.teklifId.isNotBlank() && a.miktar > 0.0001 } ||
+                !it.onaylananTeklifId.isNullOrBlank()
+        }
 
     val teklifGirilmis: Boolean
         get() = safeTeklifler.any { teklif ->

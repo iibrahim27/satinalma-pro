@@ -36,6 +36,9 @@ try
     tumSonuclar.Add(E2eAkisTestleri.BildirimDuzeltmeAkisi(ortam));
     ortam.Temizle();
 
+    tumSonuclar.Add(E2eAkisTestleri.KalemMiktarFirmaBolme(ortam));
+    ortam.Temizle();
+
     var raporYolu = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "E2E_TEST_RAPORU.md");
     raporYolu = Path.GetFullPath(raporYolu);
     var rapor = RaporOlustur(tumSonuclar);

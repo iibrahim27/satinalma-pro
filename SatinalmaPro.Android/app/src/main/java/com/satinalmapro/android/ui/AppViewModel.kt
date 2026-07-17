@@ -816,6 +816,14 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun kalemBazliOnayla(talepId: String, kalemTeklifAtamalari: Map<String, String>, onSuccess: () -> Unit) =
         runWorkflow(onSuccess) { container.kalemBazliOnayla(talepId, kalemTeklifAtamalari) }
 
+    fun kalemBazliOnaylaBolunmus(
+        talepId: String,
+        kalemFirmaAtamalari: Map<String, List<com.satinalmapro.android.core.model.KalemFirmaAtamasi>>,
+        onSuccess: () -> Unit
+    ) = runWorkflow(onSuccess) {
+        container.kalemBazliOnayla(talepId, kalemTeklifAtamalari = null, kalemFirmaAtamalari = kalemFirmaAtamalari)
+    }
+
     fun teklifGeriGonder(talepId: String, gerekce: String, onSuccess: () -> Unit) =
         runWorkflow(onSuccess) { container.teklifGeriGonder(talepId, gerekce.ifBlank { null }) }
 
@@ -841,6 +849,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         talepId: String,
         kalemId: String,
         form: com.satinalmapro.android.ui.procurement.MalKabulFormSonuc,
+        teklifId: String? = null,
         onSuccess: () -> Unit
     ) {
         val m = form.miktar.replace(',', '.').toDoubleOrNull()
@@ -872,13 +881,13 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 talepId, kalemId, m, form.firma.trim(), f,
                 form.kategori.ifBlank { "Malzeme" },
                 form.fisNo.trim(), form.teslimAlan.trim(), form.depoSaha.trim(),
-                form.sahayaDirekt, form.sahaHedef.trim()
+                form.sahayaDirekt, form.sahaHedef.trim(), teklifId
             )
         }
     }
 
-    fun sevkiyatiTamamla(talepId: String, kalemId: String, onSuccess: () -> Unit) =
-        runWorkflow(onSuccess) { container.sevkiyatiTamamla(talepId, kalemId) }
+    fun sevkiyatiTamamla(talepId: String, kalemId: String, teklifId: String? = null, onSuccess: () -> Unit) =
+        runWorkflow(onSuccess) { container.sevkiyatiTamamla(talepId, kalemId, teklifId) }
 
     fun stokGiris(malzeme: String, miktar: String, birim: String, kategori: String, depo: String, birimMaliyet: String, belgeNo: String, teslimAlan: String, onSuccess: () -> Unit) {
         val m = miktar.replace(',', '.').toDoubleOrNull() ?: run { _submitError.value = "Geçerli miktar girin"; return }

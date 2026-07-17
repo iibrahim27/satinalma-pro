@@ -30,12 +30,20 @@ public static class OnaylananMalzemeOlusturucu
 
             foreach (var kalem in talep.Kalemler
                          .Where(k => !string.IsNullOrWhiteSpace(k.Malzeme))
-                         .Where(k => teklifsiz || k.OnaylananTeklifId != null)
+                         .Where(k => teklifsiz || KalemFirmaAtamaYardimcisi.OnayliMi(k))
                          .OrderBy(k => k.SiraNo))
             {
-                if (kalem.OnaylananTeklifId is { } teklifId)
+                if (teklifsiz && !KalemFirmaAtamaYardimcisi.OnayliMi(kalem))
                 {
-                    var teklif = talep.KalemOnayTeklifi(kalem);
+                    var siparisNo = string.IsNullOrWhiteSpace(talep.SiparisNo) ? talep.TalepNo : talep.SiparisNo;
+                    liste.Add(Satir(talep, kalem, Guid.Empty, "", "", 0, 0, 0, siparisNo,
+                        kalem.Miktar, kalem.KabulEdilenMiktar, kalem.SiparisTamamlandi));
+                    continue;
+                }
+
+                foreach (var atama in KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem))
+                {
+                    var teklif = talep.Teklifler.FirstOrDefault(t => t.Id == atama.TeklifId);
                     if (teklif is null)
                         continue;
 
@@ -49,15 +57,14 @@ public static class OnaylananMalzemeOlusturucu
                         ? no
                         : talep.SiparisNo;
 
+                    var birim = fiyat.TlBirimFiyat(teklif.UsdKuru, teklif.EurKuru);
+                    var toplam = Math.Round(birim * (decimal)atama.Miktar, 2);
+
                     liste.Add(Satir(talep, kalem, teklif.Id, teklif.FirmaAdi,
                         string.IsNullOrWhiteSpace(fiyat.Marka) ? teklif.Marka : fiyat.Marka,
-                        fiyat.TlBirimFiyat(teklif.UsdKuru, teklif.EurKuru), fiyat.ToplamTutar,
-                        teklif.VadeGunu, siparisNo));
-                }
-                else
-                {
-                    var siparisNo = string.IsNullOrWhiteSpace(talep.SiparisNo) ? talep.TalepNo : talep.SiparisNo;
-                    liste.Add(Satir(talep, kalem, Guid.Empty, "", "", 0, 0, 0, siparisNo));
+                        birim, toplam,
+                        teklif.VadeGunu, siparisNo,
+                        atama.Miktar, atama.KabulEdilenMiktar, atama.SiparisTamamlandi));
                 }
             }
         }
@@ -74,7 +81,10 @@ public static class OnaylananMalzemeOlusturucu
         decimal birimFiyat,
         decimal toplamTutar,
         int vadeGunu,
-        string siparisNo) => new()
+        string siparisNo,
+        double siparisMiktari,
+        double kabulEdilenMiktar,
+        bool siparisTamamlandi) => new()
     {
         TalepId = talep.Id,
         KalemId = kalem.Id,
@@ -86,9 +96,9 @@ public static class OnaylananMalzemeOlusturucu
         Firma = firma,
         Marka = marka,
         Malzeme = kalem.Malzeme,
-        SiparisMiktari = kalem.Miktar,
-        KabulEdilenMiktar = kalem.KabulEdilenMiktar,
-        SiparisTamamlandi = kalem.SiparisTamamlandi,
+        SiparisMiktari = siparisMiktari,
+        KabulEdilenMiktar = kabulEdilenMiktar,
+        SiparisTamamlandi = siparisTamamlandi,
         Birim = kalem.Birim,
         BirimFiyati = birimFiyat,
         ToplamTutar = toplamTutar,

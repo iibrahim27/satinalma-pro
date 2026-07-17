@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.0.22",
-    "build":  23,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.22/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.22/SatinalmaYonetici.zip",
-    "notes":  "Platform yonetim 1.0.22 - Pro 2.1.69 Android Fiyat Analiz ve teklif revize ile birlikte",
+    "version":  "1.0.23",
+    "build":  24,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.23/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.23/SatinalmaYonetici.zip",
+    "notes":  "Platform yonetim 1.0.23 - Pro 2.1.70 kalem miktar firma bolme ile birlikte",
     "zorunlu":  false
 }

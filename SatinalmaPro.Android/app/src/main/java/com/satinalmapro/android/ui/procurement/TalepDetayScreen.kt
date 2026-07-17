@@ -159,7 +159,8 @@ fun TalepDetayScreen(viewModel: AppViewModel, talepId: String, viewMode: String?
                 viewModel.malKabulVeDepoyaKaydet(
                     talepId = item.id,
                     kalemId = satir.kalemId,
-                    form = form
+                    form = form,
+                    teklifId = satir.teklifId
                 ) { malKabulSatir = null }
             }
         )
@@ -178,7 +179,7 @@ fun TalepDetayScreen(viewModel: AppViewModel, talepId: String, viewMode: String?
             },
             confirmButton = {
                 Button(onClick = {
-                    viewModel.sevkiyatiTamamla(item.id, satir.kalemId) {
+                    viewModel.sevkiyatiTamamla(item.id, satir.kalemId, teklifId = satir.teklifId) {
                         sevkiyatTamamlaSatir = null
                     }
                 }) { Text("Tamamla") }

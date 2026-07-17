@@ -273,7 +273,8 @@ public static class SatinalmaPdfOlusturucu
                                 var fiyat = fiyatlar[i];
                                 var onerilen = onerilenTeklif != null && teklif.Id == onerilenTeklif.Id;
                                 var dusuk = fiyat != null && fiyat.ToplamTutar > 0 && fiyat.ToplamTutar == enDusuk;
-                                var onayli = kalem.OnaylananTeklifId == teklif.Id;
+                                var onayli = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+                                    .Any(a => a.TeklifId == teklif.Id);
                                 var vurgula = onayKaydiVar
                                     ? onayli
                                     : SatinalmaOneriYardimcisi.HucreOneriVurgula(talep, kalem, teklif, onerilenTeklif, dusuk);
@@ -631,7 +632,8 @@ public static class SatinalmaPdfOlusturucu
                             {
                                 var teklif = teklifler[i];
                                 var fiyat = fiyatlar[i];
-                                var onayli = kalem.OnaylananTeklifId == teklif.Id;
+                                var onayli = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+                                    .Any(a => a.TeklifId == teklif.Id);
                                 table.Cell().Element(c => HucreVeri(c, onayli, true)).AlignRight()
                                     .Text(fiyat?.BirimFiyatGosterim(teklif.UsdKuru, teklif.EurKuru) ?? "—");
                                 if (markaGoster)
@@ -747,7 +749,29 @@ public static class SatinalmaPdfOlusturucu
 
     private static bool TeklifOnayliMi(SatinalmaTalep talep, SatinalmaTeklif teklif) =>
         talep.OnaylananTeklifId == teklif.Id ||
-        talep.Kalemler.Any(k => k.OnaylananTeklifId == teklif.Id);
+        talep.Kalemler.Any(k => KalemFirmaAtamaYardimcisi.EtkinAtamalar(k).Any(a => a.TeklifId == teklif.Id));
+
+    private static double FirmaAtamaMiktari(SatinalmaTalepKalemi kalem, Guid teklifId) =>
+        KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+            .FirstOrDefault(a => a.TeklifId == teklifId)?.Miktar ?? 0;
+
+    private static (decimal Ara, decimal Kdv, decimal Genel) FirmaKalemTutarlari(
+        SatinalmaTeklif teklif, SatinalmaTalepKalemi kalem)
+    {
+        var fiyat = teklif.Fiyatlar?.FirstOrDefault(f => f.KalemId == kalem.Id);
+        if (fiyat is null)
+            return (0, 0, 0);
+
+        var miktar = FirmaAtamaMiktari(kalem, teklif.Id);
+        if (miktar <= 0)
+            return (0, 0, 0);
+
+        var tl = fiyat.TlBirimFiyat(teklif.UsdKuru, teklif.EurKuru);
+        var ara = Math.Round(tl * (decimal)miktar, 2);
+        var kdvOran = fiyat.KdvOrani > 0 ? fiyat.KdvOrani : teklif.KdvOrani;
+        var kdv = Math.Round(ara * (decimal)kdvOran / 100m, 2);
+        return (ara, kdv, ara + kdv);
+    }
 
     private static void YonetimOnayTabloBasliklariEkle(TableDescriptor table, List<SatinalmaTeklif> teklifler,
         SatinalmaTalep talep, bool markaGoster)
@@ -865,15 +889,15 @@ public static class SatinalmaPdfOlusturucu
     private static List<IGrouping<Guid, SatinalmaTalepKalemi>> OnayliFirmaGruplari(SatinalmaTalep talep)
     {
         talep.Kalemler ??= [];
-        var gruplar = talep.Kalemler
-            .Where(k => k.OnaylananTeklifId != null)
-            .GroupBy(k => k.OnaylananTeklifId!.Value)
+        var ciftler = talep.Kalemler
+            .SelectMany(k => KalemFirmaAtamaYardimcisi.EtkinAtamalar(k)
+                .Select(a => (TeklifId: a.TeklifId, Kalem: k)))
             .ToList();
 
-        if (gruplar.Count == 0 && talep.OnaylananTeklifId is { } eskiId)
-            gruplar = talep.Kalemler.GroupBy(_ => eskiId).ToList();
+        if (ciftler.Count == 0 && talep.OnaylananTeklifId is { } eskiId)
+            return talep.Kalemler.GroupBy(_ => eskiId).ToList();
 
-        return gruplar;
+        return ciftler.GroupBy(c => c.TeklifId, c => c.Kalem).ToList();
     }
 
     private static void SiparisOnayPdfOlustur(SatinalmaTalep talep, SatinalmaTeklif teklif,
@@ -882,12 +906,10 @@ public static class SatinalmaPdfOlusturucu
         teklif.Fiyatlar ??= [];
         teklif.FiyatlariHesapla(talep.Kalemler);
 
-        var araToplam = kalemler.Sum(k =>
-            teklif.Fiyatlar.FirstOrDefault(f => f.KalemId == k.Id)?.ToplamTutar ?? 0);
-        var kdvToplam = kalemler.Sum(k =>
-            teklif.Fiyatlar.FirstOrDefault(f => f.KalemId == k.Id)?.KdvTutari ?? 0);
-        var genelToplam = kalemler.Sum(k =>
-            teklif.Fiyatlar.FirstOrDefault(f => f.KalemId == k.Id)?.ToplamKdvDahil ?? 0);
+        var tutarlar = kalemler.Select(k => FirmaKalemTutarlari(teklif, k)).ToList();
+        var araToplam = tutarlar.Sum(t => t.Ara);
+        var kdvToplam = tutarlar.Sum(t => t.Kdv);
+        var genelToplam = tutarlar.Sum(t => t.Genel);
 
         Document.Create(container =>
         {
@@ -965,14 +987,16 @@ public static class SatinalmaPdfOlusturucu
                         foreach (var kalem in kalemler.OrderBy(k => k.SiraNo))
                         {
                             var fiyat = teklif.Fiyatlar.FirstOrDefault(f => f.KalemId == kalem.Id);
+                            var miktar = FirmaAtamaMiktari(kalem, teklif.Id);
+                            var (ara, _, _) = FirmaKalemTutarlari(teklif, kalem);
                             table.Cell().Element(HucreVeri).AlignCenter().Text(kalem.SiraNo.ToString());
                             table.Cell().Element(HucreVeri).Text(kalem.Malzeme);
-                            table.Cell().Element(HucreVeri).AlignRight().Text(kalem.Miktar.ToString("N2", Tr));
+                            table.Cell().Element(HucreVeri).AlignRight().Text(miktar.ToString("N2", Tr));
                             table.Cell().Element(HucreVeri).AlignCenter().Text(kalem.Birim);
                             table.Cell().Element(HucreVeri).AlignRight()
                                 .Text(fiyat?.BirimFiyatGosterim(teklif.UsdKuru, teklif.EurKuru) ?? "—");
                             table.Cell().Element(HucreVeri).AlignRight()
-                                .Text(fiyat?.ToplamTutar.ToString("N2", Tr) ?? "—");
+                                .Text(ara.ToString("N2", Tr));
                         }
 
                         table.Cell().ColumnSpan(5).Element(HucreBaslik).AlignRight().Text("Ara Toplam (KDV Hariç)");
@@ -1089,22 +1113,22 @@ public static class SatinalmaPdfOlusturucu
                         foreach (var kalem in kalemler.OrderBy(k => k.SiraNo))
                         {
                             var fiyat = teklif.Fiyatlar.FirstOrDefault(f => f.KalemId == kalem.Id);
+                            var miktar = FirmaAtamaMiktari(kalem, teklif.Id);
+                            var (ara, _, _) = FirmaKalemTutarlari(teklif, kalem);
                             table.Cell().Element(HucreVeri).Text(kalem.SiraNo.ToString());
                             table.Cell().Element(HucreVeri).Text(kalem.Malzeme);
                             table.Cell().Element(HucreVeri).Text(string.IsNullOrWhiteSpace(fiyat?.Marka) ? "—" : fiyat!.Marka);
-                            table.Cell().Element(HucreVeri).AlignRight().Text(kalem.Miktar.ToString("N2", Tr));
+                            table.Cell().Element(HucreVeri).AlignRight().Text(miktar.ToString("N2", Tr));
                             table.Cell().Element(HucreVeri).Text(kalem.Birim);
                             table.Cell().Element(HucreVeri).AlignRight()
                                 .Text(fiyat?.BirimFiyatGosterim(teklif.UsdKuru, teklif.EurKuru) ?? "—");
-                            table.Cell().Element(HucreVeri).AlignRight().Text(fiyat?.ToplamTutar.ToString("N2", Tr) ?? "—");
+                            table.Cell().Element(HucreVeri).AlignRight().Text(ara.ToString("N2", Tr));
                         }
 
-                        var araToplam = kalemler.Sum(k =>
-                            teklif.Fiyatlar.FirstOrDefault(f => f.KalemId == k.Id)?.ToplamTutar ?? 0);
-                        var kdvToplam = kalemler.Sum(k =>
-                            teklif.Fiyatlar.FirstOrDefault(f => f.KalemId == k.Id)?.KdvTutari ?? 0);
-                        var genelToplam = kalemler.Sum(k =>
-                            teklif.Fiyatlar.FirstOrDefault(f => f.KalemId == k.Id)?.ToplamKdvDahil ?? 0);
+                        var tutarlar = kalemler.Select(k => FirmaKalemTutarlari(teklif, k)).ToList();
+                        var araToplam = tutarlar.Sum(t => t.Ara);
+                        var kdvToplam = tutarlar.Sum(t => t.Kdv);
+                        var genelToplam = tutarlar.Sum(t => t.Genel);
 
                         table.Cell().ColumnSpan(6).Element(HucreBaslik).AlignRight().Text("Ara Toplam (KDV Hariç)");
                         table.Cell().Element(HucreBaslik).AlignRight().Text(araToplam.ToString("N2", Tr));

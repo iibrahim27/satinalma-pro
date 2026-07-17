@@ -202,7 +202,7 @@ public sealed class BellekTestOrtami
     {
         SetUser(Yonetim);
         foreach (var k in talep.Kalemler)
-            k.OnaylananTeklifId = teklifId;
+            KalemFirmaAtamaYardimcisi.TekFirmayaAta(k, teklifId);
         foreach (var t in talep.Teklifler)
             t.Onaylandi = t.Id == teklifId;
         talep.OnaylananTeklifId = teklifId;
@@ -210,6 +210,57 @@ public sealed class BellekTestOrtami
         talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
         talep.FirmaSiparisNolari[teklifId] = YeniSiparisNo();
         talep.SiparisNo = talep.FirmaSiparisNolari[teklifId];
+        Kaydet(talep);
+        foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.OnaylandiHedefleri(
+                     talep.OlusturanUid, Yonetim.Uid))
+            BildirimEkle(BildirimTipleri.Onaylandi, talep, hedefRol: hedefRol, hedefUid: hedefUid);
+    }
+
+    /// <summary>Kalem miktarını birden fazla firmaya bölen onay (ör. 80/20).</summary>
+    public void YonetimTeklifBolunmusOnayla(
+        SatinalmaTalep talep,
+        IReadOnlyDictionary<Guid, IReadOnlyList<(Guid TeklifId, double Miktar)>> kalemAtamalari)
+    {
+        SetUser(Yonetim);
+        foreach (var kalem in talep.Kalemler)
+        {
+            if (!kalemAtamalari.TryGetValue(kalem.Id, out var atamalar) || atamalar.Count == 0)
+                throw new InvalidOperationException($"Kalem ataması yok: {kalem.Malzeme}");
+            KalemFirmaAtamaYardimcisi.Uygula(kalem, atamalar.Select(a => new KalemFirmaAtamasi
+            {
+                TeklifId = a.TeklifId,
+                Miktar = a.Miktar
+            }));
+        }
+
+        var tumTeklifIds = talep.Kalemler
+            .SelectMany(KalemFirmaAtamaYardimcisi.EtkinAtamalar)
+            .Select(a => a.TeklifId)
+            .Distinct()
+            .ToList();
+
+        foreach (var t in talep.Teklifler)
+            t.Onaylandi = tumTeklifIds.Contains(t.Id);
+
+        talep.OnaylananTeklifId = talep.Kalemler
+            .SelectMany(KalemFirmaAtamaYardimcisi.EtkinAtamalar)
+            .OrderByDescending(a => a.Miktar)
+            .Select(a => (Guid?)a.TeklifId)
+            .FirstOrDefault();
+
+        talep.YonetimOnayKilitli = true;
+        talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
+        talep.FirmaSiparisNolari ??= [];
+        foreach (var teklifId in tumTeklifIds)
+        {
+            if (!talep.FirmaSiparisNolari.ContainsKey(teklifId))
+                talep.FirmaSiparisNolari[teklifId] = YeniSiparisNo();
+        }
+
+        if (talep.OnaylananTeklifId is { } anaId &&
+            talep.FirmaSiparisNolari.TryGetValue(anaId, out var anaNo))
+            talep.SiparisNo = anaNo;
+
         Kaydet(talep);
         foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.OnaylandiHedefleri(
                      talep.OlusturanUid, Yonetim.Uid))
@@ -226,12 +277,18 @@ public sealed class BellekTestOrtami
             BildirimEkle(BildirimTipleri.SiparisOlusturuldu, talep, hedefRol: hedefRol, hedefUid: hedefUid);
     }
 
-    public void MalKabul(SatinalmaTalep talep, Guid kalemId, double miktar)
+    public void MalKabul(SatinalmaTalep talep, Guid kalemId, double miktar, Guid? teklifId = null)
     {
         SetUser(Satinalma);
         var kalem = talep.Kalemler.First(k => k.Id == kalemId);
-        kalem.KabulEdilenMiktar += miktar;
-        kalem.SiparisTamamlandi = kalem.KabulEdilenMiktar >= kalem.Miktar;
+        var hedefTeklifId = teklifId
+            ?? KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+                .OrderByDescending(a => a.Miktar)
+                .Select(a => (Guid?)a.TeklifId)
+                .FirstOrDefault()
+            ?? kalem.OnaylananTeklifId
+            ?? throw new InvalidOperationException("Mal kabul için teklif bulunamadı");
+        KalemFirmaAtamaYardimcisi.KabulEkle(kalem, hedefTeklifId, miktar);
         Kaydet(talep);
         foreach (var (hedefRol, hedefUid) in BildirimRolPolitikasi.MalKabulEdildiHedefleri(
                      talep.OlusturanUid, Satinalma.Uid))

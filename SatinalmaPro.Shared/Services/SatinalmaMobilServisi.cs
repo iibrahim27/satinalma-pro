@@ -255,7 +255,7 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
             throw new InvalidOperationException("Teklif bulunamadı.");
 
         foreach (var kalem in talep.Kalemler)
-            kalem.OnaylananTeklifId = teklifId;
+            KalemFirmaAtamaYardimcisi.TekFirmayaAta(kalem, teklifId);
 
         await KalemBazliOnaylaAsync(talep, iptal);
     }
@@ -280,11 +280,7 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         talep.Teklifler ??= [];
 
         foreach (var kalem in talep.Kalemler)
-        {
-            kalem.OnaylananTeklifId = null;
-            kalem.KabulEdilenMiktar = 0;
-            kalem.SiparisTamamlandi = false;
-        }
+            KalemFirmaAtamaYardimcisi.Temizle(kalem);
 
         foreach (var teklif in talep.Teklifler)
             teklif.Onaylandi = false;
@@ -324,7 +320,10 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         if (teklifId is not null && !talep.Teklifler.Any(t => t.Id == teklifId))
             throw new InvalidOperationException("Teklif bulunamadı.");
 
-        kalem.OnaylananTeklifId = teklifId;
+        if (teklifId is null)
+            KalemFirmaAtamaYardimcisi.Temizle(kalem);
+        else
+            KalemFirmaAtamaYardimcisi.TekFirmayaAta(kalem, teklifId.Value);
         await TalepKaydetAsync(talep, iptal);
     }
 
@@ -337,7 +336,7 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
             throw new InvalidOperationException("Teklif bulunamadı.");
 
         foreach (var kalem in talep.Kalemler)
-            kalem.OnaylananTeklifId = teklifId;
+            KalemFirmaAtamaYardimcisi.TekFirmayaAta(kalem, teklifId);
 
         await TalepKaydetAsync(talep, iptal);
     }
@@ -349,16 +348,26 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         if (FirmaOnayiSaltOkunur(talep))
             throw new InvalidOperationException("Onay kilitli talepte onay değiştirilemez.");
 
-        var onayliKalemler = talep.Kalemler.Where(k => k.OnaylananTeklifId != null).ToList();
+        var onayliKalemler = talep.Kalemler.Where(KalemFirmaAtamaYardimcisi.OnayliMi).ToList();
         if (onayliKalemler.Count == 0)
             throw new InvalidOperationException("En az bir malzeme için firma seçin.");
 
+        foreach (var kalem in onayliKalemler)
+            KalemFirmaAtamaYardimcisi.Uygula(kalem, KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem));
+
+        var tumTeklifIdleri = onayliKalemler
+            .SelectMany(KalemFirmaAtamaYardimcisi.OnayliTeklifIdleri)
+            .Distinct()
+            .ToList();
+
         foreach (var teklif in talep.Teklifler)
-            teklif.Onaylandi = onayliKalemler.Any(k => k.OnaylananTeklifId == teklif.Id);
+            teklif.Onaylandi = tumTeklifIdleri.Contains(teklif.Id);
 
         var anaTeklifId = onayliKalemler
-            .GroupBy(k => k.OnaylananTeklifId!.Value)
-            .OrderByDescending(g => g.Count())
+            .SelectMany(KalemFirmaAtamaYardimcisi.EtkinAtamalar)
+            .GroupBy(a => a.TeklifId)
+            .OrderByDescending(g => g.Sum(a => a.Miktar))
+            .ThenByDescending(g => g.Count())
             .First().Key;
 
         talep.OnaylananTeklifId = anaTeklifId;
@@ -366,7 +375,7 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
 
         talep.FirmaSiparisNolari ??= [];
-        foreach (var teklifId in onayliKalemler.Select(k => k.OnaylananTeklifId!.Value).Distinct())
+        foreach (var teklifId in tumTeklifIdleri)
         {
             if (!talep.FirmaSiparisNolari.ContainsKey(teklifId))
                 talep.FirmaSiparisNolari[teklifId] = _depo.YeniSiparisNoOlustur();
@@ -378,7 +387,7 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         await TalepKaydetAsync(talep, iptal);
 
         var anaTeklif = talep.Teklifler.FirstOrDefault(t => t.Id == anaTeklifId);
-        var firmaSayisi = onayliKalemler.Select(k => k.OnaylananTeklifId).Distinct().Count();
+        var firmaSayisi = tumTeklifIdleri.Count;
         var firmaAdi = firmaSayisi == 1 ? anaTeklif?.FirmaAdi : null;
 
         var onayKayitlari = OnaylandiKayitlari(talep, firmaAdi);

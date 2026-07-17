@@ -290,7 +290,11 @@ public partial class YonetimTeklifIncelemeWindow : Window
                     : ParaBirimleri.BirimFiyatGosterim(fiyat.BirimFiyat, fiyat.ParaBirimi, teklif.UsdKuru, teklif.EurKuru);
                 var oneriMi = onerilen is not null && teklif.Id == onerilen.Id;
                 var enDusukMu = fiyat is not null && fiyat.ToplamTutar > 0 && fiyat.ToplamTutar == enDusuk;
-                var seciliMi = kalem.OnaylananTeklifId == teklif.Id;
+                var atama = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+                    .FirstOrDefault(a => a.TeklifId == teklif.Id);
+                var seciliMi = atama is not null;
+                if (seciliMi && atama is not null)
+                    metin = $"{metin}\n→ {atama.Miktar.ToString("N2", Tr)} {kalem.Birim}";
                 HucreEkle(c + 1, satir, metin, kalem, teklif, oneri: oneriMi, enDusuk: enDusukMu, secili: seciliMi);
             }
         }
@@ -366,12 +370,24 @@ public partial class YonetimTeklifIncelemeWindow : Window
         if (_secimAktif && kalem is not null && teklif is not null)
         {
             border.Cursor = Cursors.Hand;
-            border.ToolTip = $"{kalem.Malzeme} için {teklif.FirmaAdi} seç";
-            border.MouseLeftButtonUp += (_, _) =>
+            border.ToolTip =
+                $"{kalem.Malzeme} · {teklif.FirmaAdi}\nSol tık: tüm miktar bu firmaya\nCtrl+tık veya sağ tık: miktar böl (ör. 80)";
+            border.MouseLeftButtonUp += (_, e) =>
             {
-                kalem.OnaylananTeklifId = teklif.Id;
+                if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                    FirmaMiktarBol(kalem, teklif);
+                else
+                    KalemFirmaAtamaYardimcisi.TekFirmayaAta(kalem, teklif.Id);
                 KarsilastirmaTablosunuYukle();
                 SecimOzetiniGuncelle();
+                e.Handled = true;
+            };
+            border.MouseRightButtonUp += (_, e) =>
+            {
+                FirmaMiktarBol(kalem, teklif);
+                KarsilastirmaTablosunuYukle();
+                SecimOzetiniGuncelle();
+                e.Handled = true;
             };
         }
 
@@ -389,11 +405,54 @@ public partial class YonetimTeklifIncelemeWindow : Window
             return;
         }
 
-        var secili = talep.Kalemler.Count(k => k.OnaylananTeklifId is not null);
+        var secili = talep.Kalemler.Count(KalemFirmaAtamaYardimcisi.OnayliMi);
         var toplam = talep.Kalemler.Count;
-        TxtSecimOzeti.Text = secili == 0
-            ? "Henüz kalem seçimi yapılmadı."
-            : $"{secili}/{toplam} kalem için firma seçildi.";
+        if (secili == 0)
+        {
+            TxtSecimOzeti.Text = "Henüz kalem seçimi yapılmadı. Ctrl+tık / sağ tık ile miktarı firmalara bölebilirsiniz.";
+            return;
+        }
+
+        var detay = string.Join(" · ", talep.Kalemler
+            .Where(KalemFirmaAtamaYardimcisi.OnayliMi)
+            .Select(k => $"{k.Malzeme}: {KalemFirmaAtamaYardimcisi.OzetMetni(k, talep.Teklifler ?? [])}"));
+        TxtSecimOzeti.Text = $"{secili}/{toplam} kalem seçildi. {detay}";
+    }
+
+    private void FirmaMiktarBol(SatinalmaTalepKalemi kalem, SatinalmaTeklif teklif)
+    {
+        var varsayilan = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+            .FirstOrDefault(a => a.TeklifId == teklif.Id)?.Miktar
+            ?? Math.Max(0, kalem.Miktar - KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+                .Where(a => a.TeklifId != teklif.Id)
+                .Sum(a => a.Miktar));
+        if (varsayilan <= 0.0001)
+            varsayilan = kalem.Miktar;
+
+        var giris = MetinGirisDialog.Goster(
+            this,
+            "Miktar böl",
+            $"{kalem.Malzeme} — {teklif.FirmaAdi}\nTalep: {kalem.Miktar:N2} {kalem.Birim}\nBu firmaya miktar:",
+            varsayilan.ToString("G", Tr));
+        if (giris is null)
+            return;
+
+        if (!double.TryParse(giris.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var miktar)
+            && !double.TryParse(giris, NumberStyles.Float, Tr, out miktar))
+        {
+            MessageBox.Show("Geçerli bir miktar girin.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            KalemFirmaAtamaYardimcisi.FirmaMiktariniAyarla(kalem, teklif.Id, miktar);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private SatinalmaTalep? GuncelTalep() =>
@@ -407,7 +466,7 @@ public partial class YonetimTeklifIncelemeWindow : Window
             return;
 
         foreach (var kalem in talep.Kalemler)
-            kalem.OnaylananTeklifId = oneri.Id;
+            KalemFirmaAtamaYardimcisi.TekFirmayaAta(kalem, oneri.Id);
 
         KarsilastirmaTablosunuYukle();
         SecimOzetiniGuncelle();
@@ -419,15 +478,29 @@ public partial class YonetimTeklifIncelemeWindow : Window
         if (talep is null)
             return;
 
-        if (talep.Kalemler.All(k => k.OnaylananTeklifId is null))
+        if (talep.Kalemler.All(k => !KalemFirmaAtamaYardimcisi.OnayliMi(k)))
         {
             MessageBox.Show("En az bir kalem için firma seçin.", UygulamaBilgisi.Ad,
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
+        try
+        {
+            foreach (var kalem in talep.Kalemler.Where(KalemFirmaAtamaYardimcisi.OnayliMi))
+                KalemFirmaAtamaYardimcisi.Dogrula(kalem, KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem));
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var ozet = string.Join("\n", talep.Kalemler
+            .Where(KalemFirmaAtamaYardimcisi.OnayliMi)
+            .Select(k => $"• {k.Malzeme}: {KalemFirmaAtamaYardimcisi.OzetMetni(k, talep.Teklifler ?? [])}"));
         var onay = MessageBox.Show(
-            $"{talep.TalepNo} için seçilen teklifler onaylansın mı?",
+            $"{talep.TalepNo} için seçilen teklifler onaylansın mı?\n\n{ozet}",
             UygulamaBilgisi.Ad, MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (onay != MessageBoxResult.Yes)
             return;

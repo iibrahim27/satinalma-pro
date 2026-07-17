@@ -1,8 +1,9 @@
 package com.satinalmapro.android.ui.procurement
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,9 +23,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.satinalmapro.android.core.model.KalemFirmaAtamasi
 import com.satinalmapro.android.core.model.TalepItem
-import com.satinalmapro.android.core.model.TalepKalem
-import com.satinalmapro.android.core.model.TeklifItem
 import com.satinalmapro.android.services.SatinalmaPdfFormats
 import com.satinalmapro.android.ui.theme.AppColors
 import java.util.Locale
@@ -32,9 +32,10 @@ import java.util.Locale
 @Composable
 fun YonetimTeklifKarsilastirmaTablo(
     talep: TalepItem,
-    secimMap: Map<String, String>,
+    atamaMap: Map<String, List<KalemFirmaAtamasi>>,
     secimAktif: Boolean,
-    onKalemSec: (kalemId: String, teklifId: String) -> Unit,
+    onKalemTamSec: (kalemId: String, teklifId: String) -> Unit,
+    onKalemBol: (kalemId: String, teklifId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val teklifler = talep.teklifler.filter { it.firmaAdi.isNotBlank() }.sortedBy { it.firmaAdi.lowercase(Locale.ROOT) }
@@ -92,6 +93,7 @@ fun YonetimTeklifKarsilastirmaTablo(
                 SatinalmaPdfFormats.teklifFiyati(talep, teklif, kalem.id)
             }
             val enDusuk = fiyatlar.filterNotNull().filter { it.toplamTutar > 0 }.minOfOrNull { it.toplamTutar }
+            val atamalar = atamaMap[kalem.id].orEmpty()
 
             Row(Modifier.horizontalScroll(scroll)) {
                 KarsilastirmaHucre(
@@ -102,8 +104,9 @@ fun YonetimTeklifKarsilastirmaTablo(
                     val fiyat = fiyatlar[index]
                     val oneri = onerilen?.id == teklif.id
                     val enDusukMu = fiyat != null && fiyat.toplamTutar > 0 && fiyat.toplamTutar == enDusuk
-                    val secili = secimMap[kalem.id] == teklif.id
-                    val metin = fiyat?.let {
+                    val atama = atamalar.firstOrNull { it.teklifId.equals(teklif.id, true) }
+                    val secili = atama != null
+                    var metin = fiyat?.let {
                         SatinalmaPdfFormats.birimFiyatGosterim(
                             it.birimFiyat,
                             it.paraBirimi,
@@ -111,6 +114,9 @@ fun YonetimTeklifKarsilastirmaTablo(
                             teklif.eurKuru
                         )
                     } ?: "—"
+                    if (atama != null) {
+                        metin = "$metin\n→ ${SatinalmaPdfFormats.miktar(atama.miktar)} ${kalem.birim}"
+                    }
                     KarsilastirmaHucre(
                         metin = metin,
                         genislik = firmaGen,
@@ -118,7 +124,8 @@ fun YonetimTeklifKarsilastirmaTablo(
                         enDusuk = enDusukMu && !oneri,
                         secili = secili,
                         tiklanabilir = secimAktif && fiyat != null && fiyat.birimFiyat > 0,
-                        onClick = { onKalemSec(kalem.id, teklif.id) }
+                        onClick = { onKalemTamSec(kalem.id, teklif.id) },
+                        onLongClick = { onKalemBol(kalem.id, teklif.id) }
                     )
                 }
             }
@@ -146,6 +153,7 @@ fun YonetimTeklifKarsilastirmaTablo(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun KarsilastirmaHucre(
     metin: String,
@@ -156,7 +164,8 @@ private fun KarsilastirmaHucre(
     secili: Boolean = false,
     tiklanabilir: Boolean = false,
     arkaPlan: androidx.compose.ui.graphics.Color = AppColors.Surface,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    onLongClick: () -> Unit = {}
 ) {
     val zemin = when {
         secili -> AppColors.PrimaryContainer
@@ -171,7 +180,7 @@ private fun KarsilastirmaHucre(
     }
     val kalinlik = if (secili) 2.dp else 1.dp
 
-  Box(
+    Box(
         modifier = Modifier
             .width(genislik)
             .padding(1.dp)
@@ -179,7 +188,9 @@ private fun KarsilastirmaHucre(
             .border(kalinlik, cerceve, RoundedCornerShape(4.dp))
             .background(zemin)
             .then(
-                if (tiklanabilir) Modifier.clickable(onClick = onClick) else Modifier
+                if (tiklanabilir) {
+                    Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                } else Modifier
             )
             .padding(horizontal = 6.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center

@@ -144,17 +144,24 @@ public class SatinalmaTalep
 
     [JsonIgnore]
     public bool TumKalemlerOnayli =>
-        Kalemler is { Count: > 0 } && Kalemler.All(k => k.OnaylananTeklifId != null);
+        Kalemler is { Count: > 0 } && Kalemler.All(SatinalmaPro.Helpers.KalemFirmaAtamaYardimcisi.OnayliMi);
 
     [JsonIgnore]
     public bool HerhangiKalemOnayli =>
-        Kalemler?.Any(k => k.OnaylananTeklifId != null) == true;
+        Kalemler?.Any(SatinalmaPro.Helpers.KalemFirmaAtamaYardimcisi.OnayliMi) == true;
 
     public SatinalmaTeklif? OnaylananTeklif =>
         OnaylananTeklifId is { } id ? (Teklifler ?? []).FirstOrDefault(t => t.Id == id) : null;
 
-    public SatinalmaTeklif? KalemOnayTeklifi(SatinalmaTalepKalemi kalem) =>
-        kalem.OnaylananTeklifId is { } id ? (Teklifler ?? []).FirstOrDefault(t => t.Id == id) : null;
+    public SatinalmaTeklif? KalemOnayTeklifi(SatinalmaTalepKalemi kalem)
+    {
+        var id = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+            .OrderByDescending(a => a.Miktar)
+            .Select(a => (Guid?)a.TeklifId)
+            .FirstOrDefault()
+            ?? kalem.OnaylananTeklifId;
+        return id is { } tid ? (Teklifler ?? []).FirstOrDefault(t => t.Id == tid) : null;
+    }
 
     [JsonIgnore]
     public bool TeklifsizFirmaFiyatBekliyor =>
