@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SatinalmaPro.Shared.Models;
 
 namespace SatinalmaPro.Shared.SaaS;
 
@@ -104,6 +105,8 @@ public sealed class PlatformYonetimServisi
       rol = kullanici.Rol,
       saha = kullanici.Saha,
       aktif = kullanici.Aktif,
+      moduller = kullanici.Moduller,
+      modulYetkileri = kullanici.ModulYetkileri,
       sifre
     }, iptal);
     return JsonSerializer.Deserialize<PlatformKullaniciKaydi>(sonuc.GetRawText(), Json)
@@ -218,4 +221,6 @@ public sealed class PlatformKullaniciKaydi
   public string Rol { get; set; } = "Saha";
   public string Saha { get; set; } = "";
   public bool Aktif { get; set; } = true;
+  public List<string> Moduller { get; set; } = [];
+  public List<ModulYetkiKaydi> ModulYetkileri { get; set; } = [];
 }

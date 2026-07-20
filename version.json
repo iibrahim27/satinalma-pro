@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.71",
-    "build":  140,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.71/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.71/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.71/SatinalmaPro.apk",
-    "notes":  "Yonetim onay PDF: kalem miktar firma bolme (80/20+) atama ozeti, oranli tutarlar ve Android onay/siparis satirlari",
+    "version":  "2.1.72",
+    "build":  141,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.72/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.72/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.72/SatinalmaPro.apk",
+    "notes":  "Teklif ekle/duzenle/sil guvenilirligi; talep PDF 2. sayfa son alim + depo stok; yonetici beni hatirla ve modul yetkileri; sevkiyat/onay duzeltmeleri",
     "zorunlu":  false
 }

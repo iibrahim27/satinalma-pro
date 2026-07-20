@@ -499,15 +499,32 @@ export const platformListTenantUsers = onCall(async (request) => {
   if (!tenantId) throw new HttpsError("invalid-argument", "tenantId gerekli");
 
   const snap = await db().collection(tenantUsersPath(tenantId)).get();
-  return snap.docs.map((d) => ({
-    uid: d.id,
-    kullaniciAdi: d.data().kullaniciAdi ?? "",
-    eposta: d.data().eposta ?? "",
-    adSoyad: d.data().adSoyad ?? "",
-    rol: d.data().rol ?? "",
-    aktif: d.data().aktif !== false,
-    saha: d.data().saha ?? "",
-  }));
+  return snap.docs.map((d) => {
+    const data = d.data();
+    let modulYetkileri: unknown[] = [];
+    const rawYetki = data.modulYetkileriJson;
+    if (typeof rawYetki === "string" && rawYetki.trim()) {
+      try {
+        const parsed = JSON.parse(rawYetki);
+        if (Array.isArray(parsed)) modulYetkileri = parsed;
+      } catch {
+        modulYetkileri = [];
+      }
+    } else if (Array.isArray(data.modulYetkileri)) {
+      modulYetkileri = data.modulYetkileri;
+    }
+    return {
+      uid: d.id,
+      kullaniciAdi: data.kullaniciAdi ?? "",
+      eposta: data.eposta ?? "",
+      adSoyad: data.adSoyad ?? "",
+      rol: data.rol ?? "",
+      aktif: data.aktif !== false,
+      saha: data.saha ?? "",
+      moduller: Array.isArray(data.moduller) ? data.moduller : [],
+      modulYetkileri,
+    };
+  });
 });
 
 export const platformSaveTenantUser = onCall(async (request) => {
@@ -523,6 +540,17 @@ export const platformSaveTenantUser = onCall(async (request) => {
   const aktif = request.data?.aktif !== false;
   const sifre = (request.data?.sifre as string) ?? "";
   const uid = ((request.data?.uid as string) ?? "").trim();
+  const moduller = Array.isArray(request.data?.moduller)
+    ? (request.data.moduller as unknown[])
+        .filter((m): m is string => typeof m === "string" && m.trim().length > 0)
+        .map((m) => m.trim())
+    : [];
+  let modulYetkileriJson = "";
+  if (typeof request.data?.modulYetkileriJson === "string") {
+    modulYetkileriJson = (request.data.modulYetkileriJson as string).trim();
+  } else if (Array.isArray(request.data?.modulYetkileri)) {
+    modulYetkileriJson = JSON.stringify(request.data.modulYetkileri);
+  }
 
   if (!tenantId || !isValidUsername(kullaniciAdi) || !eposta || !adSoyad || !rol) {
     throw new HttpsError("invalid-argument", "Zorunlu alanlar eksik.");
@@ -581,6 +609,17 @@ export const platformSaveTenantUser = onCall(async (request) => {
   }
 
   const userPath = tenantUserPath(tenantId, userUid);
+  let modulYetkileri: unknown[] = [];
+  if (modulYetkileriJson) {
+    try {
+      const parsed = JSON.parse(modulYetkileriJson);
+      if (Array.isArray(parsed)) modulYetkileri = parsed;
+    } catch {
+      modulYetkileri = [];
+      modulYetkileriJson = "[]";
+    }
+  }
+
   await db().doc(userPath).set(
     {
       tenantId,
@@ -590,6 +629,8 @@ export const platformSaveTenantUser = onCall(async (request) => {
       rol,
       saha: saha || null,
       aktif,
+      moduller,
+      modulYetkileriJson: modulYetkileriJson || "[]",
       guncelleme: admin.firestore.FieldValue.serverTimestamp(),
     },
     { merge: true }
@@ -599,7 +640,17 @@ export const platformSaveTenantUser = onCall(async (request) => {
 
   await admin.auth().setCustomUserClaims(userUid, { tenantId });
 
-  return { uid: userUid, kullaniciAdi: normalized, eposta, adSoyad, rol, aktif };
+  return {
+    uid: userUid,
+    kullaniciAdi: normalized,
+    eposta,
+    adSoyad,
+    rol,
+    aktif,
+    saha,
+    moduller,
+    modulYetkileri,
+  };
 });
 
 export const platformBootstrapAdmin = onCall(async (request) => {
@@ -735,6 +786,16 @@ export const platformImportLegacyUsers = onCall(async (request) => {
       continue;
     }
 
+    const moduller = Array.isArray(data.moduller)
+      ? data.moduller.filter((m: unknown): m is string => typeof m === "string" && m.trim().length > 0)
+      : [];
+    let modulYetkileriJson = "[]";
+    if (typeof data.modulYetkileriJson === "string" && data.modulYetkileriJson.trim()) {
+      modulYetkileriJson = data.modulYetkileriJson;
+    } else if (Array.isArray(data.modulYetkileri)) {
+      modulYetkileriJson = JSON.stringify(data.modulYetkileri);
+    }
+
     await db()
       .doc(tenantUserPath(tenantId, doc.id))
       .set(
@@ -746,6 +807,8 @@ export const platformImportLegacyUsers = onCall(async (request) => {
           rol,
           saha: saha || null,
           aktif: true,
+          moduller,
+          modulYetkileriJson,
           guncelleme: admin.firestore.FieldValue.serverTimestamp(),
           legacyImported: true,
         },

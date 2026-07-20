@@ -218,9 +218,10 @@ public static class SatinalmaPart1Servisi
         if (pencere.ShowDialog() != true)
             return false;
 
+        SahayaCikisSatiri? cikisSatiri;
         try
         {
-            SatinalmaSiparisIslemleri.MalKabulVeDepoyaKaydet(
+            cikisSatiri = SatinalmaSiparisIslemleri.MalKabulVeDepoyaKaydet(
                 satir,
                 pencere.GirilenMiktar,
                 pencere.SecilenKategori,
@@ -245,6 +246,16 @@ public static class SatinalmaPart1Servisi
             : "Malzeme Alınan Malzemeler modülüne ve depo stoğuna kaydedildi.";
 
         MessageBox.Show(mesaj, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+
+        if (cikisSatiri is not null)
+        {
+            AlinanMalzemeAktarimServisi.SahayaCikisFisiYazdir(
+                pencere.GirilenTarih,
+                pencere.GirilenTeslimAlan,
+                pencere.GirilenSahaHedef,
+                [cikisSatiri]);
+        }
+
         return true;
     }
 
@@ -278,21 +289,32 @@ public static class SatinalmaPart1Servisi
 
         try
         {
-            var kabulEdilenKalemSayisi = SatinalmaSiparisIslemleri.TumKalemleriMalKabulVeDepoyaKaydet(
-                talep.Id,
-                seciliKalem.TeklifId,
-                pencere.SecilenKategori,
-                pencere.GirilenTarih,
-                pencere.GirilenFisNo,
-                pencere.GirilenTeslimAlan,
-                pencere.GirilenDepo,
-                pencere.GirilenAciklama,
-                pencere.SahayaDirekt,
-                pencere.GirilenSahaHedef);
+            var (kabulEdilenKalemSayisi, cikisSatirlari) =
+                SatinalmaSiparisIslemleri.TumKalemleriMalKabulVeDepoyaKaydet(
+                    talep.Id,
+                    seciliKalem.TeklifId,
+                    pencere.SecilenKategori,
+                    pencere.GirilenTarih,
+                    pencere.GirilenFisNo,
+                    pencere.GirilenTeslimAlan,
+                    pencere.GirilenDepo,
+                    pencere.GirilenAciklama,
+                    pencere.SahayaDirekt,
+                    pencere.GirilenSahaHedef);
 
             MessageBox.Show(
                 $"{kabulEdilenKalemSayisi:N0} kalemin mal kabulü tamamlandı; Alınan Malzemeler ve depo stokları güncellendi.",
                 UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+
+            if (cikisSatirlari.Count > 0)
+            {
+                AlinanMalzemeAktarimServisi.SahayaCikisFisiYazdir(
+                    pencere.GirilenTarih,
+                    pencere.GirilenTeslimAlan,
+                    pencere.GirilenSahaHedef,
+                    cikisSatirlari);
+            }
+
             return true;
         }
         catch (Exception ex)

@@ -68,7 +68,7 @@ public static class PurchaseRequestDetailServisi
         if (mutation.ClearLineItemApprovals)
         {
             foreach (var kalem in talep.Kalemler)
-                kalem.OnaylananTeklifId = null;
+                KalemFirmaAtamaYardimcisi.Temizle(kalem);
         }
 
         if (!string.IsNullOrWhiteSpace(mutation.ApprovedQuoteId)
@@ -80,7 +80,7 @@ public static class PurchaseRequestDetailServisi
             if (mutation.ApplyQuoteToAllLineItems)
             {
                 foreach (var kalem in talep.Kalemler)
-                    kalem.OnaylananTeklifId = onayTeklifId;
+                    KalemFirmaAtamaYardimcisi.TekFirmayaAta(kalem, onayTeklifId);
             }
 
             foreach (var teklif in talep.Teklifler)

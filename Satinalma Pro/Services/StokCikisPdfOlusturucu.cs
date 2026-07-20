@@ -51,7 +51,7 @@ public static class StokCikisPdfOlusturucu
                 page.Content().Column(col =>
                 {
                     col.Spacing(8);
-                    col.Item().Element(c => BaslikOlustur(c, ayarlar));
+                    col.Item().Element(c => BaslikOlustur(c, ayarlar, veri));
                     col.Item().Element(c => BilgiAlani(c, veri));
                     col.Item().PaddingTop(4).Element(c => MalzemeTablosu(c, veri));
                     col.Item().PaddingTop(24).Element(c => ImzaAlani(c, veri));
@@ -60,13 +60,16 @@ public static class StokCikisPdfOlusturucu
         }).GeneratePdf(dosya);
     }
 
-    private static void BaslikOlustur(IContainer container, UygulamaAyarlar ayarlar)
+    private static void BaslikOlustur(IContainer container, UygulamaAyarlar ayarlar, StokCikisFisVerisi veri)
     {
         const float logoGenislik = 96f;
         const float logoYukseklik = 60f;
         var logoYol = SatinalmaProLogoDeposu.TamYol(ayarlar.LogoDosyaYolu);
         var logoVar = !string.IsNullOrEmpty(logoYol) && File.Exists(logoYol);
         var firmaAdi = string.IsNullOrWhiteSpace(ayarlar.FirmaAdi) ? UygulamaBilgisi.Ad : ayarlar.FirmaAdi;
+        var baslik = string.IsNullOrWhiteSpace(veri.IndigiSaha)
+            ? "STOK TESLİM / DEPO ÇIKIŞ FİŞİ"
+            : "DEPO ÇIKIŞ FİŞİ (SAHAYA İNDİRME)";
 
         container.Column(col =>
         {
@@ -86,7 +89,7 @@ public static class StokCikisPdfOlusturucu
                 row.RelativeItem().AlignMiddle().Column(c =>
                 {
                     c.Item().AlignCenter().Text(firmaAdi).Bold().FontSize(12);
-                    c.Item().AlignCenter().Text("STOK TESLİM FİŞİ").Bold().FontSize(13).FontColor(Colors.Teal.Medium);
+                    c.Item().AlignCenter().Text(baslik).Bold().FontSize(12).FontColor(Colors.Teal.Medium);
                 });
 
                 row.ConstantItem(logoGenislik);
@@ -109,6 +112,8 @@ public static class StokCikisPdfOlusturucu
 
             BilgiSatiri(t, "Belge No", veri.BelgeNo, "Tarih", veri.Tarih);
             BilgiSatiri(t, "Teslim Eden", veri.TeslimEden, "Teslim Alan", veri.TeslimEdilen);
+            if (!string.IsNullOrWhiteSpace(veri.IndigiSaha))
+                BilgiSatiri(t, "İndiği Saha", veri.IndigiSaha!, "", "");
         });
     }
 
@@ -116,6 +121,13 @@ public static class StokCikisPdfOlusturucu
     {
         Hucre(t, etiket1, true);
         Hucre(t, deger1, false);
+        if (string.IsNullOrEmpty(etiket2) && string.IsNullOrEmpty(deger2))
+        {
+            Hucre(t, "", true);
+            Hucre(t, "", false);
+            return;
+        }
+
         Hucre(t, etiket2, true);
         Hucre(t, deger2, false);
     }
@@ -204,4 +216,5 @@ public sealed record StokCikisFisVerisi(
     string Tarih,
     string TeslimEden,
     string TeslimEdilen,
-    IReadOnlyList<StokCikisFisSatir> Satirlar);
+    IReadOnlyList<StokCikisFisSatir> Satirlar,
+    string? IndigiSaha = null);

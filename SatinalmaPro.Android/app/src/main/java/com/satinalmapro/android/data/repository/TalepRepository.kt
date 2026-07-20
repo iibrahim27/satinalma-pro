@@ -519,7 +519,7 @@ class TalepRepository(
             if (!talep.teklifler.any { it.id.equals(teklifId, true) })
                 throw IllegalArgumentException("Teklif bulunamadı")
             talep.copy(
-                kalemler = talep.kalemler.map { it.copy(onaylananTeklifId = teklifId) }
+                kalemler = talep.kalemler.map { KalemFirmaAtamaYardimcisi.tekFirmayaAta(it, teklifId) }
             )
         }
         return kalemBazliOnayla(talepId, user)
@@ -670,7 +670,7 @@ class TalepRepository(
 
             val siparisNolari = talep.firmaSiparisNolari.toMutableMap()
             talep.kalemler
-                .mapNotNull { it.onaylananTeklifId }
+                .flatMap { KalemFirmaAtamaYardimcisi.etkinAtamalar(it).map { a -> a.teklifId } }
                 .distinct()
                 .forEach { teklifId ->
                     if (!siparisNolari.containsKey(teklifId)) {
@@ -681,7 +681,10 @@ class TalepRepository(
                 }
 
             val anaTeklifId = talep.onaylananTeklifId
-                ?: talep.kalemler.firstNotNullOfOrNull { it.onaylananTeklifId }
+                ?: talep.kalemler
+                    .flatMap { KalemFirmaAtamaYardimcisi.etkinAtamalar(it) }
+                    .maxByOrNull { it.miktar }
+                    ?.teklifId
             val siparisNo = when {
                 anaTeklifId != null && siparisNolari.containsKey(anaTeklifId) -> siparisNolari[anaTeklifId]!!
                 siparisNolari.isNotEmpty() -> siparisNolari.values.first()
@@ -929,13 +932,19 @@ class TalepRepository(
         if (!KullaniciRolleri.canManagementDecide(user.role))
             throw IllegalStateException("Yönetim yetkisi gerekli")
 
+        // Tek firma onayı sipariş no üretimi için kalemBazliOnayla yolundan geçmeli.
+        if (action == PurchaseRequestDetailAction.APPROVE_QUOTE) {
+            val qid = mutation.approvedQuoteId?.takeIf { it.isNotBlank() }
+                ?: throw IllegalArgumentException("Onaylanacak teklif seçilmedi")
+            return yonetimTeklifOnayla(talepId, user, qid)
+        }
+
         val result = mutateTalep(talepId) { talep ->
             talep.applyDetailMutationFields(mutation, user)
         }
 
         when (action) {
-            PurchaseRequestDetailAction.DIRECT_APPROVE,
-            PurchaseRequestDetailAction.APPROVE_QUOTE -> {
+            PurchaseRequestDetailAction.DIRECT_APPROVE -> {
                 val hedefler = OnayBildirimYardimcisi.onaylandiHedefleri(result.olusturanUid, user.role)
                 bildirimler?.talepBildirimleriToplu(
                     BildirimTipleri.ONAYLANDI,
@@ -944,6 +953,9 @@ class TalepRepository(
                     hedefler,
                     onaylayanRol = user.role
                 )
+            }
+            PurchaseRequestDetailAction.APPROVE_QUOTE -> {
+                // Yukarıda yonetimTeklifOnayla ile işlendi
             }
             PurchaseRequestDetailAction.START_QUOTE_PROCESS -> {
                 bildirimler?.talepBildirimleri(

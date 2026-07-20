@@ -97,7 +97,7 @@ public static class SatinalmaYonetimIslemleri
         talep.OnaylananTeklifId = null;
         talep.Kalemler ??= [];
         foreach (var kalem in talep.Kalemler)
-            kalem.OnaylananTeklifId = null;
+            KalemFirmaAtamaYardimcisi.Temizle(kalem);
 
         await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
         await BildirimGonderAsync(() => SatinalmaBildirimleri.TeklifDuzeltmeyeGonderildiAsync(talep, talep.TeklifDuzeltmeNotu));

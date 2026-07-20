@@ -38,9 +38,11 @@ public static class SatinalmaTalepBirlestirme
     {
         var kazanan = KazananKayit(a, b);
         var diger = ReferenceEquals(kazanan, a) ? b : a;
+        // Kazanan daha yeniyse teklif listesi otoriterdir; silinen teklif eski buluttan geri gelmez.
+        var kazananDahaYeni = kazanan.GuncellemeUtc > diger.GuncellemeUtc;
         SurecDurumunuBirlestir(kazanan, diger);
         kazanan.GuncellemeUtc = Math.Max(kazanan.GuncellemeUtc, diger.GuncellemeUtc);
-        TeklifleriBirlestir(kazanan, diger);
+        TeklifleriBirlestir(kazanan, diger, kazananDahaYeni);
         return kazanan;
     }
 
@@ -107,7 +109,7 @@ public static class SatinalmaTalepBirlestirme
             : a;
     }
 
-    private static void TeklifleriBirlestir(SatinalmaTalep hedef, SatinalmaTalep kaynak)
+    private static void TeklifleriBirlestir(SatinalmaTalep hedef, SatinalmaTalep kaynak, bool kazananDahaYeni)
     {
         if (ReferenceEquals(hedef, kaynak))
             return;
@@ -116,22 +118,29 @@ public static class SatinalmaTalepBirlestirme
         if (ReferenceEquals(hedef.Teklifler, kaynak.Teklifler))
             return;
 
-        // Her iki taraftaki teklifleri birleştir — zaman damgası teklifleri asla silmesin
-        foreach (var kaynakTaraf in new[] { hedef, kaynak })
+        // Kazanan listedeki teklifler korunur. Kaynaktan yalnızca:
+        // - mevcut teklifin daha dolu kopyası, veya
+        // - kazanan daha yeni değilse eksik teklifler (eşzamanlı ekleme)
+        // eklenir. Böylece yerel silme + yeni zaman damgası eski bulut teklifini geri getirmez.
+        foreach (var teklif in (kaynak.Teklifler ?? []).ToList())
         {
-            foreach (var teklif in (kaynakTaraf.Teklifler ?? []).ToList())
+            if (!SatinalmaTalepYardimcisi.GercekTeklifVar(teklif))
+                continue;
+
+            var mevcut = hedef.Teklifler.FirstOrDefault(t => t.Id == teklif.Id);
+            if (mevcut is null)
             {
-                if (!SatinalmaTalepYardimcisi.GercekTeklifVar(teklif))
-                    continue;
-
-                var mevcut = hedef.Teklifler.FirstOrDefault(t => t.Id == teklif.Id);
-                if (mevcut is null)
-                {
+                if (!kazananDahaYeni)
                     hedef.Teklifler.Add(teklif);
-                    continue;
-                }
+                continue;
+            }
 
-                if (TeklifDolulukSkoru(teklif) > TeklifDolulukSkoru(mevcut))
+            if (TeklifDolulukSkoru(teklif) > TeklifDolulukSkoru(mevcut))
+            {
+                var idx = hedef.Teklifler.IndexOf(mevcut);
+                if (idx >= 0)
+                    hedef.Teklifler[idx] = teklif;
+                else
                 {
                     hedef.Teklifler.Remove(mevcut);
                     hedef.Teklifler.Add(teklif);

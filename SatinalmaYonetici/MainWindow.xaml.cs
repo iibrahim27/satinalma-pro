@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using SatinalmaPro.Shared.Models;
 using SatinalmaPro.Shared.SaaS;
+using SatinalmaYonetici.Helpers;
 using SatinalmaYonetici.Services;
 using YerelBilgi = SatinalmaYonetici.Helpers.UygulamaBilgisi;
 
@@ -12,6 +13,8 @@ public partial class MainWindow : Window
 {
     private readonly PlatformOturum _oturum = new();
     private KiracıKaydi? _seciliFirma;
+    private ModulYetkiFormYardimcisi? _modulYetki;
+    private bool _kullaniciFormDolduruluyor;
 
     public MainWindow()
     {
@@ -19,6 +22,9 @@ public partial class MainWindow : Window
         SurumMetinleriniGuncelle();
         RolKutusu.ItemsSource = KullaniciRolleri.Tum;
         RolKutusu.SelectedItem = KullaniciRolleri.Saha;
+        RolKutusu.SelectionChanged += RolKutusu_SelectionChanged;
+        _modulYetki = new ModulYetkiFormYardimcisi(ModulYetkiPanel);
+        _modulYetki.RolVarsayilaniniYukle(KullaniciRolleri.Saha);
 
         if (!_oturum.Yapilandirildi)
         {
@@ -30,8 +36,45 @@ public partial class MainWindow : Window
         }
 
         YonetimPanel.Visibility = Visibility.Collapsed;
-        if (_oturum.OtomatikGirisDene())
+        var kayitli = _oturum.KayitliEposta;
+        if (!string.IsNullOrWhiteSpace(kayitli))
+        {
+            GirisEposta.Text = kayitli;
+            ChkBeniHatirla.IsChecked = true;
+        }
+
+        Loaded += async (_, _) => await OtomatikGirisBaslatAsync();
+    }
+
+    private async Task OtomatikGirisBaslatAsync()
+    {
+        if (!_oturum.Yapilandirildi)
+            return;
+
+        try
+        {
+            if (!await _oturum.OtomatikGirisDeneAsync())
+                return;
+
+            try
+            {
+                await FirmalariYukleAsync(gosterHata: false);
+                await _oturum.Platform.PlatformHesabiniFirmalardanAyirAsync();
+            }
+            catch (Exception listeEx) when (YetkiHatasiMi(listeEx))
+            {
+                // Kayıtlı oturum platform admin değilse temizle
+                _oturum.CikisYap();
+                return;
+            }
+
             PanelleriGoster(yonetim: true);
+            DurumMetni.Text = "Oturum geri yüklendi.";
+        }
+        catch
+        {
+            // Giriş ekranında kal
+        }
     }
 
     private void PanelleriGoster(bool yonetim)
@@ -53,7 +96,8 @@ public partial class MainWindow : Window
         try
         {
             GirisHata.Visibility = Visibility.Collapsed;
-            await _oturum.GirisYapAsync(GirisEposta.Text, GirisSifre.Password);
+            var beniHatirla = ChkBeniHatirla.IsChecked == true;
+            await _oturum.GirisYapAsync(GirisEposta.Text, GirisSifre.Password, beniHatirla);
 
             // İlk kurulum: platform admin yoksa otomatik tanımla; varsa firmalardan ayır
             try
@@ -70,6 +114,7 @@ public partial class MainWindow : Window
 
             PanelleriGoster(yonetim: true);
             DurumMetni.Text = "Giriş başarılı.";
+            GirisSifre.Password = "";
         }
         catch (Exception ex)
         {
@@ -365,27 +410,64 @@ public partial class MainWindow : Window
         if (KullaniciGrid.SelectedItem is not PlatformKullaniciKaydi k)
             return;
 
-        KullaniciAdi.Text = k.KullaniciAdi;
-        KullaniciEposta.Text = k.Eposta;
-        KullaniciAdSoyad.Text = k.AdSoyad;
-        KullaniciSaha.Text = k.Saha;
-        KullaniciAktif.IsChecked = k.Aktif;
-        KullaniciSifre.Password = "";
-        RolKutusu.SelectedItem = k.Rol;
+        _kullaniciFormDolduruluyor = true;
+        try
+        {
+            KullaniciAdi.Text = k.KullaniciAdi;
+            KullaniciEposta.Text = k.Eposta;
+            KullaniciAdSoyad.Text = k.AdSoyad;
+            KullaniciSaha.Text = k.Saha;
+            KullaniciAktif.IsChecked = k.Aktif;
+            KullaniciSifre.Password = "";
+            RolKutusu.SelectedItem = k.Rol;
+            _modulYetki?.YetkileriYukle(k.ModulYetkileri, k.Moduller, k.Rol);
+        }
+        finally
+        {
+            _kullaniciFormDolduruluyor = false;
+        }
     }
 
     private void YeniKullanici_Click(object sender, RoutedEventArgs e)
     {
         KullaniciGrid.SelectedItem = null;
-        KullaniciAdi.Text = "";
-        KullaniciEposta.Text = "";
-        KullaniciAdSoyad.Text = "";
-        KullaniciSaha.Text = "";
-        KullaniciSifre.Password = "";
-        KullaniciAktif.IsChecked = true;
-        RolKutusu.SelectedItem = KullaniciRolleri.Saha;
+        _kullaniciFormDolduruluyor = true;
+        try
+        {
+            KullaniciAdi.Text = "";
+            KullaniciEposta.Text = "";
+            KullaniciAdSoyad.Text = "";
+            KullaniciSaha.Text = "";
+            KullaniciSifre.Password = "";
+            KullaniciAktif.IsChecked = true;
+            RolKutusu.SelectedItem = KullaniciRolleri.Saha;
+            _modulYetki?.RolVarsayilaniniYukle(KullaniciRolleri.Saha);
+        }
+        finally
+        {
+            _kullaniciFormDolduruluyor = false;
+        }
+
         DurumMetni.Text = "Yeni kullanıcı formu hazır.";
     }
+
+    private void RolKutusu_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_kullaniciFormDolduruluyor || _modulYetki is null)
+            return;
+
+        // Düzenlemede rol değişince varsayılanı zorla yükleme; kullanıcı «Rol varsayılanı»na basar.
+        if (KullaniciGrid.SelectedItem is PlatformKullaniciKaydi)
+            return;
+
+        _modulYetki.RolVarsayilaniniYukle(RolKutusu.SelectedItem?.ToString());
+    }
+
+    private void RolVarsayilanYetki_Click(object sender, RoutedEventArgs e) =>
+        _modulYetki?.RolVarsayilaniniYukle(RolKutusu.SelectedItem?.ToString());
+
+    private void YetkileriTemizle_Click(object sender, RoutedEventArgs e) =>
+        _modulYetki?.TumunuTemizle();
 
     private async void LegacyAktar_Click(object sender, RoutedEventArgs e)
     {
@@ -450,6 +532,9 @@ public partial class MainWindow : Window
                 return;
             }
 
+            var rol = RolKutusu.SelectedItem?.ToString() ?? KullaniciRolleri.Saha;
+            var (moduller, yetkiler) = _modulYetki?.Topla(rol) ?? ([], []);
+
             await _oturum.Platform.KullaniciKaydetAsync(
                 _seciliFirma.Id,
                 new PlatformKullaniciKaydi
@@ -458,9 +543,11 @@ public partial class MainWindow : Window
                     KullaniciAdi = KullaniciAdi.Text.Trim(),
                     Eposta = KullaniciEposta.Text.Trim(),
                     AdSoyad = KullaniciAdSoyad.Text.Trim(),
-                    Rol = RolKutusu.SelectedItem?.ToString() ?? KullaniciRolleri.Saha,
+                    Rol = rol,
                     Saha = KullaniciSaha.Text.Trim(),
-                    Aktif = KullaniciAktif.IsChecked == true
+                    Aktif = KullaniciAktif.IsChecked == true,
+                    Moduller = moduller,
+                    ModulYetkileri = yetkiler
                 },
                 sifre);
 

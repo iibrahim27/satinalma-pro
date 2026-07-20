@@ -908,7 +908,7 @@ class AppContainer(private val context: Context) {
         sahayaDirekt: Boolean = false,
         sahaHedef: String = "",
         teklifId: String? = null
-    ) {
+    ): StokTeslimFisiHelper.Fis? {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         val satir = OnaylananMalzemeOlusturucu.olustur(_talepler.value)
             .firstOrNull {
@@ -944,6 +944,7 @@ class AppContainer(private val context: Context) {
 
         val teslimEden = listOfNotNull(user.role.takeIf { it.isNotBlank() }, user.fullName.takeIf { it.isNotBlank() })
             .joinToString(" ")
+        val belgeNo = fisNo.ifBlank { "MK-${System.currentTimeMillis() % 100000}" }
         stokRepo.girisYap(
             user = user,
             malzeme = satir.malzeme,
@@ -952,24 +953,44 @@ class AppContainer(private val context: Context) {
             kategori = kat,
             depo = depoSaha,
             birimMaliyet = birimFiyat,
-            belgeNo = fisNo,
+            belgeNo = belgeNo,
             teslimEden = teslimEden,
             teslimAlan = teslimAlan
         )
+        var fis: StokTeslimFisiHelper.Fis? = null
         if (sahayaDirekt && sahaHedef.isNotBlank()) {
+            val cikisBelge = "$belgeNo-Ç"
             stokRepo.cikisYap(
                 user = user,
                 malzeme = satir.malzeme,
                 miktar = miktar,
                 depo = depoSaha,
-                belgeNo = "$fisNo-Ç",
+                belgeNo = cikisBelge,
                 teslimEden = teslimEden,
-                teslimAlan = sahaHedef.trim()
+                teslimAlan = teslimAlan.trim()
+            )
+            val firmaAdi = _uygulamaAyarlar.value.firmaAdi.ifBlank { "Satınalma Pro" }
+            fis = StokTeslimFisiHelper.Fis(
+                belgeNo = cikisBelge,
+                tarih = tarih,
+                teslimEden = teslimEden,
+                teslimAlan = teslimAlan.trim(),
+                satirlar = listOf(
+                    StokTeslimFisiHelper.Satir(
+                        malzeme = satir.malzeme,
+                        miktar = StokTeslimFisiHelper.miktarMetni(miktar, satir.birim),
+                        birim = satir.birim,
+                        depoSaha = depoSaha
+                    )
+                ),
+                firmaAdi = firmaAdi,
+                indigiSaha = sahaHedef.trim()
             )
         }
         reloadTalepler()
         loadStok()
         refreshNotifications()
+        return fis
     }
 
     suspend fun sevkiyatiTamamla(talepId: String, kalemId: String, teklifId: String? = null) {

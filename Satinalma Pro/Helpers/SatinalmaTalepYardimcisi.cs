@@ -78,7 +78,7 @@ public static class SatinalmaTalepYardimcisi
 
         talep.Kalemler ??= [];
         foreach (var kalem in talep.Kalemler)
-            kalem.OnaylananTeklifId = null;
+            KalemFirmaAtamaYardimcisi.Temizle(kalem);
     }
 
     public static void Dokun(SatinalmaTalep talep) =>

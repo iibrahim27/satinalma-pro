@@ -46,6 +46,10 @@ public static class SatinalmaPdfOlusturucu
             ayarlar = PdfGirisHazirla(talep, ayarlar);
 
         var ad = $"Talep_{talep.TalepNo}.pdf";
+        var sonAlimlar = KarsilastirmaAlimGecmisiYardimcisi.MalzemeBazliAlimlariTopla(
+            talep.Kalemler, ModulVeriDeposu.AlinanMalzemeler);
+        var stokSatirlari = TalepStokSatirlariTopla(talep.Kalemler);
+
         PdfOnizle(ad, "Satın Alma Talep Formu", dosya =>
         {
         Document.Create(container =>
@@ -83,6 +87,8 @@ public static class SatinalmaPdfOlusturucu
                         .Element(c => ImzaAlanlariOlustur(c, ayarlar));
                 });
             });
+
+            TalepReferansSayfasiEkle(container, talep, ayarlar, sonAlimlar, stokSatirlari);
         }).GeneratePdf(dosya);
         });
         }
@@ -90,6 +96,230 @@ public static class SatinalmaPdfOlusturucu
         {
             PdfHataKaydet(ex, "TalepPdf");
         }
+    }
+
+    private sealed class TalepStokSatiri
+    {
+        public int KalemSiraNo { get; init; }
+        public string Malzeme { get; init; } = "";
+        public string DepoSaha { get; init; } = "";
+        public double MevcutMiktar { get; init; }
+        public string Birim { get; init; } = "";
+        public string Durum { get; init; } = "";
+        public bool KayitYok { get; init; }
+    }
+
+    private static List<TalepStokSatiri> TalepStokSatirlariTopla(IEnumerable<SatinalmaTalepKalemi> kalemler)
+    {
+        var stok = ModulVeriDeposu.Stok ?? [];
+        var sonuc = new List<TalepStokSatiri>();
+
+        foreach (var kalem in kalemler.OrderBy(k => k.SiraNo))
+        {
+            var malzeme = (kalem.Malzeme ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(malzeme))
+                continue;
+
+            var eslesen = stok
+                .Where(s => string.Equals(
+                    (s.MalzemeAdi ?? "").Trim(),
+                    malzeme,
+                    StringComparison.OrdinalIgnoreCase))
+                .OrderBy(s => s.DepoSaha)
+                .ToList();
+
+            if (eslesen.Count == 0)
+            {
+                sonuc.Add(new TalepStokSatiri
+                {
+                    KalemSiraNo = kalem.SiraNo,
+                    Malzeme = malzeme,
+                    KayitYok = true
+                });
+                continue;
+            }
+
+            foreach (var s in eslesen)
+            {
+                sonuc.Add(new TalepStokSatiri
+                {
+                    KalemSiraNo = kalem.SiraNo,
+                    Malzeme = malzeme,
+                    DepoSaha = string.IsNullOrWhiteSpace(s.DepoSaha) ? "—" : s.DepoSaha,
+                    MevcutMiktar = s.MevcutMiktar,
+                    Birim = s.Birim,
+                    Durum = s.DurumMetin
+                });
+            }
+        }
+
+        return sonuc;
+    }
+
+    private static void TalepReferansSayfasiEkle(
+        IDocumentContainer container,
+        SatinalmaTalep talep,
+        SatinalmaAyarlar ayarlar,
+        IReadOnlyList<KarsilastirmaAlimGecmisiYardimcisi.AlimSatiri> alimSatirlari,
+        IReadOnlyList<TalepStokSatiri> stokSatirlari)
+    {
+        // Malzeme başına yalnızca en son alım satırı
+        var sonAlimlar = new List<KarsilastirmaAlimGecmisiYardimcisi.AlimSatiri>();
+        foreach (var grup in alimSatirlari.GroupBy(s => s.Malzeme, StringComparer.OrdinalIgnoreCase))
+        {
+            var ilk = grup.FirstOrDefault(s => !s.KayitYok) ?? grup.First();
+            sonAlimlar.Add(ilk);
+        }
+
+        container.Page(page =>
+        {
+            page.Size(PageSizes.A4);
+            page.Margin(36);
+            page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Segoe UI"));
+
+            page.Header().Element(c =>
+                BaslikOlustur(c, ayarlar, "TALEP REFERANS BİLGİLERİ"));
+
+            page.Content().Column(col =>
+            {
+                col.Spacing(8);
+
+                col.Item().Row(row =>
+                {
+                    row.RelativeItem().Text($"Talep No: {talep.TalepNo}");
+                    row.RelativeItem().AlignRight().Text($"Tarih: {talep.Tarih}");
+                });
+
+                col.Item().Text("1) İlgili malzemelerin en son alımı")
+                    .SemiBold().FontSize(11);
+                col.Item().Text("Malzeme başına son alım tarihi, miktarı, birim fiyatı ve tedarikçi.")
+                    .FontColor(Colors.Grey.Darken1).FontSize(8);
+
+                col.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(28);
+                        columns.RelativeColumn(2.4f);
+                        columns.ConstantColumn(72);
+                        columns.ConstantColumn(60);
+                        columns.ConstantColumn(48);
+                        columns.ConstantColumn(80);
+                        columns.RelativeColumn(1.8f);
+                    });
+
+                    static void Baslik(TableDescriptor t, string metin) =>
+                        t.Cell().Element(c => HucreBaslik(c, false, false)).AlignCenter().Text(metin).SemiBold();
+
+                    Baslik(table, "No");
+                    Baslik(table, "Malzeme");
+                    Baslik(table, "Tarih");
+                    Baslik(table, "Miktar");
+                    Baslik(table, "Birim");
+                    Baslik(table, "Birim Fiyat");
+                    Baslik(table, "Tedarikçi");
+
+                    if (sonAlimlar.Count == 0)
+                    {
+                        table.Cell().ColumnSpan(7).Element(c => HucreVeri(c, false, false))
+                            .Text("Talep kalemleri için alım kaydı bulunamadı.");
+                    }
+                    else
+                    {
+                        foreach (var satir in sonAlimlar)
+                        {
+                            table.Cell().Element(c => HucreVeri(c, false, false))
+                                .Text(satir.KalemSiraNo.ToString());
+                            table.Cell().Element(c => HucreVeri(c, false, false))
+                                .Text(satir.Malzeme);
+
+                            if (satir.KayitYok)
+                            {
+                                table.Cell().ColumnSpan(5).Element(c => HucreVeri(c, false, false))
+                                    .Text("Alım kaydı yok").FontColor(Colors.Grey.Darken1).Italic();
+                                continue;
+                            }
+
+                            table.Cell().Element(c => HucreVeri(c, false, false)).AlignCenter()
+                                .Text(satir.Tarih);
+                            table.Cell().Element(c => HucreVeri(c, false, false)).AlignRight()
+                                .Text(satir.Miktar.ToString("N2", Tr));
+                            table.Cell().Element(c => HucreVeri(c, false, false)).AlignCenter()
+                                .Text(satir.Birim);
+                            table.Cell().Element(c => HucreVeri(c, false, false)).AlignRight()
+                                .Text(TlGosterim(satir.BirimFiyati));
+                            table.Cell().Element(c => HucreVeri(c, false, false))
+                                .Text(satir.Tedarikci);
+                        }
+                    }
+                });
+
+                col.Item().PaddingTop(10).Text("2) Depo stok durumu")
+                    .SemiBold().FontSize(11);
+                col.Item().Text("Talep kalemlerinin depo / saha bazında mevcut stokları.")
+                    .FontColor(Colors.Grey.Darken1).FontSize(8);
+
+                col.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(28);
+                        columns.RelativeColumn(2.6f);
+                        columns.RelativeColumn(1.6f);
+                        columns.ConstantColumn(70);
+                        columns.ConstantColumn(48);
+                        columns.ConstantColumn(64);
+                    });
+
+                    static void Baslik(TableDescriptor t, string metin) =>
+                        t.Cell().Element(c => HucreBaslik(c, false, false)).AlignCenter().Text(metin).SemiBold();
+
+                    Baslik(table, "No");
+                    Baslik(table, "Malzeme");
+                    Baslik(table, "Depo / Saha");
+                    Baslik(table, "Miktar");
+                    Baslik(table, "Birim");
+                    Baslik(table, "Durum");
+
+                    if (stokSatirlari.Count == 0)
+                    {
+                        table.Cell().ColumnSpan(6).Element(c => HucreVeri(c, false, false))
+                            .Text("Talep kalemleri için stok kaydı bulunamadı.");
+                    }
+                    else
+                    {
+                        var oncekiMalzeme = "";
+                        foreach (var satir in stokSatirlari)
+                        {
+                            var malzemeDegisti = !string.Equals(
+                                oncekiMalzeme, satir.Malzeme, StringComparison.OrdinalIgnoreCase);
+                            oncekiMalzeme = satir.Malzeme;
+
+                            table.Cell().Element(c => HucreVeri(c, false, false))
+                                .Text(malzemeDegisti ? satir.KalemSiraNo.ToString() : "");
+                            table.Cell().Element(c => HucreVeri(c, false, false))
+                                .Text(malzemeDegisti ? satir.Malzeme : "");
+
+                            if (satir.KayitYok)
+                            {
+                                table.Cell().ColumnSpan(4).Element(c => HucreVeri(c, false, false))
+                                    .Text("Stok kaydı yok").FontColor(Colors.Grey.Darken1).Italic();
+                                continue;
+                            }
+
+                            table.Cell().Element(c => HucreVeri(c, false, false))
+                                .Text(satir.DepoSaha);
+                            table.Cell().Element(c => HucreVeri(c, false, false)).AlignRight()
+                                .Text(satir.MevcutMiktar.ToString("N2", Tr));
+                            table.Cell().Element(c => HucreVeri(c, false, false)).AlignCenter()
+                                .Text(satir.Birim);
+                            table.Cell().Element(c => HucreVeri(c, false, false)).AlignCenter()
+                                .Text(satir.Durum);
+                        }
+                    }
+                });
+            });
+        });
     }
 
     public static void TedarikciTeklifTalebiYazdir(SatinalmaTalep talep, SatinalmaAyarlar ayarlar)

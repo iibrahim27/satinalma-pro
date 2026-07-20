@@ -31,12 +31,12 @@ public class OnaylananTalepListeSatiri
         talep.Teklifler ??= [];
         foreach (var kalem in talep.Kalemler ?? [])
         {
-            if (kalem.OnaylananTeklifId is not { } teklifId)
-                continue;
-
-            var teklif = talep.Teklifler.FirstOrDefault(t => t.Id == teklifId);
-            if (!string.IsNullOrWhiteSpace(teklif?.FirmaAdi))
-                firmalar.Add(teklif.FirmaAdi);
+            foreach (var teklifId in KalemFirmaAtamaYardimcisi.OnayliTeklifIdleri(kalem))
+            {
+                var teklif = talep.Teklifler.FirstOrDefault(t => t.Id == teklifId);
+                if (!string.IsNullOrWhiteSpace(teklif?.FirmaAdi))
+                    firmalar.Add(teklif.FirmaAdi);
+            }
         }
 
         var firmaListesi = firmalar.ToList();

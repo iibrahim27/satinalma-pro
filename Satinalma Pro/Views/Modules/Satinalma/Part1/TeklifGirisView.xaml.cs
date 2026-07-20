@@ -32,7 +32,12 @@ public partial class TeklifGirisView : UserControl
     /// <summary>Kayıt veya gönderim sonrası doğru listeye yönlendirme.</summary>
     public event Action<string>? Yonlendir;
 
-    public TeklifGirisView() => InitializeComponent();
+    public TeklifGirisView()
+    {
+        InitializeComponent();
+        Loaded += (_, _) => SatinalmaDepo.TaleplerGuncellendi += DepoTaleplerGuncellendi;
+        Unloaded += (_, _) => SatinalmaDepo.TaleplerGuncellendi -= DepoTaleplerGuncellendi;
+    }
 
     public void Yukle(SatinalmaTalep talep, TeklifGirisModu mod)
     {
@@ -53,8 +58,45 @@ public partial class TeklifGirisView : UserControl
         ArayuzuGuncelle();
     }
 
+    private void DepoTaleplerGuncellendi()
+    {
+        if (!IsLoaded || _talep is null)
+            return;
+
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(DepoTaleplerGuncellendi);
+            return;
+        }
+
+        var seciliId = _seciliTeklif?.Id;
+        ArayuzuGuncelle();
+        if (seciliId is { } id)
+        {
+            _seciliTeklif = CanliTeklif(id);
+            if (_seciliTeklif is not null)
+            {
+                foreach (var item in TeklifTablosu.Items)
+                {
+                    if (item is TeklifGirisSatiri satir && satir.Teklif.Id == id)
+                    {
+                        TeklifTablosu.SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     private SatinalmaTalep? GuncelTalep() =>
         _talep is null ? null : SatinalmaDepo.Talepler.FirstOrDefault(t => t.Id == _talep.Id) ?? _talep;
+
+    private SatinalmaTeklif? CanliTeklif(Guid? id)
+    {
+        if (id is null || id == Guid.Empty)
+            return null;
+        return GuncelTalep()?.Teklifler?.FirstOrDefault(t => t.Id == id);
+    }
 
     private void ArayuzuGuncelle()
     {
@@ -167,15 +209,32 @@ public partial class TeklifGirisView : UserControl
 
     private void TeklifListesiniYenile()
     {
-        if (_talep is null)
+        var talep = GuncelTalep();
+        if (talep is null)
             return;
 
-        foreach (var teklif in _talep.Teklifler ?? [])
-            teklif.FiyatlariHesapla(_talep.Kalemler);
+        _talep = talep;
+        var seciliId = _seciliTeklif?.Id;
 
-        TeklifTablosu.ItemsSource = (_talep.Teklifler ?? [])
-            .Select(t => new TeklifGirisSatiri(_talep, t))
+        foreach (var teklif in talep.Teklifler ?? [])
+            teklif.FiyatlariHesapla(talep.Kalemler);
+
+        TeklifTablosu.ItemsSource = (talep.Teklifler ?? [])
+            .Select(t => new TeklifGirisSatiri(talep, t))
             .ToList();
+
+        if (seciliId is { } id)
+        {
+            _seciliTeklif = CanliTeklif(id);
+            foreach (var item in TeklifTablosu.Items)
+            {
+                if (item is TeklifGirisSatiri satir && satir.Teklif.Id == id)
+                {
+                    TeklifTablosu.SelectedItem = item;
+                    break;
+                }
+            }
+        }
     }
 
     private void SatinalmaOnerisiniGuncelle()
@@ -228,7 +287,7 @@ public partial class TeklifGirisView : UserControl
             talep.Kalemler);
     }
 
-    private void YeniTeklif_Click(object sender, RoutedEventArgs e)
+    private async void YeniTeklif_Click(object sender, RoutedEventArgs e)
     {
         var talep = GuncelTalep();
         if (talep is null || !TeklifEklenebilirMi())
@@ -239,6 +298,8 @@ public partial class TeklifGirisView : UserControl
         if (!TeklifPenceresiAc(teklif))
             return;
 
+        // Sync sonrası canlı talep örneğini yeniden al
+        talep = GuncelTalep() ?? talep;
         talep.Teklifler ??= [];
         var ayniFirma = talep.Teklifler.FirstOrDefault(t =>
             !string.IsNullOrWhiteSpace(t.FirmaAdi)
@@ -282,46 +343,57 @@ public partial class TeklifGirisView : UserControl
         }
 
         _talep = talep;
-        SatinalmaDepo.TeklifDegisikligiIsle(talep);
-        _ = SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
-        TeklifListesiniYenile();
-        SatinalmaOnerisiniGuncelle();
-        KalemOneriPaneliniGuncelle();
-        ArayuzuGuncelle();
-        Degisti?.Invoke();
+        await TeklifDegisikliginiKaydetAsync(talep);
     }
 
-    private void Duzenle_Click(object sender, RoutedEventArgs e) => TeklifDuzenle();
+    private void Duzenle_Click(object sender, RoutedEventArgs e) => _ = TeklifDuzenleAsync();
 
-    private void TeklifTablosu_MouseDoubleClick(object sender, MouseButtonEventArgs e) => TeklifDuzenle();
+    private void TeklifTablosu_MouseDoubleClick(object sender, MouseButtonEventArgs e) => _ = TeklifDuzenleAsync();
 
-    private void TeklifDuzenle()
+    private async Task TeklifDuzenleAsync()
     {
         var talep = GuncelTalep();
-        if (talep is null || _seciliTeklif is null)
+        var teklif = CanliTeklif(_seciliTeklif?.Id);
+        if (talep is null || teklif is null)
         {
             MessageBox.Show("Düzenlemek için bir teklif seçin.", UygulamaBilgisi.Ad,
                 MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
-        if (!TeklifPenceresiAc(_seciliTeklif))
+        if (!TeklifPenceresiAc(teklif))
             return;
 
+        talep = GuncelTalep() ?? talep;
+        // Dialog orphan örnekte çalıştıysa değişiklikleri canlı teklife taşı
+        var canli = CanliTeklif(teklif.Id);
+        if (canli is not null && !ReferenceEquals(canli, teklif))
+        {
+            canli.FirmaAdi = teklif.FirmaAdi;
+            canli.UsdKuru = teklif.UsdKuru;
+            canli.EurKuru = teklif.EurKuru;
+            canli.VadeGunu = teklif.VadeGunu;
+            canli.TeslimSuresi = teklif.TeslimSuresi;
+            canli.OdemeSekli = teklif.OdemeSekli;
+            canli.Aciklama = teklif.Aciklama;
+            canli.KdvOrani = teklif.KdvOrani;
+            canli.Fiyatlar = teklif.Fiyatlar;
+            canli.FiyatlariHesapla(talep.Kalemler);
+            _seciliTeklif = canli;
+        }
+        else
+            _seciliTeklif = canli ?? teklif;
+
         SatinalmaTalepYardimcisi.TalepKalemleriniTekliflerleSenkronla(talep);
-        SatinalmaDepo.TeklifDegisikligiIsle(talep);
-        _ = SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
-        TeklifListesiniYenile();
-        SatinalmaOnerisiniGuncelle();
-        KalemOneriPaneliniGuncelle();
-        ArayuzuGuncelle();
-        Degisti?.Invoke();
+        await TeklifDegisikliginiKaydetAsync(talep);
     }
 
-    private void Sil_Click(object sender, RoutedEventArgs e)
+    private async void Sil_Click(object sender, RoutedEventArgs e)
     {
         var talep = GuncelTalep();
-        if (talep is null || _seciliTeklif is null)
+        var teklifId = _seciliTeklif?.Id;
+        var firmaAdi = _seciliTeklif?.FirmaAdi ?? "";
+        if (talep is null || teklifId is null || teklifId == Guid.Empty)
         {
             MessageBox.Show("Silmek için bir teklif seçin.", UygulamaBilgisi.Ad,
                 MessageBoxButton.OK, MessageBoxImage.Information);
@@ -329,20 +401,62 @@ public partial class TeklifGirisView : UserControl
         }
 
         var onay = MessageBox.Show(
-            $"'{_seciliTeklif.FirmaAdi}' teklifi silinsin mi?",
+            $"'{firmaAdi}' teklifi silinsin mi?",
             UygulamaBilgisi.Ad, MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (onay != MessageBoxResult.Yes)
             return;
 
-        talep.Teklifler.Remove(_seciliTeklif);
-        SatinalmaOneriYardimcisi.TeklifSilindi(talep, _seciliTeklif.Id);
+        talep = GuncelTalep() ?? talep;
+        talep.Teklifler ??= [];
+        var silinen = 0;
+        for (var i = talep.Teklifler.Count - 1; i >= 0; i--)
+        {
+            if (talep.Teklifler[i].Id == teklifId)
+            {
+                talep.Teklifler.RemoveAt(i);
+                silinen++;
+            }
+        }
 
+        if (silinen == 0)
+        {
+            MessageBox.Show(
+                "Teklif listede bulunamadı (ekran güncellenmiş olabilir). Listeyi yenileyip tekrar deneyin.",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            ArayuzuGuncelle();
+            return;
+        }
+
+        SatinalmaOneriYardimcisi.TeklifSilindi(talep, teklifId.Value);
         _seciliTeklif = null;
-        SatinalmaDepo.TeklifDegisikligiIsle(talep);
-        _ = SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
-        TeklifListesiniYenile();
-        SatinalmaOnerisiniGuncelle();
-        Degisti?.Invoke();
+        await TeklifDegisikliginiKaydetAsync(talep);
+    }
+
+    private async Task TeklifDegisikliginiKaydetAsync(SatinalmaTalep talep)
+    {
+        IsEnabled = false;
+        try
+        {
+            SatinalmaDepo.TeklifDegisikligiIsle(talep);
+            await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
+            _talep = GuncelTalep() ?? talep;
+            TeklifListesiniYenile();
+            SatinalmaOnerisiniGuncelle();
+            KalemOneriPaneliniGuncelle();
+            ArayuzuGuncelle();
+            Degisti?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            HataGunlugu.Kaydet(ex, "TeklifGiris.Kaydet");
+            MessageBox.Show(
+                $"Teklif kaydedilemedi:\n{ex.Message}",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally
+        {
+            IsEnabled = true;
+        }
     }
 
     private void KalemOneriTemizle_Click(object sender, RoutedEventArgs e)

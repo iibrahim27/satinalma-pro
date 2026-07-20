@@ -71,7 +71,11 @@
                        Height="40" Padding="12,8" FontSize="14"
                        BorderBrush="#CBD5E1" BorderThickness="1"
                        VerticalContentAlignment="Center"
-                       Margin="0,0,0,18" KeyDown="GirisAlani_KeyDown" />
+                       Margin="0,0,0,10" KeyDown="GirisAlani_KeyDown" />
+
+          <CheckBox x:Name="ChkBeniHatirla" Content="Beni hatırla"
+                    IsChecked="True" Margin="0,0,0,16"
+                    Foreground="#475569" FontSize="13" />
 
           <Button Content="Giriş Yap" Style="{StaticResource PrimaryButtonStyle}"
                   Height="46" Click="Giris_Click" Margin="0,0,0,10" />
@@ -356,6 +360,30 @@
                               MinWidth="160" Click="KullaniciKaydet_Click" />
                     </StackPanel>
                   </Grid>
+
+                  <Border Margin="0,12,0,0" Background="White" BorderBrush="{StaticResource LineBrush}"
+                          BorderThickness="1" CornerRadius="10" Padding="12,10">
+                    <DockPanel>
+                      <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <TextBlock Text="Modül yetkileri (okuma / yazma / sekmeler)"
+                                   FontWeight="SemiBold" FontSize="13"
+                                   VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                          <Button Content="Rol varsayılanı" Style="{StaticResource LinkButtonStyle}"
+                                  Margin="0,0,12,0" Click="RolVarsayilanYetki_Click" />
+                          <Button Content="Tümünü temizle" Style="{StaticResource LinkButtonStyle}"
+                                  Click="YetkileriTemizle_Click" />
+                        </StackPanel>
+                      </Grid>
+                      <TextBlock DockPanel.Dock="Top"
+                                 Text="Okuma: modül görünür. Yazma: düzenleme. Sekmeler: yalnızca işaretliler (boş = tümü)."
+                                 FontSize="11" Foreground="{StaticResource InkMutedBrush}"
+                                 Margin="0,0,0,8" TextWrapping="Wrap" />
+                      <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="ModulYetkiPanel" />
+                      </ScrollViewer>
+                    </DockPanel>
+                  </Border>
                 </StackPanel>
               </Border>
             </Grid>

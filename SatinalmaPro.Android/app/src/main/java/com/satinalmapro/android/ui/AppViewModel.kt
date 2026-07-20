@@ -17,6 +17,7 @@ import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.data.repository.StokRepository
 import com.satinalmapro.android.core.roles.BildirimRota
 import com.satinalmapro.android.core.roles.RolNavigasyon
+import com.satinalmapro.android.services.StokTeslimFisiHelper
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -96,6 +97,10 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     private val _submitError = MutableStateFlow<String?>(null)
     val submitError: StateFlow<String?> = _submitError.asStateFlow()
+
+    private val _pendingSahayaCikisFisi = MutableStateFlow<StokTeslimFisiHelper.Fis?>(null)
+    val pendingSahayaCikisFisi: StateFlow<StokTeslimFisiHelper.Fis?> = _pendingSahayaCikisFisi.asStateFlow()
+    fun clearPendingSahayaCikisFisi() { _pendingSahayaCikisFisi.value = null }
 
     private val routeHistory = ArrayDeque<String>()
 
@@ -877,12 +882,13 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             return
         }
         runWorkflow(onSuccess) {
-            container.malKabulVeDepoyaKaydet(
+            val fis = container.malKabulVeDepoyaKaydet(
                 talepId, kalemId, m, form.firma.trim(), f,
                 form.kategori.ifBlank { "Malzeme" },
                 form.fisNo.trim(), form.teslimAlan.trim(), form.depoSaha.trim(),
                 form.sahayaDirekt, form.sahaHedef.trim(), teklifId
             )
+            if (fis != null) _pendingSahayaCikisFisi.value = fis
         }
     }
 

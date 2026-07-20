@@ -167,7 +167,8 @@ public static class SatinalmaSiparisIslemleri
         await SatinalmaKayitYardimcisi.BulutaHemenGonderAsync();
     }
 
-    public static void MalKabulVeDepoyaKaydet(
+    /// <returns>Sahaya direkt ise çıkış fişi satırı; aksi halde null.</returns>
+    public static SahayaCikisSatiri? MalKabulVeDepoyaKaydet(
         OnaylananMalzemeSatiri satir,
         double miktar,
         string kategori,
@@ -224,7 +225,7 @@ public static class SatinalmaSiparisIslemleri
             miktar, kategori, tarih, fisNo, teslimAlan, indirildigiSaha, aciklama, firma, birimFiyat);
         ModulVeriDeposu.AlinanMalzemeler.Add(kayit);
 
-        AlinanMalzemeAktarimServisi.StogaGirisKaydet(
+        var cikisSatiri = AlinanMalzemeAktarimServisi.StogaGirisKaydet(
             satir, miktar, kategori, tarih, teslimAlan, depoSaha, sahayaDirekt, sahaHedef);
 
         // CollectionChanged yetki kapısından geçmese bile yerel dosyayı zorla yaz.
@@ -249,13 +250,15 @@ public static class SatinalmaSiparisIslemleri
         if (ProcurementTalepAdapter.ResolveStatus(talep)
                 .Equals(ProcurementStatus.Completed, StringComparison.OrdinalIgnoreCase))
             _ = BildirimYoneticisi.GecersizleriOkunduYapAsync();
+
+        return cikisSatiri;
     }
 
     /// <summary>
     /// Teklifte mal kabulü bekleyen tüm kalemleri kalan sipariş miktarlarıyla tek fiş altında kabul eder.
     /// Her kalemin kendi onaylı teklifindeki firma ve birim fiyat kullanılır.
     /// </summary>
-    public static int TumKalemleriMalKabulVeDepoyaKaydet(
+    public static (int KabulEdilenKalemSayisi, List<SahayaCikisSatiri> SahayaCikisSatirlari) TumKalemleriMalKabulVeDepoyaKaydet(
         Guid talepId,
         Guid teklifId,
         string kategori,
@@ -285,19 +288,49 @@ public static class SatinalmaSiparisIslemleri
         var indirildigiSaha = sahayaDirekt && !string.IsNullOrWhiteSpace(sahaHedef)
             ? sahaHedef.Trim()
             : depoSaha;
+        var ortakCikisBelge = sahayaDirekt && !string.IsNullOrWhiteSpace(sahaHedef)
+            ? StokBelgeNoUretici.SonrakiCikisBelgeNo()
+            : null;
+        var cikisSatirlari = new List<SahayaCikisSatiri>();
+        var kabulSayisi = 0;
 
         foreach (var satir in satirlar)
         {
             var kalem = talep.Kalemler.FirstOrDefault(k => k.Id == satir.KalemId)
                 ?? throw new InvalidOperationException("Kalem bulunamadı.");
-            var miktar = Math.Max(0, kalem.Miktar - kalem.KabulEdilenMiktar);
+
+            var hedefTeklifId = satir.TeklifId != Guid.Empty
+                ? satir.TeklifId
+                : teklifId;
+            var atama = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+                .FirstOrDefault(a => a.TeklifId == hedefTeklifId);
+            var miktar = atama is not null
+                ? Math.Max(0, atama.Miktar - atama.KabulEdilenMiktar)
+                : Math.Max(0, kalem.Miktar - kalem.KabulEdilenMiktar);
             if (miktar <= 0.0001)
                 continue;
 
-            kalem.KabulEdilenMiktar += miktar;
-            kalem.SiparisTamamlandi = true;
-            satir.KabulEdilenMiktar = kalem.KabulEdilenMiktar;
-            satir.SiparisTamamlandi = true;
+            if (atama is not null)
+                KalemFirmaAtamaYardimcisi.KabulEkle(kalem, hedefTeklifId, miktar);
+            else
+            {
+                kalem.KabulEdilenMiktar += miktar;
+                kalem.SiparisTamamlandi = kalem.KabulEdilenMiktar >= kalem.Miktar - 0.0001;
+            }
+
+            var guncelAtama = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+                .FirstOrDefault(a => a.TeklifId == hedefTeklifId);
+            if (guncelAtama is not null)
+            {
+                satir.SiparisMiktari = guncelAtama.Miktar;
+                satir.KabulEdilenMiktar = guncelAtama.KabulEdilenMiktar;
+                satir.SiparisTamamlandi = guncelAtama.SiparisTamamlandi;
+            }
+            else
+            {
+                satir.KabulEdilenMiktar = kalem.KabulEdilenMiktar;
+                satir.SiparisTamamlandi = kalem.SiparisTamamlandi;
+            }
 
             MalzemeKategoriDeposu.Ekle(kategori);
 
@@ -306,8 +339,12 @@ public static class SatinalmaSiparisIslemleri
                 satir.Firma, satir.BirimFiyati);
             ModulVeriDeposu.AlinanMalzemeler.Add(kayit);
 
-            AlinanMalzemeAktarimServisi.StogaGirisKaydet(
-                satir, miktar, kategori, tarih, teslimAlan, depoSaha, sahayaDirekt, sahaHedef);
+            var cikis = AlinanMalzemeAktarimServisi.StogaGirisKaydet(
+                satir, miktar, kategori, tarih, teslimAlan, depoSaha,
+                sahayaDirekt, sahaHedef, ortakCikisBelge);
+            if (cikis is not null)
+                cikisSatirlari.Add(cikis);
+            kabulSayisi++;
         }
 
         ModulVeriDeposu.KaydetAlinanMalzemeler();
@@ -321,7 +358,7 @@ public static class SatinalmaSiparisIslemleri
         try
         {
             _ = SatinalmaBildirimleri.MalKabulEdildiAsync(
-                talep, $"{satirlar.Count} kalemin tamamı kabul edildi");
+                talep, $"{kabulSayisi} kalemin tamamı kabul edildi");
         }
         catch
         {
@@ -332,7 +369,7 @@ public static class SatinalmaSiparisIslemleri
                 .Equals(ProcurementStatus.Completed, StringComparison.OrdinalIgnoreCase))
             _ = BildirimYoneticisi.GecersizleriOkunduYapAsync();
 
-        return satirlar.Count;
+        return (kabulSayisi, cikisSatirlari);
     }
 
     public static void SevkiyatiTamamla(OnaylananMalzemeSatiri satir)
@@ -346,19 +383,52 @@ public static class SatinalmaSiparisIslemleri
         var kalem = talep.Kalemler.FirstOrDefault(k => k.Id == satir.KalemId)
             ?? throw new InvalidOperationException("Kalem bulunamadı.");
 
-        if (kalem.SiparisTamamlandi)
+        if (satir.SiparisTamamlandi || kalem.SiparisTamamlandi)
             throw new InvalidOperationException("Bu kalemin sevkiyatı zaten tamamlanmış.");
 
-        if (kalem.KabulEdilenMiktar <= 0)
-            throw new InvalidOperationException("Sevkiyatı tamamlamak için en az bir mal kabul kaydı olmalıdır.");
+        var teklifId = satir.TeklifId != Guid.Empty
+            ? satir.TeklifId
+            : kalem.OnaylananTeklifId
+              ?? Guid.Empty;
 
-        var gercekMiktar = kalem.KabulEdilenMiktar;
-        if (gercekMiktar < kalem.Miktar - 0.0001)
-            KalemMiktariniGercekleseneGoreAyarla(talep, kalem, gercekMiktar, satir);
+        if (teklifId != Guid.Empty && KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem).Count > 0)
+        {
+            var atama = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+                .FirstOrDefault(a => a.TeklifId == teklifId)
+                ?? throw new InvalidOperationException("Firma ataması bulunamadı.");
 
-        kalem.SiparisTamamlandi = true;
-        satir.SiparisTamamlandi = true;
-        satir.SiparisMiktari = gercekMiktar;
+            if (atama.SiparisTamamlandi)
+                throw new InvalidOperationException("Bu firmanın sevkiyatı zaten tamamlanmış.");
+
+            if (atama.KabulEdilenMiktar <= 0)
+                throw new InvalidOperationException("Sevkiyatı tamamlamak için en az bir mal kabul kaydı olmalıdır.");
+
+            var oncekiMiktar = kalem.Miktar;
+            KalemFirmaAtamaYardimcisi.SevkiyatiTamamla(kalem, teklifId);
+            satir.SiparisTamamlandi = true;
+            satir.SiparisMiktari = KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem)
+                .First(a => a.TeklifId == teklifId).Miktar;
+
+            if (Math.Abs(oncekiMiktar - kalem.Miktar) > 0.0001)
+            {
+                talep.Teklifler ??= [];
+                foreach (var teklif in talep.Teklifler)
+                    teklif.FiyatlariHesapla(talep.Kalemler);
+            }
+        }
+        else
+        {
+            if (kalem.KabulEdilenMiktar <= 0)
+                throw new InvalidOperationException("Sevkiyatı tamamlamak için en az bir mal kabul kaydı olmalıdır.");
+
+            var gercekMiktar = kalem.KabulEdilenMiktar;
+            if (gercekMiktar < kalem.Miktar - 0.0001)
+                KalemMiktariniGercekleseneGoreAyarla(talep, kalem, gercekMiktar, satir);
+
+            kalem.SiparisTamamlandi = true;
+            satir.SiparisTamamlandi = true;
+            satir.SiparisMiktari = gercekMiktar;
+        }
 
         SatinalmaTalepYardimcisi.Dokun(talep);
         SatinalmaDepo.Kaydet();

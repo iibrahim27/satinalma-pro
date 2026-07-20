@@ -277,12 +277,15 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
             }
 
             ModulVeriDeposu.BeginBatch();
+            var stokGirisSayisi = 0;
             try
             {
                 foreach (var kayit in yeniKayitlar)
                 {
                     kayit.Tarih = TarihYardimcisi.Normalize(kayit.Tarih);
                     Kayitlar.Add(kayit);
+                    if (AlinanMalzemeAktarimServisi.ExcelKayittanStokGiris(kayit) is not null)
+                        stokGirisSayisi++;
                 }
             }
             finally
@@ -290,8 +293,16 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
                 ModulVeriDeposu.EndBatch();
             }
 
+            ModulVeriDeposu.KaydetAlinanMalzemeler();
+            ModulVeriDeposu.KaydetStok();
+            ModulVeriDeposu.KaydetStokHareketleri();
+
             VeriGuncellendi();
-            MessageBox.Show($"{yeniKayitlar.Count} kayıt içe aktarıldı.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(
+                $"{yeniKayitlar.Count} kayıt içe aktarıldı.\n{stokGirisSayisi} kalem için stok giriş hareketi oluşturuldu (alınan malzeme tarihine göre).",
+                UygulamaBilgisi.Ad,
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
         catch (Exception ex)
         {

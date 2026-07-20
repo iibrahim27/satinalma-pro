@@ -467,6 +467,8 @@ private fun TeklifOnayTabIcerik(
 ) {
     var bolDialog by remember { mutableStateOf<Pair<TalepKalem, TeklifItem>?>(null) }
     var bolMiktar by remember { mutableStateOf("") }
+    var bolHata by remember { mutableStateOf<String?>(null) }
+    var onayHata by remember { mutableStateOf<String?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
         if (item.teklifDuzeltmeNotu.isNotBlank()) {
             AppCard(contentPadding = AppSpacing.sm) {
@@ -636,7 +638,7 @@ private fun TeklifOnayTabIcerik(
 
         bolDialog?.let { (kalem, teklif) ->
             AlertDialog(
-                onDismissRequest = { bolDialog = null },
+                onDismissRequest = { bolDialog = null; bolHata = null },
                 title = { Text("Miktar böl") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -646,18 +648,24 @@ private fun TeklifOnayTabIcerik(
                         )
                         OutlinedTextField(
                             value = bolMiktar,
-                            onValueChange = { bolMiktar = it },
+                            onValueChange = { bolMiktar = it; bolHata = null },
                             label = { Text("Bu firmaya miktar") },
                             singleLine = true,
                             shape = AppShapes.medium,
                             colors = fieldColors
                         )
+                        bolHata?.let {
+                            Text(it, color = AppColors.Danger, style = MaterialTheme.typography.bodySmall)
+                        }
                     }
                 },
                 confirmButton = {
                     TextButton(onClick = {
                         val m = bolMiktar.replace(',', '.').toDoubleOrNull()
-                        if (m == null || m <= 0) return@TextButton
+                        if (m == null || m <= 0) {
+                            bolHata = "Geçerli bir miktar girin"
+                            return@TextButton
+                        }
                         try {
                             val taslak = kalem.copy(
                                 firmaAtamalari = atamaMap[kalem.id].orEmpty(),
@@ -665,9 +673,10 @@ private fun TeklifOnayTabIcerik(
                             )
                             val guncel = KalemFirmaAtamaYardimcisi.firmaMiktariniAyarla(taslak, teklif.id, m)
                             atamaMap[kalem.id] = guncel.firmaAtamalari
+                            bolHata = null
                             bolDialog = null
-                        } catch (_: Exception) {
-                            // dialog açık kalır; kullanıcı miktarı düzeltir
+                        } catch (ex: Exception) {
+                            bolHata = ex.message ?: "Miktar bölünemedi"
                         }
                     }) { Text("Kaydet") }
                 },
@@ -702,6 +711,7 @@ private fun TeklifOnayTabIcerik(
         }
 
         error?.let { Text(it, color = AppColors.Danger, style = MaterialTheme.typography.bodySmall) }
+        onayHata?.let { Text(it, color = AppColors.Danger, style = MaterialTheme.typography.bodySmall) }
 
         if (canDecide) {
             HorizontalDivider(color = AppColors.Border, modifier = Modifier.padding(vertical = AppSpacing.xs))
@@ -711,14 +721,19 @@ private fun TeklifOnayTabIcerik(
                     val firmaAtamalari = atamaMap
                         .filterValues { it.isNotEmpty() }
                         .mapValues { it.value }
-                    if (firmaAtamalari.isEmpty()) return@Button
+                    if (firmaAtamalari.isEmpty()) {
+                        onayHata = "En az bir kalem için firma seçin"
+                        return@Button
+                    }
                     try {
                         item.kalemler.filter { firmaAtamalari.containsKey(it.id) }.forEach { kalem ->
                             KalemFirmaAtamaYardimcisi.dogrula(kalem, firmaAtamalari[kalem.id]!!)
                         }
-                    } catch (_: Exception) {
+                    } catch (ex: Exception) {
+                        onayHata = ex.message ?: "Miktar toplamı kalem miktarına eşit olmalı"
                         return@Button
                     }
+                    onayHata = null
                     viewModel.kalemBazliOnaylaBolunmus(talepId, firmaAtamalari) {
                         viewModel.navigate(IsAkisRotalari.teklifOnaySonrasi(userRole, talepId))
                     }

@@ -12,11 +12,13 @@ public sealed class PlatformOturum
     private string? _refreshToken;
     private string? _idToken;
     private long _tokenExpiryMs;
+    private string? _eposta;
 
     public PlatformYonetimServisi Platform { get; private set; } = null!;
     public bool Yapilandirildi { get; private set; }
     public string ProjectId { get; private set; } = "";
     public string ApiKey { get; private set; } = "";
+    public string? KayitliEposta => PlatformOturumDeposu.Oku()?.Eposta;
 
     public PlatformOturum()
     {
@@ -35,9 +37,33 @@ public sealed class PlatformOturum
         Yapilandirildi = true;
     }
 
-    public bool OtomatikGirisDene() => false;
+    public async Task<bool> OtomatikGirisDeneAsync()
+    {
+        if (!Yapilandirildi)
+            return false;
 
-    public async Task GirisYapAsync(string eposta, string sifre)
+        var paket = PlatformOturumDeposu.Oku();
+        if (paket is null)
+            return false;
+
+        try
+        {
+            _refreshToken = paket.RefreshToken;
+            _eposta = paket.Eposta;
+            _idToken = null;
+            _tokenExpiryMs = 0;
+            await GecerliTokenAlAsync();
+            return true;
+        }
+        catch
+        {
+            PlatformOturumDeposu.Sil();
+            CikisYap(oturumuSil: false);
+            return false;
+        }
+    }
+
+    public async Task GirisYapAsync(string eposta, string sifre, bool beniHatirla = false)
     {
         if (!Yapilandirildi)
             throw new InvalidOperationException("firebase_ayarlar.json yapılandırılmamış.");
@@ -53,11 +79,17 @@ public sealed class PlatformOturum
         using var belge = JsonDocument.Parse(json);
         _idToken = belge.RootElement.GetProperty("idToken").GetString();
         _refreshToken = belge.RootElement.GetProperty("refreshToken").GetString();
+        _eposta = eposta.Trim();
         var expiresIn = belge.RootElement.TryGetProperty("expiresIn", out var ex)
             ? int.TryParse(ex.GetString(), out var sec) ? sec : 3600
             : 3600;
         _tokenExpiryMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + (expiresIn - 60) * 1000L;
         Platform.OturumTokenAyarla(_idToken!);
+
+        if (beniHatirla && !string.IsNullOrWhiteSpace(_refreshToken))
+            PlatformOturumDeposu.Kaydet(_refreshToken!, _eposta!, true);
+        else
+            PlatformOturumDeposu.Sil();
     }
 
     public async Task<string> GecerliTokenAlAsync(CancellationToken iptal = default)
@@ -95,13 +127,20 @@ public sealed class PlatformOturum
         var saniye = int.TryParse(expiresIn, out var s) ? s : 3600;
         _tokenExpiryMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + (saniye - 60) * 1000L;
         Platform.OturumTokenAyarla(_idToken!);
+
+        if (!string.IsNullOrWhiteSpace(_refreshToken) && PlatformOturumDeposu.Oku() is { BeniHatirla: true })
+            PlatformOturumDeposu.Kaydet(_refreshToken!, _eposta ?? "", true);
+
         return _idToken!;
     }
 
-    public void CikisYap()
+    public void CikisYap(bool oturumuSil = true)
     {
         _idToken = null;
         _refreshToken = null;
         _tokenExpiryMs = 0;
+        _eposta = null;
+        if (oturumuSil)
+            PlatformOturumDeposu.Sil();
     }
 }

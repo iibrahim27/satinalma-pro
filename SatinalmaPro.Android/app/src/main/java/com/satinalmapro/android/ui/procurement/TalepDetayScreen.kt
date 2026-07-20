@@ -20,6 +20,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +42,7 @@ import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailScreen
 import com.satinalmapro.android.core.roles.TalepTurleri
 import com.satinalmapro.android.core.roles.TalepYetkileri
 import com.satinalmapro.android.services.SatinalmaPdfHelper
+import com.satinalmapro.android.services.StokTeslimFisiHelper
 import com.satinalmapro.android.ui.AppViewModel
 import com.satinalmapro.android.ui.components.AppCard
 import com.satinalmapro.android.ui.components.DetailRow
@@ -60,11 +62,18 @@ fun TalepDetayScreen(viewModel: AppViewModel, talepId: String, viewMode: String?
     val talep by viewModel.talepById(talepId).collectAsState(initial = null)
     val user by viewModel.user.collectAsState()
     val error by viewModel.submitError.collectAsState()
+    val pendingSahayaFis by viewModel.pendingSahayaCikisFisi.collectAsState()
     var redGerekce by remember { mutableStateOf("") }
     val context = LocalContext.current
     var silOnay by remember { mutableStateOf(false) }
     var malKabulSatir by remember { mutableStateOf<OnaylananMalzemeSatiri?>(null) }
     var sevkiyatTamamlaSatir by remember { mutableStateOf<OnaylananMalzemeSatiri?>(null) }
+
+    LaunchedEffect(pendingSahayaFis) {
+        val fis = pendingSahayaFis ?: return@LaunchedEffect
+        StokTeslimFisiHelper.paylasPdf(context, fis)
+        viewModel.clearPendingSahayaCikisFisi()
+    }
 
     if (talep == null) {
         Column(Modifier.fillMaxSize().padding(24.dp)) { Text("Talep bulunamadı.", color = AppColors.TextSecondary) }

@@ -33,7 +33,8 @@ object StokTeslimFisiHelper {
         val teslimEden: String,
         val teslimAlan: String,
         val satirlar: List<Satir>,
-        val firmaAdi: String = "Satınalma Pro"
+        val firmaAdi: String = "Satınalma Pro",
+        val indigiSaha: String = ""
     )
 
     fun teslimEdenMetni(role: String?, fullName: String): String {
@@ -113,8 +114,9 @@ object StokTeslimFisiHelper {
         paint.textAlign = Paint.Align.CENTER
         canvas.drawText(fis.firmaAdi, 210f, y, paint)
         y += 20f
-        paint.textSize = 13f
-        canvas.drawText("DEPO ÇIKIŞ FİŞİ", 210f, y, paint)
+        paint.textSize = 12f
+        val baslik = if (fis.indigiSaha.isNotBlank()) "DEPO ÇIKIŞ FİŞİ (SAHAYA)" else "DEPO ÇIKIŞ FİŞİ"
+        canvas.drawText(baslik, 210f, y, paint)
         y += 24f
 
         paint.textAlign = Paint.Align.LEFT
@@ -122,6 +124,9 @@ object StokTeslimFisiHelper {
         paint.typeface = Typeface.DEFAULT
         y = bilgiSatiri(canvas, paint, y, "Belge No", fis.belgeNo, "Tarih", fis.tarih)
         y = bilgiSatiri(canvas, paint, y, "Teslim Eden", fis.teslimEden, "Teslim Alan", fis.teslimAlan)
+        if (fis.indigiSaha.isNotBlank()) {
+            y = bilgiSatiri(canvas, paint, y, "İndiği Saha", fis.indigiSaha, "", "")
+        }
         y += 8f
 
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -164,10 +169,12 @@ object StokTeslimFisiHelper {
         canvas.drawText("$etiket1:", 28f, y, paint)
         paint.typeface = Typeface.DEFAULT
         canvas.drawText(kisalt(deger1, 28), 92f, y, paint)
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        canvas.drawText("$etiket2:", 220f, y, paint)
-        paint.typeface = Typeface.DEFAULT
-        canvas.drawText(kisalt(deger2, 28), 286f, y, paint)
+        if (etiket2.isNotBlank()) {
+            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            canvas.drawText("$etiket2:", 220f, y, paint)
+            paint.typeface = Typeface.DEFAULT
+            canvas.drawText(kisalt(deger2, 28), 286f, y, paint)
+        }
         return y + 16f
     }
 
@@ -226,11 +233,12 @@ object StokTeslimFisiHelper {
             <body>
               <div class="page">
                 <h1>${escape(fis.firmaAdi)}</h1>
-                <div class="sub">DEPO ÇIKIŞ FİŞİ</div>
+                <div class="sub">${if (fis.indigiSaha.isNotBlank()) "DEPO ÇIKIŞ FİŞİ (SAHAYA İNDİRME)" else "DEPO ÇIKIŞ FİŞİ"}</div>
                 <div class="divider"></div>
                 <table class="info">
                   <tr><td class="label">Belge No</td><td>${escape(fis.belgeNo)}</td><td class="label">Tarih</td><td>${escape(fis.tarih)}</td></tr>
                   <tr><td class="label">Teslim Eden</td><td>${escape(fis.teslimEden)}</td><td class="label">Teslim Alan</td><td>${escape(fis.teslimAlan)}</td></tr>
+                  ${if (fis.indigiSaha.isNotBlank()) """<tr><td class="label">İndiği Saha</td><td colspan="3">${escape(fis.indigiSaha)}</td></tr>""" else ""}
                 </table>
                 <table class="items">
                   <thead>

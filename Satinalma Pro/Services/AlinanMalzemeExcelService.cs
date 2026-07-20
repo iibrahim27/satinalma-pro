@@ -164,6 +164,11 @@ public static class AlinanMalzemeExcelService
         return liste;
     }
 
+    /// <summary>
+    /// Görünen kayıtları Excel'e yazar.
+    /// Birden fazla kategori varsa (ör. filtre = Tümü) her kategori ayrı sayfaya yazılır.
+    /// Tek kategoride tek sayfa kullanılır.
+    /// </summary>
     public static void ListeyiKaydet(IEnumerable<AlinanMalzemeKaydi> kayitlar, string varsayilanAd)
     {
         var dialog = new Microsoft.Win32.SaveFileDialog
@@ -176,8 +181,38 @@ public static class AlinanMalzemeExcelService
         if (dialog.ShowDialog() != true)
             return;
 
+        var liste = kayitlar?.ToList() ?? [];
         using var kitap = new XLWorkbook();
-        var sayfa = kitap.Worksheets.Add("Alınan Malzemeler");
+
+        var gruplar = liste
+            .GroupBy(k => string.IsNullOrWhiteSpace(k.Kategori) ? "Kategorisiz" : k.Kategori.Trim(),
+                StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        if (gruplar.Count <= 1)
+        {
+            var ad = gruplar.Count == 1 ? ExcelSayfaAdi(gruplar[0].Key, []) : "Alınan Malzemeler";
+            SayfaYaz(kitap, ad, liste);
+        }
+        else
+        {
+            var kullanilan = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var grup in gruplar)
+                SayfaYaz(kitap, ExcelSayfaAdi(grup.Key, kullanilan), grup.ToList());
+        }
+
+        kitap.SaveAs(dialog.FileName);
+
+        var mesaj = gruplar.Count > 1
+            ? $"Excel dosyası oluşturuldu.\n{gruplar.Count} kategori ayrı sayfalara yazıldı."
+            : "Excel dosyası oluşturuldu.";
+        MessageBox.Show(mesaj, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private static void SayfaYaz(XLWorkbook kitap, string sayfaAdi, IReadOnlyList<AlinanMalzemeKaydi> kayitlar)
+    {
+        var sayfa = kitap.Worksheets.Add(sayfaAdi);
 
         for (var i = 0; i < DisaAktarBasliklari.Length; i++)
             sayfa.Cell(1, i + 1).Value = DisaAktarBasliklari[i];
@@ -202,10 +237,33 @@ public static class AlinanMalzemeExcelService
         }
 
         sayfa.Row(1).Style.Font.Bold = true;
+        sayfa.Row(1).Style.Fill.BackgroundColor = XLColor.FromHtml("#EEF2FF");
         sayfa.Columns().AdjustToContents();
-        kitap.SaveAs(dialog.FileName);
+    }
 
-        MessageBox.Show("Excel dosyası oluşturuldu.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+    /// <summary>Excel sayfa adı kuralları: max 31 karakter, yasak karakter yok, benzersiz.</summary>
+    private static string ExcelSayfaAdi(string? kategori, HashSet<string> kullanilan)
+    {
+        var ad = string.IsNullOrWhiteSpace(kategori) ? "Kategorisiz" : kategori.Trim();
+        foreach (var c in new[] { '\\', '/', '?', '*', '[', ']', ':', '\'' })
+            ad = ad.Replace(c, '_');
+
+        if (ad.Length > 31)
+            ad = ad[..31];
+        if (string.IsNullOrWhiteSpace(ad))
+            ad = "Kategorisiz";
+
+        var sonuc = ad;
+        var i = 2;
+        while (!kullanilan.Add(sonuc))
+        {
+            var ek = $" ({i})";
+            var taban = ad.Length + ek.Length > 31 ? ad[..(31 - ek.Length)] : ad;
+            sonuc = taban + ek;
+            i++;
+        }
+
+        return sonuc;
     }
 
     private static Dictionary<string, int> BaslikKolonlari(IXLWorksheet sayfa)

@@ -51,65 +51,50 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 
 import androidx.compose.runtime.Composable
-
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-
 import androidx.compose.runtime.getValue
-
 import androidx.compose.runtime.mutableStateOf
-
 import androidx.compose.runtime.remember
-
 import androidx.compose.runtime.setValue
-
 import androidx.compose.ui.Alignment
-
 import androidx.compose.ui.Modifier
-
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-
 import androidx.compose.ui.unit.dp
-
 import com.satinalmapro.android.core.model.OnaylananMalzemeSatiri
-
 import com.satinalmapro.android.core.roles.OnaylananMalzemeOlusturucu
 import com.satinalmapro.android.core.roles.KullaniciRolleri
-
+import com.satinalmapro.android.services.StokTeslimFisiHelper
 import com.satinalmapro.android.ui.AppViewModel
-
 import com.satinalmapro.android.ui.components.AppCard
 import com.satinalmapro.android.ui.procurement.MalKabulDialog
-
 import com.satinalmapro.android.ui.components.StatusBadge
-
 import com.satinalmapro.android.ui.components.AppScreenContent
 import com.satinalmapro.android.ui.components.AppSearchField
 import com.satinalmapro.android.ui.theme.AppColors
 import com.satinalmapro.android.ui.theme.AppShapes
 import com.satinalmapro.android.ui.theme.AppSpacing
 
-
-
 @Composable
-
 fun MaterialsScreen(viewModel: AppViewModel, initialSection: String? = null) {
-
     var search by remember { mutableStateOf("") }
-
     val siparisItems by viewModel.siparisBekleyenMalzemeler().collectAsState()
-
     val malKabulItems by viewModel.approvedMaterials().collectAsState()
-
     val user by viewModel.user.collectAsState()
-
     val canPlaceOrder = KullaniciRolleri.canPlaceOrder(user?.role)
-
     val canMalKabul = KullaniciRolleri.canMalKabul(user?.role)
-
     val error by viewModel.submitError.collectAsState()
-
+    val pendingSahayaFis by viewModel.pendingSahayaCikisFisi.collectAsState()
+    val context = LocalContext.current
     var dialogSatir by remember { mutableStateOf<OnaylananMalzemeSatiri?>(null) }
     var sevkiyatDialogSatir by remember { mutableStateOf<OnaylananMalzemeSatiri?>(null) }
+
+    LaunchedEffect(pendingSahayaFis) {
+        val fis = pendingSahayaFis ?: return@LaunchedEffect
+        StokTeslimFisiHelper.paylasPdf(context, fis)
+        viewModel.clearPendingSahayaCikisFisi()
+    }
 
     val section = initialSection?.lowercase()
     val showSiparis = section != "malkabul" && section != "mal-kabul"
@@ -291,7 +276,7 @@ fun MaterialsScreen(viewModel: AppViewModel, initialSection: String? = null) {
 
             } else {
 
-                items(filteredMalKabul, key = { "mk_${it.talepId}_${it.kalemId}" }) { satir ->
+                items(filteredMalKabul, key = { "mk_${it.talepId}_${it.kalemId}_${it.teklifId}" }) { satir ->
 
                     MaterialLineCard(
 
