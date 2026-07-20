@@ -90,10 +90,11 @@ public static class SatinalmaYonetimIslemleri
         if (!SatinalmaTalepYardimcisi.TeklifYonetimOnayiBekliyor(talep))
             throw new InvalidOperationException("Bu talep için geri gönderilecek teklif onayı bulunamadı.");
 
-        talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
-        talep.Status = ProcurementStatus.Comparison;
+        talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
+        talep.Status = ProcurementStatus.QuoteRequested;
         talep.Priority = ProcurementTalepAdapter.EffectivePriority(talep);
         talep.TeklifDuzeltmeNotu = string.IsNullOrWhiteSpace(gerekce) ? "" : gerekce.Trim();
+        talep.YonetimOnayKilitli = false;
         talep.OnaylananTeklifId = null;
         talep.Kalemler ??= [];
         foreach (var kalem in talep.Kalemler)

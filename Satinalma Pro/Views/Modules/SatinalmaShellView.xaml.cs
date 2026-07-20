@@ -175,8 +175,9 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
                 => SatinalmaPart1Menusu.SatinalmaTeklifIstenen,
             "satinalma-teklif-girilen" or "teklif-girilen"
                 => SatinalmaPart1Menusu.SatinalmaTeklifGirilen,
+            // Eski bildirim deep-link'leri → Teklif İstemi Yapılanlar
             "satinalma-teklif-duzeltme" or "teklif-duzeltme"
-                => SatinalmaPart1Menusu.SatinalmaTeklifDuzeltme,
+                => SatinalmaPart1Menusu.SatinalmaTeklifIstenen,
             "yonetim-teklif-girilen"
                 => SatinalmaPart1Menusu.YonetimTeklifGirilen,
             "teklifsiz-firma-fiyat"

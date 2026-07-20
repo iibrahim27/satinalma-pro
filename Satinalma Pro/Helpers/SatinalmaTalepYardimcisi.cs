@@ -6,9 +6,10 @@ public static class SatinalmaTalepYardimcisi
 {
     public static bool TeklifDuzeltmeBekliyor(SatinalmaTalep talep) =>
         !string.IsNullOrWhiteSpace(talep.TeklifDuzeltmeNotu)
-        && talep.Durum == SatinalmaTalepDurumlari.Karsilastirma
         && GercekTeklifVar(talep)
-        && !talep.YonetimOnayKilitli;
+        && !talep.YonetimOnayKilitli
+        && talep.Durum is SatinalmaTalepDurumlari.TeklifGirisi
+            or SatinalmaTalepDurumlari.Karsilastirma;
 
     public static bool TeklifYonetimOnayiBekliyor(SatinalmaTalep talep) =>
         talep.Durum == SatinalmaTalepDurumlari.YonetimOnayinda

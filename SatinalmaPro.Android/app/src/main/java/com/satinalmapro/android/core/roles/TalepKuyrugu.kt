@@ -84,9 +84,9 @@ object TalepKuyrugu {
 
     fun teklifDuzeltmeBekliyor(t: TalepItem): Boolean =
         t.teklifDuzeltmeNotu.isNotBlank() &&
-            t.durum == TalepDurumlari.KARSILASTIRMA &&
             gercekTeklifVar(t) &&
-            !t.yonetimOnayKilitli
+            !t.yonetimOnayKilitli &&
+            t.durum in setOf(TalepDurumlari.TEKLIF_GIRISI, TalepDurumlari.KARSILASTIRMA)
 
     fun karsilastirma(t: TalepItem): Boolean =
         ((t.durum == TalepDurumlari.KARSILASTIRMA ||
@@ -184,7 +184,7 @@ object TalepKuyrugu {
 
     /** Satınalma — teklif girilmesi istenen (yönetime gönderilmemiş). */
     fun satinalmaTeklifIstenen(t: TalepItem): Boolean =
-        teklifGirisi(t) && !teklifYonetimOnayiBekliyor(t)
+        (teklifGirisi(t) || teklifDuzeltmeBekliyor(t)) && !teklifYonetimOnayiBekliyor(t)
 
     /** Satınalma — yönetim onayı bekleyen (gönderilmiş teklifler). */
     fun satinalmaTeklifGirilen(t: TalepItem): Boolean = teklifYonetimOnayiBekliyor(t)

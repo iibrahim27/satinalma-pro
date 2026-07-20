@@ -53,8 +53,9 @@ public sealed class PurchaseRequestDetailMutation
 
     public static PurchaseRequestDetailMutation SendForRevision(string note) => new()
     {
-        NewStatus = ProcurementStatus.Comparison,
-        NewLegacyDurum = "Karşılaştırma",
+        // Satınalma «Teklif İstemi Yapılanlar» sekmesi quote_requested bekler.
+        NewStatus = ProcurementStatus.QuoteRequested,
+        NewLegacyDurum = "Teklif Girişi",
         QuoteCorrectionNote = note,
         ClearApprovedQuote = true,
         ClearLineItemApprovals = true,

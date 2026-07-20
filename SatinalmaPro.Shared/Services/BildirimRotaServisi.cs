@@ -21,8 +21,8 @@ public static class BildirimRotaServisi
                 ? "gelen-talepler"
                 : tid is { } teklifTid ? $"teklif-gir?id={teklifTid}" : "satinalma-teklif-istenen",
             BildirimTipleri.TeklifDuzeltmeIstendi => tid is { } duzTid
-                ? $"satinalma-teklif-duzeltme?id={duzTid}"
-                : "satinalma-teklif-duzeltme",
+                ? $"satinalma-teklif-istenen?id={duzTid}"
+                : "satinalma-teklif-istenen",
             BildirimTipleri.TeklifOnayda when tid is { } onayTid => $"teklif-onay-detay?id={onayTid}",
             BildirimTipleri.TeklifOnayda => "yonetim-teklif-girilen",
             BildirimTipleri.Onaylandi when tid is null && rol == KullaniciRolleri.Yonetim => "gecmis-talepler",
@@ -67,7 +67,7 @@ public static class BildirimRotaServisi
                 KullaniciRolleri.Yonetim => new("Satınalma", "gelen-talepler", 0, bildirim.TalepId),
                 _ => new("Satınalma", "satinalma-teklif-istenen", 0, bildirim.TalepId)
             },
-            BildirimTipleri.TeklifDuzeltmeIstendi => new("Satınalma", "satinalma-teklif-duzeltme", 0, bildirim.TalepId),
+            BildirimTipleri.TeklifDuzeltmeIstendi => new("Satınalma", "satinalma-teklif-istenen", 0, bildirim.TalepId),
             BildirimTipleri.Onaylandi => rol switch
             {
                 KullaniciRolleri.Satinalma => new("Satınalma", "satinalma-onaylanan", 0, bildirim.TalepId),

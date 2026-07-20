@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.0.25",
-    "build":  26,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.25/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.25/SatinalmaYonetici.zip",
-    "notes":  "Platform yonetim 1.0.25 - Beni hatirla oturum; kullanici modul yetkileri (okuma/yazma/sekme); Pro 2.1.72 ile birlikte",
+    "version":  "1.0.26",
+    "build":  27,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.26/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.26/SatinalmaYonetici.zip",
+    "notes":  "Platform yonetim 1.0.26 - Pro 2.1.73 teklif revize → Teklif Istemi Yapilanlar duzeltmesi ile birlikte",
     "zorunlu":  false
 }

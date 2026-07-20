@@ -306,8 +306,8 @@ object BildirimRota {
             }
             "TeklifDuzeltmeIstendi" -> when {
                 r == KullaniciRolleri.SATINALMA || r == KullaniciRolleri.ADMIN ->
-                    if (requestId != null) "satinalma-teklif-duzeltme?id=$requestId"
-                    else "satinalma-teklif-duzeltme"
+                    if (requestId != null) "satinalma-teklif-istenen?id=$requestId"
+                    else "satinalma-teklif-istenen"
                 requestId != null -> "talep-detay?id=$requestId"
                 else -> "bildirimler"
             }

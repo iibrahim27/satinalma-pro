@@ -48,12 +48,15 @@ fun TalepItem.resolvedEnterpriseStatus(): String {
             if (tamam) ProcurementStatus.COMPLETED else ProcurementStatus.ORDERED
         }
         "Onaylandı", "Onaylandi" -> ProcurementStatus.APPROVED
-        "Karşılaştırma", "Karsilastirma" -> ProcurementStatus.COMPARISON
+        "Karşılaştırma", "Karsilastirma" -> {
+            if (teklifDuzeltmeNotu.isNotBlank()) ProcurementStatus.QUOTE_REQUESTED
+            else ProcurementStatus.COMPARISON
+        }
         "Teklif Girişi", "Teklif Girisi" -> {
             val gercekTeklif = safeTeklifler().any {
                 it.firmaAdi.isNotBlank() || it.safeFiyatlar().any { f -> f.birimFiyat > 0 }
             }
-            if (!gercekTeklif) ProcurementStatus.QUOTE_REQUESTED
+            if (!gercekTeklif || teklifDuzeltmeNotu.isNotBlank()) ProcurementStatus.QUOTE_REQUESTED
             else ProcurementStatus.QUOTE_ENTRY
         }
         "Yönetim Onayında", "Yonetim Onayinda" -> {

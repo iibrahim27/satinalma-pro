@@ -52,9 +52,11 @@ fun TalepListScreen(viewModel: AppViewModel, queue: TalepQueue) {
                 subtitle = when {
                     items.isNotEmpty() -> "Farklı bir arama deneyin."
                     queue == TalepQueue.SATINALMA_TEKLIF_DUZELTME ->
-                        "Yönetim «Teklifleri Revizeye Gönder» dediğinde talepler burada görünür. Eklediğiniz teklifler silinmez."
+                        "Revize talepleri «Teklif İstemi Yapılanlar» sekmesinde listelenir."
                     queue == TalepQueue.TEKLIF_KARSILASTIRMA ->
-                        "Revize istenen talepler burada değil — «Düzeltme Bekleyen» menüsüne bakın."
+                        "Revize istenen talepler burada değil — «Teklif İstemi Yapılanlar» menüsüne bakın."
+                    queue == TalepQueue.SATINALMA_TEKLIF_ISTENEN ->
+                        "Yönetim teklif istediğinde veya revizeye gönderdiğinde talepler burada görünür."
                     else -> "Yeni talep oluştuğunda burada listelenir."
                 }
             )
@@ -82,7 +84,7 @@ private fun routeForQueue(queue: TalepQueue, talepId: String) = when (queue) {
     TalepQueue.TEKLIF_KARSILASTIRMA -> "teklif-karsilastirma?id=$talepId"
     TalepQueue.TEKLIF_ONAY -> "teklif-onay-detay?id=$talepId"
     TalepQueue.SATINALMA_TEKLIF_GIRILEN -> "teklif-onay-detay?id=$talepId"
-    TalepQueue.SATINALMA_TEKLIF_DUZELTME -> "teklif-karsilastirma?id=$talepId"
+    TalepQueue.SATINALMA_TEKLIF_DUZELTME -> "teklif-gir?id=$talepId"
     TalepQueue.TEKLIFSIZ_FIRMA_FIYAT -> "teklifsiz-firma-fiyat?id=$talepId"
     TalepQueue.SATINALMA_ONAYLANAN -> "talep-detay?id=$talepId&view=onaylanan"
     TalepQueue.SATINALMA_SIPARIS -> "talep-detay?id=$talepId&view=siparis"

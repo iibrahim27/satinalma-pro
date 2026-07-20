@@ -40,7 +40,7 @@ object IsAkisRotalari {
     }
 
     fun duzeltmeGonderSonrasi(role: String?): String = when (KullaniciRolleri.normalize(role)) {
-        KullaniciRolleri.SATINALMA -> "satinalma-teklif-duzeltme"
+        KullaniciRolleri.SATINALMA -> "satinalma-teklif-istenen"
         else -> teklifOnayListesi(role)
     }
 

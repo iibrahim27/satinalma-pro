@@ -38,6 +38,18 @@ public static class ProcurementRouteMatcher
                 return false;
         }
 
+        // Revize (düzeltme notu) → Teklif İstemi Yapılanlar; Karşılaştırma'dan ayrılır.
+        if (route == SatinalmaRoutes.SatinalmaTeklifIstenen)
+        {
+            var status = ProcurementStatusResolver.Resolve(talep);
+            return status == ProcurementStatus.QuoteRequested
+                   || SatinalmaTalepYardimcisi.TeklifDuzeltmeBekliyor(talep);
+        }
+
+        if (route == SatinalmaRoutes.SatinalmaKarsilastirma
+            && SatinalmaTalepYardimcisi.TeklifDuzeltmeBekliyor(talep))
+            return false;
+
         var rule = FindRule(route);
         if (rule is not null)
             return MatchesRule(rule, talep);
@@ -78,8 +90,7 @@ public static class ProcurementRouteMatcher
             || ProcurementStatusResolver.Resolve(talep) == ProcurementStatus.Completed,
 
         SatinalmaRoutes.SatinalmaTeklifDuzeltme =>
-            ProcurementStatusResolver.Resolve(talep) == ProcurementStatus.Comparison
-            && !string.IsNullOrWhiteSpace(talep.TeklifDuzeltmeNotu),
+            SatinalmaTalepYardimcisi.TeklifDuzeltmeBekliyor(talep),
 
         SatinalmaRoutes.OnayBekleyen =>
             ProcurementStatusResolver.Resolve(talep) is ProcurementStatus.Submitted

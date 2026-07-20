@@ -7,9 +7,10 @@ public static class SatinalmaTalepYardimcisi
     /// <summary>Yönetim teklifleri düzeltme için satınalmaya geri gönderdi.</summary>
     public static bool TeklifDuzeltmeBekliyor(SatinalmaTalep talep) =>
         !string.IsNullOrWhiteSpace(talep.TeklifDuzeltmeNotu)
-        && talep.Durum == SatinalmaTalepDurumlari.Karsilastirma
         && GercekTeklifVar(talep)
-        && !talep.YonetimOnayKilitli;
+        && !talep.YonetimOnayKilitli
+        && talep.Durum is SatinalmaTalepDurumlari.TeklifGirisi
+            or SatinalmaTalepDurumlari.Karsilastirma;
 
     /// <summary>Yönetime gönderilmiş — yönetim teklif onayı bekliyor.</summary>
     public static bool TeklifYonetimOnayiBekliyor(SatinalmaTalep talep) =>

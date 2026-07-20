@@ -43,13 +43,19 @@ public static class ProcurementStatusResolver
             return ProcurementStatus.Approved;
 
         if (talep.Durum == SatinalmaTalepDurumlari.Karsilastirma)
+        {
+            // Eski revize kayıtları (Karşılaştırma + düzeltme notu) Teklif İstemi'nde kalsın.
+            if (SatinalmaTalepYardimcisi.TeklifDuzeltmeBekliyor(talep))
+                return ProcurementStatus.QuoteRequested;
             return ProcurementStatus.Comparison;
+        }
 
         if (talep.Durum == SatinalmaTalepDurumlari.TeklifGirisi)
         {
-            return SatinalmaTalepKuyrugu.YonetimTeklifBekleyen(talep)
-                ? ProcurementStatus.QuoteRequested
-                : ProcurementStatus.QuoteEntry;
+            if (SatinalmaTalepYardimcisi.TeklifDuzeltmeBekliyor(talep)
+                || SatinalmaTalepKuyrugu.YonetimTeklifBekleyen(talep))
+                return ProcurementStatus.QuoteRequested;
+            return ProcurementStatus.QuoteEntry;
         }
 
         if (talep.Durum == SatinalmaTalepDurumlari.YonetimOnayinda

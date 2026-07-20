@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.72",
-    "build":  141,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.72/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.72/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.72/SatinalmaPro.apk",
-    "notes":  "Teklif ekle/duzenle/sil guvenilirligi; talep PDF 2. sayfa son alim + depo stok; yonetici beni hatirla ve modul yetkileri; sevkiyat/onay duzeltmeleri",
+    "version":  "2.1.73",
+    "build":  142,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.73/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.73/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.73/SatinalmaPro.apk",
+    "notes":  "Teklif revizeye gonder → Satinalma Teklif Istemi Yapilanlar sekmesine dusuyor; bildirim ayni sekmeye yonlendirir",
     "zorunlu":  false
 }

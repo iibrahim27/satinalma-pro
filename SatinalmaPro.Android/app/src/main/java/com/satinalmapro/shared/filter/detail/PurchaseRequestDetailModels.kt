@@ -83,8 +83,8 @@ data class PurchaseRequestDetailMutation(
         )
 
         fun sendForRevision(note: String) = PurchaseRequestDetailMutation(
-            newStatus = ProcurementStatus.COMPARISON,
-            newLegacyDurum = "Karşılaştırma",
+            newStatus = ProcurementStatus.QUOTE_REQUESTED,
+            newLegacyDurum = "Teklif Girişi",
             quoteCorrectionNote = note,
             clearApprovedQuote = true,
             clearLineItemApprovals = true,

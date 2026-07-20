@@ -354,7 +354,8 @@ public static class E2eAkisTestleri
         ortam.YonetimeTeklifGonder(talep);
 
         talep = ortam.GuncelTalep(talep.Id);
-        talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
+        talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
+        talep.Status = ProcurementStatus.QuoteRequested;
         talep.TeklifDuzeltmeNotu = "Fiyatları güncelleyin";
         ortam.Kaydet(talep);
         ortam.BildirimEkle(BildirimTipleri.TeklifDuzeltmeIstendi, talep, hedefRol: KullaniciRolleri.Satinalma);

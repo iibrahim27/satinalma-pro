@@ -642,7 +642,8 @@ class TalepRepository(
             if (!TalepKuyrugu.teklifYonetimOnayiBekliyor(talep))
                 throw IllegalStateException("Bu talep için geri gönderilecek teklif onayı bulunamadı")
             talep.copy(
-                durum = TalepDurumlari.KARSILASTIRMA,
+                durum = TalepDurumlari.TEKLIF_GIRISI,
+                status = "quote_requested",
                 teklifDuzeltmeNotu = gerekce?.trim().orEmpty(),
                 yonetimOnayKilitli = false,
                 onaylananTeklifId = null,

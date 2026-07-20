@@ -156,14 +156,18 @@ public static class PurchaseModuleAutomationTest
             not: "Birim fiyatları güncelleyin");
         talep = ortam.GuncelTalep(talep.Id);
         sonuc.Adim($"4. Yönetim revizeye gönderdi → {talep.Status}");
-        sonuc.Bekle(talep.Status == ProcurementStatus.Comparison,
-            "Durum comparison", $"Durum hatalı: {talep.Status}");
+        sonuc.Bekle(talep.Status == ProcurementStatus.QuoteRequested,
+            "Durum quote_requested (Teklif İstemi)", $"Durum hatalı: {talep.Status}");
         sonuc.Bekle(ortam.Fcm.PushGittiMi(satTopic, BildirimTipleri.TeklifDuzeltmeIstendi, talep.Id),
             "Satınalma revize bildirimi aldı",
             "TeklifDuzeltmeIstendi FCM yok");
 
         // 5 — Satınalma güncelle ve yeniden gönder
         ortam.OturumAc(AutomasyonTestOrtami.Satinalma);
+        sonuc.Bekle(ortam.RouteTalepleri(SatinalmaRoutes.SatinalmaTeklifIstenen, AutomasyonTestOrtami.Satinalma)
+                .Any(t => t.Id == talep.Id),
+            "Revize sonrası talep Teklif İstemi Yapılanlar listesinde",
+            "Revize talebi satinalma-teklif-istenen listesinde DEĞİL");
         talep = ortam.GuncelTalep(talep.Id);
         var guncelTeklif = talep.Teklifler.First(t => t.Id == teklifB.Id);
         foreach (var f in guncelTeklif.Fiyatlar)

@@ -87,7 +87,7 @@ class PurchaseModuleAutomationTest {
             AutomationTestEnvironment.YONETIM,
             not = "Fiyatları güncelleyin"
         )
-        assertEquals(ProcurementStatus.COMPARISON, guncel.status)
+        assertEquals(ProcurementStatus.QUOTE_REQUESTED, guncel.status)
         assertTrue(FcmTopicRegistry.pushDelivered(satTopic, "teklif_duzeltme_istendi", guncel.id))
 
         // 5 — Güncelle ve yeniden gönder
