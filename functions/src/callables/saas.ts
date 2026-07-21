@@ -12,7 +12,15 @@ import {
 
 const db = () => admin.firestore();
 
-type LisansTip = "deneme" | "yillik";
+type LisansTip = "deneme" | "yillik" | "2yil" | "3yil" | "manuel";
+
+const LISANS_GUN: Record<LisansTip, number> = {
+  deneme: 15,
+  yillik: 365,
+  "2yil": 730,
+  "3yil": 1095,
+  manuel: 0,
+};
 
 type TenantDoc = {
   id: string;
@@ -23,6 +31,24 @@ type TenantDoc = {
   lisansBaslangic?: admin.firestore.Timestamp | string | Date | null;
   lisansBitis?: admin.firestore.Timestamp | string | Date | null;
 };
+
+function normalizeLisansTip(raw: unknown): LisansTip {
+  const tip = String(raw ?? "deneme").trim().toLowerCase();
+  if (tip === "yillik" || tip === "1yil" || tip === "yil") return "yillik";
+  if (tip === "2yil" || tip === "2yıllık" || tip === "2yillik") return "2yil";
+  if (tip === "3yil" || tip === "3yıllık" || tip === "3yillik") return "3yil";
+  if (tip === "manuel" || tip === "gun" || tip === "gün") return "manuel";
+  return "deneme";
+}
+
+function lisansGunSayisi(tip: LisansTip, manuelGun?: number | null): number {
+  if (tip === "manuel") {
+    const g = Number(manuelGun);
+    if (!Number.isFinite(g) || g <= 0) return 15;
+    return Math.min(Math.floor(g), 3650);
+  }
+  return LISANS_GUN[tip];
+}
 
 function toDate(value: unknown): Date | null {
   if (!value) return null;
@@ -54,7 +80,7 @@ function calcKalanGun(bitis: Date | null): number | null {
 }
 
 function lisansOzeti(tenant: TenantDoc) {
-  const tip = (tenant.lisansTipi === "yillik" ? "yillik" : "deneme") as LisansTip;
+  const tip = normalizeLisansTip(tenant.lisansTipi);
   const baslangic = toDate(tenant.lisansBaslangic);
   const bitis = toDate(tenant.lisansBitis);
   const kalanGun = calcKalanGun(bitis);
@@ -78,7 +104,7 @@ async function ensureTenantLicense(tenantId: string, tenant: TenantDoc): Promise
   const { baslangic, bitis } = defaultTrialDates();
   await db().collection("tenants").doc(tenantId).set(
     {
-      lisansTipi: tenant.lisansTipi === "yillik" ? "yillik" : "deneme",
+      lisansTipi: "deneme",
       lisansBaslangic: admin.firestore.Timestamp.fromDate(baslangic),
       lisansBitis: admin.firestore.Timestamp.fromDate(bitis),
       lisansSuresiDoldu: false,
@@ -89,7 +115,7 @@ async function ensureTenantLicense(tenantId: string, tenant: TenantDoc): Promise
 
   return {
     ...tenant,
-    lisansTipi: tenant.lisansTipi === "yillik" ? "yillik" : "deneme",
+    lisansTipi: "deneme",
     lisansBaslangic: baslangic,
     lisansBitis: bitis,
   };
@@ -121,7 +147,7 @@ async function expireTenantIfNeeded(tenantId: string, tenant: TenantDoc): Promis
 
 function defaultTrialDates() {
   const baslangic = new Date();
-  const bitis = addDays(baslangic, 30);
+  const bitis = addDays(baslangic, LISANS_GUN.deneme);
   return { baslangic, bitis };
 }
 
@@ -202,25 +228,47 @@ async function readTenant(tenantId: string): Promise<TenantDoc> {
 }
 
 function parseLisansaInput(data: Record<string, unknown> | undefined, existing?: TenantDoc) {
-  const tipRaw = ((data?.lisansTipi as string) ?? existing?.lisansTipi ?? "deneme").trim().toLowerCase();
-  const tip: LisansTip = tipRaw === "yillik" ? "yillik" : "deneme";
+  const tip = normalizeLisansTip(data?.lisansTipi ?? existing?.lisansTipi ?? "deneme");
+  const manuelGunRaw = data?.lisansGunEkle ?? data?.lisansManuelGun;
+  const manuelGun =
+    typeof manuelGunRaw === "number"
+      ? manuelGunRaw
+      : typeof manuelGunRaw === "string"
+        ? Number(manuelGunRaw)
+        : null;
 
   let baslangic = toDate(data?.lisansBaslangic) ?? toDate(existing?.lisansBaslangic);
   let bitis = toDate(data?.lisansBitis) ?? toDate(existing?.lisansBitis);
 
   const yenile = data?.lisansYenile === true;
-    // Elle verilen tarihler korunur; yenileme veya eksik tarihte tip süresine göre hesaplanır.
-    if (yenile || !baslangic || !bitis) {
-      baslangic = yenile || !baslangic ? new Date() : baslangic;
-      bitis =
-        yenile || !bitis
-          ? tip === "yillik"
-            ? addDays(baslangic, 365)
-            : addDays(baslangic, 30)
-          : bitis;
-    }
+  const gunEkleModu = data?.lisansGunEkleModu === true || data?.lisansGunEkleModu === "true";
+  const gunEkle =
+    typeof data?.lisansGunEkle === "number"
+      ? data.lisansGunEkle
+      : typeof data?.lisansGunEkle === "string"
+        ? Number(data.lisansGunEkle)
+        : NaN;
 
-  return { tip, baslangic, bitis };
+  // Mevcut bitişe gün ekle (bitmişse bugünden).
+  if (gunEkleModu && Number.isFinite(gunEkle) && gunEkle > 0) {
+    const now = new Date();
+    const mevcutBitis = bitis && bitis.getTime() > now.getTime() ? bitis : now;
+    const ek = Math.min(Math.floor(gunEkle), 3650);
+    baslangic = baslangic ?? now;
+    bitis = addDays(mevcutBitis, ek);
+    return { tip: tip === "manuel" ? "manuel" : tip, baslangic, bitis };
+  }
+
+  // Elle verilen tarihler korunur; yenileme veya eksik tarihte tip süresine göre hesaplanır.
+  if (yenile || !baslangic || !bitis) {
+    baslangic = yenile || !baslangic ? new Date() : baslangic;
+    if (yenile || !bitis) {
+      const gun = lisansGunSayisi(tip, manuelGun);
+      bitis = addDays(baslangic!, gun);
+    }
+  }
+
+  return { tip, baslangic: baslangic!, bitis: bitis! };
 }
 
 async function lookupUsername(username: string) {

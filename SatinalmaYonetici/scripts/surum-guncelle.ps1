@@ -49,6 +49,7 @@ if (Test-Path $iss) {
 $tag = "yonetici-v$Version"
 $kurulumUrl = "https://github.com/$GitHubKullanici/$RepoAdi/releases/download/$tag/SatinalmaYonetici_Kurulum.exe"
 $zipUrl = "https://github.com/$GitHubKullanici/$RepoAdi/releases/download/$tag/SatinalmaYonetici.zip"
+$apkUrl = "https://github.com/$GitHubKullanici/$RepoAdi/releases/download/$tag/SatinalmaYonetici.apk"
 $notMetni = if ($Notes) { $Notes } else { "Satinalma Yonetici $Version" }
 
 $yeniBuild = 1
@@ -61,12 +62,13 @@ if (Test-Path $eskiManifest) {
 }
 
 $manifest = [ordered]@{
-    version        = $Version
-    build          = $yeniBuild
-    downloadUrl    = $kurulumUrl
-    downloadUrlZip = $zipUrl
-    notes          = $notMetni
-    zorunlu        = $false
+    version           = $Version
+    build             = $yeniBuild
+    downloadUrl       = $kurulumUrl
+    downloadUrlZip    = $zipUrl
+    downloadUrlApk    = $apkUrl
+    notes             = $notMetni
+    zorunlu           = $false
 }
 
 $manifestYol = Join-Path $repoKok "version-yonetici.json"

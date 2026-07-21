@@ -117,6 +117,142 @@ async function writeVeriDoc(
   );
 }
 
+export async function wipeTenantOperationalData(
+  tenantId: string,
+  uid: string,
+  scope: ResetScope = "all"
+): Promise<{
+  ok: true;
+  tenantId: string;
+  scope: ResetScope;
+  veriSifirlamaUtc: number;
+  usersProcessed: number;
+  inboxesCleared: number;
+}> {
+  const db = admin.firestore();
+  const veriSifirlamaUtc = Date.now();
+  const nowIso = new Date().toISOString();
+  const veriRoot = db.collection(`tenants/${tenantId}/veri`);
+
+  await writeVeriDoc(
+    veriRoot,
+    "satinalma_ayarlar",
+    emptyAyarlarJson(veriSifirlamaUtc),
+    uid,
+    veriSifirlamaUtc,
+    nowIso
+  );
+  await veriRoot.doc("satinalma_ayarlar").set(
+    { resetInProgress: true },
+    { merge: true }
+  );
+
+  await writeVeriDoc(
+    veriRoot,
+    "satinalma_talepler",
+    "[]",
+    uid,
+    veriSifirlamaUtc,
+    nowIso
+  );
+
+  try {
+    await db.recursiveDelete(
+      db.collection(`tenants/${tenantId}/procurement_requests`)
+    );
+  } catch (err) {
+    console.error(`procurement_requests wipe failed tenant=${tenantId}`, err);
+  }
+
+  let inboxCleared = 0;
+  let usersProcessed = 0;
+
+  if (scope === "all") {
+    const usersSnap = await db.collection(tenantUsersPath(tenantId)).get();
+    usersProcessed = usersSnap.size;
+    for (const userDoc of usersSnap.docs) {
+      try {
+        await db.recursiveDelete(userDoc.ref.collection("notification_inbox"));
+        inboxCleared++;
+      } catch (err) {
+        console.error(
+          `inbox wipe failed tenant=${tenantId} uid=${userDoc.id}`,
+          err
+        );
+      }
+    }
+
+    for (const doc of ALL_VERI_DOCS) {
+      const json =
+        doc.id === "satinalma_ayarlar"
+          ? emptyAyarlarJson(veriSifirlamaUtc)
+          : doc.json;
+      await writeVeriDoc(
+        veriRoot,
+        doc.id,
+        json,
+        uid,
+        veriSifirlamaUtc,
+        nowIso
+      );
+    }
+  } else {
+    for (const docId of SATINALMA_VERI_DOCS) {
+      const json =
+        docId === "satinalma_ayarlar"
+          ? emptyAyarlarJson(veriSifirlamaUtc)
+          : "[]";
+      await writeVeriDoc(
+        veriRoot,
+        docId,
+        json,
+        uid,
+        veriSifirlamaUtc,
+        nowIso
+      );
+    }
+    const usersSnap = await db.collection(tenantUsersPath(tenantId)).get();
+    usersProcessed = usersSnap.size;
+    for (const userDoc of usersSnap.docs) {
+      try {
+        await db.recursiveDelete(userDoc.ref.collection("notification_inbox"));
+        inboxCleared++;
+      } catch (err) {
+        console.error(
+          `inbox wipe failed tenant=${tenantId} uid=${userDoc.id}`,
+          err
+        );
+      }
+    }
+  }
+
+  await writeVeriDoc(
+    veriRoot,
+    "satinalma_talepler",
+    "[]",
+    uid,
+    veriSifirlamaUtc,
+    nowIso
+  );
+  await writeVeriDoc(
+    veriRoot,
+    "satinalma_ayarlar",
+    emptyAyarlarJson(veriSifirlamaUtc),
+    uid,
+    veriSifirlamaUtc,
+    nowIso
+  );
+
+  return {
+    ok: true,
+    tenantId,
+    scope,
+    veriSifirlamaUtc,
+    usersProcessed,
+    inboxesCleared: inboxCleared,
+  };
+}
+
 /**
  * Kiracı operasyonel verisini sunucu tarafında sıfırlar.
  * scope=all → tüm modüller + inbox + medya
@@ -168,132 +304,6 @@ export const resetTenantOperationalData = onCall(
       );
     }
 
-    const veriSifirlamaUtc = Date.now();
-    const nowIso = new Date().toISOString();
-    const veriRoot = db.collection(`tenants/${tenantId}/veri`);
-
-    // 1) Damga önce — istemciler eski cache'i düşürsün.
-    await writeVeriDoc(
-      veriRoot,
-      "satinalma_ayarlar",
-      emptyAyarlarJson(veriSifirlamaUtc),
-      uid,
-      veriSifirlamaUtc,
-      nowIso
-    );
-    await veriRoot.doc("satinalma_ayarlar").set(
-      { resetInProgress: true },
-      { merge: true }
-    );
-
-    // 2) Talepleri hemen boşalt (diğer istemciler merge etmeden önce).
-    await writeVeriDoc(
-      veriRoot,
-      "satinalma_talepler",
-      "[]",
-      uid,
-      veriSifirlamaUtc,
-      nowIso
-    );
-
-    // 3) Enterprise talep koleksiyonunu sil.
-    try {
-      await db.recursiveDelete(
-        db.collection(`tenants/${tenantId}/procurement_requests`)
-      );
-    } catch (err) {
-      console.error(`procurement_requests wipe failed tenant=${tenantId}`, err);
-    }
-
-    let inboxCleared = 0;
-    let usersProcessed = 0;
-
-    if (scope === "all") {
-      const usersSnap = await db.collection(tenantUsersPath(tenantId)).get();
-      usersProcessed = usersSnap.size;
-      for (const userDoc of usersSnap.docs) {
-        try {
-          await db.recursiveDelete(userDoc.ref.collection("notification_inbox"));
-          inboxCleared++;
-        } catch (err) {
-          console.error(
-            `inbox wipe failed tenant=${tenantId} uid=${userDoc.id}`,
-            err
-          );
-        }
-      }
-
-      for (const doc of ALL_VERI_DOCS) {
-        const json =
-          doc.id === "satinalma_ayarlar"
-            ? emptyAyarlarJson(veriSifirlamaUtc)
-            : doc.json;
-        await writeVeriDoc(
-          veriRoot,
-          doc.id,
-          json,
-          uid,
-          veriSifirlamaUtc,
-          nowIso
-        );
-      }
-    } else {
-      // satinalma scope: yalnızca satınalma + bildirim blob
-      for (const docId of SATINALMA_VERI_DOCS) {
-        const json =
-          docId === "satinalma_ayarlar"
-            ? emptyAyarlarJson(veriSifirlamaUtc)
-            : "[]";
-        await writeVeriDoc(
-          veriRoot,
-          docId,
-          json,
-          uid,
-          veriSifirlamaUtc,
-          nowIso
-        );
-      }
-      // Bildirim inbox'larını da temizle (talep bildirimleri kalmasın)
-      const usersSnap = await db.collection(tenantUsersPath(tenantId)).get();
-      usersProcessed = usersSnap.size;
-      for (const userDoc of usersSnap.docs) {
-        try {
-          await db.recursiveDelete(userDoc.ref.collection("notification_inbox"));
-          inboxCleared++;
-        } catch (err) {
-          console.error(
-            `inbox wipe failed tenant=${tenantId} uid=${userDoc.id}`,
-            err
-          );
-        }
-      }
-    }
-
-    // 4) Talepleri tekrar [] yaz — ara yarışta dolmuş olabilir.
-    await writeVeriDoc(
-      veriRoot,
-      "satinalma_talepler",
-      "[]",
-      uid,
-      veriSifirlamaUtc,
-      nowIso
-    );
-    await writeVeriDoc(
-      veriRoot,
-      "satinalma_ayarlar",
-      emptyAyarlarJson(veriSifirlamaUtc),
-      uid,
-      veriSifirlamaUtc,
-      nowIso
-    );
-
-    return {
-      ok: true,
-      tenantId,
-      scope,
-      veriSifirlamaUtc,
-      usersProcessed,
-      inboxesCleared: inboxCleared,
-    };
+    return wipeTenantOperationalData(tenantId, uid, scope);
   }
 );

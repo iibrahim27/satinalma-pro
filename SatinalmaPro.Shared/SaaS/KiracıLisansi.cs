@@ -4,11 +4,26 @@ public static class LisansTipleri
 {
   public const string Deneme = "deneme";
   public const string Yillik = "yillik";
+  public const string IkiYil = "2yil";
+  public const string UcYil = "3yil";
+  public const string Manuel = "manuel";
+
+  public static int VarsayilanGun(string? tip, int manuelGun = 0) => tip switch
+  {
+    Yillik => 365,
+    IkiYil => 730,
+    UcYil => 1095,
+    Manuel => manuelGun > 0 ? manuelGun : 15,
+    _ => 15
+  };
 
   public static string GorunenAd(string? tip) => tip switch
   {
-    Deneme => "30 günlük deneme",
-    Yillik => "Yıllık lisans",
+    Deneme => "15 günlük deneme",
+    Yillik => "1 yıllık lisans",
+    IkiYil => "2 yıllık lisans",
+    UcYil => "3 yıllık lisans",
+    Manuel => "Manuel gün",
     _ => "Lisans yok"
   };
 }

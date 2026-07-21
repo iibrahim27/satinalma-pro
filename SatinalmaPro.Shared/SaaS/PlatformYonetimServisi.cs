@@ -66,6 +66,8 @@ public sealed class PlatformYonetimServisi
   public async Task<KiracıKaydi> FirmaKaydetAsync(
     KiracıKaydi firma,
     bool lisansYenile = false,
+    int? lisansGunEkle = null,
+    bool lisansGunEkleModu = false,
     CancellationToken iptal = default)
   {
     var sonuc = await CagirAsync("platformSaveTenant", new
@@ -77,10 +79,49 @@ public sealed class PlatformYonetimServisi
       lisansTipi = firma.LisansTipi,
       lisansBaslangic = firma.LisansBaslangic,
       lisansBitis = firma.LisansBitis,
-      lisansYenile
+      lisansYenile,
+      lisansGunEkle,
+      lisansGunEkleModu,
+      lisansManuelGun = lisansGunEkle
     }, iptal);
     return JsonSerializer.Deserialize<KiracıKaydi>(sonuc.GetRawText(), Json)
            ?? throw new InvalidOperationException("Firma kaydı okunamadı.");
+  }
+
+  public async Task<(string DownloadUrl, string Path, long SizeBytes)> FirmaYedekAlAsync(
+    string tenantId, CancellationToken iptal = default)
+  {
+    var sonuc = await CagirAsync("platformBackupTenant", new { tenantId }, iptal);
+    return (
+      sonuc.TryGetProperty("downloadUrl", out var u) ? u.GetString() ?? "" : "",
+      sonuc.TryGetProperty("path", out var p) ? p.GetString() ?? "" : "",
+      sonuc.TryGetProperty("sizeBytes", out var s) ? s.GetInt64() : 0
+    );
+  }
+
+  public async Task<(int RestoredDocs, int RestoredUsers)> FirmaYedektenYukleAsync(
+    string tenantId, string storagePath, bool kullanicilar = true, CancellationToken iptal = default)
+  {
+    var sonuc = await CagirAsync("platformRestoreTenant", new
+    {
+      tenantId,
+      storagePath,
+      restoreUsers = kullanicilar
+    }, iptal);
+    return (
+      sonuc.TryGetProperty("restoredDocs", out var d) ? d.GetInt32() : 0,
+      sonuc.TryGetProperty("restoredUsers", out var u) ? u.GetInt32() : 0
+    );
+  }
+
+  public async Task<(long VeriSifirlamaUtc, int UsersProcessed)> FirmaVeriSifirlaAsync(
+    string tenantId, string scope = "all", CancellationToken iptal = default)
+  {
+    var sonuc = await CagirAsync("platformResetTenantData", new { tenantId, scope }, iptal);
+    return (
+      sonuc.TryGetProperty("veriSifirlamaUtc", out var v) ? v.GetInt64() : 0,
+      sonuc.TryGetProperty("usersProcessed", out var u) ? u.GetInt32() : 0
+    );
   }
 
   public async Task<List<PlatformKullaniciKaydi>> KullanicilariListeleAsync(string tenantId, CancellationToken iptal = default)

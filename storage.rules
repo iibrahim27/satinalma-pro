@@ -143,6 +143,12 @@ service firebase.storage {
       allow delete: if isOwner(uid) || isAdmin();
     }
 
+    // ─── Platform yedekleri (yalnızca Admin SDK / imzalı URL) ───────────
+
+    match /platform-backups/{allPaths=**} {
+      allow read, write: if false;
+    }
+
     // ─── Sistem: logo, imza, duyuru ekleri ──────────────────────────────
 
     match /system/{allPaths=**} {

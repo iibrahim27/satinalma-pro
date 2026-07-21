@@ -1,8 +1,9 @@
 ﻿{
-    "version":  "1.0.30",
-    "build":  31,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.30/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.30/SatinalmaYonetici.zip",
-    "notes":  "Platform yonetim 1.0.30 - Pro 2.1.77 satinalma sunucu sifirlama korumasi ile birlikte",
+    "version":  "1.0.31",
+    "build":  32,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.31/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.31/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.31/SatinalmaYonetici.apk",
+    "notes":  "1.0.31 - Acilis kapanma duzeltmesi, 15g deneme + 1/2/3 yil/manuel lisans, yedek/geri yukleme/sifirlama, Android Yonetici ilk surum",
     "zorunlu":  false
 }

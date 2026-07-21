@@ -15,6 +15,11 @@ export {
 } from "./callables/admin";
 export { resetTenantOperationalData } from "./callables/resetTenantData";
 export {
+  platformBackupTenant,
+  platformRestoreTenant,
+  platformResetTenantData,
+} from "./callables/platformTenantOps";
+export {
   loginWithUsername,
   passwordResetByUsername,
   platformListTenants,

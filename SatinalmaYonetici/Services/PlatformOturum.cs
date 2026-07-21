@@ -18,19 +18,40 @@ public sealed class PlatformOturum
     public bool Yapilandirildi { get; private set; }
     public string ProjectId { get; private set; } = "";
     public string ApiKey { get; private set; } = "";
+    public string? YapilandirmaHatasi { get; private set; }
     public string? KayitliEposta => PlatformOturumDeposu.Oku()?.Eposta;
 
     public PlatformOturum()
     {
         var yol = Path.Combine(AppContext.BaseDirectory, "firebase_ayarlar.json");
         if (!File.Exists(yol))
+        {
+            YapilandirmaHatasi = "firebase_ayarlar.json bulunamadı (exe yanında olmalı).";
             return;
+        }
 
-        using var belge = JsonDocument.Parse(File.ReadAllText(yol));
-        ProjectId = belge.RootElement.GetProperty("projectId").GetString() ?? "";
-        ApiKey = belge.RootElement.GetProperty("apiKey").GetString() ?? "";
-        if (string.IsNullOrWhiteSpace(ProjectId) || string.IsNullOrWhiteSpace(ApiKey))
+        try
+        {
+            using var belge = JsonDocument.Parse(File.ReadAllText(yol));
+            ProjectId = belge.RootElement.TryGetProperty("projectId", out var p)
+                ? p.GetString() ?? ""
+                : "";
+            ApiKey = belge.RootElement.TryGetProperty("apiKey", out var a)
+                ? a.GetString() ?? ""
+                : "";
+        }
+        catch (Exception ex)
+        {
+            YapilandirmaHatasi = $"firebase_ayarlar.json okunamadı: {ex.Message}";
+            HataGunlugu.Kaydet(ex, "PlatformOturum.ctor");
             return;
+        }
+
+        if (string.IsNullOrWhiteSpace(ProjectId) || string.IsNullOrWhiteSpace(ApiKey))
+        {
+            YapilandirmaHatasi = "firebase_ayarlar.json içinde projectId / apiKey eksik.";
+            return;
+        }
 
         Platform = new PlatformYonetimServisi(ProjectId);
         Platform.TokenSaglayiciAyarla(GecerliTokenAlAsync);
@@ -55,8 +76,9 @@ public sealed class PlatformOturum
             await GecerliTokenAlAsync();
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            HataGunlugu.Kaydet(ex, "PlatformOturum.OtomatikGiris");
             PlatformOturumDeposu.Sil();
             CikisYap(oturumuSil: false);
             return false;
@@ -66,7 +88,8 @@ public sealed class PlatformOturum
     public async Task GirisYapAsync(string eposta, string sifre, bool beniHatirla = false)
     {
         if (!Yapilandirildi)
-            throw new InvalidOperationException("firebase_ayarlar.json yapılandırılmamış.");
+            throw new InvalidOperationException(
+                YapilandirmaHatasi ?? "firebase_ayarlar.json yapılandırılmamış.");
 
         var yanit = await Http.PostAsJsonAsync(
             $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={ApiKey}",

@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.77",
-    "build":  146,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.77/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.77/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.77/SatinalmaPro.apk",
-    "notes":  "Satinalma sifirlama: sunucu scope=satinalma; eski istemci geri yazimini sunucu reddeder; talep [] disk ile doldurulmaz",
+    "version":  "2.1.78",
+    "build":  147,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.78/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.78/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.78/SatinalmaPro.apk",
+    "notes":  "2.1.78 - Lisans metinleri 15g deneme; Yonetici panel genisletme ile Shared uyumu",
     "zorunlu":  false
 }

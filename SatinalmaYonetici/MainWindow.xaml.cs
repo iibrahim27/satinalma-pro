@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         SurumMetinleriniGuncelle();
+        FirmaLisansTipi.SelectionChanged += FirmaLisansTipi_SelectionChanged;
         RolKutusu.ItemsSource = KullaniciRolleri.Tum;
         RolKutusu.SelectedItem = KullaniciRolleri.Saha;
         RolKutusu.SelectionChanged += RolKutusu_SelectionChanged;
@@ -28,9 +29,12 @@ public partial class MainWindow : Window
 
         if (!_oturum.Yapilandirildi)
         {
-            DurumMetni.Text = "firebase_ayarlar.json bulunamadı.";
+            var hata = string.IsNullOrWhiteSpace(_oturum.YapilandirmaHatasi)
+                ? "firebase_ayarlar.json bulunamadı. Exe yanında yapılandırma dosyası olmalı."
+                : _oturum.YapilandirmaHatasi!;
+            DurumMetni.Text = hata;
             YonetimPanel.Visibility = Visibility.Collapsed;
-            GirisHata.Text = "firebase_ayarlar.json bulunamadı. Exe yanında yapılandırma dosyası olmalı.";
+            GirisHata.Text = hata;
             GirisHata.Visibility = Visibility.Visible;
             return;
         }
@@ -207,10 +211,12 @@ public partial class MainWindow : Window
         FirmaAd.Text = "";
         FirmaAktif.IsChecked = true;
         LisansTipiniSec(LisansTipleri.Deneme);
+        FirmaLisansManuelGun.Text = "15";
+        ManuelGunPanel.Visibility = Visibility.Collapsed;
         var bugun = DateTime.Today;
         FirmaLisansBaslangic.SelectedDate = bugun;
-        FirmaLisansBitis.SelectedDate = bugun.AddDays(30);
-        FirmaLisansDurum.Text = "Yeni firmaya otomatik 30 gün deneme verilir. Tarihleri elle de ayarlayabilirsiniz.";
+        FirmaLisansBitis.SelectedDate = bugun.AddDays(15);
+        FirmaLisansDurum.Text = "Yeni firmaya otomatik 15 gün deneme verilir. Tarihleri elle de ayarlayabilirsiniz.";
         KullaniciGrid.ItemsSource = null;
         KullaniciBaslik.Text = "Kullanıcılar";
         DurumMetni.Text = "Yeni firma formu hazır.";
@@ -230,7 +236,7 @@ public partial class MainWindow : Window
         }
 
         var tip = SeciliLisansTipi();
-        var gun = tip == LisansTipleri.Yillik ? 365 : 30;
+        var gun = LisansTipleri.VarsayilanGun(tip, ManuelGunOku());
         var onay = MessageBox.Show(
             $"Lisans bugünden itibaren {gun} gün yenilenecek ({LisansTipleri.GorunenAd(tip)}).\n"
             + "Süre dolmuşsa firma ve kullanıcılar yeniden aktifleştirilebilir.\n\nDevam edilsin mi?",
@@ -241,6 +247,151 @@ public partial class MainWindow : Window
             return;
 
         await FirmaKaydetInternalAsync(lisansYenile: true);
+    }
+
+    private async void LisansGunEkle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_seciliFirma is null || string.IsNullOrWhiteSpace(_seciliFirma.Id))
+        {
+            MessageBox.Show("Önce bir firma seçin.", "Gün ekle", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var gun = ManuelGunOku();
+        if (gun <= 0)
+        {
+            MessageBox.Show("Eklenecek gün sayısı pozitif bir sayı olmalı.", "Gün ekle",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var onay = MessageBox.Show(
+            $"Mevcut lisans bitişine {gun} gün eklenecek (bitmişse bugünden başlar).\n\nDevam edilsin mi?",
+            "Gün ekle",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (onay != MessageBoxResult.Yes)
+            return;
+
+        await FirmaKaydetInternalAsync(lisansYenile: false, lisansGunEkle: gun, lisansGunEkleModu: true);
+    }
+
+    private async void FirmaYedekAl_Click(object sender, RoutedEventArgs e)
+    {
+        if (_seciliFirma is null || string.IsNullOrWhiteSpace(_seciliFirma.Id))
+        {
+            MessageBox.Show("Önce bir firma seçin.", "Yedek", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            DurumMetni.Text = "Yedek alınıyor...";
+            var (url, path, size) = await _oturum.Platform.FirmaYedekAlAsync(_seciliFirma.Id);
+            if (string.IsNullOrWhiteSpace(url))
+                throw new InvalidOperationException("Yedek URL alınamadı.");
+
+            var dlg = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "Firma yedeğini kaydet",
+                Filter = "ZIP yedek|*.zip",
+                FileName = $"{_seciliFirma.Kod}_{DateTime.Now:yyyyMMdd_HHmm}.zip"
+            };
+            if (dlg.ShowDialog() != true)
+            {
+                DurumMetni.Text = $"Yedek oluşturuldu (Storage): {path}";
+                return;
+            }
+
+            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMinutes(10) };
+            var bytes = await http.GetByteArrayAsync(url);
+            await System.IO.File.WriteAllBytesAsync(dlg.FileName, bytes);
+            DurumMetni.Text = $"Yedek kaydedildi ({size / 1024} KB): {dlg.FileName}";
+            MessageBox.Show($"Yedek indirildi.\n\n{dlg.FileName}", "Yedek",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Yedek", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private async void FirmaYedektenYukle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_seciliFirma is null || string.IsNullOrWhiteSpace(_seciliFirma.Id))
+        {
+            MessageBox.Show("Önce bir firma seçin.", "Geri yükle", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var path = MetinGir(
+            "Yedekten yükle",
+            "Storage yolu (örn. platform-backups/tenantId/timestamp.zip)\n"
+            + "veya yedek alırken dönen path:",
+            $"platform-backups/{_seciliFirma.Id}/");
+        if (string.IsNullOrWhiteSpace(path))
+            return;
+
+        var onay = MessageBox.Show(
+            $"«{_seciliFirma.Ad}» verisi bu yedekten üzerine yazılacak.\n\nPath: {path}\n\nDevam edilsin mi?",
+            "Yedekten yükle",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (onay != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            DurumMetni.Text = "Geri yükleniyor...";
+            var (docs, users) = await _oturum.Platform.FirmaYedektenYukleAsync(_seciliFirma.Id, path.Trim());
+            DurumMetni.Text = $"Geri yüklendi: {docs} veri, {users} kullanıcı.";
+            MessageBox.Show(
+                $"Geri yükleme tamam.\n\nVeri dokümanı: {docs}\nKullanıcı profili: {users}",
+                "Geri yükle", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Geri yükle", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private async void FirmaVeriSifirla_Click(object sender, RoutedEventArgs e)
+    {
+        if (_seciliFirma is null || string.IsNullOrWhiteSpace(_seciliFirma.Id))
+        {
+            MessageBox.Show("Önce bir firma seçin.", "Sıfırla", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var u1 = MessageBox.Show(
+            $"«{_seciliFirma.Ad}» operasyonel verisi silinecek (talepler, stok, filo…).\n"
+            + "Kullanıcı hesapları kalır.\n\nDevam edilsin mi?",
+            "Verileri sıfırla",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (u1 != MessageBoxResult.Yes)
+            return;
+
+        var kod = MetinGir("Sıfırlama onayı", $"Onay için firma kodunu yazın: {_seciliFirma.Kod}", "");
+        if (!string.Equals(kod?.Trim(), _seciliFirma.Kod, StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show("Onay kodu eşleşmedi. İptal edildi.", "Sıfırla",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            DurumMetni.Text = "Firma verisi sıfırlanıyor...";
+            var (utc, users) = await _oturum.Platform.FirmaVeriSifirlaAsync(_seciliFirma.Id);
+            DurumMetni.Text = $"Veri sıfırlandı (utc={utc}, kullanıcı={users}).";
+            MessageBox.Show("Operasyonel veri sıfırlandı. Kullanıcı hesapları korundu.",
+                "Sıfırla", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Sıfırla", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private async void FirmaSil_Click(object sender, RoutedEventArgs e)
@@ -303,33 +454,68 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task FirmaKaydetInternalAsync(bool lisansYenile)
+    private async Task FirmaKaydetInternalAsync(
+        bool lisansYenile,
+        int? lisansGunEkle = null,
+        bool lisansGunEkleModu = false)
     {
         try
         {
             var tip = SeciliLisansTipi();
+            var manuelGun = tip == LisansTipleri.Manuel || lisansGunEkleModu
+                ? (lisansGunEkle ?? ManuelGunOku())
+                : (int?)null;
+
             var kayit = await _oturum.Platform.FirmaKaydetAsync(new KiracıKaydi
             {
                 Id = _seciliFirma?.Id ?? "",
                 Kod = FirmaKod.Text.Trim(),
                 Ad = FirmaAd.Text.Trim(),
-                Aktif = lisansYenile || FirmaAktif.IsChecked == true,
+                Aktif = lisansYenile || lisansGunEkleModu || FirmaAktif.IsChecked == true,
                 LisansTipi = tip,
-                LisansBaslangic = FirmaLisansBaslangic.SelectedDate?.ToUniversalTime().ToString("o"),
-                LisansBitis = FirmaLisansBitis.SelectedDate?.ToUniversalTime().ToString("o")
-            }, lisansYenile);
+                LisansBaslangic = lisansGunEkleModu
+                    ? null
+                    : FirmaLisansBaslangic.SelectedDate?.ToUniversalTime().ToString("o"),
+                LisansBitis = lisansGunEkleModu
+                    ? null
+                    : FirmaLisansBitis.SelectedDate?.ToUniversalTime().ToString("o")
+            }, lisansYenile, manuelGun, lisansGunEkleModu);
 
             await FirmalariYukleAsync();
             LisansTarihleriniDoldur(kayit);
             FirmaLisansDurum.Text = LisansDurumMetni(kayit);
-            DurumMetni.Text = lisansYenile
-                ? $"Lisans yenilendi: {kayit.Ad}"
-                : $"Firma kaydedildi: {kayit.Ad}";
+            DurumMetni.Text = lisansGunEkleModu
+                ? $"Lisans süresi uzatıldı: {kayit.Ad}"
+                : lisansYenile
+                    ? $"Lisans yenilendi: {kayit.Ad}"
+                    : $"Firma kaydedildi: {kayit.Ad}";
         }
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Firma", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private void FirmaLisansTipi_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var tip = SeciliLisansTipi();
+        ManuelGunPanel.Visibility = tip == LisansTipleri.Manuel
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        if (_seciliFirma is not null)
+            return;
+
+        var bugun = DateTime.Today;
+        FirmaLisansBaslangic.SelectedDate = bugun;
+        FirmaLisansBitis.SelectedDate = bugun.AddDays(LisansTipleri.VarsayilanGun(tip, ManuelGunOku()));
+    }
+
+    private int ManuelGunOku()
+    {
+        if (int.TryParse(FirmaLisansManuelGun.Text?.Trim(), out var g) && g > 0)
+            return Math.Min(g, 3650);
+        return 15;
     }
 
     private string SeciliLisansTipi()
@@ -342,13 +528,20 @@ public partial class MainWindow : Window
 
     private void LisansTipiniSec(string? tip)
     {
-        var hedef = tip == LisansTipleri.Yillik ? LisansTipleri.Yillik : LisansTipleri.Deneme;
+        var hedef = string.IsNullOrWhiteSpace(tip) ? LisansTipleri.Deneme : tip.Trim().ToLowerInvariant();
+        if (hedef is not (LisansTipleri.Deneme or LisansTipleri.Yillik or LisansTipleri.IkiYil
+            or LisansTipleri.UcYil or LisansTipleri.Manuel))
+            hedef = LisansTipleri.Deneme;
+
         foreach (var obj in FirmaLisansTipi.Items)
         {
             if (obj is System.Windows.Controls.ComboBoxItem item &&
                 string.Equals(item.Tag as string, hedef, StringComparison.OrdinalIgnoreCase))
             {
                 FirmaLisansTipi.SelectedItem = item;
+                ManuelGunPanel.Visibility = hedef == LisansTipleri.Manuel
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
                 return;
             }
         }

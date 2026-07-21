@@ -58,6 +58,38 @@ public static class GuncellemeServisi
 
         ilerleme?.Invoke($"Yeni sürüm: v{manifest.Version}", 12);
 
+        // Açılış (sessiz): yalnızca zorunlu güncellemede kurulum+kapanış.
+        // Aksi halde kullanıcı panelini kaybetmesin — bildirim MainWindow'da gösterilir.
+        if (sessiz && !manifest.Zorunlu)
+        {
+            HataGunlugu.Kaydet(
+                $"İsteğe bağlı güncelleme atlandı (mevcut={YerelBilgi.Versiyon}, yeni={manifest.Version})",
+                "Guncelleme.SessizAtla");
+            return false;
+        }
+
+        if (sessiz && manifest.Zorunlu)
+        {
+            var onay = MessageBox.Show(
+                $"Zorunlu güncelleme: v{manifest.Version}\n\n{manifest.Notes}\n\nŞimdi güncellensin mi?",
+                "Satınalma Yönetici",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (onay != MessageBoxResult.Yes)
+                return false;
+        }
+
+        if (!sessiz)
+        {
+            var onay = MessageBox.Show(
+                $"Yeni sürüm hazır: v{manifest.Version}\n\n{manifest.Notes}\n\nŞimdi güncellensin mi?",
+                "Satınalma Yönetici",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Information);
+            if (onay != MessageBoxResult.Yes)
+                return false;
+        }
+
         var adresler = IndirmeAdresleri(manifest).ToList();
         for (var i = 0; i < adresler.Count; i++)
         {

@@ -202,9 +202,20 @@
                   <ComboBox x:Name="FirmaLisansTipi" Foreground="#0F172A" Background="White"
                             Height="40" Padding="10,6" FontSize="14" BorderBrush="#CBD5E1" BorderThickness="1"
                             VerticalContentAlignment="Center" Margin="0,0,0,10">
-                    <ComboBoxItem Tag="deneme" Content="30 günlük deneme" IsSelected="True" />
-                    <ComboBoxItem Tag="yillik" Content="Yıllık lisans (365 gün)" />
+                    <ComboBoxItem Tag="deneme" Content="15 günlük deneme" IsSelected="True" />
+                    <ComboBoxItem Tag="yillik" Content="1 yıllık lisans (365 gün)" />
+                    <ComboBoxItem Tag="2yil" Content="2 yıllık lisans (730 gün)" />
+                    <ComboBoxItem Tag="3yil" Content="3 yıllık lisans (1095 gün)" />
+                    <ComboBoxItem Tag="manuel" Content="Manuel gün" />
                   </ComboBox>
+
+                  <StackPanel x:Name="ManuelGunPanel" Visibility="Collapsed" Margin="0,0,0,10">
+                    <TextBlock Text="Manuel gün sayısı" Style="{StaticResource FieldLabelStyle}" />
+                    <TextBox x:Name="FirmaLisansManuelGun" Foreground="#0F172A" Background="White"
+                             CaretBrush="#0F172A" Height="40" Padding="12,8" FontSize="14"
+                             BorderBrush="#CBD5E1" BorderThickness="1"
+                             VerticalContentAlignment="Center" Text="30" />
+                  </StackPanel>
 
                   <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
@@ -225,18 +236,32 @@
                   </Grid>
 
                   <TextBlock x:Name="FirmaLisansDurum" Style="{StaticResource HintTextStyle}"
-                             Text="Yeni firmaya otomatik 30 gün deneme verilir. Tarihleri elle de ayarlayabilirsiniz." Margin="0,0,0,10" />
+                             Text="Yeni firmaya otomatik 15 gün deneme verilir. Tarihleri elle de ayarlayabilirsiniz." Margin="0,0,0,10" />
 
                   <CheckBox x:Name="FirmaAktif" Content="Aktif" IsChecked="True" Margin="0,0,0,12" />
-                  <StackPanel Orientation="Horizontal">
+                  <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                     <Button Content="Firmayı Kaydet" Style="{StaticResource PrimaryButtonStyle}"
                             MinWidth="140" Click="FirmaKaydet_Click" Margin="0,0,8,0" />
                     <Button Content="Lisansı yenile" Style="{StaticResource SecondaryButtonStyle}"
                             MinWidth="120" Click="LisansYenile_Click" Margin="0,0,8,0"
-                            ToolTip="Bugünden itibaren deneme=30 gün veya yıllık=365 gün yeniden başlatır" />
+                            ToolTip="Bugünden itibaren seçili lisans tipiyle yeniden başlatır" />
+                    <Button Content="Gün ekle" Style="{StaticResource SecondaryButtonStyle}"
+                            MinWidth="100" Click="LisansGunEkle_Click" Margin="0,0,8,0"
+                            ToolTip="Mevcut bitiş tarihine manuel gün ekler (bitmişse bugünden)" />
                     <Button Content="Firmayı Sil" Style="{StaticResource DangerButtonStyle}"
                             MinWidth="110" Click="FirmaSil_Click"
                             ToolTip="Firmayı ve tüm verisini kalıcı olarak siler (geri alınamaz)" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal">
+                    <Button Content="Yedek al" Style="{StaticResource SecondaryButtonStyle}"
+                            MinWidth="100" Click="FirmaYedekAl_Click" Margin="0,0,8,0"
+                            ToolTip="Firma verisini buluta yedekler ve indirir" />
+                    <Button Content="Yedekten yükle" Style="{StaticResource SecondaryButtonStyle}"
+                            MinWidth="120" Click="FirmaYedektenYukle_Click" Margin="0,0,8,0"
+                            ToolTip="Seçilen ZIP yedeğini firmaya geri yükler" />
+                    <Button Content="Verileri sıfırla" Style="{StaticResource DangerButtonStyle}"
+                            MinWidth="120" Click="FirmaVeriSifirla_Click"
+                            ToolTip="Operasyonel veriyi siler; kullanıcı hesapları kalır" />
                   </StackPanel>
                 </StackPanel>
               </Border>
