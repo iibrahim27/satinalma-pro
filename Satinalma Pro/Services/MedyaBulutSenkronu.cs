@@ -79,6 +79,17 @@ public static class MedyaBulutSenkronu
             BelgeYolu, json, OturumYoneticisi.Auth?.Uid, iptal);
     }
 
+    /// <summary>Tüm verileri sıfırla: buluttaki logo/imza paketini boşaltır.</summary>
+    public static async Task BulutuTemizleAsync(CancellationToken iptal = default)
+    {
+        if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
+            return;
+
+        var json = JsonSerializer.Serialize(new MedyaPaketi(), Json);
+        await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
+            BelgeYolu, json, OturumYoneticisi.Auth?.Uid, iptal);
+    }
+
     public static void Planla()
     {
         if (!OturumYoneticisi.GirisYapildi)

@@ -741,7 +741,7 @@ public partial class AyarlarView : UserControl
         {
             try
             {
-                await BulutVeriSenkronu.TumVerileriBulutaGonderAsync();
+                await BulutVeriSenkronu.TumVerileriBulutaGonderAsync(sifirlamaModu: true);
                 try
                 {
                     await BildirimYoneticisi.SifirlamaSonrasiTemizleAsync();
@@ -753,7 +753,7 @@ public partial class AyarlarView : UserControl
                 MessageBox.Show(
                     "Firma ve modül verileri sıfırlandı ve buluta kaydedildi.\n" +
                     "Firebase ve Android ayarları korundu.\n" +
-                    "Diğer bilgisayarlar giriş yaptığında güncellenecek.",
+                    "Android ve diğer cihazlar yenileme/giriş sonrası boş listeyi görecek.",
                     UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }

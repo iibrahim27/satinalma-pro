@@ -1397,33 +1397,17 @@ class AppContainer(private val context: Context) {
                 return
             }
 
-        // Telefonda sık görülen: geçici boş/eksik yanıt → dolu listeyi silme.
-        // Bellekte veya cache'de veri varken bulut boş dönerse şüpheli say, koru.
-        val next = when {
-            loaded.isNotEmpty() -> loaded
-            previous.isNotEmpty() -> {
-                BildirimLog.w(
-                    "SESSION",
-                    "Bulut boş döndü ama bellekte ${previous.size} talep var — korunuyor"
-                )
-                previous
-            }
-            cached.isNotEmpty() -> {
-                BildirimLog.w(
-                    "SESSION",
-                    "Bulut boş döndü ama cache'de ${cached.size} talep var — korunuyor"
-                )
-                cached
-            }
-            else -> loaded
+        // Başarılı Firestore okuması otoriterdir (bilinçli sıfırlama dahil "[]").
+        // Yalnızca exception yolunda önceki/cache veri korunur.
+        if (loaded.isEmpty() && (previous.isNotEmpty() || cached.isNotEmpty())) {
+            BildirimLog.i(
+                "SESSION",
+                "Bulut boş liste döndü — yerel ${previous.size}/cache ${cached.size} talep temizleniyor"
+            )
         }
-
-        _talepler.value = next
-        if (tenantId.isNotBlank() && next.isNotEmpty()) {
-            offlineCache.saveTalepler(tenantId, next)
-        } else if (tenantId.isNotBlank() && loaded.isEmpty() && previous.isEmpty() && cached.isEmpty()) {
-            // Gerçekten boş kiracı — boş cache yazılabilir.
-            offlineCache.saveTalepler(tenantId, emptyList())
+        _talepler.value = loaded
+        if (tenantId.isNotBlank()) {
+            offlineCache.saveTalepler(tenantId, loaded)
         }
     }
 
