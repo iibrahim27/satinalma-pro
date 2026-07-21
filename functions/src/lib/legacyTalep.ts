@@ -12,6 +12,8 @@ export interface LegacyTalep {
   siparisNo?: string;
   olusturmaTarihi?: string;
   guncellemeTarihi?: string;
+  /** CamelCase JSON (masaüstü/Android) */
+  guncellemeUtc?: number;
 }
 
 export function parseLegacyTalepler(jsonStr: string | undefined): LegacyTalep[] {

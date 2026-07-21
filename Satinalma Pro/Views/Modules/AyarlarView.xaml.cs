@@ -660,21 +660,51 @@ public partial class AyarlarView : UserControl
 
         if (sonuc != MessageBoxResult.Yes) return;
 
-        SatinalmaProYedeklemeServisi.ModulSifirla(dosyaAdi);
-        AyarlariYukle();
-        VeriDurumlariniYenile();
+        var satinalmaModulu =
+            dosyaAdi.Equals("satinalma_talepler.json", StringComparison.OrdinalIgnoreCase)
+            || dosyaAdi.Equals("satinalma_ayarlar.json", StringComparison.OrdinalIgnoreCase);
 
-        if (string.Equals(dosyaAdi, "satinalma_talepler.json", StringComparison.OrdinalIgnoreCase))
+        // Satınalma: istemci merge yarışına bırakma — sunucu otoriter temizler.
+        if (satinalmaModulu && OturumYoneticisi.GirisYapildi && OturumYoneticisi.Firestore is not null)
         {
+            BulutVeriSenkronu.SifirlamaKapisiniAc();
             try
             {
-                await BildirimYoneticisi.GecersizleriSilAsync();
+                var sunucu = await KiraciVeriSifirlamaServisi.SifirlaAsync("satinalma");
+                SatinalmaDepo.AyarlariSifirla();
+                SatinalmaDepo.Ayarlar.VeriSifirlamaUtc = sunucu.VeriSifirlamaUtc;
+                SatinalmaDepo.TumTalepleriSifirla();
+                SatinalmaDepo.Kaydet();
+                BildirimDeposu.KiraciDegisti();
+
+                AyarlariYukle();
+                VeriDurumlariniYenile();
+                if (Application.Current.MainWindow is MainWindow mwSat)
+                    mwSat.Sidebar.Yenile();
+
+                MessageBox.Show(
+                    $"Satınalma verileri (talepler + bildirimler) sıfırlandı.\n" +
+                    $"Android yenilemede boş listeyi görecek.\nInbox: {sunucu.InboxesCleared}/{sunucu.UsersProcessed}",
+                    UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
             }
             catch (Exception ex)
             {
-                HataGunlugu.Kaydet(ex, "Ayarlar.ModulSifirla.BildirimTemizligi");
+                HataGunlugu.Kaydet(ex, "Ayarlar.ModulSifirla.Satinalma");
+                MessageBox.Show(
+                    $"Satınalma sıfırlanamadı:\n{ex.Message}",
+                    UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            finally
+            {
+                BulutVeriSenkronu.SifirlamaKapisiniKapat();
             }
         }
+
+        SatinalmaProYedeklemeServisi.ModulSifirla(dosyaAdi);
+        AyarlariYukle();
+        VeriDurumlariniYenile();
 
         if (OturumYoneticisi.GirisYapildi && OturumYoneticisi.Firestore is not null)
         {

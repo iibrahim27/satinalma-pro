@@ -1,6 +1,6 @@
 ﻿; Satınalma Yönetici — Inno Setup kurulum betiği
 #define MyAppName "Satınalma Yönetici"
-#define MyAppVersion "1.0.29"
+#define MyAppVersion "1.0.30"
 #define MyAppPublisher "MV İNŞAAT"
 #define MyAppExeName "SatinalmaYonetici.exe"
 #define MyPublishDir "..\bin\Release\net9.0-windows10.0.17763.0\win-x64\publish"

@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.76",
-    "build":  145,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.76/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.76/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.76/SatinalmaPro.apk",
-    "notes":  "Sunucu tarafli tam sifirlama (resetTenantOperationalData): talepler/stok/bildirim/inbox/medya; masaustu merge yarisi kapatildi; Android damga ile cache temizler",
+    "version":  "2.1.77",
+    "build":  146,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.77/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.77/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.77/SatinalmaPro.apk",
+    "notes":  "Satinalma sifirlama: sunucu scope=satinalma; eski istemci geri yazimini sunucu reddeder; talep [] disk ile doldurulmaz",
     "zorunlu":  false
 }

@@ -23,9 +23,13 @@ public static class KiraciVeriSifirlamaServisi
     public sealed record Sonuc(
         long VeriSifirlamaUtc,
         int UsersProcessed,
-        int InboxesCleared);
+        int InboxesCleared,
+        string Scope);
 
-    public static async Task<Sonuc> SifirlaAsync(CancellationToken iptal = default)
+    /// <param name="scope">"all" veya "satinalma"</param>
+    public static async Task<Sonuc> SifirlaAsync(
+        string scope = "all",
+        CancellationToken iptal = default)
     {
         if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Auth is null)
             throw new InvalidOperationException("Buluta sıfırlama için oturum gerekli.");
@@ -40,12 +44,17 @@ public static class KiraciVeriSifirlamaServisi
 
         var token = await OturumYoneticisi.Auth.GecerliTokenAlAsync(iptal);
         var tenantId = KiracıOturumu.ZorunluTenantId();
+        var scopeNorm = string.Equals(scope, "satinalma", StringComparison.OrdinalIgnoreCase)
+            ? "satinalma"
+            : "all";
         var url =
             $"https://europe-west1-{projectId}.cloudfunctions.net/resetTenantOperationalData";
 
         using var istek = new HttpRequestMessage(HttpMethod.Post, url)
         {
-            Content = JsonContent.Create(new { data = new { tenantId } }, options: Json)
+            Content = JsonContent.Create(
+                new { data = new { tenantId, scope = scopeNorm } },
+                options: Json)
         };
         istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -64,7 +73,10 @@ public static class KiraciVeriSifirlamaServisi
 
         var users = result.TryGetProperty("usersProcessed", out var up) ? up.GetInt32() : 0;
         var inboxes = result.TryGetProperty("inboxesCleared", out var ic) ? ic.GetInt32() : 0;
-        return new Sonuc(utc, users, inboxes);
+        var scopeOut = result.TryGetProperty("scope", out var sc)
+            ? sc.GetString() ?? scopeNorm
+            : scopeNorm;
+        return new Sonuc(utc, users, inboxes, scopeOut);
     }
 
     private static string HataMesaji(System.Net.HttpStatusCode kod, string govde)
