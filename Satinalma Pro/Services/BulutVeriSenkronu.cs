@@ -254,6 +254,14 @@ public static class BulutVeriSenkronu
                 foreach (var anahtar in BelgeHaritasi.Keys)
                     BosYazmayaIzinliAnahtarlar.Add(anahtar);
             }
+
+            // Android/diğer istemcilerin offline cache temizlemesi için damga.
+            if (SatinalmaDepo.Ayarlar.VeriSifirlamaUtc <= 0)
+            {
+                SatinalmaDepo.Ayarlar.VeriSifirlamaUtc =
+                    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                SatinalmaDepo.Kaydet();
+            }
         }
 
         _senkronYukleniyor = true;
@@ -277,7 +285,15 @@ public static class BulutVeriSenkronu
                 }
 
                 if (sifirlamaModu)
+                {
                     await MedyaBulutSenkronu.BulutuTemizleAsync(iptal).ConfigureAwait(false);
+                    // Paylaşılan bildirim blob'unu da boşalt (inbox kullanıcı bazlı ayrı temizlenir).
+                    await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
+                        FirestoreYollari.Bildirimler(),
+                        "[]",
+                        OturumYoneticisi.Auth?.Uid,
+                        iptal).ConfigureAwait(false);
+                }
                 else
                     await MedyaBulutSenkronu.BulutaYukleAsync(iptal).ConfigureAwait(false);
             }
@@ -349,6 +365,8 @@ public static class BulutVeriSenkronu
                         SatinalmaDepo.Ayarlar.SonSiparisSira, bulutAyarlar.SonSiparisSira);
                     SatinalmaDepo.Ayarlar.SonIadeSira = Math.Max(
                         SatinalmaDepo.Ayarlar.SonIadeSira, bulutAyarlar.SonIadeSira);
+                    SatinalmaDepo.Ayarlar.VeriSifirlamaUtc = Math.Max(
+                        SatinalmaDepo.Ayarlar.VeriSifirlamaUtc, bulutAyarlar.VeriSifirlamaUtc);
                     json = JsonSerializer.Serialize(SatinalmaDepo.Ayarlar, JsonSecenekleri);
                 }
             }
@@ -696,6 +714,8 @@ public static class BulutVeriSenkronu
                         SatinalmaDepo.Ayarlar.SonSiparisSira, bulutAyarlar.SonSiparisSira);
                     SatinalmaDepo.Ayarlar.SonIadeSira = Math.Max(
                         SatinalmaDepo.Ayarlar.SonIadeSira, bulutAyarlar.SonIadeSira);
+                    SatinalmaDepo.Ayarlar.VeriSifirlamaUtc = Math.Max(
+                        SatinalmaDepo.Ayarlar.VeriSifirlamaUtc, bulutAyarlar.VeriSifirlamaUtc);
                     json = JsonSerializer.Serialize(SatinalmaDepo.Ayarlar, JsonSecenekleri);
                 }
             }

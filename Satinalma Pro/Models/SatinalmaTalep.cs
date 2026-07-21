@@ -311,6 +311,12 @@ public class SatinalmaAyarlar
     /// <summary>Tüm verileri sıfırla sonrası — varsayılan imza ünvanları eklenmez.</summary>
     public bool ImzaAyarleriTemiz { get; set; }
 
+    /// <summary>
+    /// Tüm verileri sıfırla damgası (UTC ms). Android/diğer istemciler bu değer artınca
+    /// offline cache'i temizler; sıfırlama öncesi taleplerin buluta geri yazılmasını engeller.
+    /// </summary>
+    public long VeriSifirlamaUtc { get; set; }
+
     /// <summary>Eski tek-firma şablonu; yeni kiracılarda kullanılmaz.</summary>
     public static SatinalmaAyarlar VarsayilanOlustur() => new()
     {

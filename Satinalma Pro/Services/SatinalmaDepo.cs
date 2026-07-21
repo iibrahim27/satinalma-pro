@@ -77,6 +77,7 @@ public static class SatinalmaDepo
     public static void AyarlariSifirla()
     {
         Ayarlar = SatinalmaAyarlar.SifirlanmisOlustur();
+        Ayarlar.VeriSifirlamaUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         Kaydet();
     }
 
@@ -300,6 +301,7 @@ public static class SatinalmaDepo
             Ayarlar.SonTalepSira = Math.Max(Ayarlar.SonTalepSira, gelen.SonTalepSira);
             Ayarlar.SonSiparisSira = Math.Max(Ayarlar.SonSiparisSira, gelen.SonSiparisSira);
             Ayarlar.SonIadeSira = Math.Max(Ayarlar.SonIadeSira, gelen.SonIadeSira);
+            Ayarlar.VeriSifirlamaUtc = Math.Max(Ayarlar.VeriSifirlamaUtc, gelen.VeriSifirlamaUtc);
             if (Ayarlar.VarsayilanUsdKuru <= 0 && gelen.VarsayilanUsdKuru > 0)
                 Ayarlar.VarsayilanUsdKuru = gelen.VarsayilanUsdKuru;
             if (Ayarlar.VarsayilanEurKuru <= 0 && gelen.VarsayilanEurKuru > 0)

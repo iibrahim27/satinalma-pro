@@ -83,10 +83,8 @@ class TalepRepository(
         }
         val filtered = if (silinen.isEmpty()) normalized
         else normalized.filterNot { silinen.contains(it.id.lowercase()) }
-        val (synced, degisti) = syncStatuses(filtered)
-        if (degisti && auth.uid != null) {
-            runCatching { saveTalepler(synced) }
-        }
+        // Okuma sırasında buluta yazma yok: sıfırlama sonrası eski listeyi geri yükler.
+        val (synced, _) = syncStatuses(filtered)
         return synced
     }
 
@@ -99,7 +97,28 @@ class TalepRepository(
 
     suspend fun saveTalepler(talepler: List<TalepItem>) {
         val uid = auth.uid ?: throw IllegalStateException("Oturum gerekli")
-        val (synced, _) = syncStatuses(talepler)
+        var (synced, _) = syncStatuses(talepler)
+
+        // Sıfırlama sonrası: bulut boşken sıfırlama öncesi talepleri geri yazmayı engelle.
+        val resetUtc = runCatching { loadAyarlar().veriSifirlamaUtc }.getOrDefault(0L)
+        if (resetUtc > 0L && synced.isNotEmpty()) {
+            val cloudJson = runCatching {
+                firestore.readDocumentJson("veri/satinalma_talepler")
+            }.getOrNull()
+            val cloudEmpty = cloudJson.isNullOrBlank() || cloudJson.trim() == "[]"
+            if (cloudEmpty) {
+                val keep = synced.filter { it.guncellemeUtc >= resetUtc }
+                if (keep.size < synced.size) {
+                    BildirimLog.w(
+                        "SYNC",
+                        "Sıfırlama: ${synced.size - keep.size} eski talep buluta yazılmadı"
+                    )
+                }
+                if (keep.isEmpty()) return
+                synced = keep
+            }
+        }
+
         val json = gson.toJson(synced)
         firestore.writeDocumentJson("veri/satinalma_talepler", json, uid)
     }

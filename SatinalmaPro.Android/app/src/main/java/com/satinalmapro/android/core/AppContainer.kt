@@ -456,6 +456,40 @@ class AppContainer(private val context: Context) {
         draftStore.clearAll()
     }
 
+    /**
+     * Masaüstü "Tüm Verileri Sıfırla" damgası (veriSifirlamaUtc) arttıysa
+     * offline cache + bellek listelerini hemen boşalt — eski talepler ekranda kalmasın.
+     */
+    private suspend fun applyCloudResetIfNeeded() {
+        val tenantId = TenantSession.tenantId().orEmpty()
+        if (tenantId.isBlank()) return
+        val ayarlar = talepler.loadAyarlar()
+        val resetUtc = ayarlar.veriSifirlamaUtc
+        if (resetUtc <= 0L) return
+        val key = appliedResetKey(tenantId)
+        val applied = prefs.getLong(key, 0L)
+        if (resetUtc <= applied) return
+
+        BildirimLog.i(
+            "SESSION",
+            "Bulut veri sıfırlaması algılandı ($resetUtc > $applied) — yerel önbellek temizleniyor"
+        )
+        _talepler.value = emptyList()
+        _notifications.value = emptyList()
+        _stok.value = emptyList()
+        _stokHareketleri.value = emptyList()
+        _agrega.value = emptyList()
+        _cimento.value = emptyList()
+        _alinanMalzemeKayitlari.value = emptyList()
+        _satinalmaAyarlar.value = ayarlar
+        draftStore.clearAll()
+        offlineCache.clearTenant(tenantId)
+        prefs.edit().putLong(key, resetUtc).apply()
+    }
+
+    private fun appliedResetKey(tenantId: String) =
+        "${KEY_APPLIED_RESET_UTC}_$tenantId"
+
     private fun unregisterFcm(uid: String?) {
         CoroutineScope(Dispatchers.IO).launch {
             if (!uid.isNullOrBlank()) {
@@ -473,6 +507,8 @@ class AppContainer(private val context: Context) {
                 return
             }
             val uid = auth.uid ?: return
+            runCatching { applyCloudResetIfNeeded() }
+                .onFailure { BildirimLog.e("SYNC", "applyCloudResetIfNeeded", it) }
             runCatching { loadMaterialNames() }
                 .onFailure { BildirimLog.e("SYNC", "loadMaterialNames", it) }
             runCatching { loadTalepler() }
@@ -506,6 +542,8 @@ class AppContainer(private val context: Context) {
                 return
             }
             val uid = auth.uid ?: return
+            runCatching { applyCloudResetIfNeeded() }
+                .onFailure { BildirimLog.e("SYNC", "live applyCloudResetIfNeeded", it) }
             runCatching { loadTalepler() }
                 .onFailure { BildirimLog.e("SYNC", "live loadTalepler", it) }
             runCatching { loadNotifications(uid, cleanup = false) }
@@ -1881,6 +1919,7 @@ class AppContainer(private val context: Context) {
         private const val KEY_STORED_FIRST_INSTALL = "stored_first_install_time"
         private const val KEY_SAVED_EMAIL = "saved_login_email"
         private const val KEY_REMEMBER_ME = "remember_login"
+        private const val KEY_APPLIED_RESET_UTC = "applied_veri_sifirlama_utc"
 
         fun loadFirebaseConfig(context: Context): FirebaseConfig {
             var apiKey = ""

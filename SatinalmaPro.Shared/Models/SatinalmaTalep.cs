@@ -279,4 +279,7 @@ public class SatinalmaAyarlar
     public decimal VarsayilanEurKuru { get; set; }
     /// <summary>Tüm verileri sıfırla sonrası — varsayılan imza ünvanları eklenmez.</summary>
     public bool ImzaAyarleriTemiz { get; set; }
+
+    /// <summary>Tüm verileri sıfırla damgası (UTC ms) — istemciler offline cache temizler.</summary>
+    public long VeriSifirlamaUtc { get; set; }
 }

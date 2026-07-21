@@ -244,7 +244,9 @@ data class SatinalmaAyarlar(
     var sonSiparisSira: Int = 0,
     val silinenTalepIdleri: List<String> = emptyList(),
     val varsayilanUsdKuru: Double = 0.0,
-    val varsayilanEurKuru: Double = 0.0
+    val varsayilanEurKuru: Double = 0.0,
+    /** Masaüstü "Tüm Verileri Sıfırla" damgası (UTC ms). */
+    val veriSifirlamaUtc: Long = 0L
 )
 
 data class DashboardCard(

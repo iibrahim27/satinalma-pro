@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.74",
-    "build":  143,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.74/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.74/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.74/SatinalmaPro.apk",
-    "notes":  "Tum verileri sifirla: buluta bos yazim merge ile geri yuklenmesin; Android basarili bos bulut listesini kabul edip offline cache temizlesin",
+    "version":  "2.1.75",
+    "build":  144,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.75/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.75/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.75/SatinalmaPro.apk",
+    "notes":  "Sifirlama damgasi (veriSifirlamaUtc): Android offline cache temizler, eski taleplerin buluta geri yazilmasini engeller; bildirim blob bosaltilir",
     "zorunlu":  false
 }

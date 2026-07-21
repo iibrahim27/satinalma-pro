@@ -24,6 +24,7 @@ public static class SatinalmaTalepSenkronYardimcisi
         hedef.SonTalepSira = Math.Max(hedef.SonTalepSira, kaynak.SonTalepSira);
         hedef.SonSiparisSira = Math.Max(hedef.SonSiparisSira, kaynak.SonSiparisSira);
         hedef.SonIadeSira = Math.Max(hedef.SonIadeSira, kaynak.SonIadeSira);
+        hedef.VeriSifirlamaUtc = Math.Max(hedef.VeriSifirlamaUtc, kaynak.VeriSifirlamaUtc);
 
         if (string.IsNullOrWhiteSpace(hedef.FirmaAdi) && !string.IsNullOrWhiteSpace(kaynak.FirmaAdi))
             hedef.FirmaAdi = kaynak.FirmaAdi;
