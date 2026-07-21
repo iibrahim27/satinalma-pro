@@ -13,6 +13,7 @@ export {
   manualFanOut,
   markInboxRead,
 } from "./callables/admin";
+export { resetTenantOperationalData } from "./callables/resetTenantData";
 export {
   loginWithUsername,
   passwordResetByUsername,

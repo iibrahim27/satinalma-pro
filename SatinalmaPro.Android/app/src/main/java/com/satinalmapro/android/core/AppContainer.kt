@@ -481,9 +481,15 @@ class AppContainer(private val context: Context) {
         _agrega.value = emptyList()
         _cimento.value = emptyList()
         _alinanMalzemeKayitlari.value = emptyList()
+        _materialNames.value = emptyList()
         _satinalmaAyarlar.value = ayarlar
+        _uygulamaAyarlar.value = UygulamaAyarlar()
+        firmaLogoBytes = null
         draftStore.clearAll()
         offlineCache.clearTenant(tenantId)
+        offlineCache.saveTalepler(tenantId, emptyList())
+        offlineCache.saveNotifications(tenantId, emptyList())
+        offlineCache.saveStok(tenantId, emptyList())
         prefs.edit().putLong(key, resetUtc).apply()
     }
 

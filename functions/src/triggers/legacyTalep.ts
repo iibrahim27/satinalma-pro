@@ -1,3 +1,4 @@
+import * as admin from "firebase-admin";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { fanOutNotification } from "../lib/fanOut";
 import {
@@ -17,6 +18,29 @@ export const onLegacyTalepWrite = onDocumentWritten(
 
     const beforeList = parseLegacyTalepler(beforeJson);
     const afterList = parseLegacyTalepler(afterJson);
+    const db = admin.firestore();
+
+    // Sıfırlama / silinen talepler: enterprise kopyalarını da kaldır.
+    const afterIds = new Set(
+      afterList.map((t) => t.id).filter((id): id is string => !!id)
+    );
+    for (const prev of beforeList) {
+      if (!prev.id || afterIds.has(prev.id)) continue;
+      try {
+        await db.recursiveDelete(
+          db.doc(`tenants/${tenantId}/procurement_requests/${prev.id}`)
+        );
+      } catch (err) {
+        console.error(
+          `enterprise delete failed tenant=${tenantId} talep=${prev.id}`,
+          err
+        );
+      }
+    }
+
+    // Boş liste (tam sıfırlama): fan-out / dual-write yapma.
+    if (afterList.length === 0) return;
+
     const changes = diffTalepChanges(beforeList, afterList);
 
     for (const { before, after } of changes) {

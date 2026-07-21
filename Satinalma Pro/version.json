@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.75",
-    "build":  144,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.75/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.75/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.75/SatinalmaPro.apk",
-    "notes":  "Sifirlama damgasi (veriSifirlamaUtc): Android offline cache temizler, eski taleplerin buluta geri yazilmasini engeller; bildirim blob bosaltilir",
+    "version":  "2.1.76",
+    "build":  145,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.76/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.76/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.76/SatinalmaPro.apk",
+    "notes":  "Sunucu tarafli tam sifirlama (resetTenantOperationalData): talepler/stok/bildirim/inbox/medya; masaustu merge yarisi kapatildi; Android damga ile cache temizler",
     "zorunlu":  false
 }

@@ -713,8 +713,9 @@ public partial class AyarlarView : UserControl
         try
         {
         var sonuc = MessageBox.Show(
-            "Firma bilgileri, logolar, imzalar ve tüm modül verileri sıfırlanacak.\n" +
-            "Firebase ve Android ayarları korunur.\n" +
+            "Talepler, stok, bildirimler, medya ve tüm modül verileri sıfırlanacak\n" +
+            "(masaüstü + Android + tüm kullanıcı bildirimleri).\n" +
+            "Kullanıcı hesapları ve Firebase yapılandırması korunur.\n" +
             "Önce yedek almanız önerilir.\n\nDevam etmek istiyor musunuz?",
             "Tüm Verileri Sıfırla",
             MessageBoxButton.YesNo,
@@ -723,60 +724,63 @@ public partial class AyarlarView : UserControl
         if (sonuc != MessageBoxResult.Yes) return;
 
         var onay = MessageBox.Show(
-            "Son onay: Firma bilgileri, logolar, imzalar ve modül kayıtları kalıcı olarak silinip varsayılanlara dönecek.\n" +
-            "Firebase yapılandırması, FCM anahtarı, google-services.json ve oturum bilgileri etkilenmeyecek.",
+            "Son onay: Tüm operasyonel veriler kalıcı olarak silinecek.\n" +
+            "Firebase yapılandırması, kullanıcı hesapları ve oturum bilgileri etkilenmeyecek.",
             "Emin misiniz?",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
         if (onay != MessageBoxResult.Yes) return;
 
-        SatinalmaProYedeklemeServisi.TumVerileriSifirla();
-        AyarlariYukle();
-        VeriDurumlariniYenile();
-        if (Application.Current.MainWindow is MainWindow mw)
-            mw.Sidebar.Yenile();
-
-        if (OturumYoneticisi.GirisYapildi && OturumYoneticisi.Firestore is not null)
+        if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
         {
-            try
-            {
-                await BulutVeriSenkronu.TumVerileriBulutaGonderAsync(sifirlamaModu: true);
-                try
-                {
-                    await BildirimYoneticisi.SifirlamaSonrasiTemizleAsync();
-                }
-                catch (Exception ex)
-                {
-                    HataGunlugu.Kaydet(ex, "Ayarlar.TumVerileriSifirla.BildirimTemizligi");
-                }
-                MessageBox.Show(
-                    "Firma ve modül verileri sıfırlandı ve buluta kaydedildi.\n" +
-                    "Firebase ve Android ayarları korundu.\n" +
-                    "Android ve diğer cihazlar yenileme/giriş sonrası boş listeyi görecek.",
-                    UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Veriler yerelde sıfırlandı ancak buluta yazılamadı:\n{ex.Message}\n\nFirebase ayarları korundu.",
-                    UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+            SatinalmaProYedeklemeServisi.TumVerileriSifirla();
+            AyarlariYukle();
+            VeriDurumlariniYenile();
+            if (Application.Current.MainWindow is MainWindow mwOffline)
+                mwOffline.Sidebar.Yenile();
+            MessageBox.Show(
+                "Firma ve modül verileri yerelde sıfırlandı.\nBuluta yazmak için giriş yapıp tekrar sıfırlayın.",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
         }
 
-        MessageBox.Show(
-            "Firma ve modül verileri sıfırlandı.\nFirebase ve Android ayarları korundu.",
-            UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
-
+        BulutVeriSenkronu.SifirlamaKapisiniAc();
         try
         {
-            await BildirimYoneticisi.SifirlamaSonrasiTemizleAsync();
+            // 1) Sunucu otoriter temizler (tüm inbox + veri + procurement_requests).
+            var sunucu = await KiraciVeriSifirlamaServisi.SifirlaAsync();
+
+            // 2) Yerel bellek/disk — Planla/merge yarışı olmadan.
+            SatinalmaProYedeklemeServisi.TumVerileriSifirla(bulutaPlanlama: false);
+            SatinalmaDepo.Ayarlar.VeriSifirlamaUtc = sunucu.VeriSifirlamaUtc;
+            SatinalmaDepo.Kaydet();
+            BildirimDeposu.KiraciDegisti();
+
+            // 3) Boş bulutu birleştirmeden uygula.
+            await BulutVeriSenkronu.BuluttanYukleAsync();
+
+            AyarlariYukle();
+            VeriDurumlariniYenile();
+            if (Application.Current.MainWindow is MainWindow mw)
+                mw.Sidebar.Yenile();
+
+            MessageBox.Show(
+                "Tüm operasyonel veriler (talepler, stok, bildirimler, medya) sıfırlandı.\n" +
+                $"Android ve diğer cihazlar yenilemede boş listeyi görecek.\n" +
+                $"Kullanıcı inbox temizliği: {sunucu.InboxesCleared}/{sunucu.UsersProcessed}",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            HataGunlugu.Kaydet(ex, "Ayarlar.TumVerileriSifirla.BildirimTemizligi");
+            HataGunlugu.Kaydet(ex, "Ayarlar.TumVerileriSifirla");
+            MessageBox.Show(
+                $"Sistem sıfırlanamadı:\n{ex.Message}",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            BulutVeriSenkronu.SifirlamaKapisiniKapat();
         }
         }
         catch (Exception ex)

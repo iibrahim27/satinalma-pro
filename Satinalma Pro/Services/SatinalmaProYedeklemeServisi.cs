@@ -112,18 +112,65 @@ public static class SatinalmaProYedeklemeServisi
     /// Firma bilgileri, logolar, imzalar ve modül verilerini sıfırlar.
     /// Firebase / Android yapılandırması ve oturum dosyalarına dokunmaz.
     /// </summary>
-    public static void TumVerileriSifirla()
+    /// <param name="bulutaPlanlama">
+    /// false: sunucu callable zaten temizlediyse gecikmeli Planla/merge yarışını başlatma.
+    /// </param>
+    public static void TumVerileriSifirla(bool bulutaPlanlama = true)
     {
         foreach (var tanim in SatinalmaProVeriKatalogu.TumKayitlar)
         {
             if (SifirlamaDisiMi(tanim.DosyaAdi))
                 continue;
 
-            ModulSifirla(tanim.DosyaAdi);
+            if (bulutaPlanlama)
+                ModulSifirla(tanim.DosyaAdi);
+            else
+                ModulSifirlaYerel(tanim.DosyaAdi);
         }
 
         SatinalmaProLogoDeposu.TumDosyalariSil();
         YenidenYukle();
+    }
+
+    /// <summary>Yalnızca yerel sıfırlama — bulut Planla çağırmaz.</summary>
+    private static void ModulSifirlaYerel(string dosyaAdi)
+    {
+        if (SifirlamaDisiMi(dosyaAdi))
+            return;
+
+        switch (dosyaAdi)
+        {
+            case "uygulama_ayarlar.json":
+                UygulamaAyarDeposu.VarsayilanaSifirla();
+                break;
+            case "satinalma_ayarlar.json":
+                SatinalmaDepo.AyarlariSifirla();
+                break;
+            case "satinalma_talepler.json":
+                SatinalmaDepo.TumTalepleriSifirla();
+                break;
+            case "alinan_malzemeler.json":
+            case "stok.json":
+            case "stok_hareketleri.json":
+            case "agrega.json":
+            case "cimento.json":
+            case "akaryakit.json":
+            case "filo.json":
+                ModulVeriDeposu.Sifirla(dosyaAdi);
+                break;
+            case "finansman_gelir.json":
+                FinansmanVeriDeposu.Sifirla();
+                break;
+            default:
+                if (!SatinalmaProVeriKatalogu.TumKayitlar.Any(t =>
+                        string.Equals(t.DosyaAdi, dosyaAdi, StringComparison.OrdinalIgnoreCase)))
+                    return;
+
+                var yol = SatinalmaProKlasor.DosyaYolu(dosyaAdi);
+                if (File.Exists(yol))
+                    File.Delete(yol);
+                break;
+        }
     }
 
     public static void YenidenYukle()

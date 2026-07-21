@@ -579,7 +579,7 @@
                            Margin="0,0,0,8" />
                 <TextBlock Style="{StaticResource AyarSectionDesc}" Foreground="#BE123C" Margin="0,0,0,14"
                            TextWrapping="Wrap"
-                           Text="Firma bilgileri, logolar, imzalar ve modül verileri sıfırlanır. Firebase, Android ve oturum ayarları korunur. İşlem geri alınamaz; önce yedek alın." />
+                           Text="Talepler, stok, bildirimler, medya ve tüm modül verileri (Android dahil) sıfırlanır. Kullanıcı hesapları ve Firebase yapılandırması korunur. İşlem geri alınamaz; önce yedek alın." />
                 <Button Style="{StaticResource AyarGhostButton}" HorizontalAlignment="Left"
                         Click="TumVerileriSifirla_Click" Foreground="#BE123C">
                   <StackPanel Orientation="Horizontal">
