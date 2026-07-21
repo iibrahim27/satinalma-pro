@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.31",
-    "build":  32,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.31/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.31/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.31/SatinalmaYonetici.apk",
-    "notes":  "1.0.31 - Acilis kapanma duzeltmesi, 15g deneme + 1/2/3 yil/manuel lisans, yedek/geri yukleme/sifirlama, Android Yonetici ilk surum",
+    "version":  "1.0.32",
+    "build":  33,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.32/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.32/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.32/SatinalmaYonetici.apk",
+    "notes":  "1.0.32 - Android Yonetici masaustu esitleme: kullanici/rol/modul yetkileri, yedek/sifirla/sil, SY ikonu",
     "zorunlu":  false
 }
