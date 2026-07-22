@@ -326,8 +326,16 @@ public static class SatinalmaDepo
 
     private static void ImzaAyarlariSenkronla(SatinalmaAyarlar gelen)
     {
+        var yerelOzellestirilmis = !Ayarlar.ImzaAyarleriTemiz
+            && ((Ayarlar.SefImzalari?.Count ?? 0) > 0
+                || (Ayarlar.YonetimImzalari?.Count ?? 0) > 0);
+
         if (gelen.ImzaAyarleriTemiz)
         {
+            // Bulut sıfırlama iskeleti, yerelde kaydedilmiş imzaları silmesin.
+            if (yerelOzellestirilmis)
+                return;
+
             Ayarlar.SefImzalari ??= [];
             Ayarlar.YonetimImzalari ??= [];
             Ayarlar.SefImzalari.Clear();
@@ -338,6 +346,9 @@ public static class SatinalmaDepo
 
         // Yerel temiz (yeni firma) iken gelen doluysa birleştirme yapma — doğrudan al.
         // Aksi halde aynı ünvan anahtarlarına başka firmanın AdSoyad değerleri sızıyordu.
+        Ayarlar.SefImzalari ??= [];
+        Ayarlar.YonetimImzalari ??= [];
+
         if (Ayarlar.ImzaAyarleriTemiz
             || (Ayarlar.SefImzalari.Count == 0 && Ayarlar.YonetimImzalari.Count == 0))
         {
@@ -410,10 +421,12 @@ public static class SatinalmaDepo
 
             if (mevcut is not null)
             {
+                // Yerel boşsa buluttan al; ikisi de doluysa yereli koru (kaydetme kaybı olmasın).
                 if (string.IsNullOrWhiteSpace(mevcut.AdSoyad) && !string.IsNullOrWhiteSpace(kaynakImza.AdSoyad))
                     mevcut.AdSoyad = kaynakImza.AdSoyad.Trim();
 
-                mevcut.Unvan = kaynakImza.Unvan.Trim();
+                if (!string.IsNullOrWhiteSpace(kaynakImza.Unvan))
+                    mevcut.Unvan = kaynakImza.Unvan.Trim();
                 mevcut.Aktif = mevcut.Aktif || kaynakImza.Aktif;
             }
             else

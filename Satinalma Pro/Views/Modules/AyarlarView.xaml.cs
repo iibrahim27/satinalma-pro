@@ -316,13 +316,40 @@ public partial class AyarlarView : UserControl
         SatinalmaDepo.Ayarlar.SartnameMetni = TxtSartnameMetni.Text;
         SatinalmaDepo.Ayarlar.TeklifIstemeSartnameleri = TxtTeklifIstemeSartnameleri.Text;
         DovizKurlariniKaydet(sessiz: true);
+        ImzaDuzenlemeleriniKaydet();
         UygulamaAyarDeposu.Kaydet();
         SatinalmaDepo.Kaydet();
+        _ = BulutVeriSenkronu.AyarlariHemenGonderAsync();
 
         DegisiklikTemizle();
         KpiKartlariniGuncelle();
         MessageBox.Show("Tüm ayarlar kaydedildi.", UygulamaBilgisi.Ad,
             MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    /// <summary>DataGrid hücre düzenlemesini commit eder ve imza listelerini diske/buluta hazırlar.</summary>
+    private void ImzaDuzenlemeleriniKaydet()
+    {
+        try
+        {
+            SefImzaGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+            SefImzaGrid.CommitEdit(DataGridEditingUnit.Row, true);
+            YonetimImzaGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+            YonetimImzaGrid.CommitEdit(DataGridEditingUnit.Row, true);
+        }
+        catch
+        {
+            /* düzenleme yoksa CommitEdit fırlatabilir */
+        }
+
+        ImzaDuzenlemesiniBaslat();
+        if ((SatinalmaDepo.Ayarlar.SefImzalari?.Count ?? 0) > 0
+            || (SatinalmaDepo.Ayarlar.YonetimImzalari?.Count ?? 0) > 0)
+        {
+            SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz = false;
+        }
+
+        SatinalmaDepo.KaydetAyarlar();
     }
 
     private void KategoriListesiniYenile()
@@ -547,9 +574,11 @@ public partial class AyarlarView : UserControl
     private void SefImzaEkle_Click(object sender, RoutedEventArgs e)
     {
         ImzaDuzenlemesiniBaslat();
+        SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz = false;
         SatinalmaDepo.Ayarlar.SefImzalari.Add(new ImzaAyari { Unvan = "Yeni Şef", Aktif = true });
         ImzaGridleriYenile();
-        SatinalmaDepo.Kaydet();
+        SatinalmaDepo.KaydetAyarlar();
+        _ = BulutVeriSenkronu.AyarlariHemenGonderAsync();
     }
 
     private void SefImzaSil_Click(object sender, RoutedEventArgs e)
@@ -568,13 +597,15 @@ public partial class AyarlarView : UserControl
     private void YonetimImzaEkle_Click(object sender, RoutedEventArgs e)
     {
         ImzaDuzenlemesiniBaslat();
+        SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz = false;
         SatinalmaDepo.Ayarlar.YonetimImzalari.Add(new ImzaAyari
         {
             Unvan = "Yönetim / Proje Müdürü",
             Aktif = true
         });
         ImzaGridleriYenile();
-        SatinalmaDepo.Kaydet();
+        SatinalmaDepo.KaydetAyarlar();
+        _ = BulutVeriSenkronu.AyarlariHemenGonderAsync();
     }
 
     private void YonetimImzaSil_Click(object sender, RoutedEventArgs e)
@@ -596,6 +627,7 @@ public partial class AyarlarView : UserControl
             return;
 
         ImzaDuzenlemesiniBaslat();
+        SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz = false;
 
         if (e.EditingElement is TextBox textBox)
         {
@@ -608,6 +640,7 @@ public partial class AyarlarView : UserControl
         {
             try
             {
+                SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz = false;
                 SatinalmaDepo.KaydetAyarlar();
                 _ = BulutVeriSenkronu.AyarlariHemenGonderAsync();
             }

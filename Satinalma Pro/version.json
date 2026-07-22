@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.80",
-    "build":  149,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.80/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.80/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.80/SatinalmaPro.apk",
-    "notes":  "2.1.80 - Sifirlama sonrasi eski talep geri yazma engeli (sunucu strip + istemci filtre)",
+    "version":  "2.1.81",
+    "build":  150,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.81/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.81/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.81/SatinalmaPro.apk",
+    "notes":  "2.1.81 - Imza ayarlari kaydetme: sifirlama iskeleti yereli ezmesin, DataGrid commit + aninda bulut",
     "zorunlu":  false
 }

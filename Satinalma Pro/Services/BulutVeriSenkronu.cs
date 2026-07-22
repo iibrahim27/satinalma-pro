@@ -149,9 +149,33 @@ public static class BulutVeriSenkronu
                             .ConfigureAwait(false);
                         BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
                     }
-                    else if (bulutBelgesiVar && !buluttaVar && sifirlamaDamgasi)
+                    else if (bulutBelgesiVar && !buluttaVar && yereldeVar && yerelJson is not null
+                             && anahtar == "satinalma_ayarlar")
                     {
-                        // Boş bulut otoriter — yereli geri yükleme.
+                        // Sıfırlama iskeleti (ImzaAyarleriTemiz) "boş" sayılır; yerel imza/şartname
+                        // kaydını yoklamada ezme — özelleştirilmiş yereli buluta yaz.
+                        await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
+                            yol, yerelJson, OturumYoneticisi.Auth?.Uid, iptal)
+                            .ConfigureAwait(false);
+                        BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
+                    }
+                    else if (bulutBelgesiVar && !buluttaVar && sifirlamaDamgasi
+                             && anahtar != "satinalma_ayarlar")
+                    {
+                        // Boş bulut otoriter — yereli geri yükleme (ayarlar hariç; yukarıda korundu).
+                        await UiThreaddeCalistirAsync(() =>
+                        {
+                            if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                                return;
+                            Uygula(anahtar, bulutJson!);
+                            YerelBirlesikDurumuKaydet(anahtar);
+                        });
+                        BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
+                    }
+                    else if (bulutBelgesiVar && !buluttaVar && sifirlamaDamgasi
+                             && anahtar == "satinalma_ayarlar" && !yereldeVar)
+                    {
+                        // Hem bulut hem yerel boş iskelet — uygula (damga vs.).
                         await UiThreaddeCalistirAsync(() =>
                         {
                             if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
@@ -976,6 +1000,12 @@ public static class BulutVeriSenkronu
                 SatinalmaDepo.Ayarlar.VeriSifirlamaUtc, bulutAyarlar.VeriSifirlamaUtc);
         }
 
+        if ((SatinalmaDepo.Ayarlar.SefImzalari?.Count ?? 0) > 0
+            || (SatinalmaDepo.Ayarlar.YonetimImzalari?.Count ?? 0) > 0)
+        {
+            SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz = false;
+        }
+
         return JsonSerializer.Serialize(SatinalmaDepo.Ayarlar, JsonSecenekleri);
     }
 
@@ -1030,18 +1060,19 @@ public static class BulutVeriSenkronu
             if (ayar is null)
                 return true;
 
-            if (ayar.ImzaAyarleriTemiz)
-                return ayar.SonTalepSira <= 0
-                       && ayar.SonSiparisSira <= 0
-                       && ayar.SonIadeSira <= 0
-                       && (ayar.SilinenTalepIdleri is null || ayar.SilinenTalepIdleri.Count == 0)
-                       && string.IsNullOrWhiteSpace(ayar.SartnameMetni)
-                       && string.IsNullOrWhiteSpace(ayar.TeklifIstemeSartnameleri);
-
+            // ImzaAyarleriTemiz bayrağı imza listelerini yok saymamalı — aksi halde
+            // kaydedilen şef/yönetim imzaları "boş" sayılıp yoklamada siliniyordu.
             var sef = ayar.SefImzalari?.Count ?? 0;
             var yonetim = ayar.YonetimImzalari?.Count ?? 0;
-            return sef == 0 && yonetim == 0
-                   && ayar.SonTalepSira <= 0
+            var imzaDolu = (ayar.SefImzalari?.Any(i =>
+                                 !string.IsNullOrWhiteSpace(i.AdSoyad) || !string.IsNullOrWhiteSpace(i.Unvan)) ?? false)
+                           || (ayar.YonetimImzalari?.Any(i =>
+                                 !string.IsNullOrWhiteSpace(i.AdSoyad) || !string.IsNullOrWhiteSpace(i.Unvan)) ?? false);
+
+            if (sef > 0 || yonetim > 0 || imzaDolu)
+                return false;
+
+            return ayar.SonTalepSira <= 0
                    && ayar.SonSiparisSira <= 0
                    && ayar.SonIadeSira <= 0
                    && (ayar.SilinenTalepIdleri is null || ayar.SilinenTalepIdleri.Count == 0)
