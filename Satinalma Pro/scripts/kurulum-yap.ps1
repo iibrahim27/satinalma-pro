@@ -45,6 +45,17 @@ if (-not (Test-Path $publish)) {
     throw "Publish klasoru bulunamadi: $publish"
 }
 
+$sharedDll = Join-Path $publish "SatinalmaPro.Shared.dll"
+if (-not (Test-Path $sharedDll)) {
+    throw "Publish icinde SatinalmaPro.Shared.dll yok: $sharedDll"
+}
+# Assembly.LoadFrom kullanma — publish DLL'lerini kilitler, zip basarisiz olur.
+$sharedVer = [System.Reflection.AssemblyName]::GetAssemblyName((Resolve-Path $sharedDll)).Version.ToString()
+Write-Host "  Shared DLL surum: $sharedVer"
+if ($sharedVer -ne "1.0.0.0") {
+    throw "SatinalmaPro.Shared beklenen surum 1.0.0.0, bulunan: $sharedVer (paralel paket Version ezmesi?)"
+}
+
 Write-Host "`n[3/5] Firebase dosyalari kopyalaniyor..."
 $firebaseYol = Join-Path $projeKok "firebase_ayarlar.json"
 if (Test-Path $firebaseYol) {

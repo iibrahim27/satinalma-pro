@@ -9,7 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SatinalmaPro.Shared\SatinalmaPro.Shared.csproj" />
+    <ProjectReference Include="..\SatinalmaPro.Shared\SatinalmaPro.Shared.csproj"
+                      GlobalPropertiesToRemove="Version;PackageVersion;AssemblyVersion;FileVersion;InformationalVersion" />
   </ItemGroup>
 
 </Project>

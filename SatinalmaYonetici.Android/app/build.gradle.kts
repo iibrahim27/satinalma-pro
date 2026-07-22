@@ -21,8 +21,8 @@ android {
         applicationId = "com.metrik.satinalmapro.admin"
         minSdk = 31
         targetSdk = 35
-        versionCode = 34
-        versionName = "1.0.34"
+        versionCode = 35
+        versionName = "1.0.35"
     }
 
     signingConfigs {
