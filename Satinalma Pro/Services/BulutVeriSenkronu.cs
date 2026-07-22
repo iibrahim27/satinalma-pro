@@ -888,8 +888,8 @@ public static class BulutVeriSenkronu
                         yerelBirlestir: !talepBos && !_sifirlamaAktif);
                     break;
                 case "satinalma_ayarlar":
-                    // Bulut bu kiracının kaynağı — birleştirme diğer firmanın imza isimlerini sızdırıyordu.
-                    SatinalmaDepo.AyarlarYukle(json, birlestir: false);
+                    // Yerel imza düzenlemelerini koruyarak birleştir (Ayarlar nesnesi değiştirilmez).
+                    SatinalmaDepo.AyarlarYukle(json, birlestir: true);
                     break;
                 case "finansman":
                     FinansmanVeriDeposu.GelirleriYukle(json);
@@ -1191,7 +1191,7 @@ public static class BulutVeriSenkronu
             var (json, _) = await OturumYoneticisi.Firestore
                 .BelgeOkuAsync(KiraciliBulutYolu(BelgeHaritasi["satinalma_ayarlar"]), iptal);
             if (!string.IsNullOrWhiteSpace(json))
-                SatinalmaDepo.AyarlarYukle(json, birlestir: false);
+                SatinalmaDepo.AyarlarYukle(json, birlestir: true);
         }
         catch
         {

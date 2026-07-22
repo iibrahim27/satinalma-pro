@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.82",
-    "build":  151,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.82/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.82/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.82/SatinalmaPro.apk",
-    "notes":  "2.1.82 - Shared DLL surum sabitleme (2.1.81 acilis hatasi) + imza kaydetme",
+    "version":  "2.1.83",
+    "build":  152,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.83/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.83/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.83/SatinalmaPro.apk",
+    "notes":  "2.1.83 - Imza kaydetme: Ayarlar nesnesi ezilmesin; Ekle/Duzenle/Sil dialog",
     "zorunlu":  false
 }

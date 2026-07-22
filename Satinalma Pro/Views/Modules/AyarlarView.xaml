@@ -296,38 +296,56 @@
                            Text="Talep ve yönetim PDF'lerinde kullanılan imza alanları." />
 
                 <Grid Margin="0,0,0,10">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
                   <TextBlock Text="Şefler İmza İsimleri" FontWeight="SemiBold" VerticalAlignment="Center" />
-                  <Button Style="{StaticResource AyarSaveButton}" Content="Şef İmza Ekle"
-                          HorizontalAlignment="Right" Click="SefImzaEkle_Click" />
+                  <Button Grid.Column="1" Style="{StaticResource AyarSaveButton}" Content="Ekle"
+                          Margin="0,0,8,0" Click="SefImzaEkle_Click" />
+                  <Button Grid.Column="2" Style="{StaticResource AyarGhostButton}" Content="Düzenle"
+                          Margin="0,0,8,0" Click="SefImzaDuzenle_Click" />
+                  <Button Grid.Column="3" Style="{StaticResource AyarGhostButton}" Content="Sil"
+                          Click="SefImzaSil_Click" />
                 </Grid>
                 <DataGrid x:Name="SefImzaGrid" Style="{StaticResource ModuleEditableDataGridStyle}"
-                          Height="120" AutoGenerateColumns="False" CanUserAddRows="False"
-                          CellEditEnding="ImzaGrid_CellEditEnding">
+                          Height="140" AutoGenerateColumns="False" CanUserAddRows="False"
+                          IsReadOnly="True" SelectionMode="Single"
+                          MouseDoubleClick="SefImzaGrid_MouseDoubleClick">
                   <DataGrid.Columns>
-                    <DataGridTextColumn Header="Ünvan" Binding="{Binding Unvan, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Width="*" />
-                    <DataGridTextColumn Header="Ad Soyad" Binding="{Binding AdSoyad, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Width="*" />
-                    <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Aktif, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70" />
+                    <DataGridTextColumn Header="Ünvan" Binding="{Binding Unvan}" Width="*" />
+                    <DataGridTextColumn Header="Ad Soyad" Binding="{Binding AdSoyad}" Width="*" />
+                    <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Aktif}" Width="70" IsReadOnly="True" />
                   </DataGrid.Columns>
                 </DataGrid>
-                <Button Style="{StaticResource AyarGhostButton}" Content="Seçili Şef İmzasını Sil"
-                        Margin="0,10,0,0" HorizontalAlignment="Left" Click="SefImzaSil_Click" />
 
                 <Grid Margin="0,20,0,10">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
                   <TextBlock Text="Yönetim İmza İsimleri" FontWeight="SemiBold" VerticalAlignment="Center" />
-                  <Button Style="{StaticResource AyarSaveButton}" Content="Yönetim İmza Ekle"
-                          HorizontalAlignment="Right" Click="YonetimImzaEkle_Click" />
+                  <Button Grid.Column="1" Style="{StaticResource AyarSaveButton}" Content="Ekle"
+                          Margin="0,0,8,0" Click="YonetimImzaEkle_Click" />
+                  <Button Grid.Column="2" Style="{StaticResource AyarGhostButton}" Content="Düzenle"
+                          Margin="0,0,8,0" Click="YonetimImzaDuzenle_Click" />
+                  <Button Grid.Column="3" Style="{StaticResource AyarGhostButton}" Content="Sil"
+                          Click="YonetimImzaSil_Click" />
                 </Grid>
                 <DataGrid x:Name="YonetimImzaGrid" Style="{StaticResource ModuleEditableDataGridStyle}"
-                          Height="120" AutoGenerateColumns="False" CanUserAddRows="False"
-                          CellEditEnding="ImzaGrid_CellEditEnding">
+                          Height="140" AutoGenerateColumns="False" CanUserAddRows="False"
+                          IsReadOnly="True" SelectionMode="Single"
+                          MouseDoubleClick="YonetimImzaGrid_MouseDoubleClick">
                   <DataGrid.Columns>
-                    <DataGridTextColumn Header="Ünvan" Binding="{Binding Unvan, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Width="*" />
-                    <DataGridTextColumn Header="Ad Soyad" Binding="{Binding AdSoyad, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Width="*" />
-                    <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Aktif, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70" />
+                    <DataGridTextColumn Header="Ünvan" Binding="{Binding Unvan}" Width="*" />
+                    <DataGridTextColumn Header="Ad Soyad" Binding="{Binding AdSoyad}" Width="*" />
+                    <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Aktif}" Width="70" IsReadOnly="True" />
                   </DataGrid.Columns>
                 </DataGrid>
-                <Button Style="{StaticResource AyarGhostButton}" Content="Seçili Yönetim İmzasını Sil"
-                        Margin="0,10,0,0" HorizontalAlignment="Left" Click="YonetimImzaSil_Click" />
               </StackPanel>
             </Border>
           </StackPanel>

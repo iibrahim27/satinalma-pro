@@ -294,14 +294,21 @@ public static class SatinalmaDepo
         var gelen = JsonSerializer.Deserialize<SatinalmaAyarlar>(json, JsonSecenekleri)
                     ?? SatinalmaAyarlar.SifirlanmisOlustur();
 
+        // Ayarlar nesnesini ASLA değiştirme — UI DataGrid eski ObservableCollection'a bağlı kalır,
+        // Kaydet ise yeni nesneyi yazınca imza düzenlemeleri kaybolur.
+        Ayarlar.SefImzalari ??= [];
+        Ayarlar.YonetimImzalari ??= [];
+        Ayarlar.Sartnameler ??= [];
+
+        Ayarlar.SilinenTalepIdleri = SatinalmaTalepSenkronYardimcisi.SilinenleriBirlestir(
+            Ayarlar.SilinenTalepIdleri, gelen.SilinenTalepIdleri);
+        Ayarlar.SonTalepSira = Math.Max(Ayarlar.SonTalepSira, gelen.SonTalepSira);
+        Ayarlar.SonSiparisSira = Math.Max(Ayarlar.SonSiparisSira, gelen.SonSiparisSira);
+        Ayarlar.SonIadeSira = Math.Max(Ayarlar.SonIadeSira, gelen.SonIadeSira);
+        Ayarlar.VeriSifirlamaUtc = Math.Max(Ayarlar.VeriSifirlamaUtc, gelen.VeriSifirlamaUtc);
+
         if (birlestir)
         {
-            Ayarlar.SilinenTalepIdleri = SatinalmaTalepSenkronYardimcisi.SilinenleriBirlestir(
-                Ayarlar.SilinenTalepIdleri, gelen.SilinenTalepIdleri);
-            Ayarlar.SonTalepSira = Math.Max(Ayarlar.SonTalepSira, gelen.SonTalepSira);
-            Ayarlar.SonSiparisSira = Math.Max(Ayarlar.SonSiparisSira, gelen.SonSiparisSira);
-            Ayarlar.SonIadeSira = Math.Max(Ayarlar.SonIadeSira, gelen.SonIadeSira);
-            Ayarlar.VeriSifirlamaUtc = Math.Max(Ayarlar.VeriSifirlamaUtc, gelen.VeriSifirlamaUtc);
             if (Ayarlar.VarsayilanUsdKuru <= 0 && gelen.VarsayilanUsdKuru > 0)
                 Ayarlar.VarsayilanUsdKuru = gelen.VarsayilanUsdKuru;
             if (Ayarlar.VarsayilanEurKuru <= 0 && gelen.VarsayilanEurKuru > 0)
@@ -318,7 +325,37 @@ public static class SatinalmaDepo
                 Ayarlar.TeklifIstemeSartnameleri = gelen.TeklifIstemeSartnameleri;
         }
         else
-            Ayarlar = gelen;
+        {
+            if (!string.IsNullOrWhiteSpace(gelen.FirmaAdi))
+                Ayarlar.FirmaAdi = gelen.FirmaAdi;
+            if (gelen.VarsayilanUsdKuru > 0)
+                Ayarlar.VarsayilanUsdKuru = gelen.VarsayilanUsdKuru;
+            if (gelen.VarsayilanEurKuru > 0)
+                Ayarlar.VarsayilanEurKuru = gelen.VarsayilanEurKuru;
+
+            // Yerel özelleştirilmiş imza varsa bulut iskeletiyle ezme.
+            var yerelImzaVar = !Ayarlar.ImzaAyarleriTemiz
+                && (Ayarlar.SefImzalari.Count > 0 || Ayarlar.YonetimImzalari.Count > 0);
+            if (yerelImzaVar && gelen.ImzaAyarleriTemiz)
+            {
+                // yalnızca damga/sayaç alındı; imza listeleri durur
+            }
+            else if (yerelImzaVar)
+            {
+                ImzaAyarlariSenkronla(gelen);
+            }
+            else
+            {
+                ImzaListeleriniDegistir(gelen);
+                Ayarlar.ImzaAyarleriTemiz = gelen.ImzaAyarleriTemiz;
+            }
+
+            if (!string.IsNullOrWhiteSpace(gelen.SartnameMetni) || string.IsNullOrWhiteSpace(Ayarlar.SartnameMetni))
+                Ayarlar.SartnameMetni = gelen.SartnameMetni ?? "";
+            if (!string.IsNullOrWhiteSpace(gelen.TeklifIstemeSartnameleri) ||
+                string.IsNullOrWhiteSpace(Ayarlar.TeklifIstemeSartnameleri))
+                Ayarlar.TeklifIstemeSartnameleri = gelen.TeklifIstemeSartnameleri ?? "";
+        }
 
         AyarlariHazirla(Ayarlar);
         SilinenTalepleriTemizle();
