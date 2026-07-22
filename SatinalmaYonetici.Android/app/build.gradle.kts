@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -21,8 +21,8 @@ android {
         applicationId = "com.metrik.satinalmapro.admin"
         minSdk = 31
         targetSdk = 35
-        versionCode = 32
-        versionName = "1.0.32"
+        versionCode = 33
+        versionName = "1.0.33"
     }
 
     signingConfigs {

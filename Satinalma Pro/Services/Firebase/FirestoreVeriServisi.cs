@@ -69,13 +69,21 @@ public sealed class FirestoreVeriServisi
 
     public async Task<(string? json, DateTime? guncelleme)> BelgeOkuAsync(string yol, CancellationToken iptal = default)
     {
+        var (json, guncelleme, _) = await BelgeOkuDetayAsync(yol, iptal);
+        return (json, guncelleme);
+    }
+
+    /// <summary>Belge json + doc-level veriSifirlamaUtc (sıfırlama damgası).</summary>
+    public async Task<(string? json, DateTime? guncelleme, long veriSifirlamaUtc)> BelgeOkuDetayAsync(
+        string yol, CancellationToken iptal = default)
+    {
         var token = await _auth.GecerliTokenAlAsync(iptal);
         using var istek = new HttpRequestMessage(HttpMethod.Get, $"{Kok}/{yol}");
         istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var yanit = await Http.SendAsync(istek, iptal);
         if (yanit.StatusCode == System.Net.HttpStatusCode.NotFound)
-            return (null, null);
+            return (null, null, 0);
 
         var govde = await yanit.Content.ReadAsStringAsync(iptal);
         if (!yanit.IsSuccessStatusCode)
@@ -92,7 +100,17 @@ public sealed class FirestoreVeriServisi
             DateTime.TryParse(ts.GetString(), out var dt))
             guncelleme = dt.ToUniversalTime();
 
-        return (json, guncelleme);
+        long stamp = 0;
+        if (alanlar.TryGetProperty("veriSifirlamaUtc", out var vs))
+        {
+            if (vs.TryGetProperty("integerValue", out var iv) &&
+                long.TryParse(iv.GetString(), out var parsed))
+                stamp = parsed;
+            else if (vs.TryGetProperty("doubleValue", out var dv))
+                stamp = (long)dv.GetDouble();
+        }
+
+        return (json, guncelleme, stamp);
     }
 
     public async Task BelgeJsonYazAsync(string yol, string json, string? guncelleyenUid, CancellationToken iptal = default)

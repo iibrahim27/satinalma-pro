@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.32",
-    "build":  33,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.32/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.32/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.32/SatinalmaYonetici.apk",
-    "notes":  "1.0.32 - Android Yonetici masaustu esitleme: kullanici/rol/modul yetkileri, yedek/sifirla/sil, SY ikonu",
+    "version":  "1.0.33",
+    "build":  34,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.33/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.33/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.33/SatinalmaYonetici.apk",
+    "notes":  "1.0.33 - Firma sifirlama: tum operasyonel veri, ayarlar/kullanicilar korunur; stale guard ile birlikte",
     "zorunlu":  false
 }

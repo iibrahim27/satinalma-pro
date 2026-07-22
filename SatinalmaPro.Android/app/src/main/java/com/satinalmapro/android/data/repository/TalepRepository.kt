@@ -83,40 +83,53 @@ class TalepRepository(
         }
         val filtered = if (silinen.isEmpty()) normalized
         else normalized.filterNot { silinen.contains(it.id.lowercase()) }
+        val resetUtc = ayarlar.veriSifirlamaUtc
+        val postReset = if (resetUtc > 0L) {
+            filtered.filter { it.guncellemeUtc >= resetUtc }
+        } else {
+            filtered
+        }
         // Okuma sırasında buluta yazma yok: sıfırlama sonrası eski listeyi geri yükler.
-        val (synced, _) = syncStatuses(filtered)
+        val (synced, _) = syncStatuses(postReset)
         return synced
     }
 
     suspend fun loadAyarlar(): SatinalmaAyarlar {
-        val json = firestore.readDocumentJson("veri/satinalma_ayarlar") ?: return SatinalmaAyarlar()
-        return runCatching {
-            gson.fromJson(json, ayarType) ?: SatinalmaAyarlar()
-        }.getOrDefault(SatinalmaAyarlar())
+        val raw = firestore.readDocumentRaw("veri/satinalma_ayarlar") ?: return SatinalmaAyarlar()
+        val fields = org.json.JSONObject(raw).optJSONObject("fields") ?: return SatinalmaAyarlar()
+        val json = fields.optJSONObject("json")?.optString("stringValue").orEmpty()
+        val fromJson = if (json.isBlank()) {
+            SatinalmaAyarlar()
+        } else {
+            runCatching { gson.fromJson(json, ayarType) ?: SatinalmaAyarlar() }
+                .getOrDefault(SatinalmaAyarlar())
+        }
+        val docStamp = fields.optJSONObject("veriSifirlamaUtc")
+            ?.optString("integerValue")
+            ?.toLongOrNull()
+            ?: fields.optJSONObject("veriSifirlamaUtc")
+                ?.optDouble("doubleValue", 0.0)
+                ?.toLong()
+            ?: 0L
+        return fromJson.copy(veriSifirlamaUtc = maxOf(fromJson.veriSifirlamaUtc, docStamp))
     }
 
     suspend fun saveTalepler(talepler: List<TalepItem>) {
         val uid = auth.uid ?: throw IllegalStateException("Oturum gerekli")
         var (synced, _) = syncStatuses(talepler)
 
-        // Sıfırlama sonrası: bulut boşken sıfırlama öncesi talepleri geri yazmayı engelle.
+        // Sıfırlama sonrası: eski (pre-reset) talepleri asla buluta geri yazma.
         val resetUtc = runCatching { loadAyarlar().veriSifirlamaUtc }.getOrDefault(0L)
         if (resetUtc > 0L && synced.isNotEmpty()) {
-            val cloudJson = runCatching {
-                firestore.readDocumentJson("veri/satinalma_talepler")
-            }.getOrNull()
-            val cloudEmpty = cloudJson.isNullOrBlank() || cloudJson.trim() == "[]"
-            if (cloudEmpty) {
-                val keep = synced.filter { it.guncellemeUtc >= resetUtc }
-                if (keep.size < synced.size) {
-                    BildirimLog.w(
-                        "SYNC",
-                        "Sıfırlama: ${synced.size - keep.size} eski talep buluta yazılmadı"
-                    )
-                }
-                if (keep.isEmpty()) return
-                synced = keep
+            val keep = synced.filter { it.guncellemeUtc >= resetUtc }
+            if (keep.size < synced.size) {
+                BildirimLog.w(
+                    "SYNC",
+                    "Sıfırlama: ${synced.size - keep.size} eski talep buluta yazılmadı"
+                )
             }
+            if (keep.isEmpty()) return
+            synced = keep
         }
 
         val json = gson.toJson(synced)
@@ -125,7 +138,15 @@ class TalepRepository(
 
     suspend fun saveAyarlar(ayarlar: SatinalmaAyarlar) {
         val uid = auth.uid ?: throw IllegalStateException("Oturum gerekli")
-        firestore.writeDocumentJson("veri/satinalma_ayarlar", gson.toJson(ayarlar), uid)
+        val bulut = runCatching { loadAyarlar() }.getOrNull()
+        val guvenli = if (bulut != null) {
+            ayarlar.copy(
+                veriSifirlamaUtc = maxOf(ayarlar.veriSifirlamaUtc, bulut.veriSifirlamaUtc)
+            )
+        } else {
+            ayarlar
+        }
+        firestore.writeDocumentJson("veri/satinalma_ayarlar", gson.toJson(guvenli), uid)
     }
 
     suspend fun createAndSend(

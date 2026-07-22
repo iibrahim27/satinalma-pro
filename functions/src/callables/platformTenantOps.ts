@@ -318,9 +318,10 @@ export const platformResetTenantData = onCall(
     const tenantSnap = await db().collection("tenants").doc(tenantId).get();
     if (!tenantSnap.exists) throw new HttpsError("not-found", "Firma bulunamadı.");
 
-    const scopeRaw = String(request.data?.scope ?? "all").trim().toLowerCase();
-    const scope = scopeRaw === "satinalma" ? "satinalma" : "all";
-
-    return wipeTenantOperationalData(tenantId, request.auth.uid, scope);
+    // Yönetici firma sıfırlama: tüm operasyonel veri gider;
+    // kullanıcı hesapları + ayarlar (imza/logo/kategori/şablon) kalır.
+    return wipeTenantOperationalData(tenantId, request.auth.uid, "all", {
+      preserveSettings: true,
+    });
   }
 );

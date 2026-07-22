@@ -364,8 +364,10 @@ public partial class MainWindow : Window
         }
 
         var u1 = MessageBox.Show(
-            $"«{_seciliFirma.Ad}» operasyonel verisi silinecek (talepler, stok, filo…).\n"
-            + "Kullanıcı hesapları kalır.\n\nDevam edilsin mi?",
+            $"«{_seciliFirma.Ad}» Firebase operasyonel verisi tamamen silinecek\n"
+            + "(talepler, siparişler, stok, filo, bildirimler, iade…).\n\n"
+            + "Korunur: kullanıcı adları / hesaplar, ayarlar (imza, logo, kategori, şablon).\n\n"
+            + "Devam edilsin mi?",
             "Verileri sıfırla",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
@@ -385,7 +387,8 @@ public partial class MainWindow : Window
             DurumMetni.Text = "Firma verisi sıfırlanıyor...";
             var (utc, users) = await _oturum.Platform.FirmaVeriSifirlaAsync(_seciliFirma.Id);
             DurumMetni.Text = $"Veri sıfırlandı (utc={utc}, kullanıcı={users}).";
-            MessageBox.Show("Operasyonel veri sıfırlandı. Kullanıcı hesapları korundu.",
+            MessageBox.Show(
+                "Firebase operasyonel veri sıfırlandı.\nKullanıcı hesapları ve ayarlar korundu.",
                 "Sıfırla", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)

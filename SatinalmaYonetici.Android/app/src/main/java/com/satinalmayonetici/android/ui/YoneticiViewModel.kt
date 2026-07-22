@@ -281,7 +281,7 @@ class YoneticiViewModel(app: Application) : AndroidViewModel(app) {
             busy = true
             try {
                 val utc = api.resetTenant(ensureToken(), t.id)
-                message = "Veri sıfırlandı (utc=$utc)."
+                message = "Veri sıfırlandı (utc=$utc). Kullanıcılar ve ayarlar korundu."
             } catch (ex: Exception) {
                 message = ex.message
             } finally {

@@ -16,6 +16,11 @@ function talepGuncellemeUtc(t: LegacyTalep): number {
   return 0;
 }
 
+function isStaleTalep(t: LegacyTalep, resetUtc: number): boolean {
+  const g = talepGuncellemeUtc(t);
+  return g <= 0 || g < resetUtc;
+}
+
 async function readResetUtc(
   db: admin.firestore.Firestore,
   tenantId: string
@@ -23,54 +28,47 @@ async function readResetUtc(
   const snap = await db.doc(`tenants/${tenantId}/veri/satinalma_ayarlar`).get();
   const data = snap.data();
   if (!data) return 0;
+  let docUtc = 0;
   if (typeof data.veriSifirlamaUtc === "number" && data.veriSifirlamaUtc > 0) {
-    return data.veriSifirlamaUtc;
+    docUtc = data.veriSifirlamaUtc;
   }
+  let jsonUtc = 0;
   try {
     const parsed = JSON.parse(String(data.json ?? "{}")) as {
       veriSifirlamaUtc?: number;
     };
-    return typeof parsed.veriSifirlamaUtc === "number"
-      ? parsed.veriSifirlamaUtc
-      : 0;
+    if (typeof parsed.veriSifirlamaUtc === "number" && parsed.veriSifirlamaUtc > 0) {
+      jsonUtc = parsed.veriSifirlamaUtc;
+    }
   } catch {
-    return 0;
+    /* ignore */
   }
+  return Math.max(docUtc, jsonUtc);
 }
 
 /**
  * Sıfırlama sonrası eski istemcilerin dolu listeyi geri yazmasını engeller.
- * Tüm kayıtlar resetUtc öncesine aitse belgeyi tekrar [] yapar.
+ * Karışık yazılarda (eski + 1 yeni) eski kayıtları ayıklar; yalnızca post-reset kalır.
+ * @returns "rewrote" | "emptied" | "clean"
  */
-async function rejectStaleResurrection(
+async function stripStaleResurrection(
   db: admin.firestore.Firestore,
   tenantId: string,
   afterRef: admin.firestore.DocumentReference,
   afterList: LegacyTalep[],
   resetUtc: number
-): Promise<boolean> {
-  if (resetUtc <= 0 || afterList.length === 0) return false;
+): Promise<"rewrote" | "emptied" | "clean"> {
+  if (resetUtc <= 0 || afterList.length === 0) return "clean";
 
-  const allStale = afterList.every((t) => {
-    const g = talepGuncellemeUtc(t);
-    return g <= 0 || g < resetUtc;
-  });
-  if (!allStale) return false;
+  const kept = afterList.filter((t) => !isStaleTalep(t, resetUtc));
+  const stale = afterList.filter((t) => isStaleTalep(t, resetUtc));
+  if (stale.length === 0) return "clean";
 
   console.warn(
-    `stale talep write rejected tenant=${tenantId} count=${afterList.length} resetUtc=${resetUtc}`
-  );
-  await afterRef.set(
-    {
-      json: "[]",
-      updatedAt: new Date().toISOString(),
-      updatedBy: "system-reset-guard",
-      veriSifirlamaUtc: resetUtc,
-    },
-    { merge: true }
+    `stale talep strip tenant=${tenantId} stale=${stale.length} kept=${kept.length} resetUtc=${resetUtc}`
   );
 
-  for (const t of afterList) {
+  for (const t of stale) {
     if (!t.id) continue;
     try {
       await db.recursiveDelete(
@@ -80,8 +78,102 @@ async function rejectStaleResurrection(
       /* ignore */
     }
   }
-  return true;
+
+  if (kept.length === 0) {
+    await afterRef.set(
+      {
+        json: "[]",
+        updatedAt: new Date().toISOString(),
+        updatedBy: "system-reset-guard",
+        veriSifirlamaUtc: resetUtc,
+      },
+      { merge: true }
+    );
+    return "emptied";
+  }
+
+  await afterRef.set(
+    {
+      json: JSON.stringify(kept),
+      updatedAt: new Date().toISOString(),
+      updatedBy: "system-stale-strip",
+      veriSifirlamaUtc: resetUtc,
+    },
+    { merge: true }
+  );
+  return "rewrote";
 }
+
+/** Ayarlar belgesinde veriSifirlamaUtc'nin düşürülmesini engeller. */
+export const onLegacyAyarlarWrite = onDocumentWritten(
+  "tenants/{tenantId}/veri/satinalma_ayarlar",
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!after || !event.data?.after) return;
+
+    const updatedBy = String(after.updatedBy ?? "");
+    if (updatedBy === "system-reset-stamp-guard") return;
+
+    const beforeDoc =
+      typeof before?.veriSifirlamaUtc === "number" ? before.veriSifirlamaUtc : 0;
+    const afterDoc =
+      typeof after.veriSifirlamaUtc === "number" ? after.veriSifirlamaUtc : 0;
+
+    let beforeJson = 0;
+    try {
+      const p = JSON.parse(String(before?.json ?? "{}")) as {
+        veriSifirlamaUtc?: number;
+      };
+      if (typeof p.veriSifirlamaUtc === "number" && p.veriSifirlamaUtc > 0) {
+        beforeJson = p.veriSifirlamaUtc;
+      }
+    } catch {
+      /* ignore */
+    }
+
+    let afterJson = 0;
+    let afterParsed: Record<string, unknown> = {};
+    try {
+      const p = JSON.parse(String(after.json ?? "{}"));
+      if (p && typeof p === "object" && !Array.isArray(p)) {
+        afterParsed = p as Record<string, unknown>;
+        if (typeof afterParsed.veriSifirlamaUtc === "number") {
+          afterJson = afterParsed.veriSifirlamaUtc as number;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+
+    const floor = Math.max(beforeDoc, beforeJson, afterDoc, afterJson);
+    if (floor <= 0) return;
+
+    const needsDocFix = afterDoc < floor;
+    const needsJsonFix = afterJson < floor;
+    if (!needsDocFix && !needsJsonFix) return;
+
+    if (needsJsonFix) {
+      afterParsed.veriSifirlamaUtc = floor;
+    }
+
+    console.warn(
+      `ayarlar stamp guard tenant=${event.params.tenantId} floor=${floor} afterDoc=${afterDoc} afterJson=${afterJson}`
+    );
+
+    await event.data.after.ref.set(
+      {
+        ...(needsJsonFix
+          ? { json: JSON.stringify(afterParsed) }
+          : {}),
+        veriSifirlamaUtc: floor,
+        updatedAt: new Date().toISOString(),
+        updatedBy: "system-reset-stamp-guard",
+      },
+      { merge: true }
+    );
+  }
+);
 
 export const onLegacyTalepWrite = onDocumentWritten(
   "tenants/{tenantId}/veri/satinalma_talepler",
@@ -91,8 +183,8 @@ export const onLegacyTalepWrite = onDocumentWritten(
     const afterJson = event.data?.after?.data()?.json as string | undefined;
     if (!afterJson || !event.data?.after) return;
 
-    // Guard'ın kendi [] yazısı — döngüye girme.
     const updatedBy = String(event.data.after.data()?.updatedBy ?? "");
+    // Boşaltma guard'ı — döngüye girme.
     if (updatedBy === "system-reset-guard") return;
 
     const beforeList = parseLegacyTalepler(beforeJson);
@@ -100,16 +192,16 @@ export const onLegacyTalepWrite = onDocumentWritten(
     const db = admin.firestore();
 
     const resetUtc = await readResetUtc(db, tenantId);
-    if (
-      await rejectStaleResurrection(
+    // system-stale-strip: zaten ayıklanmış liste — tekrar strip etme, dual-write'a devam.
+    if (updatedBy !== "system-stale-strip") {
+      const strip = await stripStaleResurrection(
         db,
         tenantId,
         event.data.after.ref,
         afterList,
         resetUtc
-      )
-    ) {
-      return;
+      );
+      if (strip === "emptied" || strip === "rewrote") return;
     }
 
     // Sıfırlama / silinen talepler: enterprise kopyalarını da kaldır.
