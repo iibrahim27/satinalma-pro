@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.83",
-    "build":  152,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.83/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.83/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.83/SatinalmaPro.apk",
-    "notes":  "2.1.83 - Imza kaydetme: Ayarlar nesnesi ezilmesin; Ekle/Duzenle/Sil dialog",
+    "version":  "2.1.84",
+    "build":  153,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.84/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.84/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.84/SatinalmaPro.apk",
+    "notes":  "2.1.84 - Imza Ekle/Duzenle/Sil butonlari: dialog ve salt-okunur kilit duzeltmesi",
     "zorunlu":  false
 }

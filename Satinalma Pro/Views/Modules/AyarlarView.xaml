@@ -295,21 +295,21 @@
                 <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,16"
                            Text="Talep ve yönetim PDF'lerinde kullanılan imza alanları." />
 
-                <Grid Margin="0,0,0,10">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Text="Şefler İmza İsimleri" FontWeight="SemiBold" VerticalAlignment="Center" />
-                  <Button Grid.Column="1" Style="{StaticResource AyarSaveButton}" Content="Ekle"
-                          Margin="0,0,8,0" Click="SefImzaEkle_Click" />
-                  <Button Grid.Column="2" Style="{StaticResource AyarGhostButton}" Content="Düzenle"
-                          Margin="0,0,8,0" Click="SefImzaDuzenle_Click" />
-                  <Button Grid.Column="3" Style="{StaticResource AyarGhostButton}" Content="Sil"
-                          Click="SefImzaSil_Click" />
-                </Grid>
+                <DockPanel Margin="0,0,0,10" LastChildFill="True">
+                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="BtnSefImzaEkle" Style="{StaticResource AyarSaveButton}"
+                            Content="Ekle" Margin="0,0,8,0" MinWidth="72"
+                            Click="SefImzaEkle_Click" />
+                    <Button x:Name="BtnSefImzaDuzenle" Style="{StaticResource AyarGhostButton}"
+                            Content="Düzenle" Margin="0,0,8,0" MinWidth="72"
+                            Click="SefImzaDuzenle_Click" />
+                    <Button x:Name="BtnSefImzaSil" Style="{StaticResource AyarGhostButton}"
+                            Content="Sil" MinWidth="72"
+                            Click="SefImzaSil_Click" />
+                  </StackPanel>
+                  <TextBlock Text="Şefler İmza İsimleri" FontWeight="SemiBold"
+                             VerticalAlignment="Center" Margin="0,0,12,0" />
+                </DockPanel>
                 <DataGrid x:Name="SefImzaGrid" Style="{StaticResource ModuleEditableDataGridStyle}"
                           Height="140" AutoGenerateColumns="False" CanUserAddRows="False"
                           IsReadOnly="True" SelectionMode="Single"
@@ -321,21 +321,21 @@
                   </DataGrid.Columns>
                 </DataGrid>
 
-                <Grid Margin="0,20,0,10">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Text="Yönetim İmza İsimleri" FontWeight="SemiBold" VerticalAlignment="Center" />
-                  <Button Grid.Column="1" Style="{StaticResource AyarSaveButton}" Content="Ekle"
-                          Margin="0,0,8,0" Click="YonetimImzaEkle_Click" />
-                  <Button Grid.Column="2" Style="{StaticResource AyarGhostButton}" Content="Düzenle"
-                          Margin="0,0,8,0" Click="YonetimImzaDuzenle_Click" />
-                  <Button Grid.Column="3" Style="{StaticResource AyarGhostButton}" Content="Sil"
-                          Click="YonetimImzaSil_Click" />
-                </Grid>
+                <DockPanel Margin="0,20,0,10" LastChildFill="True">
+                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="BtnYonetimImzaEkle" Style="{StaticResource AyarSaveButton}"
+                            Content="Ekle" Margin="0,0,8,0" MinWidth="72"
+                            Click="YonetimImzaEkle_Click" />
+                    <Button x:Name="BtnYonetimImzaDuzenle" Style="{StaticResource AyarGhostButton}"
+                            Content="Düzenle" Margin="0,0,8,0" MinWidth="72"
+                            Click="YonetimImzaDuzenle_Click" />
+                    <Button x:Name="BtnYonetimImzaSil" Style="{StaticResource AyarGhostButton}"
+                            Content="Sil" MinWidth="72"
+                            Click="YonetimImzaSil_Click" />
+                  </StackPanel>
+                  <TextBlock Text="Yönetim İmza İsimleri" FontWeight="SemiBold"
+                             VerticalAlignment="Center" Margin="0,0,12,0" />
+                </DockPanel>
                 <DataGrid x:Name="YonetimImzaGrid" Style="{StaticResource ModuleEditableDataGridStyle}"
                           Height="140" AutoGenerateColumns="False" CanUserAddRows="False"
                           IsReadOnly="True" SelectionMode="Single"
