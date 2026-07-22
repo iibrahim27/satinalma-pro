@@ -528,13 +528,40 @@ public partial class AyarlarView : UserControl
 
     #region Satınalma
 
-    private void ImzaGridleriYenile()
+    private void ImzaGridleriYenile(ImzaAyari? sefSecili = null, ImzaAyari? yonetimSecili = null)
     {
         SatinalmaDepo.ImzalariHazirla(SatinalmaDepo.Ayarlar);
+        var oncekiSef = sefSecili ?? SefImzaOlarak(SefImzaGrid.SelectedItem) ?? SefImzaOlarak(SefImzaGrid.CurrentItem);
+        var oncekiYonetim = yonetimSecili ?? SefImzaOlarak(YonetimImzaGrid.SelectedItem)
+            ?? SefImzaOlarak(YonetimImzaGrid.CurrentItem);
+
         SefImzaGrid.ItemsSource = null;
         YonetimImzaGrid.ItemsSource = null;
         SefImzaGrid.ItemsSource = SatinalmaDepo.Ayarlar.SefImzalari;
         YonetimImzaGrid.ItemsSource = SatinalmaDepo.Ayarlar.YonetimImzalari;
+
+        if (oncekiSef is not null && SatinalmaDepo.Ayarlar.SefImzalari.Contains(oncekiSef))
+            SefImzaGrid.SelectedItem = oncekiSef;
+        if (oncekiYonetim is not null && SatinalmaDepo.Ayarlar.YonetimImzalari.Contains(oncekiYonetim))
+            YonetimImzaGrid.SelectedItem = oncekiYonetim;
+    }
+
+    private static ImzaAyari? SefImzaOlarak(object? o) => o as ImzaAyari;
+
+    /// <summary>
+    /// Cell seçiminde SelectedItem boş kalabiliyor; CurrentItem / tek satır yedekleri kullan.
+    /// </summary>
+    private static ImzaAyari? SeciliImzaAl(DataGrid grid, IList<ImzaAyari>? liste)
+    {
+        if (SefImzaOlarak(grid.SelectedItem) is { } secili)
+            return secili;
+        if (SefImzaOlarak(grid.CurrentItem) is { } guncel)
+            return guncel;
+        if (grid.SelectedCells.Count > 0 && SefImzaOlarak(grid.SelectedCells[0].Item) is { } hucre)
+            return hucre;
+        if (liste is { Count: 1 })
+            return liste[0];
+        return null;
     }
 
     private void ImzaDuzenlemesiniBaslat()
@@ -599,8 +626,7 @@ public partial class AyarlarView : UserControl
             ImzaDuzenlemesiniBaslat();
             SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz = false;
             SatinalmaDepo.Ayarlar.SefImzalari.Add(yeni);
-            ImzaGridleriYenile();
-            SefImzaGrid.SelectedItem = yeni;
+            ImzaGridleriYenile(sefSecili: yeni);
             ImzaDuzenlemeleriniKaydet();
         }
         catch (Exception ex)
@@ -621,21 +647,22 @@ public partial class AyarlarView : UserControl
         try
         {
             ImzaButonlariniAktifEt();
-            if (SefImzaGrid.SelectedItem is not ImzaAyari imza)
+            var imza = SeciliImzaAl(SefImzaGrid, SatinalmaDepo.Ayarlar.SefImzalari);
+            if (imza is null)
             {
-                MessageBox.Show("Düzenlemek için listeden bir imza seçin.", UygulamaBilgisi.Ad,
+                MessageBox.Show("Düzenlemek için listeden bir satıra tıklayıp seçin.", UygulamaBilgisi.Ad,
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
+            SefImzaGrid.SelectedItem = imza;
             var guncel = ImzaDuzenleDialog.Goster(SahipPencere(), "Şef İmzası Düzenle", imza);
             if (guncel is null) return;
 
             imza.Unvan = guncel.Unvan;
             imza.AdSoyad = guncel.AdSoyad;
             imza.Aktif = guncel.Aktif;
-            ImzaGridleriYenile();
-            SefImzaGrid.SelectedItem = imza;
+            ImzaGridleriYenile(sefSecili: imza);
             ImzaDuzenlemeleriniKaydet();
         }
         catch (Exception ex)
@@ -651,9 +678,10 @@ public partial class AyarlarView : UserControl
         try
         {
             ImzaButonlariniAktifEt();
-            if (SefImzaGrid.SelectedItem is not ImzaAyari imza)
+            var imza = SeciliImzaAl(SefImzaGrid, SatinalmaDepo.Ayarlar.SefImzalari);
+            if (imza is null)
             {
-                MessageBox.Show("Silmek için listeden bir imza seçin.", UygulamaBilgisi.Ad,
+                MessageBox.Show("Silmek için listeden bir satıra tıklayıp seçin.", UygulamaBilgisi.Ad,
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
@@ -692,8 +720,7 @@ public partial class AyarlarView : UserControl
             ImzaDuzenlemesiniBaslat();
             SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz = false;
             SatinalmaDepo.Ayarlar.YonetimImzalari.Add(yeni);
-            ImzaGridleriYenile();
-            YonetimImzaGrid.SelectedItem = yeni;
+            ImzaGridleriYenile(yonetimSecili: yeni);
             ImzaDuzenlemeleriniKaydet();
         }
         catch (Exception ex)
@@ -714,21 +741,22 @@ public partial class AyarlarView : UserControl
         try
         {
             ImzaButonlariniAktifEt();
-            if (YonetimImzaGrid.SelectedItem is not ImzaAyari imza)
+            var imza = SeciliImzaAl(YonetimImzaGrid, SatinalmaDepo.Ayarlar.YonetimImzalari);
+            if (imza is null)
             {
-                MessageBox.Show("Düzenlemek için listeden bir imza seçin.", UygulamaBilgisi.Ad,
+                MessageBox.Show("Düzenlemek için listeden bir satıra tıklayıp seçin.", UygulamaBilgisi.Ad,
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
+            YonetimImzaGrid.SelectedItem = imza;
             var guncel = ImzaDuzenleDialog.Goster(SahipPencere(), "Yönetim İmzası Düzenle", imza);
             if (guncel is null) return;
 
             imza.Unvan = guncel.Unvan;
             imza.AdSoyad = guncel.AdSoyad;
             imza.Aktif = guncel.Aktif;
-            ImzaGridleriYenile();
-            YonetimImzaGrid.SelectedItem = imza;
+            ImzaGridleriYenile(yonetimSecili: imza);
             ImzaDuzenlemeleriniKaydet();
         }
         catch (Exception ex)
@@ -744,9 +772,10 @@ public partial class AyarlarView : UserControl
         try
         {
             ImzaButonlariniAktifEt();
-            if (YonetimImzaGrid.SelectedItem is not ImzaAyari imza)
+            var imza = SeciliImzaAl(YonetimImzaGrid, SatinalmaDepo.Ayarlar.YonetimImzalari);
+            if (imza is null)
             {
-                MessageBox.Show("Silmek için listeden bir imza seçin.", UygulamaBilgisi.Ad,
+                MessageBox.Show("Silmek için listeden bir satıra tıklayıp seçin.", UygulamaBilgisi.Ad,
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }

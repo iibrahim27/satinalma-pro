@@ -310,9 +310,9 @@
                   <TextBlock Text="Şefler İmza İsimleri" FontWeight="SemiBold"
                              VerticalAlignment="Center" Margin="0,0,12,0" />
                 </DockPanel>
-                <DataGrid x:Name="SefImzaGrid" Style="{StaticResource ModuleEditableDataGridStyle}"
+                <DataGrid x:Name="SefImzaGrid" Style="{StaticResource ModuleDataGridStyle}"
                           Height="140" AutoGenerateColumns="False" CanUserAddRows="False"
-                          IsReadOnly="True" SelectionMode="Single"
+                          IsReadOnly="True" SelectionMode="Single" SelectionUnit="FullRow"
                           MouseDoubleClick="SefImzaGrid_MouseDoubleClick">
                   <DataGrid.Columns>
                     <DataGridTextColumn Header="Ünvan" Binding="{Binding Unvan}" Width="*" />
@@ -336,9 +336,9 @@
                   <TextBlock Text="Yönetim İmza İsimleri" FontWeight="SemiBold"
                              VerticalAlignment="Center" Margin="0,0,12,0" />
                 </DockPanel>
-                <DataGrid x:Name="YonetimImzaGrid" Style="{StaticResource ModuleEditableDataGridStyle}"
+                <DataGrid x:Name="YonetimImzaGrid" Style="{StaticResource ModuleDataGridStyle}"
                           Height="140" AutoGenerateColumns="False" CanUserAddRows="False"
-                          IsReadOnly="True" SelectionMode="Single"
+                          IsReadOnly="True" SelectionMode="Single" SelectionUnit="FullRow"
                           MouseDoubleClick="YonetimImzaGrid_MouseDoubleClick">
                   <DataGrid.Columns>
                     <DataGridTextColumn Header="Ünvan" Binding="{Binding Unvan}" Width="*" />

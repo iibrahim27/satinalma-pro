@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.37",
-    "build":  38,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.37/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.37/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.37/SatinalmaYonetici.apk",
-    "notes":  "1.0.37 - Pro 2.1.84 imza buton duzeltmesi ile birlikte",
+    "version":  "1.0.38",
+    "build":  40,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.38/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.38/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.38/SatinalmaYonetici.apk",
+    "notes":  "1.0.38 - Pro 2.1.85 imza satir secimi duzeltmesi ile birlikte",
     "zorunlu":  false
 }
