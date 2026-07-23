@@ -8,10 +8,14 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.satinalmayonetici.android.YoneticiApp
+import com.satinalmayonetici.android.BuildConfig
 import com.satinalmayonetici.android.data.AuthSession
 import com.satinalmayonetici.android.data.ModulKatalogu
 import com.satinalmayonetici.android.data.ModulYetki
 import com.satinalmayonetici.android.data.TenantRow
+import com.satinalmayonetici.android.data.UpdateInstallResult
+import com.satinalmayonetici.android.data.UpdateManifest
+import com.satinalmayonetici.android.data.UpdateService
 import com.satinalmayonetici.android.data.UserRow
 import com.satinalmayonetici.android.data.validateUsername
 import kotlinx.coroutines.launch
@@ -27,6 +31,7 @@ sealed class Screen {
 class YoneticiViewModel(app: Application) : AndroidViewModel(app) {
     private val api = YoneticiApp.from(app).api
     private val prefs = app.getSharedPreferences("yonetici_oturum", Context.MODE_PRIVATE)
+    private val updates = UpdateService(app)
 
     var screen by mutableStateOf<Screen>(Screen.Login)
         private set
@@ -44,6 +49,19 @@ class YoneticiViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var message by mutableStateOf<String?>(null)
     var loginError by mutableStateOf<String?>(null)
+
+    val appVersionLabel: String
+        get() = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+
+    var pendingUpdate by mutableStateOf<UpdateManifest?>(null)
+        private set
+    var updateProgress by mutableStateOf<Int?>(null)
+        private set
+    var updateMessage by mutableStateOf<String?>(null)
+    var updateError by mutableStateOf<String?>(null)
+    var updateBusy by mutableStateOf(false)
+        private set
+    var showUpdatePanel by mutableStateOf(false)
 
     // Firm form
     var firmaKod by mutableStateOf("")
@@ -457,6 +475,83 @@ class YoneticiViewModel(app: Application) : AndroidViewModel(app) {
     fun backFromUser() {
         screen = Screen.FirmDetail
         message = null
+    }
+
+    /** Sistem geri tuşu: ekran yığını; çıkış yerine arka plana al. */
+    fun handleSystemBack(): Boolean {
+        return when (screen) {
+            Screen.UserEdit -> {
+                backFromUser()
+                true
+            }
+            Screen.FirmDetail -> {
+                goFirmList()
+                true
+            }
+            Screen.FirmList, Screen.Login -> false
+        }
+    }
+
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            updateBusy = true
+            updateError = null
+            updateMessage = "Güncelleme kontrol ediliyor..."
+            pendingUpdate = null
+            try {
+                val result = updates.checkForUpdate()
+                updateMessage = null
+                when {
+                    result.error != null && result.manifest == null ->
+                        updateError = result.error
+                    result.available && result.manifest != null -> {
+                        pendingUpdate = result.manifest
+                        showUpdatePanel = true
+                        updateMessage = "Yeni sürüm bulundu: v${result.manifest.version}"
+                    }
+                    else -> updateMessage = "Uygulama güncel ($appVersionLabel)."
+                }
+            } catch (ex: Exception) {
+                updateMessage = null
+                updateError = ex.message ?: "Güncelleme kontrolü başarısız"
+            } finally {
+                updateBusy = false
+            }
+        }
+    }
+
+    fun startUpdateDownload() {
+        val manifest = pendingUpdate ?: return
+        viewModelScope.launch {
+            updateBusy = true
+            updateError = null
+            updateProgress = 0
+            try {
+                when (updates.downloadAndInstall(manifest) { msg, p ->
+                    updateMessage = msg
+                    updateProgress = p
+                }) {
+                    UpdateInstallResult.SUCCESS ->
+                        updateMessage = "Kurulum başlatıldı."
+                    UpdateInstallResult.NEEDS_PERMISSION ->
+                        updateError = "Bilinmeyen kaynaklardan kurulum izni gerekli. İzin verip tekrar deneyin."
+                    UpdateInstallResult.FAILED ->
+                        updateError = "Kurulum başlatılamadı."
+                }
+            } catch (ex: Exception) {
+                updateError = ex.message ?: "İndirme başarısız"
+            } finally {
+                updateBusy = false
+                updateProgress = null
+            }
+        }
+    }
+
+    fun dismissUpdateDialog() {
+        if (updateProgress != null) return
+        pendingUpdate = null
+        showUpdatePanel = false
+        updateError = null
     }
 
     private fun mergeYetkiler(mevcut: List<ModulYetki>): List<ModulYetki> {

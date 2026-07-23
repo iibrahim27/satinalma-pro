@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.40",
-    "build":  42,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.40/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.40/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.40/SatinalmaYonetici.apk",
-    "notes":  "1.0.40 - Pro 2.1.87 sifirlama geri gelme engeli ile birlikte",
+    "version":  "1.0.41",
+    "build":  43,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.41/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.41/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.41/SatinalmaYonetici.apk",
+    "notes":  "1.0.41 - Yonetici Android: profesyonel UI, animasyonlu giris, uygulama guncelleme, geri tusu",
     "zorunlu":  false
 }

@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.87",
-    "build":  156,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.87/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.87/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.87/SatinalmaPro.apk",
-    "notes":  "2.1.87 - Sifirlama sonrasi eski talep geri gelmesin: yerel disk birlestirme ve bos bulut push kapatildi",
+    "version":  "2.1.88",
+    "build":  158,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.88/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.88/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.88/SatinalmaPro.apk",
+    "notes":  "2.1.88 - Yonetici Android 1.0.41 ile birlikte (profesyonel UI, guncelleme, geri tusu)",
     "zorunlu":  false
 }
