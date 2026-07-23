@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.85",
-    "build":  154,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.85/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.85/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.85/SatinalmaPro.apk",
-    "notes":  "2.1.85 - Imza listesi satir secimi: Duzenle/Sil artik calisiyor (FullRow)",
+    "version":  "2.1.86",
+    "build":  155,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.86/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.86/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.86/SatinalmaPro.apk",
+    "notes":  "2.1.86 - Talep kayit: bos bulut yeni talebi silmesin; stale-guard grace + damga parse",
     "zorunlu":  false
 }

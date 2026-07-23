@@ -136,12 +136,38 @@ public static class BulutVeriSenkronu
 
                     // Bilinçli sıfırlama damgası varken boş bulutu yerel ile doldurma.
                     var sifirlamaDamgasi = SatinalmaDepo.Ayarlar.VeriSifirlamaUtc > 0
-                        || anahtar is "satinalma_talepler" or "satinalma_ayarlar";
+                        || anahtar is "satinalma_ayarlar";
 
                     if (bulutBelgesiVar && !buluttaVar && yereldeVar && yerelJson is not null
+                        && anahtar == "satinalma_talepler")
+                    {
+                        // Boş bulut + yerel talep: post-reset yereli geri yaz; yoklamada silme.
+                        // (Eski sıfırlama koruması boş [] uygulayıp yeni kaydı yok ediyordu.)
+                        var (hazirJson, _) = await TalepleriBulutaHazirlaAsync(yol, iptal)
+                            .ConfigureAwait(false);
+                        if (JsonAnlamliMi(hazirJson, anahtar))
+                        {
+                            await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
+                                yol, hazirJson, OturumYoneticisi.Auth?.Uid, iptal)
+                                .ConfigureAwait(false);
+                            YerelOnbellegeYaz(anahtar, hazirJson);
+                            BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
+                        }
+                        else
+                        {
+                            await UiThreaddeCalistirAsync(() =>
+                            {
+                                if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                                    return;
+                                Uygula(anahtar, bulutJson!);
+                                YerelOnbellegeYaz(anahtar, bulutJson!);
+                            });
+                            BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
+                        }
+                    }
+                    else if (bulutBelgesiVar && !buluttaVar && yereldeVar && yerelJson is not null
                         && ListeModuluMu(anahtar)
-                        && SatinalmaDepo.Ayarlar.VeriSifirlamaUtc <= 0
-                        && anahtar != "satinalma_talepler")
+                        && SatinalmaDepo.Ayarlar.VeriSifirlamaUtc <= 0)
                     {
                         // Boş bulut + dolu yerel: mal kabul kaybını önlemek için yereli yükle
                         await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
@@ -160,9 +186,10 @@ public static class BulutVeriSenkronu
                         BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
                     }
                     else if (bulutBelgesiVar && !buluttaVar && sifirlamaDamgasi
-                             && anahtar != "satinalma_ayarlar")
+                             && anahtar != "satinalma_ayarlar"
+                             && anahtar != "satinalma_talepler")
                     {
-                        // Boş bulut otoriter — yereli geri yükleme (ayarlar hariç; yukarıda korundu).
+                        // Boş bulut otoriter — yereli geri yükleme (ayarlar/talepler hariç).
                         await UiThreaddeCalistirAsync(() =>
                         {
                             if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
@@ -624,6 +651,29 @@ public static class BulutVeriSenkronu
                 if (!bosBulut && !BulutSenkronZamani.YeniVeriVar(anahtar, guncelleme))
                     continue;
 
+                // Boş talep belgesi + post-reset yerel: silme; geri yaz.
+                if (bosBulut && anahtar == "satinalma_talepler" && !_sifirlamaAktif)
+                {
+                    const long StaleGraceMs = 5L * 60L * 1000L;
+                    var resetUtc = SatinalmaDepo.Ayarlar.VeriSifirlamaUtc;
+                    var filtreTabani = resetUtc > StaleGraceMs ? resetUtc - StaleGraceMs : 0;
+                    var yerelKorunan = SatinalmaDepo.Talepler
+                        .Where(t => resetUtc <= 0 || t.GuncellemeUtc >= filtreTabani)
+                        .ToList();
+                    if (yerelKorunan.Count > 0)
+                    {
+                        var (hazirJson, _) = await TalepleriBulutaHazirlaAsync(yol, iptal);
+                        if (JsonAnlamliMi(hazirJson, anahtar))
+                        {
+                            await OturumYoneticisi.Firestore!.BelgeJsonYazAsync(
+                                yol, hazirJson, OturumYoneticisi.Auth?.Uid, iptal);
+                            YerelOnbellegeYaz(anahtar, hazirJson);
+                            BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
+                            continue;
+                        }
+                    }
+                }
+
                 _senkronYukleniyor = true;
                 await UiThreaddeCalistirAsync(() =>
                 {
@@ -882,7 +932,27 @@ public static class BulutVeriSenkronu
                 case "satinalma_talepler":
                     SatinalmaAyarlariniDisktenYenile();
                     // Boş bulut veya sıfırlama: birleştirme yok — disk/bellek eski talepleri geri getirmesin.
+                    // Ancak post-reset yerel talepleri boş [] ile asla silme (kayıt yarışı).
                     var talepBos = string.IsNullOrWhiteSpace(json) || json.Trim() is "[]";
+                    if (talepBos && !_sifirlamaAktif)
+                    {
+                        const long StaleGraceMs = 5L * 60L * 1000L;
+                        var resetUtc = SatinalmaDepo.Ayarlar.VeriSifirlamaUtc;
+                        var filtreTabani = resetUtc > StaleGraceMs ? resetUtc - StaleGraceMs : 0;
+                        var korunacak = SatinalmaDepo.Talepler
+                            .Where(t => resetUtc <= 0 || t.GuncellemeUtc >= filtreTabani)
+                            .ToList();
+                        if (korunacak.Count > 0)
+                        {
+                            // Pre-reset varsa bellekten ayıkla; post-reset kalsın.
+                            if (resetUtc > 0 && korunacak.Count != SatinalmaDepo.Talepler.Count)
+                            {
+                                var koruJson = JsonSerializer.Serialize(korunacak, JsonSecenekleri);
+                                SatinalmaDepo.TalepleriBirlestirVeYukle(koruJson, yerelBirlestir: false);
+                            }
+                            break;
+                        }
+                    }
                     SatinalmaDepo.TalepleriBirlestirVeYukle(
                         json,
                         yerelBirlestir: !talepBos && !_sifirlamaAktif);
@@ -946,21 +1016,21 @@ public static class BulutVeriSenkronu
         if (resetUtc > SatinalmaDepo.Ayarlar.VeriSifirlamaUtc)
             SatinalmaDepo.Ayarlar.VeriSifirlamaUtc = resetUtc;
 
-        var yerel = SatinalmaDepo.Talepler
-            .Where(t => resetUtc <= 0 || t.GuncellemeUtc >= resetUtc)
-            .ToList();
-
         var (bulutJson, _, talepDocStamp) = await OturumYoneticisi.Firestore!
             .BelgeOkuDetayAsync(yol, iptal);
-        if (talepDocStamp > resetUtc)
+        // Talepler doc damgası ayarlar damgasını yükseltmesin — yeni kayıtları filtre dışı bırakır.
+        if (talepDocStamp > 0 && talepDocStamp <= resetUtc)
         {
-            resetUtc = talepDocStamp;
             SatinalmaDepo.Ayarlar.VeriSifirlamaUtc = Math.Max(
-                SatinalmaDepo.Ayarlar.VeriSifirlamaUtc, resetUtc);
-            yerel = SatinalmaDepo.Talepler
-                .Where(t => t.GuncellemeUtc >= resetUtc)
-                .ToList();
+                SatinalmaDepo.Ayarlar.VeriSifirlamaUtc, talepDocStamp);
         }
+
+        // Saat kayması: reset ile aynı saniye civarı damgaları koru (5 dk).
+        const long StaleGraceMs = 5L * 60L * 1000L;
+        var filtreTabani = resetUtc > StaleGraceMs ? resetUtc - StaleGraceMs : 0;
+        var yerel = SatinalmaDepo.Talepler
+            .Where(t => resetUtc <= 0 || t.GuncellemeUtc >= filtreTabani)
+            .ToList();
 
         var bulutBos = string.IsNullOrWhiteSpace(bulutJson) || bulutJson.Trim() is "[]";
         if (bulutBos)
@@ -971,7 +1041,7 @@ public static class BulutVeriSenkronu
 
         var bulut = JsonSerializer.Deserialize<List<SatinalmaTalep>>(bulutJson!, JsonSecenekleri) ?? [];
         if (resetUtc > 0)
-            bulut = bulut.Where(t => t.GuncellemeUtc >= resetUtc).ToList();
+            bulut = bulut.Where(t => t.GuncellemeUtc >= filtreTabani).ToList();
         var silinen = SatinalmaTalepSenkronYardimcisi.SilinenleriBirlestir(
             SatinalmaDepo.Ayarlar.SilinenTalepIdleri,
             bulutAyarlar?.SilinenTalepIdleri);

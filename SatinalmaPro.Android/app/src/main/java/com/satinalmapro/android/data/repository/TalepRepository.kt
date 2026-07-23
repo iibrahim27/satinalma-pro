@@ -84,8 +84,10 @@ class TalepRepository(
         val filtered = if (silinen.isEmpty()) normalized
         else normalized.filterNot { silinen.contains(it.id.lowercase()) }
         val resetUtc = ayarlar.veriSifirlamaUtc
+        val staleGraceMs = 5L * 60L * 1000L
+        val filtreTabani = if (resetUtc > staleGraceMs) resetUtc - staleGraceMs else 0L
         val postReset = if (resetUtc > 0L) {
-            filtered.filter { it.guncellemeUtc >= resetUtc }
+            filtered.filter { it.guncellemeUtc >= filtreTabani }
         } else {
             filtered
         }
@@ -119,16 +121,25 @@ class TalepRepository(
         var (synced, _) = syncStatuses(talepler)
 
         // Sıfırlama sonrası: eski (pre-reset) talepleri asla buluta geri yazma.
+        // Saat kayması için 5 dk grace; boş keep ile sessiz return yok (yeni kayıt kaybı).
         val resetUtc = runCatching { loadAyarlar().veriSifirlamaUtc }.getOrDefault(0L)
+        val staleGraceMs = 5L * 60L * 1000L
+        val filtreTabani = if (resetUtc > staleGraceMs) resetUtc - staleGraceMs else 0L
         if (resetUtc > 0L && synced.isNotEmpty()) {
-            val keep = synced.filter { it.guncellemeUtc >= resetUtc }
+            val keep = synced.filter { it.guncellemeUtc >= filtreTabani }
             if (keep.size < synced.size) {
                 BildirimLog.w(
                     "SYNC",
                     "Sıfırlama: ${synced.size - keep.size} eski talep buluta yazılmadı"
                 )
             }
-            if (keep.isEmpty()) return
+            if (keep.isEmpty()) {
+                BildirimLog.w(
+                    "SYNC",
+                    "Sıfırlama: tüm liste pre-reset — buluta boş yazılmıyor (yerel korunur)"
+                )
+                return
+            }
             synced = keep
         }
 

@@ -9,16 +9,34 @@ import {
 } from "../lib/legacyTalep";
 import { statusTransitionEvent } from "../lib/templates";
 
-function talepGuncellemeUtc(t: LegacyTalep): number {
-  if (typeof t.guncellemeUtc === "number" && t.guncellemeUtc > 0) {
-    return t.guncellemeUtc;
+/** İstemci saati sunucu reset damgasından biraz geride olabilir. */
+const STALE_GRACE_MS = 5 * 60 * 1000;
+
+function readUtcMs(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const n = Number(value);
+    if (Number.isFinite(n) && n > 0) return n;
   }
   return 0;
 }
 
+function talepGuncellemeUtc(t: LegacyTalep): number {
+  const anyT = t as LegacyTalep & { GuncellemeUtc?: unknown };
+  return Math.max(readUtcMs(t.guncellemeUtc), readUtcMs(anyT.GuncellemeUtc));
+}
+
+/**
+ * Gerçek pre-reset kayıtları ayıklar.
+ * g<=0: damgasız eski blob (stale).
+ * Saat kayması: resetUtc - grace altı stale.
+ */
 function isStaleTalep(t: LegacyTalep, resetUtc: number): boolean {
   const g = talepGuncellemeUtc(t);
-  return g <= 0 || g < resetUtc;
+  if (g <= 0) return true;
+  return g < resetUtc - STALE_GRACE_MS;
 }
 
 async function readResetUtc(
@@ -28,18 +46,17 @@ async function readResetUtc(
   const snap = await db.doc(`tenants/${tenantId}/veri/satinalma_ayarlar`).get();
   const data = snap.data();
   if (!data) return 0;
-  let docUtc = 0;
-  if (typeof data.veriSifirlamaUtc === "number" && data.veriSifirlamaUtc > 0) {
-    docUtc = data.veriSifirlamaUtc;
-  }
+  const docUtc = readUtcMs(data.veriSifirlamaUtc);
   let jsonUtc = 0;
   try {
     const parsed = JSON.parse(String(data.json ?? "{}")) as {
-      veriSifirlamaUtc?: number;
+      veriSifirlamaUtc?: unknown;
+      VeriSifirlamaUtc?: unknown;
     };
-    if (typeof parsed.veriSifirlamaUtc === "number" && parsed.veriSifirlamaUtc > 0) {
-      jsonUtc = parsed.veriSifirlamaUtc;
-    }
+    jsonUtc = Math.max(
+      readUtcMs(parsed.veriSifirlamaUtc),
+      readUtcMs(parsed.VeriSifirlamaUtc)
+    );
   } catch {
     /* ignore */
   }
@@ -56,6 +73,7 @@ async function stripStaleResurrection(
   tenantId: string,
   afterRef: admin.firestore.DocumentReference,
   afterList: LegacyTalep[],
+  beforeList: LegacyTalep[],
   resetUtc: number
 ): Promise<"rewrote" | "emptied" | "clean"> {
   if (resetUtc <= 0 || afterList.length === 0) return "clean";
@@ -65,7 +83,7 @@ async function stripStaleResurrection(
   if (stale.length === 0) return "clean";
 
   console.warn(
-    `stale talep strip tenant=${tenantId} stale=${stale.length} kept=${kept.length} resetUtc=${resetUtc}`
+    `stale talep strip tenant=${tenantId} stale=${stale.length} kept=${kept.length} resetUtc=${resetUtc} before=${beforeList.length}`
   );
 
   for (const t of stale) {
@@ -115,19 +133,19 @@ export const onLegacyAyarlarWrite = onDocumentWritten(
     const updatedBy = String(after.updatedBy ?? "");
     if (updatedBy === "system-reset-stamp-guard") return;
 
-    const beforeDoc =
-      typeof before?.veriSifirlamaUtc === "number" ? before.veriSifirlamaUtc : 0;
-    const afterDoc =
-      typeof after.veriSifirlamaUtc === "number" ? after.veriSifirlamaUtc : 0;
+    const beforeDoc = readUtcMs(before?.veriSifirlamaUtc);
+    const afterDoc = readUtcMs(after.veriSifirlamaUtc);
 
     let beforeJson = 0;
     try {
       const p = JSON.parse(String(before?.json ?? "{}")) as {
-        veriSifirlamaUtc?: number;
+        veriSifirlamaUtc?: unknown;
+        VeriSifirlamaUtc?: unknown;
       };
-      if (typeof p.veriSifirlamaUtc === "number" && p.veriSifirlamaUtc > 0) {
-        beforeJson = p.veriSifirlamaUtc;
-      }
+      beforeJson = Math.max(
+        readUtcMs(p.veriSifirlamaUtc),
+        readUtcMs(p.VeriSifirlamaUtc)
+      );
     } catch {
       /* ignore */
     }
@@ -138,9 +156,10 @@ export const onLegacyAyarlarWrite = onDocumentWritten(
       const p = JSON.parse(String(after.json ?? "{}"));
       if (p && typeof p === "object" && !Array.isArray(p)) {
         afterParsed = p as Record<string, unknown>;
-        if (typeof afterParsed.veriSifirlamaUtc === "number") {
-          afterJson = afterParsed.veriSifirlamaUtc as number;
-        }
+        afterJson = Math.max(
+          readUtcMs(afterParsed.veriSifirlamaUtc),
+          readUtcMs(afterParsed.VeriSifirlamaUtc)
+        );
       }
     } catch {
       /* ignore */
@@ -199,6 +218,7 @@ export const onLegacyTalepWrite = onDocumentWritten(
         tenantId,
         event.data.after.ref,
         afterList,
+        beforeList,
         resetUtc
       );
       if (strip === "emptied" || strip === "rewrote") return;
