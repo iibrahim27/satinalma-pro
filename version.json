@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.86",
-    "build":  155,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.86/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.86/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.86/SatinalmaPro.apk",
-    "notes":  "2.1.86 - Talep kayit: bos bulut yeni talebi silmesin; stale-guard grace + damga parse",
+    "version":  "2.1.87",
+    "build":  156,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.87/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.87/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.87/SatinalmaPro.apk",
+    "notes":  "2.1.87 - Sifirlama sonrasi eski talep geri gelmesin: yerel disk birlestirme ve bos bulut push kapatildi",
     "zorunlu":  false
 }

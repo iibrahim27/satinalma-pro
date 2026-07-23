@@ -125,7 +125,8 @@ public static class SatinalmaDepo
             try
             {
                 var json = File.ReadAllText(TalepDosyasi);
-                var liste = JsonSerializer.Deserialize<List<SatinalmaTalep>>(json, JsonSecenekleri) ?? [];
+                var liste = PostResetTalepleriFiltrele(
+                    JsonSerializer.Deserialize<List<SatinalmaTalep>>(json, JsonSecenekleri) ?? []);
                 foreach (var talep in liste)
                 {
                     TalebiHazirla(talep);
@@ -133,11 +134,16 @@ public static class SatinalmaDepo
                     Talepler.Add(talep);
                 }
 
+                // Diskte pre-reset kalmışsa temiz dosyaya yaz.
+                var hamSayisi = (JsonSerializer.Deserialize<List<SatinalmaTalep>>(json, JsonSecenekleri) ?? []).Count;
+                var kaydetDisk = liste.Count != hamSayisi;
                 if (SatinalmaTalepYardimcisi.TaslaklariNormalizeEt(Talepler))
-                    Kaydet();
+                    kaydetDisk = true;
                 else if (SatinalmaTalepYardimcisi.TeklifGirisAsamalariniNormalizeEt(Talepler))
-                    Kaydet();
+                    kaydetDisk = true;
                 else if (SatinalmaTalepYardimcisi.YonetimOnayMiraslariniGuncelle(Talepler))
+                    kaydetDisk = true;
+                if (kaydetDisk)
                     Kaydet();
             }
             catch
@@ -176,18 +182,29 @@ public static class SatinalmaDepo
     public static void TalepleriYukle(string json) =>
         TalepleriBirlestirVeYukle(json, yerelBirlestir: false);
 
+    /// <summary>Sıfırlama damgasından eski talepleri eler (yerel disk geri yüklemesini engeller).</summary>
+    public static List<SatinalmaTalep> PostResetTalepleriFiltrele(IEnumerable<SatinalmaTalep> kaynak)
+    {
+        var resetUtc = Ayarlar.VeriSifirlamaUtc;
+        if (resetUtc <= 0)
+            return kaynak.ToList();
+        return kaynak.Where(t => t.GuncellemeUtc >= resetUtc).ToList();
+    }
+
     /// <summary>Bulut verisini yerel ile birleştirir — kayıp talep olmaz.</summary>
     public static void TalepleriBirlestirVeYukle(string json, bool yerelBirlestir = true)
     {
-        var gelen = JsonSerializer.Deserialize<List<SatinalmaTalep>>(json, JsonSecenekleri) ?? [];
-        var yerel = yerelBirlestir ? Talepler.ToList() : [];
+        var gelen = PostResetTalepleriFiltrele(
+            JsonSerializer.Deserialize<List<SatinalmaTalep>>(json, JsonSecenekleri) ?? []);
+        var yerel = yerelBirlestir ? PostResetTalepleriFiltrele(Talepler) : [];
 
         if (yerelBirlestir && File.Exists(TalepDosyasi))
         {
             try
             {
-                var disk = JsonSerializer.Deserialize<List<SatinalmaTalep>>(
-                    File.ReadAllText(TalepDosyasi), JsonSecenekleri) ?? [];
+                var disk = PostResetTalepleriFiltrele(
+                    JsonSerializer.Deserialize<List<SatinalmaTalep>>(
+                        File.ReadAllText(TalepDosyasi), JsonSecenekleri) ?? []);
                 yerel = SatinalmaTalepBirlestirme.Birlestir(yerel, disk, Ayarlar.SilinenTalepIdleri);
             }
             catch
