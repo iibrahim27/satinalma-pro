@@ -318,6 +318,7 @@ public partial class RaporlamalarView : UserControl, IModulKlavyeKisayollari
 
     private void PdfIndir_Click(object sender, RoutedEventArgs e)
     {
+        _filtreZamanlayici.Hemen();
         var filtre = FiltreOlustur();
         RaporlamaPdfOlusturucu.Indir(
             filtre, _modulOzetleri, _detaySatirlari, _grupOzetleri, FiltreMetni());
@@ -325,13 +326,17 @@ public partial class RaporlamalarView : UserControl, IModulKlavyeKisayollari
 
     private void PdfYazdir_Click(object sender, RoutedEventArgs e)
     {
+        _filtreZamanlayici.Hemen();
         var filtre = FiltreOlustur();
         RaporlamaPdfOlusturucu.Yazdir(
             filtre, FiltreMetni(), _modulOzetleri, _detaySatirlari, _grupOzetleri);
     }
 
-    private void ExcelAktar_Click(object sender, RoutedEventArgs e) =>
+    private void ExcelAktar_Click(object sender, RoutedEventArgs e)
+    {
+        _filtreZamanlayici.Hemen();
         RaporlamaExcelService.DisaAktar(
             SeciliRaporTuru(), FiltreMetni(),
             _modulOzetleri, _detaySatirlari, _grupOzetleri);
+    }
 }

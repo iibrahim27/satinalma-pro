@@ -711,47 +711,11 @@ public static class RaporlamaServisi
 
 
 
-    private static bool TarihAralikta(string tarih, DateTime? baslangic, DateTime? bitis)
-
-    {
-
-        if (baslangic == null && bitis == null)
-
-            return true;
-
-
-
-        if (!DateTime.TryParseExact(tarih, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
-
-            return false;
-
-
-
-        if (baslangic is DateTime b && dt.Date < b.Date)
-
-            return false;
-
-
-
-        if (bitis is DateTime e && dt.Date > e.Date)
-
-            return false;
-
-
-
-        return true;
-
-    }
-
-
+    private static bool TarihAralikta(string tarih, DateTime? baslangic, DateTime? bitis) =>
+        TarihYardimcisi.Aralikta(tarih, baslangic, bitis);
 
     private static DateTime TarihCoz(string tarih) =>
-
-        DateTime.TryParseExact(tarih, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)
-
-            ? dt
-
-            : DateTime.MinValue;
+        TarihYardimcisi.SiralamaDegeri(tarih);
 
 }
 

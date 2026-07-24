@@ -29,4 +29,7 @@ public sealed class FiltreZamanlayici
         _timer.Stop();
         _calistir();
     }
+
+    /// <summary>Bekleyen tetiklemeyi iptal eder; aksiyonu çalıştırmaz.</summary>
+    public void Durdur() => _timer.Stop();
 }

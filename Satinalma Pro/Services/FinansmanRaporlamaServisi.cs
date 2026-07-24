@@ -1,4 +1,5 @@
 using System.Globalization;
+using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 
 namespace SatinalmaPro.Services;
@@ -316,22 +317,9 @@ public static class FinansmanRaporlamaServisi
       filtreSaha == "Tümü" || string.IsNullOrWhiteSpace(filtreSaha) ||
       saha.Equals(filtreSaha, StringComparison.CurrentCultureIgnoreCase);
 
-  private static bool TarihUygunMu(string tarih, DateTime? baslangic, DateTime? bitis)
-  {
-    var dt = TarihCoz(tarih);
-    if (dt == DateTime.MinValue)
-      return baslangic is null && bitis is null;
-
-    if (baslangic is DateTime b && dt.Date < b.Date)
-      return false;
-    if (bitis is DateTime e && dt.Date > e.Date)
-      return false;
-
-    return true;
-  }
+  private static bool TarihUygunMu(string tarih, DateTime? baslangic, DateTime? bitis) =>
+      TarihYardimcisi.Aralikta(tarih, baslangic, bitis);
 
   private static DateTime TarihCoz(string tarih) =>
-      DateTime.TryParseExact(tarih, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)
-          ? dt
-          : DateTime.MinValue;
+      TarihYardimcisi.SiralamaDegeri(tarih);
 }

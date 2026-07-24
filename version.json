@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.88",
-    "build":  158,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.88/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.88/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.88/SatinalmaPro.apk",
-    "notes":  "2.1.88 - Yonetici Android 1.0.41 ile birlikte (profesyonel UI, guncelleme, geri tusu)",
+    "version":  "2.1.89",
+    "build":  159,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.89/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.89/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.89/SatinalmaPro.apk",
+    "notes":  "2.1.89 - Modul filtre: PDF/Excel secili tarih araligini uygulasin (Agrega, Cimento, Akaryakit, Alinan Malzemeler, Raporlar)",
     "zorunlu":  false
 }

@@ -166,11 +166,17 @@ public partial class AgregaView : UserControl, IModulKlavyeKisayollari
     private void SablonIndir_Click(object sender, RoutedEventArgs e) =>
         AgregaExcelService.SablonKaydet();
 
-    private void PdfYazdir_Click(object sender, RoutedEventArgs e) =>
+    private void PdfYazdir_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         AgregaPdfOlusturucu.Yazdir(GorunenKayitlar(), FiltreOzetiMetni());
+    }
 
-    private void PdfIndir_Click(object sender, RoutedEventArgs e) =>
+    private void PdfIndir_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         AgregaPdfOlusturucu.Indir(GorunenKayitlar(), FiltreOzetiMetni());
+    }
 
     private void YeniKayit_Click(object sender, RoutedEventArgs e)
     {
@@ -189,8 +195,22 @@ public partial class AgregaView : UserControl, IModulKlavyeKisayollari
         VeriGuncellendi();
     }
 
-    private void DisaAktar_Click(object sender, RoutedEventArgs e) =>
+    private void DisaAktar_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         AgregaExcelService.ListeyiKaydet(GorunenKayitlar(), "Agrega.xlsx");
+    }
+
+    /// <summary>
+    /// Tarih seçimi debounce ile gecikebildiği için PDF/Excel öncesi filtreyi hemen uygular.
+    /// </summary>
+    private void FiltreyiDisaAktarOncesiUygula()
+    {
+        _filtreZamanlayici.Durdur();
+        _tarihZamanlayici.Durdur();
+        FiltreSecenekleriniGuncelle();
+        FiltreYenile();
+    }
 
     private void Yenile_Click(object sender, RoutedEventArgs e) => KisayolYenile();
 
@@ -364,22 +384,8 @@ public partial class AgregaView : UserControl, IModulKlavyeKisayollari
         return true;
     }
 
-    private bool TarihUygunMu(string tarih)
-    {
-        if (DpBaslangic.SelectedDate is not DateTime && DpBitis.SelectedDate is not DateTime)
-            return true;
-
-        if (!DateTime.TryParseExact(tarih, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
-            return false;
-
-        if (DpBaslangic.SelectedDate is DateTime b && dt.Date < b.Date)
-            return false;
-
-        if (DpBitis.SelectedDate is DateTime bit && dt.Date > bit.Date)
-            return false;
-
-        return true;
-    }
+    private bool TarihUygunMu(string tarih) =>
+        TarihYardimcisi.Aralikta(tarih, DpBaslangic.SelectedDate, DpBitis.SelectedDate);
 
     private IEnumerable<AgregaKaydi> TarihFiltreliKayitlar() =>
         Kayitlar.Where(k => TarihUygunMu(k.Tarih));
@@ -586,8 +592,11 @@ public partial class AgregaView : UserControl, IModulKlavyeKisayollari
         return parcalar.Count == 0 ? "Tüm kayıtlar" : string.Join(" · ", parcalar);
     }
 
-    private List<AgregaKaydi> GorunenKayitlar() =>
-        _gorunum.Cast<AgregaKaydi>().ToList();
+    private List<AgregaKaydi> GorunenKayitlar()
+    {
+        _gorunum.Refresh();
+        return ModulSayfalamaYardimcisi.FiltrelenmisListe<AgregaKaydi>(_gorunum);
+    }
 
     private void OzetGuncelle()
     {

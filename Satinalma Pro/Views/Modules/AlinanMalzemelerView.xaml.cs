@@ -313,11 +313,17 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
     private void SablonIndir_Click(object sender, RoutedEventArgs e) =>
         AlinanMalzemeExcelService.SablonKaydet();
 
-    private void PdfIndir_Click(object sender, RoutedEventArgs e) =>
+    private void PdfIndir_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         AlinanMalzemePdfOlusturucu.Indir(GorunenKayitlar(), FiltreOzetiMetni());
+    }
 
-    private void PdfYazdir_Click(object sender, RoutedEventArgs e) =>
+    private void PdfYazdir_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         AlinanMalzemePdfOlusturucu.Yazdir(GorunenKayitlar(), FiltreOzetiMetni());
+    }
 
     private void YeniKayit_Click(object sender, RoutedEventArgs e)
     {
@@ -335,8 +341,17 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
         VeriGuncellendi();
     }
 
-    private void DisaAktar_Click(object sender, RoutedEventArgs e) =>
+    private void DisaAktar_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         AlinanMalzemeExcelService.ListeyiKaydet(GorunenKayitlar(), "AlinanMalzemeler.xlsx");
+    }
+
+    private void FiltreyiDisaAktarOncesiUygula()
+    {
+        _filtreZamanlayici.Durdur();
+        FiltreYenile();
+    }
 
     private void Yenile_Click(object sender, RoutedEventArgs e) => KisayolYenile();
 
@@ -455,17 +470,8 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
         if (!string.IsNullOrEmpty(arama) && !AramaEslesir(kayit, arama))
             return false;
 
-        if (DpBaslangic.SelectedDate is DateTime || DpBitis.SelectedDate is DateTime)
-        {
-            if (!DateTime.TryParseExact(kayit.Tarih, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var tarih))
-                return false;
-
-            if (DpBaslangic.SelectedDate is DateTime b && tarih.Date < b.Date)
-                return false;
-
-            if (DpBitis.SelectedDate is DateTime bit && tarih.Date > bit.Date)
-                return false;
-        }
+        if (!TarihYardimcisi.Aralikta(kayit.Tarih, DpBaslangic.SelectedDate, DpBitis.SelectedDate))
+            return false;
 
         var malzeme = (MalzemeFiltre.Metin ?? "").Trim();
         if (!string.IsNullOrEmpty(malzeme) &&
@@ -665,8 +671,11 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
 
     #endregion
 
-    private List<AlinanMalzemeKaydi> GorunenKayitlar() =>
-        _gorunum.Cast<AlinanMalzemeKaydi>().ToList();
+    private List<AlinanMalzemeKaydi> GorunenKayitlar()
+    {
+        _gorunum.Refresh();
+        return ModulSayfalamaYardimcisi.FiltrelenmisListe<AlinanMalzemeKaydi>(_gorunum);
+    }
 
     private string FiltreOzetiMetni()
     {

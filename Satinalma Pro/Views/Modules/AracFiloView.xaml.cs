@@ -124,11 +124,23 @@ public partial class AracFiloView : UserControl, IModulKlavyeKisayollari
     private void SablonIndir_Click(object sender, RoutedEventArgs e) =>
         FiloExcelService.SablonKaydet();
 
-    private void PdfYazdir_Click(object sender, RoutedEventArgs e) =>
+    private void PdfYazdir_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         FiloPdfService.Yazdir(GorunenAraclar(), "Araç Filo Park Raporu");
+    }
 
-    private void DisaAktar_Click(object sender, RoutedEventArgs e) =>
+    private void DisaAktar_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         FiloExcelService.ListeyiKaydet(GorunenAraclar(), "AracFilo.xlsx");
+    }
+
+    private void FiltreyiDisaAktarOncesiUygula()
+    {
+        _filtreZamanlayici.Durdur();
+        FiltreYenile();
+    }
 
     private void Yenile_Click(object sender, RoutedEventArgs e) => KisayolYenile();
 
@@ -388,8 +400,11 @@ public partial class AracFiloView : UserControl, IModulKlavyeKisayollari
         BtnZimmetPdf.IsEnabled = secili;
     }
 
-    private List<FiloAracKaydi> GorunenAraclar() =>
-        _gorunum.Cast<FiloAracKaydi>().ToList();
+    private List<FiloAracKaydi> GorunenAraclar()
+    {
+        _gorunum.Refresh();
+        return ModulSayfalamaYardimcisi.FiltrelenmisListe<FiloAracKaydi>(_gorunum);
+    }
 
     private void OzetGuncelle()
     {

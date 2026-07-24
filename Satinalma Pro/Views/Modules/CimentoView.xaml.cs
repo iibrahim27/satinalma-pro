@@ -166,11 +166,17 @@ public partial class CimentoView : UserControl, IModulKlavyeKisayollari
     private void SablonIndir_Click(object sender, RoutedEventArgs e) =>
         CimentoExcelService.SablonKaydet();
 
-    private void PdfYazdir_Click(object sender, RoutedEventArgs e) =>
+    private void PdfYazdir_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         CimentoPdfOlusturucu.Yazdir(GorunenKayitlar(), FiltreOzetiMetni());
+    }
 
-    private void PdfIndir_Click(object sender, RoutedEventArgs e) =>
+    private void PdfIndir_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         CimentoPdfOlusturucu.Indir(GorunenKayitlar(), FiltreOzetiMetni());
+    }
 
     private void YeniKayit_Click(object sender, RoutedEventArgs e)
     {
@@ -189,8 +195,22 @@ public partial class CimentoView : UserControl, IModulKlavyeKisayollari
         VeriGuncellendi();
     }
 
-    private void DisaAktar_Click(object sender, RoutedEventArgs e) =>
+    private void DisaAktar_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         CimentoExcelService.ListeyiKaydet(GorunenKayitlar(), "Cimento.xlsx");
+    }
+
+    /// <summary>
+    /// Tarih seçimi debounce ile gecikebildiği için PDF/Excel öncesi filtreyi hemen uygular.
+    /// </summary>
+    private void FiltreyiDisaAktarOncesiUygula()
+    {
+        _filtreZamanlayici.Durdur();
+        _tarihZamanlayici.Durdur();
+        FiltreSecenekleriniGuncelle();
+        FiltreYenile();
+    }
 
     private void Yenile_Click(object sender, RoutedEventArgs e) => KisayolYenile();
 
@@ -364,22 +384,8 @@ public partial class CimentoView : UserControl, IModulKlavyeKisayollari
         return true;
     }
 
-    private bool TarihUygunMu(string tarih)
-    {
-        if (DpBaslangic.SelectedDate is not DateTime && DpBitis.SelectedDate is not DateTime)
-            return true;
-
-        if (!DateTime.TryParseExact(tarih, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
-            return false;
-
-        if (DpBaslangic.SelectedDate is DateTime b && dt.Date < b.Date)
-            return false;
-
-        if (DpBitis.SelectedDate is DateTime bit && dt.Date > bit.Date)
-            return false;
-
-        return true;
-    }
+    private bool TarihUygunMu(string tarih) =>
+        TarihYardimcisi.Aralikta(tarih, DpBaslangic.SelectedDate, DpBitis.SelectedDate);
 
     private IEnumerable<CimentoKaydi> TarihFiltreliKayitlar() =>
         Kayitlar.Where(k => TarihUygunMu(k.Tarih));
@@ -585,8 +591,11 @@ public partial class CimentoView : UserControl, IModulKlavyeKisayollari
         return parcalar.Count == 0 ? "Tüm kayıtlar" : string.Join(" · ", parcalar);
     }
 
-    private List<CimentoKaydi> GorunenKayitlar() =>
-        _gorunum.Cast<CimentoKaydi>().ToList();
+    private List<CimentoKaydi> GorunenKayitlar()
+    {
+        _gorunum.Refresh();
+        return ModulSayfalamaYardimcisi.FiltrelenmisListe<CimentoKaydi>(_gorunum);
+    }
 
     private void OzetGuncelle()
     {

@@ -352,11 +352,24 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         TumunuYenile();
     }
 
-    private void PdfIndir_Click(object sender, RoutedEventArgs e) =>
+    private void PdfIndir_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         StokPdfOlusturucu.Indir(GorunenStoklar(), FiltreOzetiMetni());
+    }
 
-    private void DisaAktar_Click(object sender, RoutedEventArgs e) =>
+    private void DisaAktar_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         StokExcelService.ListeyiKaydet(GorunenStoklar(), "StokDurumu.xlsx");
+    }
+
+    private void FiltreyiDisaAktarOncesiUygula()
+    {
+        _filtreZamanlayici.Durdur();
+        _hareketFiltreZamanlayici.Durdur();
+        StokFiltreYenile();
+    }
 
     private void StokFiltreYenile()
     {
@@ -899,7 +912,11 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         return 0;
     }
 
-    private List<StokKaydi> GorunenStoklar() => _stokGorunum.Cast<StokKaydi>().ToList();
+    private List<StokKaydi> GorunenStoklar()
+    {
+        _stokGorunum.Refresh();
+        return ModulSayfalamaYardimcisi.FiltrelenmisListe<StokKaydi>(_stokGorunum);
+    }
 
     private string FiltreOzetiMetni()
     {

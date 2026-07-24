@@ -251,18 +251,21 @@ public partial class FinansmanRaporlamaView : UserControl, IModulKlavyeKisayolla
 
     private void PdfIndir_Click(object sender, RoutedEventArgs e)
     {
+        _filtreZamanlayici.Hemen();
         var filtre = FiltreOlustur();
         FinansmanPdfOlusturucu.Indir(filtre, _ozet, _modulOzetleri, _hareketler, _aylikOzetler, _vadeler, _grupOzetleri, FiltreMetni());
     }
 
     private void PdfYazdir_Click(object sender, RoutedEventArgs e)
     {
+        _filtreZamanlayici.Hemen();
         var filtre = FiltreOlustur();
         FinansmanPdfOlusturucu.Yazdir(filtre, _ozet, _modulOzetleri, _hareketler, _aylikOzetler, _vadeler, _grupOzetleri, FiltreMetni());
     }
 
     private void ExcelAktar_Click(object sender, RoutedEventArgs e)
     {
+        _filtreZamanlayici.Hemen();
         FinansmanExcelService.DisaAktar(
             SeciliMetin(CmbRaporTuru), FiltreMetni(), _ozet, _modulOzetleri,
             _hareketler, _aylikOzetler, _vadeler, _grupOzetleri);

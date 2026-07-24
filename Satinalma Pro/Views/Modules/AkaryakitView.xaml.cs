@@ -123,11 +123,17 @@ public partial class AkaryakitView : UserControl, IModulKlavyeKisayollari
         AkaryakitExcelService.SablonKaydet();
     }
 
-    private void PdfIndir_Click(object sender, RoutedEventArgs e) =>
+    private void PdfIndir_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         AkaryakitPdfOlusturucu.Indir(GorunenKayitlar(), "Akaryakıt Takip Raporu", FiltreOzetiMetni());
+    }
 
-    private void PdfYazdir_Click(object sender, RoutedEventArgs e) =>
+    private void PdfYazdir_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         AkaryakitPdfOlusturucu.Yazdir(GorunenKayitlar(), "Akaryakıt Takip Raporu", FiltreOzetiMetni());
+    }
 
     private void YeniKayit_Click(object sender, RoutedEventArgs e)
     {
@@ -148,8 +154,17 @@ public partial class AkaryakitView : UserControl, IModulKlavyeKisayollari
         VeriGuncellendi();
     }
 
-    private void DisaAktar_Click(object sender, RoutedEventArgs e) =>
+    private void DisaAktar_Click(object sender, RoutedEventArgs e)
+    {
+        FiltreyiDisaAktarOncesiUygula();
         AkaryakitExcelService.ListeyiKaydet(GorunenKayitlar(), "Akaryakit.xlsx");
+    }
+
+    private void FiltreyiDisaAktarOncesiUygula()
+    {
+        _filtreZamanlayici.Durdur();
+        FiltreYenile();
+    }
 
     private void Yenile_Click(object sender, RoutedEventArgs e) => KisayolYenile();
 
@@ -280,17 +295,8 @@ public partial class AkaryakitView : UserControl, IModulKlavyeKisayollari
                 return false;
         }
 
-        if (DpBaslangic.SelectedDate is DateTime || DpBitis.SelectedDate is DateTime)
-        {
-            if (!DateTime.TryParseExact(kayit.Tarih, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var tarih))
-                return false;
-
-            if (DpBaslangic.SelectedDate is DateTime b && tarih.Date < b.Date)
-                return false;
-
-            if (DpBitis.SelectedDate is DateTime bit && tarih.Date > bit.Date)
-                return false;
-        }
+        if (!TarihYardimcisi.Aralikta(kayit.Tarih, DpBaslangic.SelectedDate, DpBitis.SelectedDate))
+            return false;
 
         var aracTipi = ComboDegeri(CmbAracTipi);
         if (!string.IsNullOrEmpty(aracTipi) && aracTipi != "Tümü" &&
@@ -431,8 +437,11 @@ public partial class AkaryakitView : UserControl, IModulKlavyeKisayollari
         VeriGuncellendi();
     }
 
-    private List<AkaryakitKaydi> GorunenKayitlar() =>
-        _gorunum.Cast<AkaryakitKaydi>().ToList();
+    private List<AkaryakitKaydi> GorunenKayitlar()
+    {
+        _gorunum.Refresh();
+        return ModulSayfalamaYardimcisi.FiltrelenmisListe<AkaryakitKaydi>(_gorunum);
+    }
 
     private string FiltreOzetiMetni()
     {
