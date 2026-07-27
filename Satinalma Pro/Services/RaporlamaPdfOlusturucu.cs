@@ -145,14 +145,15 @@ public static class RaporlamaPdfOlusturucu
     {
         var analizler = RaporlamaServisi.MalzemeAnalizleri(detaySatirlari);
         var aylikOzetler = RaporlamaServisi.AylikAlimOzetleri(detaySatirlari);
+        var (ayEtiketleri, kategoriAylik) = RaporlamaServisi.KategoriAylikMaliyetleri(detaySatirlari);
         var toplamTutar = detaySatirlari.Sum(s => s.Tutar);
         var toplamMiktar = detaySatirlari.Sum(s => s.Miktar);
 
         container.Page(page =>
         {
-            page.Size(PageSizes.A4.Landscape());
-            page.Margin(20);
-            page.DefaultTextStyle(x => x.FontSize(7.5f).FontFamily("Segoe UI"));
+            page.Size(PageSizes.A4);
+            page.Margin(16);
+            page.DefaultTextStyle(x => x.FontSize(7f).FontFamily("Segoe UI"));
 
             page.Header().Element(c => BaslikOlustur(c, ayarlar, "DETAYLI RAPOR — ALIM ANALİZİ"));
 
@@ -169,6 +170,9 @@ public static class RaporlamaPdfOlusturucu
 
                 col.Item().PaddingTop(12).Text("AYLIK ALIM ÖZETİ").Bold().FontSize(9).FontColor(Colors.Teal.Medium);
                 col.Item().PaddingTop(4).Element(c => AylikAlimOzetTablosu(c, aylikOzetler));
+
+                col.Item().PaddingTop(12).Text("SEÇİLEN KATEGORİLER — AYLIK MALİYET").Bold().FontSize(9).FontColor(Colors.Teal.Medium);
+                col.Item().PaddingTop(4).Element(c => KategoriAylikMaliyetTablosu(c, ayEtiketleri, kategoriAylik));
 
                 col.Item().PaddingTop(12).Text("TOPLAM MALİYET TABLOSU").Bold().FontSize(9).FontColor(Colors.Teal.Medium);
                 col.Item().PaddingTop(4).Element(c => ToplamMaliyetTablosu(c, analizler));
@@ -196,23 +200,19 @@ public static class RaporlamaPdfOlusturucu
         {
             table.ColumnsDefinition(c =>
             {
-                c.ConstantColumn(58);
-                c.ConstantColumn(62);
-                c.ConstantColumn(58);
-                c.RelativeColumn(1.2f);
-                c.RelativeColumn(1.1f);
-                c.ConstantColumn(42);
-                c.ConstantColumn(34);
                 c.ConstantColumn(52);
-                c.ConstantColumn(52);
-                c.ConstantColumn(44);
-                c.RelativeColumn(0.8f);
-                c.RelativeColumn(0.7f);
+                c.ConstantColumn(48);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.3f);
+                c.ConstantColumn(40);
+                c.ConstantColumn(30);
+                c.ConstantColumn(46);
+                c.ConstantColumn(48);
+                c.RelativeColumn(0.9f);
             });
 
             table.Header(h =>
             {
-                h.Cell().Element(HucreBaslik).Text("Modül");
                 h.Cell().Element(HucreBaslik).Text("Tarih");
                 h.Cell().Element(HucreBaslik).Text("Belge");
                 h.Cell().Element(HucreBaslik).Text("Kategori");
@@ -221,14 +221,11 @@ public static class RaporlamaPdfOlusturucu
                 h.Cell().Element(HucreBaslik).Text("Birim");
                 h.Cell().Element(HucreBaslik).AlignRight().Text("B.Fiyat");
                 h.Cell().Element(HucreBaslik).AlignRight().Text("Tutar");
-                h.Cell().Element(HucreBaslik).AlignRight().Text("Artış");
                 h.Cell().Element(HucreBaslik).Text("Tedarikçi");
-                h.Cell().Element(HucreBaslik).Text("Saha");
             });
 
             foreach (var s in satirlar.OrderBy(x => x.Tarih))
             {
-                table.Cell().Element(HucreVeri).Text(s.Modul);
                 table.Cell().Element(HucreVeri).Text(s.Tarih);
                 table.Cell().Element(HucreVeri).Text(s.BelgeNo);
                 table.Cell().Element(HucreVeri).Text(s.Kategori);
@@ -237,19 +234,17 @@ public static class RaporlamaPdfOlusturucu
                 table.Cell().Element(HucreVeri).Text(s.Birim);
                 table.Cell().Element(HucreVeri).AlignRight().Text(s.BirimFiyati > 0 ? s.BirimFiyati.ToString("N2", Tr) : "—");
                 table.Cell().Element(HucreVeri).AlignRight().Text(s.Tutar.ToString("N2", Tr));
-                table.Cell().Element(HucreVeri).AlignRight().Text(s.ArtisYuzdesiMetin);
                 table.Cell().Element(HucreVeri).Text(s.Tedarikci);
-                table.Cell().Element(HucreVeri).Text(s.Saha);
             }
 
             var toplamMiktar = satirlar.Sum(s => s.Miktar);
             var toplamTutar = satirlar.Sum(s => s.Tutar);
-            table.Cell().ColumnSpan(5).Element(HucreToplam).Text("TOPLAM").SemiBold();
+            table.Cell().ColumnSpan(4).Element(HucreToplam).Text("TOPLAM").SemiBold();
             table.Cell().Element(HucreToplam).AlignRight().Text(toplamMiktar.ToString("N2", Tr)).SemiBold();
             table.Cell().Element(HucreToplam).Text("");
             table.Cell().Element(HucreToplam).Text("");
             table.Cell().Element(HucreToplam).AlignRight().Text(toplamTutar.ToString("N2", Tr)).SemiBold();
-            table.Cell().ColumnSpan(3).Element(HucreToplam).Text("");
+            table.Cell().Element(HucreToplam).Text("");
         });
     }
 
@@ -259,16 +254,14 @@ public static class RaporlamaPdfOlusturucu
         {
             table.ColumnsDefinition(c =>
             {
-                c.RelativeColumn(1.5f);
-                c.RelativeColumn(0.8f);
-                c.ConstantColumn(52);
-                c.ConstantColumn(42);
-                c.ConstantColumn(62);
-                c.ConstantColumn(58);
-                c.ConstantColumn(52);
-                c.ConstantColumn(52);
-                c.ConstantColumn(58);
-                c.ConstantColumn(68);
+                c.RelativeColumn(1.4f);
+                c.RelativeColumn(0.9f);
+                c.ConstantColumn(48);
+                c.ConstantColumn(32);
+                c.ConstantColumn(56);
+                c.ConstantColumn(50);
+                c.ConstantColumn(48);
+                c.ConstantColumn(48);
                 c.ConstantColumn(48);
             });
 
@@ -276,15 +269,13 @@ public static class RaporlamaPdfOlusturucu
             {
                 h.Cell().Element(HucreBaslik).Text("Malzeme / Hizmet");
                 h.Cell().Element(HucreBaslik).Text("Kategori");
-                h.Cell().Element(HucreBaslik).AlignRight().Text("Top. Miktar");
+                h.Cell().Element(HucreBaslik).AlignRight().Text("Miktar");
                 h.Cell().Element(HucreBaslik).Text("Birim");
-                h.Cell().Element(HucreBaslik).AlignRight().Text("Top. Maliyet");
-                h.Cell().Element(HucreBaslik).AlignRight().Text("Ort. Fiyat");
-                h.Cell().Element(HucreBaslik).AlignRight().Text("İlk Alış");
-                h.Cell().Element(HucreBaslik).AlignRight().Text("Son Alış");
-                h.Cell().Element(HucreBaslik).AlignRight().Text("K/Z (₺)");
-                h.Cell().Element(HucreBaslik).AlignRight().Text("K/Z Toplam (₺)");
-                h.Cell().Element(HucreBaslik).AlignRight().Text("K/Z (%)");
+                h.Cell().Element(HucreBaslik).AlignRight().Text("Maliyet");
+                h.Cell().Element(HucreBaslik).AlignRight().Text("Ort.");
+                h.Cell().Element(HucreBaslik).AlignRight().Text("İlk");
+                h.Cell().Element(HucreBaslik).AlignRight().Text("Son");
+                h.Cell().Element(HucreBaslik).AlignRight().Text("K/Z %");
             });
 
             foreach (var a in analizler)
@@ -297,14 +288,11 @@ public static class RaporlamaPdfOlusturucu
                 table.Cell().Element(HucreVeri).AlignRight().Text(a.AgirlikliOrtalamaFiyat.ToString("N2", Tr));
                 table.Cell().Element(HucreVeri).AlignRight().Text(a.IlkBirimFiyat > 0 ? a.IlkBirimFiyat.ToString("N2", Tr) : "—");
                 table.Cell().Element(HucreVeri).AlignRight().Text(a.SonBirimFiyat > 0 ? a.SonBirimFiyat.ToString("N2", Tr) : "—");
-                table.Cell().Element(HucreVeri).AlignRight().Text(a.KarZiyanTlMetin);
-                table.Cell().Element(HucreVeri).AlignRight().Text(a.KarZiyanToplamTlMetin);
                 table.Cell().Element(HucreVeri).AlignRight().Text(a.ToplamArtisMetin);
             }
 
             var toplamMiktar = analizler.Sum(a => a.ToplamMiktar);
             var toplamMaliyet = analizler.Sum(a => a.ToplamTutar);
-            var toplamKarZiyan = analizler.Sum(a => a.KarZiyanToplamTl);
             var ortFiyat = toplamMiktar > 0 ? toplamMaliyet / (decimal)toplamMiktar : 0m;
 
             table.Cell().ColumnSpan(2).Element(HucreToplam).Text("TOPLAM").SemiBold();
@@ -312,11 +300,121 @@ public static class RaporlamaPdfOlusturucu
             table.Cell().Element(HucreToplam).Text("");
             table.Cell().Element(HucreToplam).AlignRight().Text(toplamMaliyet.ToString("N2", Tr)).SemiBold();
             table.Cell().Element(HucreToplam).AlignRight().Text(ortFiyat.ToString("N2", Tr)).SemiBold();
-            table.Cell().ColumnSpan(2).Element(HucreToplam).Text("");
-            table.Cell().Element(HucreToplam).Text("");
-            table.Cell().Element(HucreToplam).AlignRight().Text(
-                toplamKarZiyan == 0 ? "—" : toplamKarZiyan > 0 ? $"+{toplamKarZiyan:N2} ₺" : $"{toplamKarZiyan:N2} ₺").SemiBold();
-            table.Cell().Element(HucreToplam).Text("");
+            table.Cell().ColumnSpan(3).Element(HucreToplam).Text("");
+        });
+    }
+
+    private static void KategoriAylikMaliyetTablosu(
+        IContainer container,
+        List<string> ayEtiketleri,
+        List<RaporKategoriAylikMaliyet> satirlar)
+    {
+        if (ayEtiketleri.Count == 0 || satirlar.Count == 0)
+        {
+            container.Text("Seçilen kategoriler için tarihli kayıt bulunamadı.")
+                .Italic().FontColor(Colors.Grey.Darken1);
+            return;
+        }
+
+        // Çok ay varsa dikey okunaklı satır formatı; az ayda matris.
+        if (ayEtiketleri.Count > 6)
+        {
+            KategoriAylikMaliyetUzunTablo(container, ayEtiketleri, satirlar);
+            return;
+        }
+
+        container.Table(table =>
+        {
+            table.ColumnsDefinition(c =>
+            {
+                c.RelativeColumn(1.4f);
+                foreach (var _ in ayEtiketleri)
+                    c.RelativeColumn(1);
+                c.ConstantColumn(58);
+            });
+
+            table.Header(h =>
+            {
+                h.Cell().Element(HucreBaslik).Text("Kategori");
+                foreach (var ay in ayEtiketleri)
+                    h.Cell().Element(HucreBaslik).AlignRight().Text(ay);
+                h.Cell().Element(HucreBaslik).AlignRight().Text("Toplam");
+            });
+
+            foreach (var s in satirlar)
+            {
+                table.Cell().Element(HucreVeri).Text(s.Kategori);
+                for (var i = 0; i < s.AylikTutarlar.Count; i++)
+                {
+                    var tutar = s.AylikTutarlar[i];
+                    table.Cell().Element(HucreVeri).AlignRight()
+                        .Text(tutar > 0 ? tutar.ToString("N0", Tr) : "—");
+                }
+
+                table.Cell().Element(HucreVeri).AlignRight().Text(s.Toplam.ToString("N0", Tr)).SemiBold();
+            }
+
+            table.Cell().Element(HucreToplam).Text("TOPLAM").SemiBold();
+            for (var i = 0; i < ayEtiketleri.Count; i++)
+            {
+                var ayToplam = satirlar.Sum(s => s.AylikTutarlar.Count > i ? s.AylikTutarlar[i] : 0m);
+                table.Cell().Element(HucreToplam).AlignRight().Text(ayToplam.ToString("N0", Tr)).SemiBold();
+            }
+
+            var genel = satirlar.Sum(s => s.Toplam);
+            table.Cell().Element(HucreToplam).AlignRight().Text(genel.ToString("N0", Tr)).SemiBold();
+        });
+    }
+
+    private static void KategoriAylikMaliyetUzunTablo(
+        IContainer container,
+        List<string> ayEtiketleri,
+        List<RaporKategoriAylikMaliyet> satirlar)
+    {
+        var genel = satirlar.Sum(s => s.Toplam);
+
+        container.Table(table =>
+        {
+            table.ColumnsDefinition(c =>
+            {
+                c.RelativeColumn(1.4f);
+                c.RelativeColumn(1.0f);
+                c.ConstantColumn(70);
+                c.ConstantColumn(52);
+            });
+
+            table.Header(h =>
+            {
+                h.Cell().Element(HucreBaslik).Text("Kategori");
+                h.Cell().Element(HucreBaslik).Text("Ay");
+                h.Cell().Element(HucreBaslik).AlignRight().Text("Tutar (₺)");
+                h.Cell().Element(HucreBaslik).AlignRight().Text("Pay %");
+            });
+
+            foreach (var s in satirlar)
+            {
+                for (var i = 0; i < ayEtiketleri.Count; i++)
+                {
+                    var tutar = s.AylikTutarlar[i];
+                    if (tutar <= 0)
+                        continue;
+
+                    var pay = genel > 0 ? tutar / genel * 100m : 0m;
+                    table.Cell().Element(HucreVeri).Text(s.Kategori);
+                    table.Cell().Element(HucreVeri).Text(ayEtiketleri[i]);
+                    table.Cell().Element(HucreVeri).AlignRight().Text(tutar.ToString("N2", Tr));
+                    table.Cell().Element(HucreVeri).AlignRight().Text($"{pay:N1}%");
+                }
+
+                var katPay = genel > 0 ? s.Toplam / genel * 100m : 0m;
+                table.Cell().ColumnSpan(2).Element(HucreToplam).Text($"{s.Kategori} toplam").SemiBold();
+                table.Cell().Element(HucreToplam).AlignRight().Text(s.Toplam.ToString("N2", Tr)).SemiBold();
+                table.Cell().Element(HucreToplam).AlignRight().Text($"{katPay:N1}%").SemiBold();
+            }
+
+            table.Cell().ColumnSpan(2).Element(HucreToplam).Text("GENEL TOPLAM").SemiBold();
+            table.Cell().Element(HucreToplam).AlignRight().Text(genel.ToString("N2", Tr)).SemiBold();
+            table.Cell().Element(HucreToplam).AlignRight().Text("100%").SemiBold();
         });
     }
 

@@ -265,6 +265,8 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
                     ModulVeriDeposu.EndBatch();
                 }
 
+                ModulVeriDeposu.KaydetAlinanMalzemeler();
+                ExcelSonrasiBulutaGonder();
                 VeriGuncellendi();
                 MessageBox.Show(
                     guncellenen > 0
@@ -296,6 +298,7 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
             ModulVeriDeposu.KaydetAlinanMalzemeler();
             ModulVeriDeposu.KaydetStok();
             ModulVeriDeposu.KaydetStokHareketleri();
+            ExcelSonrasiBulutaGonder();
 
             VeriGuncellendi();
             MessageBox.Show(
@@ -308,6 +311,15 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
         {
             MessageBox.Show($"Excel okunamadı:\n{ex.Message}", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    /// <summary>Excel sonrası diskte kalan veriyi gecikmeden buluta basar (yoklama/yeniden açılış kaybını önler).</summary>
+    private static void ExcelSonrasiBulutaGonder()
+    {
+        BulutVeriSenkronu.Planla("malzeme");
+        BulutVeriSenkronu.Planla("stok");
+        BulutVeriSenkronu.Planla("stok_hareket");
+        _ = BulutVeriSenkronu.MalKabulSonrasiHemenGonderAsync();
     }
 
     private void SablonIndir_Click(object sender, RoutedEventArgs e) =>

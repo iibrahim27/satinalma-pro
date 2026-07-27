@@ -289,7 +289,62 @@ public static class RaporlamaServisi
         return sonuclar;
     }
 
+    /// <summary>
+    /// Seçili/filtreli satırlardan kategori × ay maliyet matrisi.
+    /// </summary>
+    public static (List<string> AyEtiketleri, List<RaporKategoriAylikMaliyet> Satirlar)
+        KategoriAylikMaliyetleri(IReadOnlyList<RaporDetaySatiri> satirlar)
+    {
+        var tr = CultureInfo.GetCultureInfo("tr-TR");
+        var kayitlar = satirlar
+            .Select(s => (s, tarih: TarihYardimcisi.TryParse(s.Tarih, out var dt) ? dt : DateTime.MinValue))
+            .Where(x => x.tarih != DateTime.MinValue)
+            .ToList();
 
+        if (kayitlar.Count == 0)
+            return ([], []);
+
+        var aylar = kayitlar
+            .Select(x => new DateTime(x.tarih.Year, x.tarih.Month, 1))
+            .Distinct()
+            .OrderBy(d => d)
+            .ToList();
+
+        var ayEtiketleri = aylar
+            .Select(d => d.ToString("MMM yy", tr))
+            .ToList();
+
+        var kategoriler = kayitlar
+            .Select(x => string.IsNullOrWhiteSpace(x.s.Kategori) ? "Belirtilmemiş" : x.s.Kategori.Trim())
+            .Distinct(StringComparer.CurrentCultureIgnoreCase)
+            .OrderBy(k => k, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        var sonuc = new List<RaporKategoriAylikMaliyet>();
+        foreach (var kat in kategoriler)
+        {
+            var aylik = new List<decimal>(aylar.Count);
+            foreach (var ay in aylar)
+            {
+                var tutar = kayitlar
+                    .Where(x => x.tarih.Year == ay.Year && x.tarih.Month == ay.Month
+                        && string.Equals(
+                            string.IsNullOrWhiteSpace(x.s.Kategori) ? "Belirtilmemiş" : x.s.Kategori.Trim(),
+                            kat,
+                            StringComparison.CurrentCultureIgnoreCase))
+                    .Sum(x => x.s.Tutar);
+                aylik.Add(tutar);
+            }
+
+            sonuc.Add(new RaporKategoriAylikMaliyet
+            {
+                Kategori = kat,
+                AylikTutarlar = aylik
+            });
+        }
+
+        return (ayEtiketleri, sonuc.OrderByDescending(s => s.Toplam).ToList());
+    }
 
     public static string FiltreOzetiMetni(RaporFiltreleri filtre)
 

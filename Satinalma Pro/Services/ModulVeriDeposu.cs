@@ -116,14 +116,24 @@ public static class ModulVeriDeposu
     {
         JsonYaz("alinan_malzemeler.json", AlinanMalzemeler.ToList());
         MalzemeAdiOneriServisi.OnbellekSifirla();
+        if (!_yukleniyor && ModulAnahtariYazabilir("malzeme"))
+            BulutVeriSenkronu.Planla("malzeme");
     }
 
     public static void KaydetStok()
     {
         JsonYaz("stok.json", Stok.ToList());
         MalzemeAdiOneriServisi.OnbellekSifirla();
+        if (!_yukleniyor && ModulAnahtariYazabilir("stok"))
+            BulutVeriSenkronu.Planla("stok");
     }
-    public static void KaydetStokHareketleri() => JsonYaz("stok_hareketleri.json", StokHareketleri.ToList());
+
+    public static void KaydetStokHareketleri()
+    {
+        JsonYaz("stok_hareketleri.json", StokHareketleri.ToList());
+        if (!_yukleniyor && ModulAnahtariYazabilir("stok_hareket"))
+            BulutVeriSenkronu.Planla("stok_hareket");
+    }
     public static void KaydetAgrega() => JsonYaz("agrega.json", Agrega.ToList());
     public static void KaydetCimento() => JsonYaz("cimento.json", Cimento.ToList());
     public static void KaydetAkaryakit() => JsonYaz("akaryakit.json", Akaryakit.ToList());

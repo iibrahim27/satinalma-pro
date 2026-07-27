@@ -179,9 +179,10 @@ public static class BulutVeriSenkronu
                     }
                     else if (bulutBelgesiVar && !buluttaVar && yereldeVar && yerelJson is not null
                         && ListeModuluMu(anahtar)
-                        && SatinalmaDepo.Ayarlar.VeriSifirlamaUtc <= 0)
+                        && YerelListeSifirlamadanSonraMi(anahtar, SatinalmaDepo.Ayarlar.VeriSifirlamaUtc))
                     {
-                        // Boş bulut + dolu yerel: mal kabul kaybını önlemek için yereli yükle
+                        // Boş bulut + dolu yerel (Excel/mal kabul): yereli buluta yaz.
+                        // Sıfırlama damgası olsa bile dosya damgadan yeniyse koru (post-reset Excel).
                         await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
                             yol, yerelJson, OturumYoneticisi.Auth?.Uid, iptal)
                             .ConfigureAwait(false);
@@ -199,9 +200,12 @@ public static class BulutVeriSenkronu
                     }
                     else if (bulutBelgesiVar && !buluttaVar && sifirlamaDamgasi
                              && anahtar != "satinalma_ayarlar"
-                             && anahtar != "satinalma_talepler")
+                             && anahtar != "satinalma_talepler"
+                             && !(ListeModuluMu(anahtar)
+                                  && yereldeVar
+                                  && YerelListeSifirlamadanSonraMi(anahtar, SatinalmaDepo.Ayarlar.VeriSifirlamaUtc)))
                     {
-                        // Boş bulut otoriter — yereli geri yükleme (ayarlar/talepler hariç).
+                        // Boş bulut otoriter — yalnızca eski/pre-reset yerel veya boş yerel için.
                         await UiThreaddeCalistirAsync(() =>
                         {
                             if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
@@ -523,10 +527,24 @@ public static class BulutVeriSenkronu
                 if (json is null)
                     continue;
 
+                var bos = json.Trim() is "[]" or "{}" or "null";
+                if (bos && ListeModuluMu(anahtar) && !_sifirlamaAktif)
+                {
+                    var yerelJson = YerelJsonOku(anahtar);
+                    if (JsonAnlamliMi(yerelJson, anahtar)
+                        && YerelListeSifirlamadanSonraMi(anahtar, SatinalmaDepo.Ayarlar.VeriSifirlamaUtc))
+                    {
+                        // Boş bulut yerel Excel/mal kabul verisini ezmesin — yereli buluta yaz.
+                        await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
+                            yol, yerelJson!, OturumYoneticisi.Auth?.Uid, iptal);
+                        BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
+                        continue;
+                    }
+                }
+
                 await UiThreaddeCalistirAsync(() =>
                 {
                     Uygula(anahtar, json);
-                    var bos = json.Trim() is "[]" or "{}" or "null";
                     if (bos || _sifirlamaAktif)
                         YerelOnbellegeYaz(anahtar, json);
                     else
@@ -703,6 +721,29 @@ public static class BulutVeriSenkronu
                     if (guncelleme.HasValue)
                         BulutSenkronZamani.Kaydet(anahtar, guncelleme.Value);
                     continue;
+                }
+
+                // Boş liste belgesi (malzeme/stok/…): dolu yereli ezme — Excel kaybını önle.
+                if (bosBulut && ListeModuluMu(anahtar) && !_sifirlamaAktif)
+                {
+                    string? bellekJson = null;
+                    await UiThreaddeCalistirAsync(() => bellekJson = Olustur(anahtar));
+                    var yerelJson = YerelJsonOku(anahtar);
+                    var kaynak = JsonAnlamliMi(bellekJson, anahtar) ? bellekJson
+                        : JsonAnlamliMi(yerelJson, anahtar) ? yerelJson
+                        : null;
+                    var resetUtc = SatinalmaDepo.Ayarlar.VeriSifirlamaUtc;
+
+                    if (kaynak is not null
+                        && (resetUtc <= 0 || YerelListeSifirlamadanSonraMi(anahtar, resetUtc)
+                            || JsonAnlamliMi(bellekJson, anahtar)))
+                    {
+                        await OturumYoneticisi.Firestore!.BelgeJsonYazAsync(
+                            yol, kaynak, OturumYoneticisi.Auth?.Uid, iptal);
+                        YerelOnbellegeYaz(anahtar, kaynak);
+                        BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
+                        continue;
+                    }
                 }
 
                 _senkronYukleniyor = true;
@@ -1186,6 +1227,23 @@ public static class BulutVeriSenkronu
     private static bool ListeModuluMu(string anahtar) =>
         anahtar is "malzeme" or "stok" or "stok_hareket" or "agrega" or "cimento"
             or "akaryakit" or "filo" or "finansman";
+
+    /// <summary>
+    /// Yerel dosya sıfırlama damgasından sonra yazıldıysa true (post-reset Excel/mal kabul).
+    /// Damga yoksa her zaman true.
+    /// </summary>
+    private static bool YerelListeSifirlamadanSonraMi(string anahtar, long sifirlamaUtc)
+    {
+        if (sifirlamaUtc <= 0)
+            return true;
+
+        var yol = YerelDosyaYolu(anahtar);
+        if (!File.Exists(yol))
+            return false;
+
+        var yerelMs = new DateTimeOffset(File.GetLastWriteTimeUtc(yol)).ToUnixTimeMilliseconds();
+        return yerelMs > sifirlamaUtc;
+    }
 
     private static bool BilincliBosYazmaIzinliMi(string anahtar)
     {

@@ -190,6 +190,14 @@ public class RaporAylikAlimOzeti
     };
 }
 
+/// <summary>Seçili kategorilerin ay bazlı maliyet satırı (PDF matrisi).</summary>
+public class RaporKategoriAylikMaliyet
+{
+    public string Kategori { get; set; } = "";
+    public List<decimal> AylikTutarlar { get; set; } = [];
+    public decimal Toplam => AylikTutarlar.Sum();
+}
+
 
 
 public static class RaporTurleri

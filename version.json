@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.89",
-    "build":  159,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.89/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.89/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.89/SatinalmaPro.apk",
-    "notes":  "2.1.89 - Modul filtre: PDF/Excel secili tarih araligini uygulasin (Agrega, Cimento, Akaryakit, Alinan Malzemeler, Raporlar)",
+    "version":  "2.1.90",
+    "build":  160,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.90/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.90/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.90/SatinalmaPro.apk",
+    "notes":  "2.1.90 - Alinan Malzemeler Excel kaybi duzeltmesi; Raporlama Alinan PDF dikey + kategori aylik maliyet tablosu",
     "zorunlu":  false
 }
