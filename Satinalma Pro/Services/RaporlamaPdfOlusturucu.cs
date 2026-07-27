@@ -24,7 +24,11 @@ public static class RaporlamaPdfOlusturucu
         List<RaporGrupOzeti> grupOzetleri,
         string filtreMetni)
     {
-        if (!VeriVarMi(filtre.RaporTuru, modulOzetleri, detaySatirlari, grupOzetleri))
+        // Kategori/malzeme seçiliyse detayı filtreden taze çek (Genel Özet ekranında eski liste boş kalmasın).
+        if (filtre.DetayliPdfModu)
+            detaySatirlari = RaporlamaServisi.DetaySatirlari(filtre);
+
+        if (!VeriVarMi(filtre, modulOzetleri, detaySatirlari, grupOzetleri))
             return;
 
         var dosya = DosyaKaydetDialog($"Rapor_{DateTime.Now:yyyyMMdd}.pdf");
@@ -41,12 +45,14 @@ public static class RaporlamaPdfOlusturucu
         List<RaporDetaySatiri> detaySatirlari,
         List<RaporGrupOzeti> grupOzetleri)
     {
-        if (!VeriVarMi(filtre.RaporTuru, modulOzetleri, detaySatirlari, grupOzetleri))
+        if (filtre.DetayliPdfModu)
+            detaySatirlari = RaporlamaServisi.DetaySatirlari(filtre);
+
+        if (!VeriVarMi(filtre, modulOzetleri, detaySatirlari, grupOzetleri))
             return;
 
         var temp = Path.Combine(Path.GetTempPath(), $"Rapor_{Guid.NewGuid():N}.pdf");
         PdfOlustur(temp, filtre, filtreMetni, modulOzetleri, detaySatirlari, grupOzetleri);
-
         try
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -69,12 +75,23 @@ public static class RaporlamaPdfOlusturucu
     }
 
     private static bool VeriVarMi(
-        string raporTuru,
+        RaporFiltreleri filtre,
         List<RaporModulOzeti> modulOzetleri,
         List<RaporDetaySatiri> detaySatirlari,
         List<RaporGrupOzeti> grupOzetleri)
     {
-        var varMi = raporTuru switch
+        // Kategori/malzeme seçili detaylı PDF: satır veya modül özeti yeterli.
+        if (filtre.DetayliPdfModu)
+        {
+            if (detaySatirlari.Count > 0 || modulOzetleri.Any(o => o.KayitSayisi > 0))
+                return true;
+
+            MessageBox.Show("Seçilen filtrelere uygun rapor verisi bulunamadı.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return false;
+        }
+
+        var varMi = filtre.RaporTuru switch
         {
             RaporTurleri.GenelOzet => modulOzetleri.Any(o => o.KayitSayisi > 0),
             RaporTurleri.TedarikciOzeti or RaporTurleri.SahaOzeti or RaporTurleri.KategoriOzeti =>
@@ -104,7 +121,7 @@ public static class RaporlamaPdfOlusturucu
         {
             if (filtre.DetayliPdfModu)
             {
-                DetayliRaporSayfalari(container, ayarlar, filtreMetni, detaySatirlari);
+                DetayliRaporSayfalari(container, ayarlar, filtre, filtreMetni, modulOzetleri, detaySatirlari);
             }
             else
             {
@@ -140,7 +157,9 @@ public static class RaporlamaPdfOlusturucu
     private static void DetayliRaporSayfalari(
         IDocumentContainer container,
         UygulamaAyarlar ayarlar,
+        RaporFiltreleri filtre,
         string filtreMetni,
+        List<RaporModulOzeti> modulOzetleri,
         List<RaporDetaySatiri> detaySatirlari)
     {
         var analizler = RaporlamaServisi.MalzemeAnalizleri(detaySatirlari);
@@ -149,6 +168,7 @@ public static class RaporlamaPdfOlusturucu
         var toplamTutar = detaySatirlari.Sum(s => s.Tutar);
         var toplamMiktar = detaySatirlari.Sum(s => s.Miktar);
 
+        // Sayfa 1: özet + AYLIK MALİYET (uzun alım listesinin altında kaybolmasın)
         container.Page(page =>
         {
             page.Size(PageSizes.A4);
@@ -165,16 +185,55 @@ public static class RaporlamaPdfOlusturucu
                     $"Kayıt: {detaySatirlari.Count} · Toplam Miktar: {toplamMiktar:N2} · Toplam Tutar: {toplamTutar:C2}")
                     .SemiBold();
 
-                col.Item().PaddingTop(10).Text("ALINAN LİSTESİ").Bold().FontSize(9).FontColor(Colors.Teal.Medium);
-                col.Item().PaddingTop(4).Element(c => AlimListesiTablosu(c, detaySatirlari));
+                if (filtre.RaporTuru == RaporTurleri.GenelOzet && modulOzetleri.Count > 0)
+                {
+                    col.Item().PaddingTop(10).Text("MODÜL ÖZETİ").Bold().FontSize(9).FontColor(Colors.Teal.Medium);
+                    col.Item().PaddingTop(4).Element(c => ModulOzetTablosu(c, modulOzetleri));
+                }
 
                 col.Item().PaddingTop(12).Text("AYLIK ALIM ÖZETİ").Bold().FontSize(9).FontColor(Colors.Teal.Medium);
                 col.Item().PaddingTop(4).Element(c => AylikAlimOzetTablosu(c, aylikOzetler));
 
-                col.Item().PaddingTop(12).Text("SEÇİLEN KATEGORİLER — AYLIK MALİYET").Bold().FontSize(9).FontColor(Colors.Teal.Medium);
+                col.Item().PaddingTop(14).Text("SEÇİLEN KATEGORİLER — AYLIK MALİYET")
+                    .Bold().FontSize(10).FontColor(Colors.Teal.Medium);
+                col.Item().PaddingTop(2).Text("Kategori bazında aylık tutar dağılımı.")
+                    .FontSize(7).Italic().FontColor(Colors.Grey.Darken1);
                 col.Item().PaddingTop(4).Element(c => KategoriAylikMaliyetTablosu(c, ayEtiketleri, kategoriAylik));
+            });
 
-                col.Item().PaddingTop(12).Text("TOPLAM MALİYET TABLOSU").Bold().FontSize(9).FontColor(Colors.Teal.Medium);
+            page.Footer().Element(SayfaAlti);
+        });
+
+        // Sayfa 2+: alınan listesi
+        container.Page(page =>
+        {
+            page.Size(PageSizes.A4);
+            page.Margin(16);
+            page.DefaultTextStyle(x => x.FontSize(7f).FontFamily("Segoe UI"));
+
+            page.Header().Element(c => BaslikOlustur(c, ayarlar, "DETAYLI RAPOR — ALINAN LİSTESİ"));
+
+            page.Content().Column(col =>
+            {
+                col.Item().Text("ALINAN LİSTESİ").Bold().FontSize(9).FontColor(Colors.Teal.Medium);
+                col.Item().PaddingTop(4).Element(c => AlimListesiTablosu(c, detaySatirlari));
+            });
+
+            page.Footer().Element(SayfaAlti);
+        });
+
+        // Son: toplam maliyet
+        container.Page(page =>
+        {
+            page.Size(PageSizes.A4);
+            page.Margin(16);
+            page.DefaultTextStyle(x => x.FontSize(7f).FontFamily("Segoe UI"));
+
+            page.Header().Element(c => BaslikOlustur(c, ayarlar, "DETAYLI RAPOR — TOPLAM MALİYET"));
+
+            page.Content().Column(col =>
+            {
+                col.Item().Text("TOPLAM MALİYET TABLOSU").Bold().FontSize(9).FontColor(Colors.Teal.Medium);
                 col.Item().PaddingTop(4).Element(c => ToplamMaliyetTablosu(c, analizler));
             });
 

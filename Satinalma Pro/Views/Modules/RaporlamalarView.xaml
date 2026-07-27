@@ -121,7 +121,7 @@
           </StackPanel>
 
           <TextBlock Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right"
-                     Text="Kategori ve malzeme filtreleri tüm modüllerde geçerlidir. PDF'de alım listesi, aylık özet ve toplam maliyet tabloları üretilir."
+                     Text="Kategori veya malzeme seçip PDF İndir / Filtreli PDF deyin. Rapor türü Genel Özet olsa bile PDF'nin 1. sayfasında «Seçilen Kategoriler — Aylık Maliyet» tablosu çıkar."
                      FontSize="11" Foreground="{StaticResource InkMutedBrush}" TextWrapping="Wrap" />
         </Grid>
       </StackPanel>
