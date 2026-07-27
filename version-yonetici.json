@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.44",
-    "build":  46,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.44/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.44/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.44/SatinalmaYonetici.apk",
-    "notes":  "1.0.44 - Pro 2.1.91 ile birlikte (Excel stok cikis + raporlama PDF)",
+    "version":  "1.0.45",
+    "build":  47,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.45/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.45/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.45/SatinalmaYonetici.apk",
+    "notes":  "1.0.45 - Pro 2.1.92 ile birlikte (kurulum imza altyapisi)",
     "zorunlu":  false
 }

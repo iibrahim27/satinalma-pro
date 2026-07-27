@@ -23,7 +23,7 @@ if (-not $Version) {
 Write-Host "=== Satinalma Pro kurulum paketi ===" -ForegroundColor Cyan
 Write-Host "Surum: $Version`n"
 
-Write-Host "[1/5] Surum dosyalari guncelleniyor..."
+Write-Host "[1/8] Surum dosyalari guncelleniyor..."
 & (Join-Path $PSScriptRoot "surum-guncelle.ps1") -Version $Version -GitHubKullanici $GitHubKullanici -RepoAdi $RepoAdi -Notes $Notes
 
 $csprojYol = Join-Path $projeKok "SatinalmaPro.csproj"
@@ -31,7 +31,7 @@ $csprojRaw = Get-Content $csprojYol -Raw -Encoding UTF8
 $tfm = [regex]::Match($csprojRaw, '<TargetFramework>([^<]+)</TargetFramework>').Groups[1].Value
 if (-not $tfm) { throw "TargetFramework bulunamadi: $csprojYol" }
 
-Write-Host "`n[2/5] Release derleniyor ($tfm, win-x64, self-contained)..."
+Write-Host "`n[2/8] Release derleniyor ($tfm, win-x64, self-contained)..."
 dotnet publish $csprojYol -c Release -r win-x64 --self-contained true `
     -p:UseAppHost=true `
     -p:Version=$Version `
@@ -56,7 +56,7 @@ if ($sharedVer -ne "1.0.0.0") {
     throw "SatinalmaPro.Shared beklenen surum 1.0.0.0, bulunan: $sharedVer (paralel paket Version ezmesi?)"
 }
 
-Write-Host "`n[3/5] Firebase dosyalari kopyalaniyor..."
+Write-Host "`n[3/8] Firebase dosyalari kopyalaniyor..."
 $firebaseYol = Join-Path $projeKok "firebase_ayarlar.json"
 if (Test-Path $firebaseYol) {
     Copy-Item $firebaseYol (Join-Path $publish "firebase_ayarlar.json") -Force
@@ -74,13 +74,24 @@ if (Test-Path $googleYol) {
     Write-Host "  google-services.json eklendi" -ForegroundColor Green
 }
 
-Write-Host "`n[4/5] Zip olusturuluyor..."
+$imzaScript = Join-Path (Split-Path $projeKok -Parent) "scripts\kod-imzala.ps1"
+$publishExe = Join-Path $publish "SatinalmaPro.exe"
+
+Write-Host "`n[4/8] Publish exe imzalanıyor (kod imza)..."
+if (Test-Path $imzaScript) {
+    & $imzaScript -Dosyalar @($publishExe)
+}
+else {
+    Write-Host "  UYARI: kod-imzala.ps1 bulunamadi, imza atlandi." -ForegroundColor Yellow
+}
+
+Write-Host "`n[5/8] Zip olusturuluyor..."
 $zipAdi = "SatinalmaPro.zip"
 $zipYol = Join-Path $projeKok $zipAdi
 if (Test-Path $zipYol) { Remove-Item $zipYol -Force }
 Compress-Archive -Path "$publish\*" -DestinationPath $zipYol -CompressionLevel Optimal
 
-Write-Host "`n[5/5] Inno Setup kurulum exe derleniyor..."
+Write-Host "`n[6/8] Inno Setup kurulum exe derleniyor..."
 $kurulumExe = Join-Path $projeKok "SatinalmaPro_Kurulum.exe"
 $iscc = @(
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
@@ -101,7 +112,12 @@ if (-not (Test-Path $kurulumExe)) {
     throw "Kurulum exe olusturulamadi: $kurulumExe"
 }
 
-Write-Host "`n[6/6] Android APK derleniyor (Compose, 1-2 dakika)..."
+Write-Host "`n[7/8] Kurulum exe imzalanıyor..."
+if (Test-Path $imzaScript) {
+    & $imzaScript -Dosyalar @($kurulumExe)
+}
+
+Write-Host "`n[8/8] Android APK derleniyor (Compose, 1-2 dakika)..."
 $androidKok = Join-Path (Split-Path $projeKok -Parent) "SatinalmaPro.Android"
 $gradlew = Join-Path $androidKok "gradlew.bat"
 if (-not (Test-Path $gradlew)) {

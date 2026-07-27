@@ -33,6 +33,10 @@ Thumbs.db
 **/firebase-adminsdk*.json
 **/fcm-service-account.json
 **/firebase_ayarlar.json
+**/*.pfx
+**/certs/*.pfx
+**/certs/*.p12
+**/certs/*.key
 
 # Logs
 *.log

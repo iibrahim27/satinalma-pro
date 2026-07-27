@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.91",
-    "build":  161,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.91/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.91/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.91/SatinalmaPro.apk",
-    "notes":  "2.1.91 - Excel stok giris+cikis; Raporlama Genel Ozet kategori aylik maliyet 1. sayfada",
+    "version":  "2.1.92",
+    "build":  162,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.92/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.92/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.92/SatinalmaPro.apk",
+    "notes":  "2.1.92 - Kurulum imza altyapisi (sertifika varsa imzalar); SAC engeli icin OV/EV Code Signing gerekir",
     "zorunlu":  false
 }
