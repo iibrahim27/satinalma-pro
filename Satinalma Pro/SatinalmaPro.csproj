@@ -12,10 +12,10 @@
     <AssemblyTitle>Satınalma Pro</AssemblyTitle>
     <Company>Satınalma Pro</Company>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>2.1.92</Version>
-    <AssemblyVersion>2.1.92.0</AssemblyVersion>
-    <FileVersion>2.1.92.0</FileVersion>
-    <InformationalVersion>2.1.92</InformationalVersion>
+    <Version>2.1.93</Version>
+    <AssemblyVersion>2.1.93.0</AssemblyVersion>
+    <FileVersion>2.1.93.0</FileVersion>
+    <InformationalVersion>2.1.93</InformationalVersion>
     <RootNamespace>SatinalmaPro</RootNamespace>
   </PropertyGroup>
 

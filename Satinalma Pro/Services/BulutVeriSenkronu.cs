@@ -110,7 +110,9 @@ public static class BulutVeriSenkronu
 
         try
         {
-            foreach (var (anahtar, yol) in BelgeHaritasiSirali())
+            // Yol ve yerel dosya bu senkronun kiracısına kilitlenir — oturum ortasında
+            // firma değişirse başka kiracının dosyası okunup yazılmaz.
+            foreach (var (anahtar, yol) in BelgeHaritasiSirali(senkronTenantId))
             {
                 iptal.ThrowIfCancellationRequested();
                 if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
@@ -127,7 +129,7 @@ public static class BulutVeriSenkronu
                     if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
                         return;
 
-                    var yerelJson = YerelJsonOku(anahtar);
+                    var yerelJson = YerelJsonOku(anahtar, senkronTenantId);
 
                     // Belge Firestore'da varsa (boş [] dahil) bulutu uygula — aksi halde PC2 eski veriyi geri yükler
                     var bulutBelgesiVar = bulutJson is not null;
@@ -192,10 +194,14 @@ public static class BulutVeriSenkronu
                              && anahtar == "satinalma_ayarlar")
                     {
                         // Sıfırlama iskeleti (ImzaAyarleriTemiz) "boş" sayılır; yerel imza/şartname
-                        // kaydını yoklamada ezme — özelleştirilmiş yereli buluta yaz.
+                        // kaydını yoklamada ezme — özelleştirilmiş yereli (kiracı damgalı) buluta yaz.
+                        if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                            return;
+                        var ayarJson = await AyarlariBulutaHazirlaAsync(iptal).ConfigureAwait(false);
                         await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
-                            yol, yerelJson, OturumYoneticisi.Auth?.Uid, iptal)
+                            yol, ayarJson, OturumYoneticisi.Auth?.Uid, iptal)
                             .ConfigureAwait(false);
+                        YerelOnbellegeYaz(anahtar, ayarJson, senkronTenantId);
                         BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
                     }
                     else if (bulutBelgesiVar && !buluttaVar && sifirlamaDamgasi
@@ -375,23 +381,30 @@ public static class BulutVeriSenkronu
             }
         }
 
+        var senkronTenantId = KiracıOturumu.TenantId;
+        if (string.IsNullOrWhiteSpace(senkronTenantId))
+            return;
+
         _senkronYukleniyor = true;
         try
         {
             await BulutYazmaKilidi.WaitAsync(iptal).ConfigureAwait(false);
             try
             {
-                foreach (var (anahtar, yol) in BelgeHaritasiSirali())
+                foreach (var (anahtar, yol) in BelgeHaritasiSirali(senkronTenantId))
                 {
+                    if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                        return;
+
                     var json = Olustur(anahtar);
                     // Normal senkron: boş bellek yazımını yerelden tamamla.
                     // Sıfırlama: boş liste bilinçlidir — eski yerel/cache ile ezilmesin.
                     if (!sifirlamaModu && (string.IsNullOrWhiteSpace(json) || json is "[]" or "{}"))
-                        json = YerelJsonOku(anahtar) ?? json;
+                        json = YerelJsonOku(anahtar, senkronTenantId) ?? json;
 
                     await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
                         yol, json, OturumYoneticisi.Auth?.Uid, iptal).ConfigureAwait(false);
-                    YerelOnbellegeYaz(anahtar, json);
+                    YerelOnbellegeYaz(anahtar, json, senkronTenantId);
                     BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
                 }
 
@@ -431,21 +444,28 @@ public static class BulutVeriSenkronu
         if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
             return;
 
+        var senkronTenantId = KiracıOturumu.TenantId;
+        if (string.IsNullOrWhiteSpace(senkronTenantId))
+            return;
+
         if (!BelgeHaritasi.TryGetValue(anahtar, out var relYol))
             return;
 
-        var yol = KiraciliBulutYolu(relYol);
+        var yol = KiraciliBulutYolu(relYol, senkronTenantId);
 
         await BulutYazmaKilidi.WaitAsync(iptal);
         try
         {
+            if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                return;
+
             var bilincliBos = BilincliBosYazmaIzinliMi(anahtar);
             var json = Olustur(anahtar);
             // satinalma_talepler: boş [] asla eski disk ile doldurulmaz (sıfırlama geri dönüşü).
             if (!bilincliBos
                 && anahtar != "satinalma_talepler"
                 && (string.IsNullOrEmpty(json) || json is "[]" or "{}"))
-                json = YerelJsonOku(anahtar) ?? json;
+                json = YerelJsonOku(anahtar, senkronTenantId) ?? json;
 
             string? talepBirlesikJson = null;
             // Sıfırlama: buluttaki eski talepleri birleştirip geri yükleme.
@@ -463,9 +483,12 @@ public static class BulutVeriSenkronu
                 return;
             }
 
+            if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                return;
+
             await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
                 yol, json, OturumYoneticisi.Auth?.Uid, iptal);
-            YerelOnbellegeYaz(anahtar, json);
+            YerelOnbellegeYaz(anahtar, json, senkronTenantId);
             BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
             BilincliBosYazmaIzniniTuket(anahtar);
             // Disk birleştirme eski yedeği geri getirmesin — yüklenen JSON esas.
@@ -518,19 +541,29 @@ public static class BulutVeriSenkronu
         if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
             return;
 
+        var senkronTenantId = KiracıOturumu.TenantId;
+        if (string.IsNullOrWhiteSpace(senkronTenantId))
+            return;
+
         _senkronYukleniyor = true;
         try
         {
-            foreach (var (anahtar, yol) in BelgeHaritasiSirali())
+            foreach (var (anahtar, yol) in BelgeHaritasiSirali(senkronTenantId))
             {
+                if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                    return;
+
                 var (json, _) = await OturumYoneticisi.Firestore.BelgeOkuAsync(yol, iptal);
                 if (json is null)
                     continue;
 
+                if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                    return;
+
                 var bos = json.Trim() is "[]" or "{}" or "null";
                 if (bos && ListeModuluMu(anahtar) && !_sifirlamaAktif)
                 {
-                    var yerelJson = YerelJsonOku(anahtar);
+                    var yerelJson = YerelJsonOku(anahtar, senkronTenantId);
                     if (JsonAnlamliMi(yerelJson, anahtar)
                         && YerelListeSifirlamadanSonraMi(anahtar, SatinalmaDepo.Ayarlar.VeriSifirlamaUtc))
                     {
@@ -544,11 +577,13 @@ public static class BulutVeriSenkronu
 
                 await UiThreaddeCalistirAsync(() =>
                 {
+                    if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                        return;
                     Uygula(anahtar, json);
                     if (bos || _sifirlamaAktif)
-                        YerelOnbellegeYaz(anahtar, json);
+                        YerelOnbellegeYaz(anahtar, json, senkronTenantId);
                     else
-                        YerelBirlesikDurumuKaydet(anahtar);
+                        YerelBirlesikDurumuKaydet(anahtar, senkronTenantId);
                 });
             }
 
@@ -661,14 +696,21 @@ public static class BulutVeriSenkronu
         if (_sifirlamaAktif)
             return;
 
+        var senkronTenantId = KiracıOturumu.TenantId;
+        if (string.IsNullOrWhiteSpace(senkronTenantId))
+            return;
+
         foreach (var anahtar in anahtarlar.OrderBy(a => BulutGonderimOnceligi(a)))
         {
             try
             {
+                if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
+                    return;
+
                 if (!BelgeHaritasi.TryGetValue(anahtar, out var relYol))
                     continue;
 
-                var yol = KiraciliBulutYolu(relYol);
+                var yol = KiraciliBulutYolu(relYol, senkronTenantId);
 
                 if (anahtar == "satinalma_talepler")
                     await SatinalmaAyarlariniBuluttanOncelikleAsync(iptal);
@@ -907,9 +949,9 @@ public static class BulutVeriSenkronu
         ["iade_kayitlari"] = "veri/iade_kayitlari"
     };
 
-    private static string YerelDosyaYolu(string anahtar)
+    private static string YerelDosyaYolu(string anahtar, string? tenantId = null)
     {
-        var tid = KiracıOturumu.TenantId;
+        var tid = string.IsNullOrWhiteSpace(tenantId) ? KiracıOturumu.TenantId : tenantId;
         string Dosya(string ad)
         {
             if (string.IsNullOrWhiteSpace(tid))
@@ -937,16 +979,16 @@ public static class BulutVeriSenkronu
     }
 
     /// <summary>Bulut verisi uygulandıktan sonra birleşik bellek durumunu diske yazar.</summary>
-    private static void YerelBirlesikDurumuKaydet(string anahtar)
+    private static void YerelBirlesikDurumuKaydet(string anahtar, string? tenantId = null)
     {
-        var yol = YerelDosyaYolu(anahtar);
+        var yol = YerelDosyaYolu(anahtar, tenantId);
         SatinalmaProKlasor.Olustur();
         File.WriteAllText(yol, Olustur(anahtar));
     }
 
-    private static void YerelOnbellegeYaz(string anahtar, string json)
+    private static void YerelOnbellegeYaz(string anahtar, string json, string? tenantId = null)
     {
-        var yol = YerelDosyaYolu(anahtar);
+        var yol = YerelDosyaYolu(anahtar, tenantId);
         SatinalmaProKlasor.Olustur();
         File.WriteAllText(yol, json);
     }
@@ -1126,17 +1168,25 @@ public static class BulutVeriSenkronu
         var bulutAyarlar = await BulutAyarlariniOkuAsync(iptal);
         if (bulutAyarlar is not null)
         {
-            SatinalmaDepo.Ayarlar.SilinenTalepIdleri = SatinalmaTalepSenkronYardimcisi.SilinenleriBirlestir(
-                SatinalmaDepo.Ayarlar.SilinenTalepIdleri,
-                bulutAyarlar.SilinenTalepIdleri);
-            SatinalmaDepo.Ayarlar.SonTalepSira = Math.Max(
-                SatinalmaDepo.Ayarlar.SonTalepSira, bulutAyarlar.SonTalepSira);
-            SatinalmaDepo.Ayarlar.SonSiparisSira = Math.Max(
-                SatinalmaDepo.Ayarlar.SonSiparisSira, bulutAyarlar.SonSiparisSira);
-            SatinalmaDepo.Ayarlar.SonIadeSira = Math.Max(
-                SatinalmaDepo.Ayarlar.SonIadeSira, bulutAyarlar.SonIadeSira);
-            SatinalmaDepo.Ayarlar.VeriSifirlamaUtc = Math.Max(
-                SatinalmaDepo.Ayarlar.VeriSifirlamaUtc, bulutAyarlar.VeriSifirlamaUtc);
+            // Yalnızca aynı kiracı damgalı buluttan sayaç birleştir.
+            var tid = KiracıOturumu.TenantId;
+            var bulutAit = string.IsNullOrWhiteSpace(bulutAyarlar.TenantId)
+                || (!string.IsNullOrWhiteSpace(tid)
+                    && string.Equals(bulutAyarlar.TenantId.Trim(), tid.Trim(), StringComparison.Ordinal));
+            if (bulutAit)
+            {
+                SatinalmaDepo.Ayarlar.SilinenTalepIdleri = SatinalmaTalepSenkronYardimcisi.SilinenleriBirlestir(
+                    SatinalmaDepo.Ayarlar.SilinenTalepIdleri,
+                    bulutAyarlar.SilinenTalepIdleri);
+                SatinalmaDepo.Ayarlar.SonTalepSira = Math.Max(
+                    SatinalmaDepo.Ayarlar.SonTalepSira, bulutAyarlar.SonTalepSira);
+                SatinalmaDepo.Ayarlar.SonSiparisSira = Math.Max(
+                    SatinalmaDepo.Ayarlar.SonSiparisSira, bulutAyarlar.SonSiparisSira);
+                SatinalmaDepo.Ayarlar.SonIadeSira = Math.Max(
+                    SatinalmaDepo.Ayarlar.SonIadeSira, bulutAyarlar.SonIadeSira);
+                SatinalmaDepo.Ayarlar.VeriSifirlamaUtc = Math.Max(
+                    SatinalmaDepo.Ayarlar.VeriSifirlamaUtc, bulutAyarlar.VeriSifirlamaUtc);
+            }
         }
 
         if ((SatinalmaDepo.Ayarlar.SefImzalari?.Count ?? 0) > 0
@@ -1145,12 +1195,15 @@ public static class BulutVeriSenkronu
             SatinalmaDepo.Ayarlar.ImzaAyarleriTemiz = false;
         }
 
+        if (!string.IsNullOrWhiteSpace(KiracıOturumu.TenantId))
+            SatinalmaDepo.Ayarlar.TenantId = KiracıOturumu.TenantId.Trim();
+
         return JsonSerializer.Serialize(SatinalmaDepo.Ayarlar, JsonSecenekleri);
     }
 
-    private static string? YerelJsonOku(string anahtar)
+    private static string? YerelJsonOku(string anahtar, string? tenantId = null)
     {
-        var yol = YerelDosyaYolu(anahtar);
+        var yol = YerelDosyaYolu(anahtar, tenantId);
         return File.Exists(yol) ? File.ReadAllText(yol) : null;
     }
 
@@ -1289,10 +1342,15 @@ public static class BulutVeriSenkronu
         return false;
     }
 
-    private static string KiraciliBulutYolu(string veriYolu) =>
-        $"{FirestoreYollari.TenantKok(KiracıOturumu.ZorunluTenantId())}/{veriYolu}";
+    private static string KiraciliBulutYolu(string veriYolu, string? tenantId = null)
+    {
+        var tid = string.IsNullOrWhiteSpace(tenantId)
+            ? KiracıOturumu.ZorunluTenantId()
+            : tenantId.Trim();
+        return $"{FirestoreYollari.TenantKok(tid)}/{veriYolu}";
+    }
 
-    private static IEnumerable<KeyValuePair<string, string>> BelgeHaritasiSirali()
+    private static IEnumerable<KeyValuePair<string, string>> BelgeHaritasiSirali(string? tenantId = null)
     {
         string[] oncelik = ["satinalma_ayarlar", "satinalma_talepler"];
         var islenen = new HashSet<string>(StringComparer.Ordinal);
@@ -1302,7 +1360,7 @@ public static class BulutVeriSenkronu
             if (BelgeHaritasi.TryGetValue(anahtar, out var yol))
             {
                 islenen.Add(anahtar);
-                yield return new KeyValuePair<string, string>(anahtar, KiraciliBulutYolu(yol));
+                yield return new KeyValuePair<string, string>(anahtar, KiraciliBulutYolu(yol, tenantId));
             }
         }
 
@@ -1310,7 +1368,7 @@ public static class BulutVeriSenkronu
         {
             if (islenen.Contains(kv.Key))
                 continue;
-            yield return new KeyValuePair<string, string>(kv.Key, KiraciliBulutYolu(kv.Value));
+            yield return new KeyValuePair<string, string>(kv.Key, KiraciliBulutYolu(kv.Value, tenantId));
         }
     }
 

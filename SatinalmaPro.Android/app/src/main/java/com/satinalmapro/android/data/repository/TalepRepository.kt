@@ -24,6 +24,7 @@ import com.satinalmapro.android.core.roles.MalKabulYardimcisi
 import com.satinalmapro.android.core.roles.OnaylananMalzemeOlusturucu
 import com.satinalmapro.android.core.roles.TalepKuyrugu
 import com.satinalmapro.android.core.roles.TalepYetkileri
+import com.satinalmapro.android.core.saas.TenantSession
 import com.satinalmapro.android.data.firebase.FirebaseAuthClient
 import com.satinalmapro.android.data.firebase.FirestoreClient
 import com.satinalmapro.shared.filter.ProcurementStatus
@@ -105,6 +106,13 @@ class TalepRepository(
             runCatching { gson.fromJson(json, ayarType) ?: SatinalmaAyarlar() }
                 .getOrDefault(SatinalmaAyarlar())
         }
+        val tid = TenantSession.tenantId()?.trim().orEmpty()
+        val stamped = fromJson.tenantId?.trim().orEmpty()
+        // Başka kiracı damgalı ayar JSON'u asla uygulanmaz.
+        if (tid.isNotBlank() && stamped.isNotBlank() && !stamped.equals(tid, ignoreCase = false)) {
+            BildirimLog.w("SYNC", "Yabancı kiracı satinalma_ayarlar reddedildi")
+            return SatinalmaAyarlar(tenantId = tid)
+        }
         val docStamp = fields.optJSONObject("veriSifirlamaUtc")
             ?.optString("integerValue")
             ?.toLongOrNull()
@@ -112,7 +120,10 @@ class TalepRepository(
                 ?.optDouble("doubleValue", 0.0)
                 ?.toLong()
             ?: 0L
-        return fromJson.copy(veriSifirlamaUtc = maxOf(fromJson.veriSifirlamaUtc, docStamp))
+        return fromJson.copy(
+            tenantId = tid.ifBlank { fromJson.tenantId },
+            veriSifirlamaUtc = maxOf(fromJson.veriSifirlamaUtc, docStamp)
+        )
     }
 
     suspend fun saveTalepler(talepler: List<TalepItem>) {
@@ -143,13 +154,15 @@ class TalepRepository(
 
     suspend fun saveAyarlar(ayarlar: SatinalmaAyarlar) {
         val uid = auth.uid ?: throw IllegalStateException("Oturum gerekli")
+        val tid = TenantSession.tenantId()?.trim().orEmpty()
         val bulut = runCatching { loadAyarlar() }.getOrNull()
         val guvenli = if (bulut != null) {
             ayarlar.copy(
+                tenantId = tid.ifBlank { ayarlar.tenantId },
                 veriSifirlamaUtc = maxOf(ayarlar.veriSifirlamaUtc, bulut.veriSifirlamaUtc)
             )
         } else {
-            ayarlar
+            ayarlar.copy(tenantId = tid.ifBlank { ayarlar.tenantId })
         }
         firestore.writeDocumentJson("veri/satinalma_ayarlar", gson.toJson(guvenli), uid)
     }

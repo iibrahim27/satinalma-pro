@@ -235,6 +235,8 @@ data class ImzaAyari(
 )
 
 data class SatinalmaAyarlar(
+    /** Kiracı damgası — başka firmanın ayar JSON'u uygulanmamalı. */
+    val tenantId: String? = null,
     val firmaAdi: String = "",
     val sartnameMetni: String = "",
     val teklifIstemeSartnameleri: String = "",

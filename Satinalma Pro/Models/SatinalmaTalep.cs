@@ -293,6 +293,9 @@ public class SartnameDosyasi
 
 public class SatinalmaAyarlar
 {
+    /// <summary>Kiracı damgası — başka firmanın ayar JSON'u asla uygulanmaz.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? TenantId { get; set; }
     public string FirmaAdi { get; set; } = "";
     public string LogoDosyaYolu { get; set; } = "";
     public string SartnameMetni { get; set; } = "";

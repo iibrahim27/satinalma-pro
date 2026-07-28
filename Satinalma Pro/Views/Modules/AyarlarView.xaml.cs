@@ -62,13 +62,29 @@ public partial class AyarlarView : UserControl
         KpiKartlariniGuncelle();
         NavigasyonAc("genel");
 
+        SatinalmaDepo.AyarlarGuncellendi += OnSatinalmaAyarlarGuncellendi;
+        Unloaded += (_, _) => SatinalmaDepo.AyarlarGuncellendi -= OnSatinalmaAyarlarGuncellendi;
+
         Loaded += (_, _) =>
         {
+            // Önbellekli view: firma değişimi / senkron sonrası güncel kiracı imzalarını bağla.
+            AyarlariYukle();
             MenuleriUygula();
             KullaniciYetkileri.ModulErisiminiUygula(this, "Ayarlar");
             // Salt-okunur gezgini Ekle/Düzenle/Sil'i kapatmasın — ayar yazabilen kullanıcıda aç.
             ImzaButonlariniAktifEt();
         };
+    }
+
+    private void OnSatinalmaAyarlarGuncellendi()
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.Invoke(OnSatinalmaAyarlarGuncellendi);
+            return;
+        }
+
+        AyarlariYukle();
     }
 
     private void ImzaButonlariniAktifEt()
@@ -180,6 +196,8 @@ public partial class AyarlarView : UserControl
 
     private void NavigasyonAc(string id)
     {
+        if (id == "satinalma")
+            ImzaGridleriYenile();
         _aktifNav = id;
         foreach (var (key, panel) in _paneller)
             panel.Visibility = key == id ? Visibility.Visible : Visibility.Collapsed;

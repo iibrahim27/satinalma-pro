@@ -45,16 +45,23 @@ public static class SatinalmaDepo
     /// <summary>Bulut senkronu veya toplu yükleme sonrası UI listesini yenilemek için.</summary>
     public static event Action? TaleplerGuncellendi;
 
+    /// <summary>Ayar nesnesi değişti / imza listeleri yenilendi — UI ItemsSource yeniden bağlansın.</summary>
+    public static event Action? AyarlarGuncellendi;
+
     /// <summary>Firma değişiminde bellek + disk izolasyonu.</summary>
     public static void KiraciDegisti()
     {
         _yuklendi = false;
         _yuklenenTenantId = null;
         Talepler.Clear();
+        // Eski ObservableCollection referanslarını da boşalt (UI hâlâ bağlıysa sızmasın).
+        Ayarlar.SefImzalari?.Clear();
+        Ayarlar.YonetimImzalari?.Clear();
         // Yeni/boş firma: diğer firmanın varsayılan ünvan+isimleri taşınmasın.
         Ayarlar = SatinalmaAyarlar.SifirlanmisOlustur();
         KorunanBosTaslakId = null;
         TaleplerGuncellendi?.Invoke();
+        AyarlarGuncellendi?.Invoke();
     }
 
     public static void YenidenYukle()
@@ -76,9 +83,12 @@ public static class SatinalmaDepo
 
     public static void AyarlariSifirla()
     {
+        Ayarlar.SefImzalari?.Clear();
+        Ayarlar.YonetimImzalari?.Clear();
         Ayarlar = SatinalmaAyarlar.SifirlanmisOlustur();
         Ayarlar.VeriSifirlamaUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         Kaydet();
+        AyarlarGuncellendi?.Invoke();
     }
 
     public static void Yukle()
@@ -91,6 +101,8 @@ public static class SatinalmaDepo
         if (_yuklendi && !string.Equals(_yuklenenTenantId, tid, StringComparison.Ordinal))
         {
             Talepler.Clear();
+            Ayarlar.SefImzalari?.Clear();
+            Ayarlar.YonetimImzalari?.Clear();
             Ayarlar = SatinalmaAyarlar.SifirlanmisOlustur();
         }
 
@@ -103,8 +115,12 @@ public static class SatinalmaDepo
             try
             {
                 var json = File.ReadAllText(AyarDosyasi);
-                Ayarlar = JsonSerializer.Deserialize<SatinalmaAyarlar>(json, JsonSecenekleri)
-                          ?? SatinalmaAyarlar.SifirlanmisOlustur();
+                var diskten = JsonSerializer.Deserialize<SatinalmaAyarlar>(json, JsonSecenekleri)
+                              ?? SatinalmaAyarlar.SifirlanmisOlustur();
+                // Başka kiracıya ait dosya içeriği asla belleğe alınmaz.
+                Ayarlar = AyarBuKiraciyaAitMi(diskten)
+                    ? diskten
+                    : SatinalmaAyarlar.SifirlanmisOlustur();
             }
             catch
             {
@@ -119,6 +135,7 @@ public static class SatinalmaDepo
 
         ImzalariHazirla(Ayarlar);
         SartnameMetniniGocEt(Ayarlar);
+        AyarlarGuncellendi?.Invoke();
 
         if (File.Exists(TalepDosyasi))
         {
@@ -174,9 +191,36 @@ public static class SatinalmaDepo
     public static void KaydetAyarlar()
     {
         Directory.CreateDirectory(Klasor);
+        KiraciDamgasiniYaz(Ayarlar);
         var ayarJson = JsonSerializer.Serialize(Ayarlar, JsonSecenekleri);
         File.WriteAllText(AyarDosyasi, ayarJson);
         BulutVeriSenkronu.Planla("satinalma_ayarlar");
+    }
+
+    private static void KiraciDamgasiniYaz(SatinalmaAyarlar ayarlar)
+    {
+        var tid = KiracıOturumu.TenantId;
+        if (!string.IsNullOrWhiteSpace(tid))
+            ayarlar.TenantId = tid.Trim();
+    }
+
+    /// <summary>
+    /// Damgası olan ayar başka kiracıya aitse false.
+    /// Damgasız (eski) kayıtlar dosya adındaki kiracıya güvenir — true.
+    /// </summary>
+    private static bool AyarBuKiraciyaAitMi(SatinalmaAyarlar? ayar)
+    {
+        if (ayar is null)
+            return false;
+
+        var tid = KiracıOturumu.TenantId;
+        if (string.IsNullOrWhiteSpace(tid))
+            return false;
+
+        if (string.IsNullOrWhiteSpace(ayar.TenantId))
+            return true;
+
+        return string.Equals(ayar.TenantId.Trim(), tid.Trim(), StringComparison.Ordinal);
     }
 
     public static void TalepleriYukle(string json) =>
@@ -311,6 +355,10 @@ public static class SatinalmaDepo
         var gelen = JsonSerializer.Deserialize<SatinalmaAyarlar>(json, JsonSecenekleri)
                     ?? SatinalmaAyarlar.SifirlanmisOlustur();
 
+        // Başka firmanın ayar JSON'u (yanlış yola yazılmış / eski sızıntı) — tamamen yoksay.
+        if (!AyarBuKiraciyaAitMi(gelen))
+            return;
+
         // Ayarlar nesnesini ASLA değiştirme — UI DataGrid eski ObservableCollection'a bağlı kalır,
         // Kaydet ise yeni nesneyi yazınca imza düzenlemeleri kaybolur.
         Ayarlar.SefImzalari ??= [];
@@ -350,19 +398,17 @@ public static class SatinalmaDepo
             if (gelen.VarsayilanEurKuru > 0)
                 Ayarlar.VarsayilanEurKuru = gelen.VarsayilanEurKuru;
 
-            // Yerel özelleştirilmiş imza varsa bulut iskeletiyle ezme.
-            var yerelImzaVar = !Ayarlar.ImzaAyarleriTemiz
+            // Yerel bu kiracıya ait özelleştirilmiş imza varsa bulut iskeletiyle ezme.
+            var yerelImzaVar = AyarBuKiraciyaAitMi(Ayarlar)
+                && !Ayarlar.ImzaAyarleriTemiz
                 && (Ayarlar.SefImzalari.Count > 0 || Ayarlar.YonetimImzalari.Count > 0);
             if (yerelImzaVar && gelen.ImzaAyarleriTemiz)
             {
                 // yalnızca damga/sayaç alındı; imza listeleri durur
             }
-            else if (yerelImzaVar)
-            {
-                ImzaAyarlariSenkronla(gelen);
-            }
             else
             {
+                // İmza listelerinde ünvan birleştirme YOK — her zaman gelen ile değiştir.
                 ImzaListeleriniDegistir(gelen);
                 Ayarlar.ImzaAyarleriTemiz = gelen.ImzaAyarleriTemiz;
             }
@@ -374,19 +420,26 @@ public static class SatinalmaDepo
                 Ayarlar.TeklifIstemeSartnameleri = gelen.TeklifIstemeSartnameleri ?? "";
         }
 
+        KiraciDamgasiniYaz(Ayarlar);
         AyarlariHazirla(Ayarlar);
         SilinenTalepleriTemizle();
+        AyarlarGuncellendi?.Invoke();
     }
 
     private static void ImzaAyarlariSenkronla(SatinalmaAyarlar gelen)
     {
-        var yerelOzellestirilmis = !Ayarlar.ImzaAyarleriTemiz
+        var tid = KiracıOturumu.TenantId?.Trim();
+        var yerelDamgaliBuKiraci = !string.IsNullOrWhiteSpace(Ayarlar.TenantId)
+            && !string.IsNullOrWhiteSpace(tid)
+            && string.Equals(Ayarlar.TenantId.Trim(), tid, StringComparison.Ordinal);
+        var yerelOzellestirilmis = yerelDamgaliBuKiraci
+            && !Ayarlar.ImzaAyarleriTemiz
             && ((Ayarlar.SefImzalari?.Count ?? 0) > 0
                 || (Ayarlar.YonetimImzalari?.Count ?? 0) > 0);
 
         if (gelen.ImzaAyarleriTemiz)
         {
-            // Bulut sıfırlama iskeleti, yerelde kaydedilmiş imzaları silmesin.
+            // Yalnızca bu kiracıya damgalı yerel kayıt, bulut iskeletiyle silinmesin.
             if (yerelOzellestirilmis)
                 return;
 
@@ -398,21 +451,10 @@ public static class SatinalmaDepo
             return;
         }
 
-        // Yerel temiz (yeni firma) iken gelen doluysa birleştirme yapma — doğrudan al.
-        // Aksi halde aynı ünvan anahtarlarına başka firmanın AdSoyad değerleri sızıyordu.
-        Ayarlar.SefImzalari ??= [];
-        Ayarlar.YonetimImzalari ??= [];
-
-        if (Ayarlar.ImzaAyarleriTemiz
-            || (Ayarlar.SefImzalari.Count == 0 && Ayarlar.YonetimImzalari.Count == 0))
-        {
-            ImzaListeleriniDegistir(gelen);
-            Ayarlar.ImzaAyarleriTemiz = false;
-            return;
-        }
-
-        ImzaListeleriniBirlestir(Ayarlar.SefImzalari, gelen.SefImzalari);
-        ImzaListeleriniBirlestir(Ayarlar.YonetimImzalari, gelen.YonetimImzalari);
+        // Ünvan anahtarıyla AdSoyad birleştirme YOK — kiracı sızıntısı kaynağıydı.
+        // Bu kiracının bulut yolu otoriter: listeyi tamamen değiştir.
+        ImzaListeleriniDegistir(gelen);
+        Ayarlar.ImzaAyarleriTemiz = false;
     }
 
     private static void ImzaListeleriniDegistir(SatinalmaAyarlar gelen)
@@ -456,43 +498,6 @@ public static class SatinalmaDepo
 
         Ayarlar.ImzaAyarleriTemiz = false;
         KaydetAyarlar();
-    }
-
-    private static void ImzaListeleriniBirlestir(
-        ObservableCollection<ImzaAyari> hedef,
-        IEnumerable<ImzaAyari>? kaynak)
-    {
-        if (kaynak is null)
-            return;
-
-        foreach (var kaynakImza in kaynak)
-        {
-            if (string.IsNullOrWhiteSpace(kaynakImza.Unvan))
-                continue;
-
-            var mevcut = hedef.FirstOrDefault(h =>
-                string.Equals(h.Unvan?.Trim(), kaynakImza.Unvan.Trim(), StringComparison.OrdinalIgnoreCase));
-
-            if (mevcut is not null)
-            {
-                // Yerel boşsa buluttan al; ikisi de doluysa yereli koru (kaydetme kaybı olmasın).
-                if (string.IsNullOrWhiteSpace(mevcut.AdSoyad) && !string.IsNullOrWhiteSpace(kaynakImza.AdSoyad))
-                    mevcut.AdSoyad = kaynakImza.AdSoyad.Trim();
-
-                if (!string.IsNullOrWhiteSpace(kaynakImza.Unvan))
-                    mevcut.Unvan = kaynakImza.Unvan.Trim();
-                mevcut.Aktif = mevcut.Aktif || kaynakImza.Aktif;
-            }
-            else
-            {
-                hedef.Add(new ImzaAyari
-                {
-                    Unvan = kaynakImza.Unvan.Trim(),
-                    AdSoyad = kaynakImza.AdSoyad?.Trim() ?? "",
-                    Aktif = kaynakImza.Aktif
-                });
-            }
-        }
     }
 
     public static void SilinenTalepleriTemizle()

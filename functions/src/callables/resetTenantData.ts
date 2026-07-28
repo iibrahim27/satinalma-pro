@@ -89,8 +89,12 @@ function canResetTenant(user: Record<string, unknown>): boolean {
   return false;
 }
 
-export function emptyAyarlarJson(veriSifirlamaUtc: number): string {
+export function emptyAyarlarJson(
+  veriSifirlamaUtc: number,
+  tenantId?: string
+): string {
   return JSON.stringify({
+    tenantId: tenantId ?? "",
     firmaAdi: "",
     sartnameMetni: "",
     teklifIstemeSartnameleri: "",
@@ -111,7 +115,8 @@ export function emptyAyarlarJson(veriSifirlamaUtc: number): string {
 /** Mevcut ayarları koruyarak sayaçları ve sıfırlama damgasını günceller. */
 export function stampAyarlarPreservingSettingsJson(
   existingJson: string | undefined,
-  veriSifirlamaUtc: number
+  veriSifirlamaUtc: number,
+  tenantId?: string
 ): string {
   let parsed: Record<string, unknown> = {};
   if (existingJson && existingJson.trim()) {
@@ -124,6 +129,7 @@ export function stampAyarlarPreservingSettingsJson(
       parsed = {};
     }
   }
+  if (tenantId) parsed.tenantId = tenantId;
   parsed.veriSifirlamaUtc = veriSifirlamaUtc;
   parsed.sonTalepSira = 0;
   parsed.sonSiparisSira = 0;
@@ -157,7 +163,8 @@ async function writeAyarlarDoc(
   uid: string,
   veriSifirlamaUtc: number,
   nowIso: string,
-  preserveSettings: boolean
+  preserveSettings: boolean,
+  tenantId: string
 ): Promise<void> {
   let json: string;
   if (preserveSettings) {
@@ -165,9 +172,13 @@ async function writeAyarlarDoc(
     const existing = snap.exists
       ? String((snap.data() as { json?: string } | undefined)?.json ?? "")
       : "";
-    json = stampAyarlarPreservingSettingsJson(existing, veriSifirlamaUtc);
+    json = stampAyarlarPreservingSettingsJson(
+      existing,
+      veriSifirlamaUtc,
+      tenantId
+    );
   } else {
-    json = emptyAyarlarJson(veriSifirlamaUtc);
+    json = emptyAyarlarJson(veriSifirlamaUtc, tenantId);
   }
   await writeVeriDoc(
     veriRoot,
@@ -224,13 +235,7 @@ export async function wipeTenantOperationalData(
   const nowIso = new Date().toISOString();
   const veriRoot = db.collection(`tenants/${tenantId}/veri`);
 
-  await writeAyarlarDoc(
-    veriRoot,
-    uid,
-    veriSifirlamaUtc,
-    nowIso,
-    preserveSettings
-  );
+  await writeAyarlarDoc(veriRoot, uid, veriSifirlamaUtc, nowIso, preserveSettings, tenantId);
   await veriRoot.doc("satinalma_ayarlar").set(
     { resetInProgress: true },
     { merge: true }
@@ -278,13 +283,7 @@ export async function wipeTenantOperationalData(
           nowIso
         );
       }
-      await writeAyarlarDoc(
-        veriRoot,
-        uid,
-        veriSifirlamaUtc,
-        nowIso,
-        false
-      );
+      await writeAyarlarDoc(veriRoot, uid, veriSifirlamaUtc, nowIso, false, tenantId);
     } else {
       // Ayar belgelerine yalnızca damga yaz — json içeriğine dokunma.
       for (const docId of SETTINGS_VERI_DOC_IDS) {
@@ -331,13 +330,7 @@ export async function wipeTenantOperationalData(
       );
     }
     if (!preserveSettings) {
-      await writeAyarlarDoc(
-        veriRoot,
-        uid,
-        veriSifirlamaUtc,
-        nowIso,
-        false
-      );
+      await writeAyarlarDoc(veriRoot, uid, veriSifirlamaUtc, nowIso, false, tenantId);
     }
   }
 
@@ -349,13 +342,7 @@ export async function wipeTenantOperationalData(
     veriSifirlamaUtc,
     nowIso
   );
-  await writeAyarlarDoc(
-    veriRoot,
-    uid,
-    veriSifirlamaUtc,
-    nowIso,
-    preserveSettings
-  );
+  await writeAyarlarDoc(veriRoot, uid, veriSifirlamaUtc, nowIso, preserveSettings, tenantId);
 
   return {
     ok: true,

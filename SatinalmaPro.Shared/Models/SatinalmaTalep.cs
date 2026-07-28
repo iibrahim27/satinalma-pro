@@ -265,6 +265,8 @@ public static class SatinalmaTalepDurumlari
 
 public class SatinalmaAyarlar
 {
+    /// <summary>Kiracı damgası — başka firmanın ayar JSON'u asla uygulanmaz.</summary>
+    public string? TenantId { get; set; }
     public string FirmaAdi { get; set; } = "";
     public string SartnameMetni { get; set; } = "";
     public string TeklifIstemeSartnameleri { get; set; } = "";
