@@ -56,26 +56,16 @@
 
 
 
-    <Border x:Name="DuzeltmeNotuPanel" Grid.Row="1" Background="#FFF7ED"
-
-            BorderBrush="#FDBA74" BorderThickness="1" CornerRadius="10"
-
+    <Border x:Name="DuzeltmeNotuPanel" Grid.Row="1" Background="#FFF3BF"
+            BorderBrush="#F08C00" BorderThickness="1" CornerRadius="10"
             Padding="12,10" Margin="0,14,0,0" Visibility="Collapsed">
-
       <TextBlock x:Name="TxtDuzeltmeNotu" TextWrapping="Wrap" FontSize="12" Foreground="#9A3412" />
-
     </Border>
 
-
-
-    <Border x:Name="OneriBanner" Grid.Row="2" Background="#ECFDF5" BorderBrush="#059669"
-
+    <Border x:Name="OneriBanner" Grid.Row="2" Background="#E3F9E5" BorderBrush="#2F9E44"
             BorderThickness="1" CornerRadius="10" Padding="12,10" Margin="0,14,0,0" Visibility="Collapsed">
-
       <TextBlock x:Name="TxtOneriBanner" TextWrapping="Wrap" FontSize="12" FontWeight="SemiBold"
-
-                 Foreground="#047857" />
-
+                 Foreground="#2B8A3E" />
     </Border>
 
 
@@ -102,7 +92,7 @@
 
       <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="10"
 
-              Background="White" Padding="4">
+              Background="#FFFFFF" Padding="4">
 
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
 

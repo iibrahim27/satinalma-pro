@@ -232,9 +232,11 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
             {
                 NavPanel.Children.Add(new TextBlock
                 {
-                    Text = grup.Baslik,
-                    Style = (Style?)TryFindResource("SatModSideNavGroup")
-                        ?? Application.Current.TryFindResource("SatModSideNavGroup") as Style
+                    Text = grup.Baslik.ToUpperInvariant(),
+                    FontSize = 10,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Color.FromRgb(0x64, 0x74, 0x8B)),
+                    Margin = new Thickness(12, 14, 8, 6)
                 });
             }
 
@@ -252,47 +254,72 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
 
     private Button NavOgesi(string route, string baslik)
     {
-        var btn = new Button
-        {
-            Style = (Style?)TryFindResource("SatModSideNavItem")
-                ?? Application.Current.TryFindResource("SatModSideNavItem") as Style,
-            Tag = route,
-            ToolTip = baslik
-        };
-        btn.Click += (_, _) => RouteAc(route, null);
-
-        var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        var metin = new TextBlock
-        {
-            Text = baslik,
-            Style = (Style?)TryFindResource("SatModSideNavLabel")
-                ?? Application.Current.TryFindResource("SatModSideNavLabel") as Style
-        };
-        Grid.SetColumn(metin, 0);
-        grid.Children.Add(metin);
-
-        var rozetCer = new Border
-        {
-            Style = (Style?)TryFindResource("SatModSideNavBadge")
-                ?? Application.Current.TryFindResource("SatModSideNavBadge") as Style
-        };
         var rozet = new TextBlock
         {
             FontSize = 10,
             FontWeight = FontWeights.Bold,
-            Foreground = new SolidColorBrush(Color.FromRgb(225, 29, 72)),
+            Foreground = Brushes.White,
             HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Visibility = Visibility.Collapsed
+        };
+        var rozetCer = new Border
+        {
+            Background = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44)),
+            CornerRadius = new CornerRadius(9),
+            MinWidth = 18,
+            Height = 18,
+            Margin = new Thickness(8, 0, 0, 0),
+            Padding = new Thickness(5, 0, 5, 0),
+            Child = rozet,
+            Visibility = Visibility.Collapsed,
             VerticalAlignment = VerticalAlignment.Center
         };
-        rozetCer.Child = rozet;
-        Grid.SetColumn(rozetCer, 1);
-        grid.Children.Add(rozetCer);
         _navRozetleri[route] = rozet;
 
-        btn.Content = grid;
+        var metin = new TextBlock
+        {
+            Text = baslik,
+            FontSize = 13,
+            FontWeight = FontWeights.Medium,
+            Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xD5, 0xE1)),
+            VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
+            MaxWidth = 170
+        };
+
+        var icerik = new DockPanel { LastChildFill = true };
+        DockPanel.SetDock(rozetCer, Dock.Right);
+        icerik.Children.Add(rozetCer);
+        icerik.Children.Add(metin);
+
+        var shell = new Border
+        {
+            Background = Brushes.Transparent,
+            CornerRadius = new CornerRadius(10),
+            Padding = new Thickness(12, 10, 12, 10),
+            Margin = new Thickness(0, 1, 0, 1),
+            Child = icerik
+        };
+
+        var btn = new Button
+        {
+            Content = shell,
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(0),
+            Cursor = Cursors.Hand,
+            Tag = route,
+            ToolTip = baslik,
+            Focusable = false,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
+        };
+        var t = new ControlTemplate(typeof(Button));
+        var f = new FrameworkElementFactory(typeof(ContentPresenter));
+        t.VisualTree = f;
+        btn.Template = t;
+        btn.Click += (_, _) => RouteAc(route, null);
+
         _navButtons[route] = btn;
         return btn;
     }
@@ -655,17 +682,40 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
 
     private void AktifNavGuncelle(string route)
     {
-        var normalLabel = (Style?)TryFindResource("SatModSideNavLabel")
-            ?? Application.Current.TryFindResource("SatModSideNavLabel") as Style;
-        var aktifLabel = (Style?)TryFindResource("SatModSideNavLabelActive")
-            ?? Application.Current.TryFindResource("SatModSideNavLabelActive") as Style;
-
         foreach (var (id, btn) in _navButtons)
         {
             btn.Tag = id == route ? "Active" : id;
+            if (btn.Content is not Border shell) continue;
 
-            if (btn.Content is Grid grid && grid.Children[0] is TextBlock metin)
-                metin.Style = id == route ? aktifLabel : normalLabel;
+            var aktif = id == route;
+            shell.Background = aktif
+                ? new SolidColorBrush(Color.FromRgb(0x4F, 0x46, 0xE5))
+                : Brushes.Transparent;
+
+            TextBlock? metin = null;
+            if (shell.Child is DockPanel dp)
+            {
+                foreach (var child in dp.Children)
+                {
+                    if (child is TextBlock tb)
+                    {
+                        metin = tb;
+                        break;
+                    }
+                }
+            }
+            else if (shell.Child is StackPanel sp && sp.Children.Count > 0 && sp.Children[0] is TextBlock eski)
+            {
+                metin = eski;
+            }
+
+            if (metin is not null)
+            {
+                metin.Foreground = new SolidColorBrush(aktif
+                    ? Colors.White
+                    : Color.FromRgb(0xCB, 0xD5, 0xE1));
+                metin.FontWeight = aktif ? FontWeights.SemiBold : FontWeights.Medium;
+            }
         }
     }
 

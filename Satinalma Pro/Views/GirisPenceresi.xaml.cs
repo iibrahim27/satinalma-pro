@@ -20,7 +20,23 @@ public partial class GirisPenceresi : Window
         Loaded += (_, _) => GirisKontrol.TercihleriYukle();
     }
 
-    public static bool OturumAc(Window? sahip)
+    public void MarkayiAyarla(string pencereBasligi, string marka, string altBaslik, string aciklama)
+    {
+        Title = pencereBasligi;
+        TxtMarka.Text = marka;
+        TxtAltBaslik.Text = altBaslik;
+        TxtAciklama.Text = aciklama;
+    }
+
+    public static bool OturumAc(Window? sahip) =>
+        OturumAc(sahip, null, null, null, null);
+
+    public static bool OturumAc(
+        Window? sahip,
+        string? pencereBasligi,
+        string? marka,
+        string? altBaslik,
+        string? aciklama)
     {
         if (!OturumYoneticisi.BulutAktif)
         {
@@ -30,13 +46,23 @@ public partial class GirisPenceresi : Window
                 "• Mobil uygulama ile senkron olmaz\n" +
                 "• Tüm modül yetkileri açıktır\n\n" +
                 "Bulut kurulumu için: Ayarlar → Genel → Kurulum Kılavuzunu Aç",
-                UygulamaBilgisi.Ad,
+                marka ?? UygulamaBilgisi.Ad,
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             return true;
         }
 
         var pencere = new GirisPenceresi();
+        if (!string.IsNullOrWhiteSpace(pencereBasligi) ||
+            !string.IsNullOrWhiteSpace(marka))
+        {
+            pencere.MarkayiAyarla(
+                pencereBasligi ?? "Talep Pro — Giriş",
+                marka ?? "Talep Pro",
+                altBaslik ?? "Talep, teklif ve onay süreçleri",
+                aciklama ?? "Satınalma taleplerinizi buradan yönetin.");
+        }
+
         if (sahip is not null)
             pencere.Owner = sahip;
 

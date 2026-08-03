@@ -2,9 +2,11 @@
 ; Derleme: Inno Setup 6 kurulu olmalı, sonra ISCC.exe ile derlenir
 
 #define MyAppName "Satınalma Pro"
-#define MyAppVersion "2.1.93"
+#define MyAppVersion "2.1.94"
 #define MyAppPublisher "MV İNŞAAT"
 #define MyAppExeName "SatinalmaPro.exe"
+#define MyTalepProName "Talep Pro"
+#define MyTalepProExeName "TalepPro.exe"
 #define MyPublishDir "..\bin\Release\net9.0-windows10.0.17763.0\win-x64\publish"
 
 [Setup]
@@ -32,13 +34,18 @@ Name: "desktopicon"; Description: "Masaüstü kısayolu oluştur"; GroupDescript
 
 [Files]
 Source: "{#MyPublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Talep Pro masaüstü/başlat menüsü kısayolu için TP ikonu (exe gömülü ikon yedek)
+Source: "..\..\TalepPro\Assets\app.ico"; DestDir: "{app}"; DestName: "TalepPro.ico"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{#MyTalepProName}"; Filename: "{app}\{#MyTalepProExeName}"; IconFilename: "{app}\TalepPro.ico"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyTalepProName}"; Filename: "{app}\{#MyTalepProExeName}"; IconFilename: "{app}\TalepPro.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyTalepProExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyTalepProName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent unchecked
 
 [UninstallDelete]
 ; Kurulum kaldırıldığında giriş hatırlatma dosyalarını sil (AppData — Program Files dışında)

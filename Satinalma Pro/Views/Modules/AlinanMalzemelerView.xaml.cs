@@ -21,7 +21,6 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
     private readonly FiltreZamanlayici _filtreZamanlayici;
     private readonly ModulSayfalamaYoneticisi<AlinanMalzemeKaydi> _sayfalama = new();
     private bool _hesaplamaBekliyor;
-    private bool _filtreAcik;
     private bool _tamEkran;
     private bool _yogunGorunum;
     private bool _arayuzHazir;
@@ -101,46 +100,50 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
     {
         KpiPanel.Children.Clear();
         _kpiMetinleri.Clear();
-        var kpiler = new (string Baslik, string Deger, string Alt, string Renk, string Ikon)[]
+        var kpiler = new (string Baslik, string Deger, string Alt)[]
         {
-            ("Toplam Kayıt", "0", "Modüldeki tüm kayıtlar", "#2563EB", "\uE8F1"),
-            ("Toplam Tutar", "₺0", "Genel toplam tutar", "#8B5CF6", "\uE8C7"),
-            ("Aylık Ortalama Tutar", "₺0", "Ay bazında ortalama", "#16A34A", "\uE787"),
-            ("Filtreye Göre Tutar", "₺0", "Aktif filtre sonucu", "#0891B2", "\uE71C"),
-            ("En Çok Alınan Malzeme", "—", "Kalem sayısına göre", "#F59E0B", "\uE7BF")
+            ("Toplam Kayıt", "0", "Modüldeki tüm kayıtlar"),
+            ("Toplam Tutar", "₺0", "Genel toplam tutar"),
+            ("Aylık Ortalama Tutar", "₺0", "Ay bazında ortalama"),
+            ("Filtreye Göre Tutar", "₺0", "Aktif filtre sonucu"),
+            ("En Çok Alınan Malzeme", "—", "Kalem sayısına göre")
         };
+
+        var labelBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#6A6D70")!);
+        var hintBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#89919A")!);
+        var valueBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#32363A")!);
 
         foreach (var kpi in kpiler)
         {
-            var renk = (Color)ColorConverter.ConvertFromString(kpi.Renk)!;
             var degerTb = new TextBlock
             {
                 Text = kpi.Deger,
-                Style = (Style)FindResource("ErpKpiValue"),
+                FontSize = 16,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = valueBrush,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 ToolTip = kpi.Deger
             };
-            var kart = new Border { Style = (Style)FindResource("ErpKpiCard") };
+            var kart = new Border { Style = (Style)FindResource("SapMetricItem") };
             kart.Child = new StackPanel
             {
                 Children =
                 {
-                    new Border
+                    new TextBlock
                     {
-                        Width = 36, Height = 36, CornerRadius = new CornerRadius(10),
-                        Background = new SolidColorBrush(renk) { Opacity = 0.12 },
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        Child = new TextBlock
-                        {
-                            Text = kpi.Ikon, FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 16,
-                            Foreground = new SolidColorBrush(renk),
-                            HorizontalAlignment = HorizontalAlignment.Center,
-                            VerticalAlignment = VerticalAlignment.Center
-                        }
+                        Text = kpi.Baslik,
+                        FontSize = 10,
+                        FontWeight = FontWeights.SemiBold,
+                        Foreground = labelBrush
                     },
-                    new TextBlock { Text = kpi.Baslik, Style = (Style)FindResource("ErpKpiLabel"), Margin = new Thickness(0, 10, 0, 0) },
                     degerTb,
-                    new TextBlock { Text = kpi.Alt, Style = (Style)FindResource("ErpKpiHint") }
+                    new TextBlock
+                    {
+                        Text = kpi.Alt,
+                        FontSize = 10,
+                        Foreground = hintBrush,
+                        Margin = new Thickness(0, 2, 0, 0)
+                    }
                 }
             };
             _kpiMetinleri[kpi.Baslik] = degerTb;
@@ -154,8 +157,7 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
             tb.Text = deger;
     }
 
-    private void FiltreToggle_Click(object sender, RoutedEventArgs e) =>
-        ErpDataGridYardimcisi.FiltrePaneliToggle(FilterIcerik, BtnFiltreToggle, ref _filtreAcik);
+    private void FiltreToggle_Click(object sender, RoutedEventArgs e) { }
 
     private void FiltreYenile_Click(object sender, RoutedEventArgs e) => FiltreYenile();
 
@@ -177,9 +179,6 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
 
     private void FiltreOdak_Click(object sender, RoutedEventArgs e)
     {
-        if (!_filtreAcik)
-            ErpDataGridYardimcisi.FiltrePaneliToggle(FilterIcerik, BtnFiltreToggle, ref _filtreAcik);
-
         ErpDataGridYardimcisi.FiltrePanelineOdakla(FiltreBaslikKart);
         TxtArama.Focus();
     }
@@ -187,8 +186,15 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
     private void YogunGorunum_Click(object sender, RoutedEventArgs e) =>
         ErpDataGridYardimcisi.YogunGorunumToggle(MalzemeGrid, ref _yogunGorunum);
 
-    private void TamEkran_Click(object sender, RoutedEventArgs e) =>
-        ErpDataGridYardimcisi.TabloTamEkranToggle(AnaIcerikGrid, TabloKart, 4, [0, 1, 2, 3], ref _tamEkran, BtnTamEkran);
+    private void TamEkran_Click(object sender, RoutedEventArgs e)
+    {
+        _tamEkran = !_tamEkran;
+        AnaIcerikGrid.RowDefinitions[0].Height = _tamEkran ? new GridLength(0) : GridLength.Auto;
+        AnaIcerikGrid.RowDefinitions[1].Height = _tamEkran ? new GridLength(0) : GridLength.Auto;
+        FiltreBaslikKart.Visibility = _tamEkran ? Visibility.Collapsed : Visibility.Visible;
+        if (BtnTamEkran is not null)
+            BtnTamEkran.Content = _tamEkran ? "Küçült" : "Tam Ekran";
+    }
 
     private void SayfaBoyutuDegisti(object sender, SelectionChangedEventArgs e)
     {

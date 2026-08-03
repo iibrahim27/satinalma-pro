@@ -129,6 +129,7 @@ public static class AnaSayfaVeriServisi
         var toplamHarcama = buAyAlimlar.Sum(a => (double)a.ToplamTutar);
         var oncekiHarcama = oncekiAyAlimlar.Sum(a => (double)a.ToplamTutar);
         var onayBekleyen = sorgu.OnayBekleyenTalepler().Count();
+        var malKabulBekleyen = sorgu.MalKabulBekleyenSayisi();
         var kritikStok = kaynak.Stok.Count(s => s.DurumMetin is "Kritik" or "Tükendi");
         var stokDegeri = kaynak.Stok.Sum(s => (double)s.ToplamDeger);
         var oncekiStokDegeri = stokDegeri * 0.97;
@@ -164,14 +165,14 @@ public static class AnaSayfaVeriServisi
                 },
                 new AnaSayfaIstatistik
                 {
-                    Baslik = "Onay Bekleyen",
-                    Deger = onayBekleyen.ToString("N0", Tr),
-                    AltMetin = "geçen aya göre",
-                    TrendMetin = onayBekleyen > 0 ? TrendYuzde(onayBekleyen, Math.Max(1, onayBekleyen - 1)) : "▲ 0%",
-                    TrendPozitif = onayBekleyen == 0,
+                    Baslik = "Mal Kabul Bekleyen",
+                    Deger = malKabulBekleyen.ToString("N0", Tr),
+                    AltMetin = "yoldaki sipariş",
+                    TrendMetin = malKabulBekleyen > 0 ? "▼ işlem" : "▲ 0%",
+                    TrendPozitif = malKabulBekleyen == 0,
                     Icon = DashboardIconKind.ClipboardList,
                     IconRenkHex = AppTheme.PurpleHex,
-                    Sparkline = MiniSeri(onayBekleyen)
+                    Sparkline = MiniSeri(malKabulBekleyen)
                 },
                 new AnaSayfaIstatistik
                 {
@@ -632,10 +633,10 @@ public static class AnaSayfaVeriServisi
     private static List<AnaSayfaHatirlatma> HatirlatmalariOlustur(DashboardVeriKaynagi kaynak, int onayBekleyen, int kritikStok)
     {
         var liste = new List<AnaSayfaHatirlatma>();
-        if (onayBekleyen > 0)
-            liste.Add(new AnaSayfaHatirlatma { Metin = $"{onayBekleyen} onay bekleyen talep var", RenkHex = AppTheme.WarningHex });
+        // Talep Pro ayrı uygulama; masaüstü özetinde stok/operasyon odaklı hatırlat
         if (kritikStok > 0)
             liste.Add(new AnaSayfaHatirlatma { Metin = $"{kritikStok} kritik stok kalemi", RenkHex = AppTheme.DangerHex });
+        _ = onayBekleyen;
         var dusuk = kaynak.Stok.Count(s => s.DurumMetin == "Kritik");
         if (dusuk > 0)
             liste.Add(new AnaSayfaHatirlatma { Metin = $"{dusuk} malzeme minimum stok altında", RenkHex = AppTheme.PrimaryHex });

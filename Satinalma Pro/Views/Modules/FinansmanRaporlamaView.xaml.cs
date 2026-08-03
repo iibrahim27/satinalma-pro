@@ -151,10 +151,16 @@ public partial class FinansmanRaporlamaView : UserControl, IModulKlavyeKisayolla
         OzetPanel.Children.Add(OzetKarti("Açık Vade", _ozet.VadeKayitSayisi, "#8B5CF6", para: false));
     }
 
-    private static Border OzetKarti(string baslik, decimal tutar, string renkHex, bool para = true)
+    private static Border OzetKarti(string baslik, decimal tutar, string _, bool para = true)
     {
-        var renk = (Color)ColorConverter.ConvertFromString(renkHex)!;
-        var border = new Border { Style = (Style)Application.Current.FindResource("StatChipStyle"), MinWidth = 140 };
+        var border = new Border
+        {
+            Style = (Style)Application.Current.FindResource("SapMetricItem"),
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            Margin = new Thickness(0, 0, 0, 4),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            MinWidth = 0
+        };
         var panel = new StackPanel();
 
         panel.Children.Add(new TextBlock
@@ -168,7 +174,7 @@ public partial class FinansmanRaporlamaView : UserControl, IModulKlavyeKisayolla
             Text = para ? $"₺{tutar:N0}" : tutar.ToString("N0", CultureInfo.CurrentCulture),
             FontSize = para ? 20 : 22,
             FontWeight = FontWeights.SemiBold,
-            Foreground = new SolidColorBrush(renk),
+            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#32363A")!),
             Margin = new Thickness(0, 2, 0, 0)
         });
 

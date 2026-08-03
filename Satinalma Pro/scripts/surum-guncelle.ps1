@@ -29,6 +29,18 @@ $csprojIcerik = $csprojIcerik -replace '(<InformationalVersion>)[^<]+(</Informat
 Set-Content $csproj -Value $csprojIcerik -Encoding UTF8 -NoNewline
 Write-Host "  - SatinalmaPro.csproj"
 
+# TalepPro.csproj (Pro ile ayni surum / kurulum paketi)
+$talepCsproj = Join-Path (Split-Path $projeKok -Parent) "TalepPro\TalepPro.csproj"
+if (Test-Path $talepCsproj) {
+    $talepIcerik = Get-Content $talepCsproj -Raw -Encoding UTF8
+    $talepIcerik = $talepIcerik -replace '(<Version>)[^<]+(</Version>)', "`${1}$Version`${2}"
+    $talepIcerik = $talepIcerik -replace '(<AssemblyVersion>)[^<]+(</AssemblyVersion>)', "`${1}$assemblySurum`${2}"
+    $talepIcerik = $talepIcerik -replace '(<FileVersion>)[^<]+(</FileVersion>)', "`${1}$assemblySurum`${2}"
+    $talepIcerik = $talepIcerik -replace '(<InformationalVersion>)[^<]+(</InformationalVersion>)', "`${1}$Version`${2}"
+    Set-Content $talepCsproj -Value $talepIcerik -Encoding UTF8 -NoNewline
+    Write-Host "  - TalepPro\TalepPro.csproj"
+}
+
 # installer/SatinalmaPro.iss
 $iss = Join-Path $projeKok "installer\SatinalmaPro.iss"
 $issIcerik = Get-Content $iss -Raw -Encoding UTF8

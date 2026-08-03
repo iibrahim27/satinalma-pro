@@ -83,7 +83,7 @@ public static class ModuleCatalog
         {
             Number = "08",
             Title = "Satınalma",
-            Subtitle = "ERP operasyon merkezi — talep, teklif, sipariş, depo",
+            Subtitle = "Talep Pro (TP) — ayrı uygulama · talep, teklif, sipariş",
             IconGlyph = "\uE719",
             GradientStart = Color.FromRgb(249, 115, 22),
             GradientEnd = Color.FromRgb(251, 146, 60)

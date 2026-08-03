@@ -24,6 +24,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Background = AppTheme.BackgroundBrush;
+        Sidebar.Background = AppTheme.CardBrush;
         KisayollariBagla();
         Sidebar.NavigasyonSecildi += Sidebar_NavigasyonSecildi;
         Sidebar.CikisTiklandi += (_, _) => Cikis_Click(this, new RoutedEventArgs());
@@ -57,12 +59,8 @@ public partial class MainWindow : Window
         BildirimRozetiniGuncelle();
     }
 
-    private void YonetimTeklifOnay_Click(object sender, RoutedEventArgs e)
-    {
-        OnModuleSelected("Satınalma");
-        if (MainRegion.Content is SatinalmaShellView shell)
-            shell.BildirimdenAc(null, 0, "yonetim-teklif-girilen");
-    }
+    private void YonetimTeklifOnay_Click(object sender, RoutedEventArgs e) =>
+        UygulamaKoordinasyonu.TalepProAc(null, "yonetim-teklif-girilen");
 
     private void KisayollariBagla()
     {
@@ -91,13 +89,7 @@ public partial class MainWindow : Window
             ShowHome();
     }
 
-    private bool AktifSatinalmaEscapeIsle()
-    {
-        if (MainRegion.Content is SatinalmaShellView shell)
-            return shell.EscapeTusunuIsle();
-
-        return false;
-    }
+    private bool AktifSatinalmaEscapeIsle() => false;
 
     public void AnaSayfayaDon()
     {
@@ -240,6 +232,10 @@ public partial class MainWindow : Window
 
     private void OnActivated(object? sender, EventArgs e)
     {
+        var bekleyen = UygulamaKoordinasyonu.BekleyenProModulunuAl();
+        if (!string.IsNullOrWhiteSpace(bekleyen))
+            OnModuleSelected(bekleyen);
+
         if (!OturumYoneticisi.GirisYapildi)
             return;
 
@@ -279,7 +275,7 @@ public partial class MainWindow : Window
         Title = UygulamaBilgisi.Ad;
         AltBilgiyiGuncelle(modulde: false);
         Sidebar.AktifOgeyiAyarla("Ana Sayfa");
-        Header.BreadcrumbAyarla("Dashboard");
+        Header.BreadcrumbAyarla("Workspace");
 
         _homeView ??= new HomeView();
         _homeView.ModuleSelected -= OnModuleSelected;
@@ -316,12 +312,7 @@ public partial class MainWindow : Window
             ? $"{temel}  ·  Esc / Ctrl+H: Ana Sayfa  ·  F5: Yenile"
             : temel;
 
-        var rol = OturumYoneticisi.AktifKullanici?.Rol;
-        BtnYonetimTeklifOnay.Visibility = OturumYoneticisi.GirisYapildi && OturumYoneticisi.BulutAktif &&
-            (Models.KullaniciRolleri.AdminMi(rol)
-             || Models.KullaniciRolleri.Normalize(rol) is Models.KullaniciRolleri.Yonetim or Models.KullaniciRolleri.Satinalma)
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        BtnYonetimTeklifOnay.Visibility = Visibility.Collapsed;
 
         BildirimRozetiniGuncelle();
     }
@@ -350,12 +341,7 @@ public partial class MainWindow : Window
 
         var sayi = BildirimYoneticisi.OkunmamisSayisi;
         Header.BildirimRozetiniGuncelle(sayi);
-        var rol = OturumYoneticisi.AktifKullanici?.Rol;
-        BtnYonetimTeklifOnay.Visibility = OturumYoneticisi.GirisYapildi && OturumYoneticisi.BulutAktif &&
-            (Models.KullaniciRolleri.AdminMi(rol)
-             || Models.KullaniciRolleri.Normalize(rol) is Models.KullaniciRolleri.Yonetim or Models.KullaniciRolleri.Satinalma)
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        BtnYonetimTeklifOnay.Visibility = Visibility.Collapsed;
     }
 
     private void ModulBasliginiGoster(string modulAdi)
@@ -370,7 +356,8 @@ public partial class MainWindow : Window
         ModulIkonZemin.Background = AppTheme.TintBrush(renk, 40);
 
         ModulBaslikPanel.Visibility = modulAdi == "Satınalma" ? Visibility.Collapsed : Visibility.Visible;
-        Header.Visibility = Visibility.Collapsed;
+        // Üst shell her zaman görünür (mockup)
+        Header.Visibility = Visibility.Visible;
         Header.BreadcrumbAyarla(modulAdi);
         Sidebar.AktifOgeyiAyarla(modulAdi);
         Title = $"{UygulamaBilgisi.Ad} — {modulAdi}";
@@ -385,6 +372,13 @@ public partial class MainWindow : Window
         {
             MessageBox.Show("Bu modüle erişim yetkiniz yok.", UygulamaBilgisi.Ad,
                 MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        // Satınalma tamamen Talep Pro uygulamasına taşındı
+        if (moduleTitle.Equals("Satınalma", StringComparison.OrdinalIgnoreCase))
+        {
+            UygulamaKoordinasyonu.TalepProAc();
             return;
         }
 
@@ -403,7 +397,6 @@ public partial class MainWindow : Window
                     "Çimento" => new CimentoView(),
                     "Akaryakıt Takip" => new AkaryakitView(),
                     "Araç Filo Takip" => new AracFiloView(),
-                    "Satınalma" => OlusturSatinalmaShell(),
                     "Raporlamalar" => new RaporlamalarView(),
                     "Finansman Raporlama" => new FinansmanRaporlamaView(),
                     "Ayarlar" => new AyarlarView(),
@@ -429,11 +422,15 @@ public partial class MainWindow : Window
         if (!KullaniciYetkileri.ModulGorebilir(hedef.Modul))
             return;
 
+        if (hedef.Modul.Equals("Satınalma", StringComparison.OrdinalIgnoreCase))
+        {
+            UygulamaKoordinasyonu.TalepProAc(hedef.TalepId, hedef.Sekme);
+            return;
+        }
+
         OnModuleSelected(hedef.Modul);
 
-        if (MainRegion.Content is SatinalmaShellView shell)
-            shell.BildirimdenAc(hedef.TalepId, hedef.Adim, hedef.Sekme);
-        else if (MainRegion.Content is StokYonetimiView stokView)
+        if (MainRegion.Content is StokYonetimiView stokView)
             stokView.BildirimdenAc(hedef.Sekme);
     }
 
@@ -442,21 +439,7 @@ public partial class MainWindow : Window
         if (!KullaniciYetkileri.ModulGorebilir("Satınalma"))
             return;
 
-        OnModuleSelected("Satınalma");
-
-        if (MainRegion.Content is SatinalmaShellView shell)
-            shell.BildirimdenAc(talepId, 0, sekme);
-    }
-
-    private static SatinalmaShellView OlusturSatinalmaShell()
-    {
-        var shell = new SatinalmaShellView();
-        shell.StokModuluIstendi += () =>
-        {
-            if (Application.Current.MainWindow is MainWindow ana)
-                ana.ModulAc("Stok Yönetimi");
-        };
-        return shell;
+        UygulamaKoordinasyonu.TalepProAc(talepId, sekme);
     }
 }
 

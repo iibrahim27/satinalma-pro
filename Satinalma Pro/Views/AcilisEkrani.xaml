@@ -13,14 +13,14 @@
         ResizeMode="NoResize">
 
   <Border x:Name="AnaCerceve"
-          Background="White"
-          CornerRadius="20"
-          BorderBrush="{StaticResource LineBrush}"
+          Background="#0F172A"
+          CornerRadius="8"
+          BorderBrush="#243044"
           BorderThickness="1"
           Padding="32,28"
           PreviewMouseLeftButtonDown="PencereSurukle_Preview">
     <Border.Effect>
-      <DropShadowEffect BlurRadius="32" ShadowDepth="0" Opacity="0.12" Color="#000000" />
+      <DropShadowEffect BlurRadius="32" ShadowDepth="0" Opacity="0.35" Color="#000000" />
     </Border.Effect>
     <Grid>
       <Button x:Name="BtnKapat"
@@ -32,7 +32,7 @@
               Margin="0,-8,-8,0"
               Background="Transparent"
               BorderThickness="0"
-              Foreground="{StaticResource InkMutedBrush}"
+              Foreground="#94A3B8"
               FontSize="14"
               Cursor="Hand"
               ToolTip="Kapat"
@@ -45,66 +45,61 @@
           <controls:UygulamaIkonAnimasyonu IkonBoyutu="96" GirisModu="True" HorizontalAlignment="Center" Margin="0,0,0,20" />
 
           <TextBlock Text="Satınalma Pro"
-                     FontSize="24"
-                     FontWeight="SemiBold"
-                     Foreground="{StaticResource InkBrush}"
-                     HorizontalAlignment="Center" />
+                     FontSize="26"
+                     FontWeight="Bold"
+                     Foreground="White"
+                     HorizontalAlignment="Center"
+                     Margin="0,0,0,8" />
           <TextBlock Text="Kurumsal Satınalma Yönetim Sistemi"
                      FontSize="13"
-                     Foreground="{StaticResource InkMutedBrush}"
+                     Foreground="#64748B"
                      HorizontalAlignment="Center"
                      TextAlignment="Center"
-                     Margin="0,6,0,24" />
+                     Margin="0,0,0,24" />
 
           <StackPanel Margin="0,0,0,24">
-            <TextBlock Text="✓  Kurumsal satınalma süreçleri" FontSize="13" Foreground="{StaticResource InkBrush}" Margin="0,0,0,10" />
-            <TextBlock Text="✓  Teklif ve onay yönetimi" FontSize="13" Foreground="{StaticResource InkBrush}" Margin="0,0,0,10" />
-            <TextBlock Text="✓  Stok ve mal kabul takibi" FontSize="13" Foreground="{StaticResource InkBrush}" Margin="0,0,0,10" />
-            <TextBlock Text="✓  Anlık bildirimler" FontSize="13" Foreground="{StaticResource InkBrush}" />
+            <TextBlock Text="✓  Kurumsal satınalma süreçleri" FontSize="13" Foreground="#CBD5E1" Margin="0,0,0,10" />
+            <TextBlock Text="✓  Teklif ve onay yönetimi" FontSize="13" Foreground="#CBD5E1" Margin="0,0,0,10" />
+            <TextBlock Text="✓  Stok ve mal kabul takibi" FontSize="13" Foreground="#CBD5E1" Margin="0,0,0,10" />
+            <TextBlock Text="✓  Anlık bildirimler" FontSize="13" Foreground="#CBD5E1" />
           </StackPanel>
 
           <TextBlock x:Name="TxtBaslik"
                      Text="Uygulama yükleniyor..."
                      FontSize="15"
                      FontWeight="SemiBold"
-                     Foreground="{StaticResource InkBrush}"
+                     Foreground="White"
                      HorizontalAlignment="Center"
                      Margin="0,0,0,6" />
 
           <TextBlock x:Name="TxtDurum"
                      Text="Veriler alınıyor..."
                      FontSize="13"
-                     Foreground="{StaticResource InkMutedBrush}"
+                     Foreground="#94A3B8"
                      HorizontalAlignment="Center"
                      TextAlignment="Center"
                      Margin="0,0,0,18" />
 
           <Grid x:Name="PrgTrack" Margin="0,0,0,6">
-            <Border Height="10" CornerRadius="5" Background="#F1F3F6" />
+            <Border Height="10" CornerRadius="4" Background="#1A2740" />
             <Border x:Name="PrgDolgu"
                     Height="10"
-                    CornerRadius="5"
+                    CornerRadius="4"
                     HorizontalAlignment="Left"
-                    Width="0">
-              <Border.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                  <GradientStop Color="#2563EB" Offset="0" />
-                  <GradientStop Color="#1D4ED8" Offset="1" />
-                </LinearGradientBrush>
-              </Border.Background>
-            </Border>
+                    Width="0"
+                    Background="#3B82F6" />
           </Grid>
 
           <TextBlock x:Name="TxtYuzde"
                      Text="0%"
                      FontSize="11"
-                     Foreground="{StaticResource InkMutedBrush}"
+                     Foreground="#94A3B8"
                      HorizontalAlignment="Right"
                      Margin="0,0,0,16" />
 
           <TextBlock x:Name="TxtVersiyon"
                      FontSize="11"
-                     Foreground="{StaticResource InkMutedBrush}"
+                     Foreground="#64748B"
                      HorizontalAlignment="Center" />
         </StackPanel>
       </ScrollViewer>

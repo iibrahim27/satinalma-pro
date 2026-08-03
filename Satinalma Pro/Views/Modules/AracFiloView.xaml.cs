@@ -440,7 +440,7 @@ public partial class AracFiloView : UserControl, IModulKlavyeKisayollari
         ErpModulTabloYardimcisi.Yogun(FiloGrid, ref _yogunGorunum);
 
     private void TamEkran_Click(object sender, RoutedEventArgs e) =>
-        ErpModulTabloYardimcisi.TamEkran(AnaIcerikGrid, TabloKart, 4, [0, 1, 2, 3], ref _tamEkran, BtnTamEkran);
+        ErpModulTabloYardimcisi.TamEkran(AnaIcerikGrid, TabloKart, 2, [0, 1], ref _tamEkran, BtnTamEkran);
 
     private void SayfaBoyutuDegisti(object sender, SelectionChangedEventArgs e)
     {

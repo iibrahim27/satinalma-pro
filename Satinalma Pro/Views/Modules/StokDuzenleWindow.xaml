@@ -87,7 +87,7 @@
             <TextBox x:Name="TxtToplamDeger"
                      Style="{StaticResource FilterBoxStyle}"
                      IsReadOnly="True"
-                     Background="#F8FAFC" />
+                     Background="#EEF2F5" />
           </StackPanel>
         </Grid>
 

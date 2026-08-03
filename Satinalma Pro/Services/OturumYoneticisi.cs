@@ -192,11 +192,13 @@ public static class OturumYoneticisi
         {
             profil = await Firestore.KullaniciOkuAsync(Auth.Uid, iptal);
         }
-        catch (Exception ex) when (KotaHatasiMi(ex))
+        catch (Exception ex) when (KotaHatasiMi(ex) || AgHatasiMi(ex))
         {
             profil = ProfilOnbellegindenOku();
             if (profil is null)
             {
+                if (AgHatasiMi(ex))
+                    return false;
                 throw new InvalidOperationException(
                     "Firebase okuma kotası doldu veya bağlantı kurulamadı. Birkaç dakika sonra tekrar deneyin.");
             }
@@ -247,6 +249,21 @@ public static class OturumYoneticisi
     private static bool KotaHatasiMi(Exception ex) =>
         ex.Message.Contains("quota", StringComparison.OrdinalIgnoreCase)
         || ex.Message.Contains("RESOURCE_EXHAUSTED", StringComparison.OrdinalIgnoreCase);
+
+    private static bool AgHatasiMi(Exception ex)
+    {
+        for (var e = ex; e is not null; e = e.InnerException!)
+        {
+            if (e is System.Net.Http.HttpRequestException or System.Net.Sockets.SocketException)
+                return true;
+            if (e.Message.Contains("ana bilgisayar yok", StringComparison.OrdinalIgnoreCase)
+                || e.Message.Contains("No such host", StringComparison.OrdinalIgnoreCase)
+                || e.Message.Contains("network", StringComparison.OrdinalIgnoreCase)
+                || e.Message.Contains("bağlantı", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
 
     private static void ProfilOnbellegineKaydet(KullaniciProfili profil)
     {

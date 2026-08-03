@@ -1,0 +1,22 @@
+<Application x:Class="TalepPro.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.modernwpf.com/2019"
+             ShutdownMode="OnMainWindowClose">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ui:ThemeResources RequestedTheme="Light" AccentColor="#4F46E5" />
+        <ui:XamlControlsResources />
+        <ResourceDictionary Source="pack://application:,,,/SatinalmaPro;component/Resources/Theme.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/SatinalmaPro;component/Resources/SapControls.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/SatinalmaPro;component/Resources/DashboardTheme.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/SatinalmaPro;component/Resources/SatinalmaModuleTheme.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/SatinalmaPro;component/Resources/AyarlarModuleTheme.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/SatinalmaPro;component/Resources/ErpModuleTheme.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/SatinalmaPro;component/Resources/LoginTheme.xaml" />
+        <ResourceDictionary Source="Resources/TalepProTheme.xaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+</Application>

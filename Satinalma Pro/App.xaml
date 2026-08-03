@@ -5,9 +5,10 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ui:ThemeResources RequestedTheme="Light" />
+                <ui:ThemeResources RequestedTheme="Light" AccentColor="#0A6ED1" />
                 <ui:XamlControlsResources />
                 <ResourceDictionary Source="Resources/Theme.xaml" />
+                <ResourceDictionary Source="Resources/SapControls.xaml" />
                 <ResourceDictionary Source="Resources/DashboardTheme.xaml" />
                 <ResourceDictionary Source="Resources/SatinalmaModuleTheme.xaml" />
                 <ResourceDictionary Source="Resources/AyarlarModuleTheme.xaml" />

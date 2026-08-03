@@ -102,7 +102,7 @@
       </DataGrid.Columns>
     </DataGrid>
 
-    <Border Grid.Row="3" Background="#FAFBFC" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+    <Border Grid.Row="3" Background="#EEF2F5" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
             CornerRadius="10" Padding="12,10" Margin="0,0,0,16">
       <Grid>
         <TextBlock x:Name="TxtKurBilgi" FontSize="11" Foreground="{StaticResource InkMutedBrush}" VerticalAlignment="Center" />

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
@@ -16,10 +17,16 @@ public partial class AppSidebarView : UserControl
         public required Button Button { get; init; }
         public required IconControl Icon { get; init; }
         public required TextBlock Metin { get; init; }
+        public required Border Shell { get; init; }
+        public required Border Serit { get; init; }
     }
 
-    private static readonly SolidColorBrush PasifIkonFircasi = new(Color.FromRgb(0x64, 0x74, 0x8B));
-    private static readonly SolidColorBrush PasifMetinFircasi = new(Color.FromRgb(0x1E, 0x29, 0x3B));
+    private static readonly SolidColorBrush PasifIkon = AppTheme.Brush("#627D98");
+    private static readonly SolidColorBrush PasifMetin = AppTheme.Brush("#102A43");
+    private static readonly SolidColorBrush AktifIkon = AppTheme.Brush("#0D7377");
+    private static readonly SolidColorBrush AktifMetin = AppTheme.Brush("#0D7377");
+    private static readonly SolidColorBrush AktifBg = AppTheme.Brush("#E0FCFF");
+    private static readonly SolidColorBrush HoverBg = AppTheme.Brush("#F0F4F8");
 
     private readonly Dictionary<string, NavOge> _navOgeleri = new(StringComparer.Ordinal);
     private string _aktif = "Ana Sayfa";
@@ -46,7 +53,6 @@ public partial class AppSidebarView : UserControl
             Dispatcher.Invoke(LogoGuncelle);
             return;
         }
-
         LogoGuncelle();
     }
 
@@ -54,14 +60,19 @@ public partial class AppSidebarView : UserControl
     {
         _aktif = baslik;
         foreach (var (anahtar, oge) in _navOgeleri)
-            NavOgeStiliniGuncelle(oge, anahtar == baslik);
+        {
+            var aktif = anahtar == baslik;
+            oge.Button.Tag = aktif ? "Active" : null;
+            Stil(oge, aktif);
+        }
     }
 
-    private static void NavOgeStiliniGuncelle(NavOge oge, bool aktif)
+    private static void Stil(NavOge oge, bool aktif)
     {
-        oge.Button.Tag = aktif ? "Active" : null;
-        oge.Icon.StrokeBrush = aktif ? Brushes.White : PasifIkonFircasi;
-        oge.Metin.Foreground = aktif ? Brushes.White : PasifMetinFircasi;
+        oge.Shell.Background = aktif ? AktifBg : Brushes.Transparent;
+        oge.Serit.Visibility = aktif ? Visibility.Visible : Visibility.Collapsed;
+        oge.Icon.StrokeBrush = aktif ? AktifIkon : PasifIkon;
+        oge.Metin.Foreground = aktif ? AktifMetin : PasifMetin;
         oge.Metin.FontWeight = aktif ? FontWeights.SemiBold : FontWeights.Normal;
     }
 
@@ -74,10 +85,12 @@ public partial class AppSidebarView : UserControl
 
         foreach (var modul in ModuleCatalog.All)
         {
+            // Satınalma / Talep Pro ayrı uygulamada — masaüstü menüsünde yok
+            if (modul.Title.Equals("Satınalma", StringComparison.OrdinalIgnoreCase))
+                continue;
             if (!KullaniciYetkileri.ModulGorebilir(modul.Title))
                 continue;
-
-            EkleNav(modul.Title, IconProvider.ModulIkonu(modul.Title), modul.Title);
+            EkleNav(IconProvider.ModulKisaAd(modul.Title), IconProvider.ModulIkonu(modul.Title), modul.Title);
         }
 
         KullaniciyiGuncelle();
@@ -95,13 +108,22 @@ public partial class AppSidebarView : UserControl
 
     private void EkleNav(string etiket, DashboardIconKind ikon, string? modulBaslik)
     {
-        var gorunen = modulBaslik is null ? etiket : IconProvider.ModulKisaAd(modulBaslik);
-        var btn = new Button { Style = (Style)FindResource("DashSidebarNavButtonStyle") };
-        btn.Click += (_, _) =>
+        var serit = new Border
         {
-            var hedef = modulBaslik ?? "Ana Sayfa";
-            AktifOgeyiAyarla(hedef);
-            NavigasyonSecildi?.Invoke(hedef);
+            Width = 3,
+            Background = AppTheme.Brush("#0D7377"),
+            CornerRadius = new CornerRadius(2),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(0, 6, 0, 6),
+            Visibility = Visibility.Collapsed
+        };
+
+        var shell = new Border
+        {
+            Background = Brushes.Transparent,
+            CornerRadius = new CornerRadius(10),
+            Padding = new Thickness(12, 10, 12, 10),
+            Margin = new Thickness(0, 0, 0, 4)
         };
 
         var grid = new Grid();
@@ -112,28 +134,78 @@ public partial class AppSidebarView : UserControl
         {
             Kind = ikon,
             IconSize = 18,
-            StrokeBrush = PasifIkonFircasi,
+            StrokeBrush = PasifIkon,
             Margin = new Thickness(4, 0, 12, 0),
             VerticalAlignment = VerticalAlignment.Center
         };
         Grid.SetColumn(icon, 0);
-        grid.Children.Add(icon);
 
         var metin = new TextBlock
         {
-            Text = gorunen,
+            Text = etiket,
             FontSize = 13,
-            FontWeight = FontWeights.Normal,
-            Foreground = PasifMetinFircasi,
-            VerticalAlignment = VerticalAlignment.Center
+            Foreground = PasifMetin,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis
         };
         Grid.SetColumn(metin, 1);
+
+        grid.Children.Add(icon);
         grid.Children.Add(metin);
 
-        btn.Content = grid;
+        var icerik = new Grid();
+        icerik.Children.Add(serit);
+        icerik.Children.Add(grid);
+        shell.Child = icerik;
+
+        var btn = new Button
+        {
+            Content = shell,
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(0),
+            Cursor = Cursors.Hand,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            ToolTip = etiket,
+            Focusable = false
+        };
+        btn.Template = CreateFlatTemplate();
+        btn.Click += (_, _) =>
+        {
+            var hedef = modulBaslik ?? "Ana Sayfa";
+            AktifOgeyiAyarla(hedef);
+            NavigasyonSecildi?.Invoke(hedef);
+        };
+        btn.MouseEnter += (_, _) =>
+        {
+            if (btn.Tag as string != "Active")
+                shell.Background = HoverBg;
+        };
+        btn.MouseLeave += (_, _) =>
+        {
+            if (btn.Tag as string != "Active")
+                shell.Background = Brushes.Transparent;
+        };
+
         var anahtar = modulBaslik ?? "Ana Sayfa";
-        _navOgeleri[anahtar] = new NavOge { Button = btn, Icon = icon, Metin = metin };
+        _navOgeleri[anahtar] = new NavOge
+        {
+            Button = btn,
+            Icon = icon,
+            Metin = metin,
+            Shell = shell,
+            Serit = serit
+        };
         NavPanel.Children.Add(btn);
+    }
+
+    private static ControlTemplate CreateFlatTemplate()
+    {
+        var t = new ControlTemplate(typeof(Button));
+        var f = new FrameworkElementFactory(typeof(ContentPresenter));
+        f.SetValue(HorizontalAlignmentProperty, HorizontalAlignment.Stretch);
+        t.VisualTree = f;
+        return t;
     }
 
     private void KullaniciyiGuncelle()
@@ -144,12 +216,13 @@ public partial class AppSidebarView : UserControl
             TxtKullaniciAd.Text = "Misafir";
             TxtKullaniciRol.Text = "Oturum yok";
             TxtAvatar.Text = "?";
+            BtnProfil.ToolTip = "Misafir";
             return;
         }
-
         TxtKullaniciAd.Text = k.AdSoyad;
         TxtKullaniciRol.Text = k.Rol;
         TxtAvatar.Text = BasHarfler(k.AdSoyad);
+        BtnProfil.ToolTip = $"{k.AdSoyad} · {k.Rol}";
     }
 
     private void LogoGuncelle()
@@ -160,7 +233,9 @@ public partial class AppSidebarView : UserControl
             yol = ayar.LogoDosyaYolu;
         var bitmap = LogoGorselYardimcisi.Yukle(yol) ?? LogoGorselYardimcisi.VarsayilanLogo();
         ImgLogo.Source = bitmap;
-        ImgLogo.Visibility = bitmap is null ? Visibility.Collapsed : Visibility.Visible;
+        var varMi = bitmap is not null;
+        ImgLogo.Visibility = varMi ? Visibility.Visible : Visibility.Collapsed;
+        LogoYedek.Visibility = varMi ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void BtnProfil_Click(object sender, RoutedEventArgs e)
@@ -172,30 +247,22 @@ public partial class AppSidebarView : UserControl
             ayarlar.Click += (_, _) => NavigasyonSecildi?.Invoke("Ayarlar");
             menu.Items.Add(ayarlar);
         }
-
         if (OturumYoneticisi.BulutAktif && OturumYoneticisi.GirisYapildi)
         {
             var cikis = new MenuItem { Header = "Çıkış Yap" };
             cikis.Click += (_, _) => CikisTiklandi?.Invoke(this, EventArgs.Empty);
             menu.Items.Add(cikis);
         }
-
-        if (menu.Items.Count == 0)
-            return;
-
+        if (menu.Items.Count == 0) return;
         menu.PlacementTarget = BtnProfil;
         menu.IsOpen = true;
     }
 
     private static string BasHarfler(string ad)
     {
-        if (string.IsNullOrWhiteSpace(ad))
-            return "?";
-
-        var parcalar = ad.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parcalar.Length >= 2)
-            return $"{char.ToUpper(parcalar[0][0])}{char.ToUpper(parcalar[^1][0])}";
-
+        if (string.IsNullOrWhiteSpace(ad)) return "?";
+        var p = ad.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (p.Length >= 2) return $"{char.ToUpper(p[0][0])}{char.ToUpper(p[^1][0])}";
         return char.ToUpper(ad[0]).ToString();
     }
 }

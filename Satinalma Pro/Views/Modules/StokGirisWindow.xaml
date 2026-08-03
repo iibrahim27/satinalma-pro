@@ -84,7 +84,7 @@
               </StackPanel>
               <StackPanel Grid.Column="2">
                 <TextBlock Text="Malzeme" Style="{StaticResource ModuleFormLabelStyle}" />
-                <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" Background="White" CornerRadius="4" Padding="2,0" MinHeight="34">
+                <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" Background="#FFFFFF" CornerRadius="4" Padding="2,0" MinHeight="34">
                   <controls:MalzemeOneriGiris x:Name="MalzemeGiris" />
                 </Border>
               </StackPanel>

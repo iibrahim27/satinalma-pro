@@ -1,0 +1,58 @@
+<UserControl x:Class="SatinalmaPro.Controls.Sap.SapListReportChrome"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root"
+             Background="#EEF2F5">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <Border Grid.Row="0" Style="{StaticResource SapObjectHeader}">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock x:Name="TxtBreadcrumb" FontSize="11" Foreground="#627D98" Margin="0,0,0,4" />
+          <TextBlock x:Name="TxtTitle" FontSize="20" FontWeight="SemiBold" Foreground="#102A43" />
+          <TextBlock x:Name="TxtSubtitle" FontSize="12" Foreground="#627D98" Margin="0,4,0,0"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+        <ContentPresenter Grid.Column="1"
+                          Content="{Binding TitleActions, ElementName=Root}"
+                          VerticalAlignment="Center" Margin="16,0,0,0" />
+      </Grid>
+    </Border>
+
+    <Border Grid.Row="1" Style="{StaticResource SapCommandBar}"
+            Visibility="{Binding CommandBarVisibility, ElementName=Root}">
+      <ContentPresenter Content="{Binding CommandBar, ElementName=Root}" />
+    </Border>
+
+    <Border Grid.Row="2" Style="{StaticResource SapMetricStrip}"
+            Visibility="{Binding MetricStripVisibility, ElementName=Root}">
+      <ContentPresenter Content="{Binding MetricStrip, ElementName=Root}" />
+    </Border>
+
+    <Border Grid.Row="3" Style="{StaticResource SapFilterBar}"
+            Visibility="{Binding FilterBarVisibility, ElementName=Root}">
+      <ContentPresenter Content="{Binding FilterBar, ElementName=Root}" />
+    </Border>
+
+    <Border Grid.Row="4" Style="{StaticResource SapContentHost}">
+      <ContentPresenter Content="{Binding ContentHost, ElementName=Root}" />
+    </Border>
+
+    <Border Grid.Row="5" Style="{StaticResource SapFooterBar}"
+            Visibility="{Binding FooterVisibility, ElementName=Root}">
+      <ContentPresenter Content="{Binding Footer, ElementName=Root}" />
+    </Border>
+  </Grid>
+</UserControl>

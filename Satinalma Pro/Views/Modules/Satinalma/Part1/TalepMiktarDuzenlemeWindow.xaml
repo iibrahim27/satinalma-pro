@@ -18,7 +18,7 @@
                  Foreground="{StaticResource DashTextSecondaryBrush}" />
     </StackPanel>
 
-    <Border Grid.Row="1" Background="White" BorderBrush="{StaticResource DashBorderBrush}"
+    <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="{StaticResource DashBorderBrush}"
             BorderThickness="1" CornerRadius="10">
       <DataGrid x:Name="KalemTablosu" Style="{StaticResource SatModDataGrid}"
                 AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"

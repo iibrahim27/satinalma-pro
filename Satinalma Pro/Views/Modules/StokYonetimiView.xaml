@@ -3,28 +3,29 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.modernwpf.com/2019"
              xmlns:controls="clr-namespace:SatinalmaPro.Views.Controls"
-             Background="{StaticResource ErpBgBrush}">
+             Background="#EEF2F5">
   <UserControl.Resources>
     <Style x:Key="StokNavActiveStyle" TargetType="Button" BasedOn="{StaticResource ErpNavPillActive}" />
   </UserControl.Resources>
 
-  <Grid Margin="24,20,24,20">
+  <Grid x:Name="AnaIcerikGrid" Margin="20,12,20,16">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" MinHeight="400" />
     </Grid.RowDefinitions>
 
-    <!-- Üst bar -->
-    <Grid Grid.Row="0" Margin="0,0,0,20">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="Auto" />
-      </Grid.ColumnDefinitions>
-      <StackPanel VerticalAlignment="Center">
-        <TextBlock Text="Stok Yönetimi" Style="{StaticResource ErpPageTitle}" />
-        <TextBlock Text="Ana Sayfa  ›  Stok Yönetimi" Style="{StaticResource ErpBreadcrumb}" Margin="0,6,0,0" />
-        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-          <Border Background="White" CornerRadius="12" Padding="4" BorderBrush="{StaticResource ErpCardBorderBrush}" BorderThickness="1">
+    <Border Grid.Row="0" Background="#FFFFFF" CornerRadius="16" BorderBrush="#D9E2EC" BorderThickness="1"
+            Padding="22,16" Margin="0,0,0,12">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+          <TextBlock Text="STOK" FontSize="11" FontWeight="Bold" Foreground="#0D7377" />
+          <TextBlock Text="Stok Yönetimi" FontSize="22" FontWeight="SemiBold" Foreground="#102A43" Margin="0,4,0,0" />
+          <Border Background="#EEF2F5" CornerRadius="10" Padding="4" BorderBrush="#D9E2EC" BorderThickness="1" Margin="0,10,0,0">
             <StackPanel Orientation="Horizontal">
               <Button x:Name="BtnNavDurum" Style="{StaticResource StokNavActiveStyle}" Content="Stok Durumu" Click="NavDurum_Click" />
               <Button x:Name="BtnNavHareket" Style="{StaticResource ErpNavPill}" Content="Stok Hareketleri" Click="NavHareket_Click" />
@@ -32,104 +33,100 @@
             </StackPanel>
           </Border>
         </StackPanel>
-      </StackPanel>
-      <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top">
-        <Button x:Name="BtnDepoTopluGiris" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,8" Padding="14,9" Click="DepoTopluGiris_Click">
-          <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,8,0" />
-            <TextBlock Text="Depo Stok Girişi" />
-          </StackPanel>
-        </Button>
-        <Button x:Name="BtnStokGiris" Style="{StaticResource PrimaryToolbarButtonStyle}" Margin="0,0,8,8" Padding="14,9" Click="StokGiris_Click">
-          <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,8,0" />
-            <TextBlock Text="Stok Girişi" />
-          </StackPanel>
-        </Button>
-        <Button x:Name="BtnStokCikis" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,8,8" Padding="14,9" Click="StokCikis_Click">
-          <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE738;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,8,0" />
-            <TextBlock Text="Stok Çıkışı" />
-          </StackPanel>
-        </Button>
-        <Button Style="{StaticResource ErpIconBtn}" Click="Yenile_Click" ToolTip="Yenile">
-          <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource DashTextSecondaryBrush}" />
-        </Button>
-      </WrapPanel>
-    </Grid>
+        <ScrollViewer x:Name="StokKpiScroll" Grid.Column="1" HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled" VerticalAlignment="Center" Margin="8,0">
+          <StackPanel x:Name="StokKpiPanel" Orientation="Horizontal" />
+        </ScrollViewer>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+          <Button x:Name="BtnDepoTopluGiris" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,6,0" Padding="12,8" Click="DepoTopluGiris_Click" Content="Depo Giriş" />
+          <Button x:Name="BtnStokGiris" Style="{StaticResource PrimaryToolbarButtonStyle}" Margin="0,0,6,0" Padding="12,8" Click="StokGiris_Click" Content="+ Stok Girişi" />
+          <Button x:Name="BtnStokCikis" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,6,0" Padding="12,8" Click="StokCikis_Click" Content="Stok Çıkışı" />
+          <Button Style="{StaticResource ErpIconBtn}" Click="Yenile_Click" ToolTip="Yenile">
+            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#102A43" />
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
 
     <!-- STOK DURUMU -->
     <Grid x:Name="PanelDurum" Grid.Row="1">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" MinHeight="280" />
+      </Grid.RowDefinitions>
+      <!-- Compatibility stubs for TamEkran column math (unused in Workspace 26 layout) -->
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="260" MinWidth="220" />
-        <ColumnDefinition Width="16" />
-        <ColumnDefinition Width="*" MinWidth="480" />
+        <ColumnDefinition Width="0" />
+        <ColumnDefinition Width="0" />
+        <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
 
-      <!-- Kategori ağacı -->
-      <Border x:Name="StokSolPanel" Grid.Column="0" Style="{StaticResource ErpTreePanel}">
+      <Border x:Name="StokFiltreKart" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+              Background="#FFFFFF" CornerRadius="14" BorderBrush="#D9E2EC" BorderThickness="1"
+              Padding="16,12" Margin="0,0,0,12">
         <Grid>
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-          </Grid.RowDefinitions>
-          <TextBlock Text="Kategori Ağacı" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource DashTextBrush}" Margin="0,0,0,12" />
-          <Grid Grid.Row="1" Margin="0,0,0,12">
-            <TextBox x:Name="TxtKategoriAra" Style="{StaticResource FilterBoxStyle}" Height="36"
-                     TextChanged="KategoriAraDegisti"
-                     ui:ControlHelper.PlaceholderText="Kategori ara..." />
-            <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                       Foreground="{StaticResource InkMutedBrush}" HorizontalAlignment="Right"
-                       VerticalAlignment="Center" Margin="0,0,10,0" IsHitTestVisible="False" />
-          </Grid>
-          <TreeView x:Name="KategoriAgaci" Grid.Row="2" BorderThickness="0" Background="Transparent"
-                    SelectedItemChanged="KategoriAgaci_SelectionChanged">
-            <TreeView.ItemContainerStyle>
-              <Style TargetType="TreeViewItem" BasedOn="{StaticResource ErpTreeItem}" />
-            </TreeView.ItemContainerStyle>
-          </TreeView>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Border x:Name="StokSolPanel" BorderBrush="#D9E2EC" BorderThickness="0,0,1,0" Padding="0,0,14,0" Margin="0,0,14,0">
+            <Grid>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" MinHeight="80" MaxHeight="140" />
+              </Grid.RowDefinitions>
+              <TextBlock Text="Kategori Ağacı" FontSize="13" FontWeight="SemiBold" Foreground="#102A43" Margin="0,0,0,8" />
+              <Grid Grid.Row="1" Margin="0,0,0,8">
+                <TextBox x:Name="TxtKategoriAra" Style="{StaticResource FilterBoxStyle}" Height="32"
+                         TextChanged="KategoriAraDegisti"
+                         ui:ControlHelper.PlaceholderText="Kategori ara..." />
+                <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                           Foreground="#627D98" HorizontalAlignment="Right"
+                           VerticalAlignment="Center" Margin="0,0,10,0" IsHitTestVisible="False" />
+              </Grid>
+              <TreeView x:Name="KategoriAgaci" Grid.Row="2" BorderThickness="0" Background="Transparent"
+                        SelectedItemChanged="KategoriAgaci_SelectionChanged">
+                <TreeView.ItemContainerStyle>
+                  <Style TargetType="TreeViewItem" BasedOn="{StaticResource ErpTreeItem}" />
+                </TreeView.ItemContainerStyle>
+              </TreeView>
+            </Grid>
+          </Border>
+          <StackPanel Grid.Column="1">
+            <TextBlock Text="Filtreler" FontSize="13" FontWeight="SemiBold" Foreground="#102A43" Margin="0,0,0,10" />
+            <WrapPanel>
+              <StackPanel Width="200" Margin="0,0,12,8">
+                <TextBlock Text="Ara" Style="{StaticResource SapFilterLabel}" />
+                <TextBox x:Name="TxtArama" Style="{StaticResource FilterBoxStyle}" Height="32" TextChanged="FiltreDegisti"
+                         ui:ControlHelper.PlaceholderText="Malzeme, depo..." />
+              </StackPanel>
+              <StackPanel Width="160" Margin="0,0,12,8">
+                <TextBlock Text="Kategori" Style="{StaticResource SapFilterLabel}" />
+                <ComboBox x:Name="CmbKategori" Style="{StaticResource FilterComboStyle}" Height="32" SelectionChanged="FiltreDegisti" />
+              </StackPanel>
+              <StackPanel Width="160" Margin="0,0,12,8">
+                <TextBlock Text="Depo / Saha" Style="{StaticResource SapFilterLabel}" />
+                <ComboBox x:Name="CmbDepoSaha" Style="{StaticResource FilterComboStyle}" Height="32" SelectionChanged="FiltreDegisti" />
+              </StackPanel>
+              <StackPanel Width="140" Margin="0,0,0,8">
+                <TextBlock Text="Durum" Style="{StaticResource SapFilterLabel}" />
+                <ComboBox x:Name="CmbDurum" Style="{StaticResource FilterComboStyle}" Height="32" SelectionChanged="FiltreDegisti" />
+              </StackPanel>
+            </WrapPanel>
+          </StackPanel>
         </Grid>
       </Border>
 
-      <!-- Ana içerik -->
-      <Grid x:Name="StokIcerikGrid" Grid.Column="2">
+      <Grid x:Name="StokIcerikGrid" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3">
         <Grid.RowDefinitions>
-          <RowDefinition Height="Auto" />
-          <RowDefinition Height="Auto" />
+          <RowDefinition Height="0" />
+          <RowDefinition Height="0" />
           <RowDefinition Height="*" MinHeight="280" />
         </Grid.RowDefinitions>
 
-        <ScrollViewer x:Name="StokKpiScroll" Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,16">
-          <StackPanel x:Name="StokKpiPanel" Orientation="Horizontal" />
-        </ScrollViewer>
-
-        <Border x:Name="StokFiltreKart" Grid.Row="1" Style="{StaticResource ErpCard}" Padding="16,14" Margin="0,0,0,16">
-          <Grid>
-            <TextBlock Text="Filtreleme" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <UniformGrid Columns="4" Margin="0,36,0,0">
-              <StackPanel Margin="0,0,12,0">
-                <TextBlock Text="Ara" Style="{StaticResource FilterLabelStyle}" />
-                <TextBox x:Name="TxtArama" Style="{StaticResource FilterBoxStyle}" Height="36" TextChanged="FiltreDegisti"
-                         ui:ControlHelper.PlaceholderText="Malzeme, depo, kategori..." />
-              </StackPanel>
-              <StackPanel Margin="0,0,12,0">
-                <TextBlock Text="Kategori" Style="{StaticResource FilterLabelStyle}" />
-                <ComboBox x:Name="CmbKategori" Style="{StaticResource FilterComboStyle}" Height="36" SelectionChanged="FiltreDegisti" />
-              </StackPanel>
-              <StackPanel Margin="0,0,12,0">
-                <TextBlock Text="Depo / Saha" Style="{StaticResource FilterLabelStyle}" />
-                <ComboBox x:Name="CmbDepoSaha" Style="{StaticResource FilterComboStyle}" Height="36" SelectionChanged="FiltreDegisti" />
-              </StackPanel>
-              <StackPanel>
-                <TextBlock Text="Durum" Style="{StaticResource FilterLabelStyle}" />
-                <ComboBox x:Name="CmbDurum" Style="{StaticResource FilterComboStyle}" Height="36" SelectionChanged="FiltreDegisti" />
-              </StackPanel>
-            </UniformGrid>
-          </Grid>
-        </Border>
-
-        <Border x:Name="StokTabloKart" Grid.Row="2" Style="{StaticResource ErpCard}" Padding="0">
+        <Border x:Name="StokTabloKart" Grid.Row="2" Background="#FFFFFF" CornerRadius="16"
+                BorderBrush="#D9E2EC" BorderThickness="1">
           <Grid>
             <Grid.RowDefinitions>
               <RowDefinition Height="Auto" />
@@ -137,9 +134,11 @@
               <RowDefinition Height="Auto" />
               <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <Border Grid.Row="0" Style="{StaticResource ErpTableToolbar}">
+            <Border Grid.Row="0" Background="#F0F4F8" BorderBrush="#D9E2EC" BorderThickness="0,0,0,1"
+                    CornerRadius="16,16,0,0" Padding="16,10">
               <Grid>
-                <TextBlock x:Name="TxtStokTabloBaslik" Text="Stok Listesi" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <TextBlock x:Name="TxtStokTabloBaslik" Text="Stok Listesi" FontSize="13" FontWeight="SemiBold"
+                           Foreground="#102A43" VerticalAlignment="Center" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                   <Button Style="{StaticResource ErpTableToolbarBtn}" Content="Kolonlar" Click="StokKolonlar_Click" />
                   <Button Style="{StaticResource ErpTableToolbarBtn}" Content="Grupla" Click="StokGrupla_Click" />
@@ -153,6 +152,7 @@
               </Grid>
             </Border>
             <DataGrid x:Name="StokGrid" Grid.Row="1" Style="{StaticResource ErpPremiumGrid}"
+                      BorderThickness="0"
                       CanUserReorderColumns="True"
                       LoadingRow="StokGrid_LoadingRow" SelectionChanged="StokGrid_SelectionChanged"
                       MouseDoubleClick="StokGrid_MouseDoubleClick">
@@ -212,7 +212,7 @@
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                       <Button Style="{StaticResource ErpIconBtn}" Tag="{Binding}" Click="StokSatirMenu_Click">
-                        <TextBlock Text="&#xE712;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource InkMutedBrush}" />
+                        <TextBlock Text="&#xE712;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#102A43" />
                       </Button>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
@@ -252,31 +252,43 @@
         <RowDefinition Height="Auto" />
         <RowDefinition Height="*" />
       </Grid.RowDefinitions>
-      <Border Grid.Row="0" Style="{StaticResource ErpCard}" Padding="16" Margin="0,0,0,16">
-        <UniformGrid Columns="4">
-          <StackPanel Margin="0,0,12,0">
-            <TextBlock Text="Ara" Style="{StaticResource FilterLabelStyle}" />
-            <TextBox x:Name="TxtHareketAra" Style="{StaticResource FilterBoxStyle}" Height="36"
-                     TextChanged="HareketFiltreDegisti" ui:ControlHelper.PlaceholderText="Malzeme, belge..." />
-          </StackPanel>
-          <StackPanel Margin="0,0,12,0">
-            <TextBlock Text="Hareket Tipi" Style="{StaticResource FilterLabelStyle}" />
-            <ComboBox x:Name="CmbHareketTip" Style="{StaticResource FilterComboStyle}" Height="36" SelectionChanged="HareketFiltreDegisti" />
-          </StackPanel>
-          <StackPanel Margin="0,0,12,0">
-            <TextBlock Text="Depo" Style="{StaticResource FilterLabelStyle}" />
-            <ComboBox x:Name="CmbHareketDepo" Style="{StaticResource FilterComboStyle}" Height="36" SelectionChanged="HareketFiltreDegisti" />
-          </StackPanel>
-          <Button Style="{StaticResource ToolbarButtonStyle}" VerticalAlignment="Bottom" Content="Temizle" Click="HareketFiltreTemizle_Click" />
-        </UniformGrid>
+      <Border Grid.Row="0" Background="#FFFFFF" CornerRadius="14" BorderBrush="#D9E2EC" BorderThickness="1"
+              Padding="16,12" Margin="0,0,0,12">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <DockPanel LastChildFill="False">
+            <TextBlock Text="Filtreler" FontSize="13" FontWeight="SemiBold" Foreground="#102A43"
+                       VerticalAlignment="Center" DockPanel.Dock="Left" />
+            <Button Style="{StaticResource ToolbarButtonStyle}" Content="Temizle" Click="HareketFiltreTemizle_Click"
+                    DockPanel.Dock="Right" Padding="14,7" />
+          </DockPanel>
+          <WrapPanel Grid.Row="1" Margin="0,12,0,0">
+            <StackPanel Width="200" Margin="0,0,12,8">
+              <TextBlock Text="Ara" Style="{StaticResource SapFilterLabel}" />
+              <TextBox x:Name="TxtHareketAra" Style="{StaticResource FilterBoxStyle}" Height="32"
+                       TextChanged="HareketFiltreDegisti" ui:ControlHelper.PlaceholderText="Malzeme, belge..." />
+            </StackPanel>
+            <StackPanel Width="160" Margin="0,0,12,8">
+              <TextBlock Text="Hareket Tipi" Style="{StaticResource SapFilterLabel}" />
+              <ComboBox x:Name="CmbHareketTip" Style="{StaticResource FilterComboStyle}" Height="32" SelectionChanged="HareketFiltreDegisti" />
+            </StackPanel>
+            <StackPanel Width="160" Margin="0,0,0,8">
+              <TextBlock Text="Depo" Style="{StaticResource SapFilterLabel}" />
+              <ComboBox x:Name="CmbHareketDepo" Style="{StaticResource FilterComboStyle}" Height="32" SelectionChanged="HareketFiltreDegisti" />
+            </StackPanel>
+          </WrapPanel>
+        </Grid>
       </Border>
-      <Border Grid.Row="1" Style="{StaticResource ErpCard}" Padding="0">
+      <Border Grid.Row="1" Background="#FFFFFF" CornerRadius="16" BorderBrush="#D9E2EC" BorderThickness="1">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
-          <DataGrid x:Name="HareketGrid" Style="{StaticResource ErpPremiumGrid}" IsReadOnly="True"
+          <DataGrid x:Name="HareketGrid" Style="{StaticResource ErpPremiumGrid}" BorderThickness="0" IsReadOnly="True"
                     MouseDoubleClick="HareketGrid_MouseDoubleClick" PreviewMouseRightButtonDown="HareketGrid_PreviewMouseRightButtonDown">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="90" />
@@ -290,69 +302,83 @@
               <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*" MinWidth="120" />
             </DataGrid.Columns>
           </DataGrid>
-          <controls:SayfalamaCubugu x:Name="HareketSayfalamaBar" Grid.Row="1" />
+          <Border Grid.Row="1" Style="{StaticResource ErpFooterBar}" CornerRadius="0,0,16,16" Padding="0">
+            <controls:SayfalamaCubugu x:Name="HareketSayfalamaBar" />
+          </Border>
         </Grid>
       </Border>
     </Grid>
 
     <!-- STOK SAYIM -->
-    <ScrollViewer x:Name="PanelSayim" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-      <StackPanel>
-        <Border Style="{StaticResource ErpCard}" Margin="0,0,0,16" Padding="22">
-          <StackPanel>
-            <TextBlock Text="Stok Sayımı" Style="{StaticResource ErpPageTitle}" FontSize="18" Margin="0,0,0,16" />
-            <UniformGrid Columns="3" Margin="0,0,0,12">
-              <StackPanel Margin="0,0,12,12">
-                <TextBlock Text="Tarih" Style="{StaticResource FilterLabelStyle}" />
-                <TextBox x:Name="TxtSayimTarih" Style="{StaticResource FilterBoxStyle}" Height="36" />
-              </StackPanel>
-              <StackPanel Margin="0,0,12,12" Grid.ColumnSpan="2">
-                <TextBlock Text="Sayım Yapılacak Stok" Style="{StaticResource FilterLabelStyle}" />
-                <ComboBox x:Name="CmbSayimStok" Style="{StaticResource FilterComboStyle}" Height="36"
-                          SelectionChanged="SayimStokSecildi" DisplayMemberPath="SecimMetni" />
-              </StackPanel>
-              <StackPanel Margin="0,0,12,0">
-                <TextBlock Text="Sistemdeki Miktar" Style="{StaticResource FilterLabelStyle}" />
-                <TextBox x:Name="TxtSayimMevcut" Style="{StaticResource ModuleReadOnlyFieldStyle}" Height="36" />
-              </StackPanel>
-              <StackPanel Margin="0,0,12,0">
-                <TextBlock Text="Sayım Miktarı" Style="{StaticResource FilterLabelStyle}" />
-                <TextBox x:Name="TxtSayimMiktar" Style="{StaticResource FilterBoxStyle}" Height="36" TextChanged="SayimFarkHesapla" />
-              </StackPanel>
-              <StackPanel>
-                <TextBlock Text="Fark" Style="{StaticResource FilterLabelStyle}" />
-                <TextBox x:Name="TxtSayimFark" Style="{StaticResource ModuleReadOnlyFieldStyle}" Height="36" />
-              </StackPanel>
-            </UniformGrid>
-            <TextBlock Text="İşlem Yapan" Style="{StaticResource FilterLabelStyle}" />
-            <TextBox x:Name="TxtSayimIslemYapan" Style="{StaticResource FilterBoxStyle}" Height="36" Margin="0,0,0,12" />
-            <TextBlock Text="Açıklama" Style="{StaticResource FilterLabelStyle}" />
-            <TextBox x:Name="TxtSayimAciklama" Style="{StaticResource FilterBoxStyle}" Height="64" TextWrapping="Wrap"
-                     AcceptsReturn="True" VerticalContentAlignment="Top" Padding="12,10" Margin="0,0,0,16" />
-            <Button Style="{StaticResource PrimaryToolbarButtonStyle}" HorizontalAlignment="Left" Padding="18,10"
-                    Content="Sayımı Kaydet" Click="SayimKaydet_Click" />
-          </StackPanel>
-        </Border>
-        <Border Style="{StaticResource ErpCard}" Padding="0">
-          <Grid>
-            <Grid.RowDefinitions>
-              <RowDefinition Height="Auto" />
-              <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-            <DataGrid x:Name="SayimGrid" Style="{StaticResource ErpPremiumGrid}" Height="320" IsReadOnly="True">
-              <DataGrid.Columns>
-                <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="90" />
-                <DataGridTextColumn Header="Malzeme" Binding="{Binding MalzemeAdi}" Width="140" />
-                <DataGridTextColumn Header="Sayım" Binding="{Binding MiktarGosterim}" Width="130" />
-                <DataGridTextColumn Header="Depo" Binding="{Binding DepoSaha}" Width="110" />
-                <DataGridTextColumn Header="İşlem Yapan" Binding="{Binding IslemYapan}" Width="110" />
-                <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*" MinWidth="120" />
-              </DataGrid.Columns>
-            </DataGrid>
-            <controls:SayfalamaCubugu x:Name="SayimSayfalamaBar" Grid.Row="1" />
-          </Grid>
-        </Border>
-      </StackPanel>
-    </ScrollViewer>
+    <Grid x:Name="PanelSayim" Grid.Row="1" Visibility="Collapsed">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <Border Grid.Row="0" Background="#FFFFFF" CornerRadius="14" BorderBrush="#D9E2EC" BorderThickness="1"
+              Padding="16,12" Margin="0,0,0,12">
+        <StackPanel>
+          <TextBlock Text="Sayım Formu" FontSize="13" FontWeight="SemiBold" Foreground="#102A43" Margin="0,0,0,12" />
+          <WrapPanel>
+            <StackPanel Width="140" Margin="0,0,12,8">
+              <TextBlock Text="Tarih" Style="{StaticResource SapFilterLabel}" />
+              <TextBox x:Name="TxtSayimTarih" Style="{StaticResource FilterBoxStyle}" Height="32" />
+            </StackPanel>
+            <StackPanel Width="220" Margin="0,0,12,8">
+              <TextBlock Text="Sayım Yapılacak Stok" Style="{StaticResource SapFilterLabel}" />
+              <ComboBox x:Name="CmbSayimStok" Style="{StaticResource FilterComboStyle}" Height="32"
+                        SelectionChanged="SayimStokSecildi" DisplayMemberPath="SecimMetni" />
+            </StackPanel>
+            <StackPanel Width="140" Margin="0,0,12,8">
+              <TextBlock Text="Sistemdeki Miktar" Style="{StaticResource SapFilterLabel}" />
+              <TextBox x:Name="TxtSayimMevcut" Style="{StaticResource ModuleReadOnlyFieldStyle}" Height="32" />
+            </StackPanel>
+            <StackPanel Width="140" Margin="0,0,12,8">
+              <TextBlock Text="Sayım Miktarı" Style="{StaticResource SapFilterLabel}" />
+              <TextBox x:Name="TxtSayimMiktar" Style="{StaticResource FilterBoxStyle}" Height="32" TextChanged="SayimFarkHesapla" />
+            </StackPanel>
+            <StackPanel Width="120" Margin="0,0,12,8">
+              <TextBlock Text="Fark" Style="{StaticResource SapFilterLabel}" />
+              <TextBox x:Name="TxtSayimFark" Style="{StaticResource ModuleReadOnlyFieldStyle}" Height="32" />
+            </StackPanel>
+            <StackPanel Width="160" Margin="0,0,12,8">
+              <TextBlock Text="İşlem Yapan" Style="{StaticResource SapFilterLabel}" />
+              <TextBox x:Name="TxtSayimIslemYapan" Style="{StaticResource FilterBoxStyle}" Height="32" />
+            </StackPanel>
+            <StackPanel Width="200" Margin="0,0,12,8">
+              <TextBlock Text="Açıklama" Style="{StaticResource SapFilterLabel}" />
+              <TextBox x:Name="TxtSayimAciklama" Style="{StaticResource FilterBoxStyle}" Height="32" />
+            </StackPanel>
+            <StackPanel Width="140" Margin="0,0,0,8" VerticalAlignment="Bottom">
+              <Button Style="{StaticResource PrimaryToolbarButtonStyle}" HorizontalAlignment="Stretch"
+                      Content="Sayımı Kaydet" Click="SayimKaydet_Click" Padding="12,9" Height="32" />
+            </StackPanel>
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Row="1" Background="#FFFFFF" CornerRadius="16" BorderBrush="#D9E2EC" BorderThickness="1">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <DataGrid x:Name="SayimGrid" Style="{StaticResource ErpPremiumGrid}" BorderThickness="0" IsReadOnly="True">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="90" />
+              <DataGridTextColumn Header="Malzeme" Binding="{Binding MalzemeAdi}" Width="140" />
+              <DataGridTextColumn Header="Sayım" Binding="{Binding MiktarGosterim}" Width="130" />
+              <DataGridTextColumn Header="Depo" Binding="{Binding DepoSaha}" Width="110" />
+              <DataGridTextColumn Header="İşlem Yapan" Binding="{Binding IslemYapan}" Width="110" />
+              <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*" MinWidth="120" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <Border Grid.Row="1" Style="{StaticResource ErpFooterBar}" CornerRadius="0,0,16,16" Padding="0">
+            <controls:SayfalamaCubugu x:Name="SayimSayfalamaBar" />
+          </Border>
+        </Grid>
+      </Border>
+    </Grid>
   </Grid>
 </UserControl>

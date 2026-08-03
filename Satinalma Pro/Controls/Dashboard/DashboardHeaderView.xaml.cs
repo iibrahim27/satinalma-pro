@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using SatinalmaPro.Helpers;
 using SatinalmaPro.Services;
 
 namespace SatinalmaPro.Controls.Dashboard;
@@ -13,9 +14,23 @@ public partial class DashboardHeaderView : UserControl
     public DashboardHeaderView()
     {
         InitializeComponent();
+        Loaded += (_, _) =>
+        {
+            FirmaEtiketiniGuncelle();
+            TalepProButonunuGuncelle();
+        };
+        OturumYoneticisi.OturumDegisti += () =>
+            Dispatcher.BeginInvoke(TalepProButonunuGuncelle);
     }
 
-    public void BreadcrumbAyarla(string metin) => TxtBreadcrumb.Text = metin;
+    public void BreadcrumbAyarla(string metin) =>
+        TxtBreadcrumb.Text = metin is "Ana Sayfa" or "Dashboard" or "Kontrol Merkezi" ? "Workspace" : metin;
+
+    public void FirmaEtiketiniGuncelle()
+    {
+        var firma = UygulamaAyarDeposu.Ayarlar.FirmaAdi;
+        TxtFirmaKisa.Text = string.IsNullOrWhiteSpace(firma) ? "Merkez Satınalma" : firma;
+    }
 
     public void BildirimRozetiniGuncelle(int sayi)
     {
@@ -23,6 +38,7 @@ public partial class DashboardHeaderView : UserControl
         BadgeBildirim.Visibility = sayi > 0 ? Visibility.Visible : Visibility.Collapsed;
         TxtBadgeSayi.Text = sayi > 99 ? "99+" : sayi.ToString();
         AyarlarButonunuGuncelle();
+        TalepProButonunuGuncelle();
     }
 
     public void AyarlarButonunuGuncelle()
@@ -32,6 +48,17 @@ public partial class DashboardHeaderView : UserControl
             : Visibility.Collapsed;
     }
 
+    public void TalepProButonunuGuncelle()
+    {
+        BtnTalepPro.Visibility = OturumYoneticisi.GirisYapildi
+                                 && KullaniciYetkileri.ModulGorebilir("Satınalma")
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private void BtnTalepPro_Click(object sender, RoutedEventArgs e) =>
+        UygulamaKoordinasyonu.TalepProAc();
+
     private void BtnBildirim_Click(object sender, RoutedEventArgs e) =>
         BildirimTiklandi?.Invoke(this, EventArgs.Empty);
 
@@ -40,13 +67,6 @@ public partial class DashboardHeaderView : UserControl
         if (!KullaniciYetkileri.ModulGorebilir("Ayarlar"))
             return;
         AyarlarTiklandi?.Invoke(this, EventArgs.Empty);
-    }
-
-    private void BtnTema_Click(object sender, RoutedEventArgs e)
-    {
-        TemaIkon.Kind = TemaIkon.Kind == DashboardIconKind.Moon
-            ? DashboardIconKind.Sun
-            : DashboardIconKind.Moon;
     }
 
     private void TxtArama_TextChanged(object sender, TextChangedEventArgs e) =>

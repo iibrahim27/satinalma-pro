@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.46",
-    "build":  48,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.46/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.46/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.46/SatinalmaYonetici.apk",
-    "notes":  "1.0.46 - Pro 2.1.93 ile birlikte (sef imza kiraci izolasyonu)",
+    "version":  "1.0.47",
+    "build":  49,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.47/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.47/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.47/SatinalmaYonetici.apk",
+    "notes":  "1.0.47 - Pro 2.1.94 ile birlikte (Talep Pro ayri uygulama)",
     "zorunlu":  false
 }

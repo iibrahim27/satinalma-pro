@@ -83,8 +83,7 @@ public partial class CimentoView : UserControl, IModulKlavyeKisayollari
             TxtTeslimAlanFilter, TxtIrsaliyeNoFilter, TxtGridArama,
             ref _filtreAcik, ref _filtrePanelYukseklik);
 
-        ErpModulFiltreYardimcisi.FiltrePanelGorunumunuUygula(
-            FiltrePanelKap, _filtreAcik, _filtrePanelYukseklik, TxtFiltreToggle, IcoFiltreToggle);
+        FiltrePaneliHerZamanAcik();
         SecimMetniniGuncelle();
     }
 
@@ -100,26 +99,23 @@ public partial class CimentoView : UserControl, IModulKlavyeKisayollari
         }
 
         _arayuzHazir = true;
-
-        Dispatcher.BeginInvoke(() =>
-        {
-            FiltrePanelAnimasyonYardimcisi.YukseklikOlcul(
-                FiltrePanelKap, AnaIcerikGrid.ActualWidth, out _filtrePanelYukseklik);
-            if (_filtreAcik)
-                ErpModulFiltreYardimcisi.FiltrePanelGorunumunuUygula(
-                    FiltrePanelKap, true, _filtrePanelYukseklik, TxtFiltreToggle, IcoFiltreToggle);
-        }, System.Windows.Threading.DispatcherPriority.Loaded);
-
+        FiltrePaneliHerZamanAcik();
         KullaniciYetkileri.ModulErisiminiUygula(this, "Çimento");
+    }
+
+    private void FiltrePaneliHerZamanAcik()
+    {
+        _filtreAcik = true;
+        FiltrePanelKap.BeginAnimation(FrameworkElement.MaxHeightProperty, null);
+        FiltrePanelKap.ClearValue(FrameworkElement.MaxHeightProperty);
+        FiltrePanelKap.Visibility = Visibility.Visible;
+        TxtFiltreToggle.Text = "Filtreler";
+        IcoFiltreToggle.Text = "\uE70E";
     }
 
     private void FiltrePaneli_Toggle(object sender, RoutedEventArgs e)
     {
-        FiltrePanelAnimasyonYardimcisi.Toggle(
-            FiltrePanelKap, AnaIcerikGrid.ActualWidth, ref _filtreAcik, ref _filtrePanelYukseklik);
-
-        TxtFiltreToggle.Text = _filtreAcik ? "Filtreleri Gizle" : "Filtreleri Göster";
-        IcoFiltreToggle.Text = _filtreAcik ? "\uE70E" : "\uE70D";
+        FiltrePaneliHerZamanAcik();
         FiltreDurumunuKaydet();
     }
 
@@ -651,9 +647,7 @@ public partial class CimentoView : UserControl, IModulKlavyeKisayollari
 
     private void FiltreOdak_Click(object sender, RoutedEventArgs e)
     {
-        if (!_filtreAcik)
-            FiltrePaneli_Toggle(sender, e);
-
+        FiltrePaneliHerZamanAcik();
         ErpModulTabloYardimcisi.FiltreOdakla(FiltreBaslikBar);
     }
 
@@ -661,5 +655,5 @@ public partial class CimentoView : UserControl, IModulKlavyeKisayollari
         ErpModulTabloYardimcisi.Yogun(CimentoGrid, ref _yogunGorunum);
 
     private void TamEkran_Click(object sender, RoutedEventArgs e) =>
-        ErpModulTabloYardimcisi.TamEkran(AnaIcerikGrid, TabloKart, 4, [0, 1, 2, 3], ref _tamEkran, BtnTamEkran);
+        ErpModulTabloYardimcisi.TamEkran(AnaIcerikGrid, TabloKart, 2, [0, 1], ref _tamEkran, BtnTamEkran);
 }

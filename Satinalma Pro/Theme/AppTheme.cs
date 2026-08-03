@@ -2,21 +2,22 @@ using System.Windows.Media;
 
 namespace SatinalmaPro.Theme;
 
-/// <summary>Ana sayfa ve shell renk sabitleri — tek kaynak.</summary>
+/// <summary>Workspace 26 — charcoal rail + teal accent (SAP Quartz / Control Center değil).</summary>
 public static class AppTheme
 {
-    public const string PrimaryHex = "#2563EB";
-    public const string BackgroundHex = "#F7F9FC";
+    public const string PrimaryHex = "#0D7377";
+    public const string BackgroundHex = "#EEF2F5";
     public const string CardHex = "#FFFFFF";
-    public const string BorderHex = "#E8EDF5";
-    public const string TextHex = "#111827";
-    public const string SecondaryTextHex = "#64748B";
-    public const string SuccessHex = "#10B981";
-    public const string WarningHex = "#F59E0B";
-    public const string DangerHex = "#EF4444";
-    public const string PurpleHex = "#8B5CF6";
-    public const string NavActiveBgHex = "#EAF2FF";
-    public const string NavHoverBgHex = "#F1F5F9";
+    public const string BorderHex = "#D9E2EC";
+    public const string TextHex = "#102A43";
+    public const string SecondaryTextHex = "#627D98";
+    public const string SuccessHex = "#2F9E44";
+    public const string WarningHex = "#F08C00";
+    public const string DangerHex = "#E03131";
+    public const string PurpleHex = "#0D7377";
+    public const string NavActiveBgHex = "#E0FCFF";
+    public const string NavHoverBgHex = "#F0F4F8";
+    public const string ShellHex = "#102A43";
 
     public static Color Primary => Parse(PrimaryHex);
     public static Color Background => Parse(BackgroundHex);
@@ -30,6 +31,7 @@ public static class AppTheme
     public static Color Purple => Parse(PurpleHex);
     public static Color NavActiveBg => Parse(NavActiveBgHex);
     public static Color NavHoverBg => Parse(NavHoverBgHex);
+    public static Color Shell => Parse(ShellHex);
 
     public static SolidColorBrush PrimaryBrush => Freeze(new SolidColorBrush(Primary));
     public static SolidColorBrush BackgroundBrush => Freeze(new SolidColorBrush(Background));
@@ -37,6 +39,8 @@ public static class AppTheme
     public static SolidColorBrush BorderBrush => Freeze(new SolidColorBrush(Border));
     public static SolidColorBrush TextBrush => Freeze(new SolidColorBrush(Text));
     public static SolidColorBrush SecondaryTextBrush => Freeze(new SolidColorBrush(SecondaryText));
+    public static SolidColorBrush ShellBrush => Freeze(new SolidColorBrush(Shell));
+    public static SolidColorBrush NavActiveBgBrush => Freeze(new SolidColorBrush(NavActiveBg));
 
     public static Color Parse(string hex) => (Color)ColorConverter.ConvertFromString(hex)!;
 

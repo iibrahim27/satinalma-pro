@@ -26,7 +26,7 @@
     </StackPanel>
 
     <Border Grid.Row="1" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-            CornerRadius="10" Background="#FAFBFC" Padding="2">
+            CornerRadius="10" Background="#EEF2F5" Padding="2">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <TextBox x:Name="TxtSartname" BorderThickness="0" Background="Transparent"
                  AcceptsReturn="True" TextWrapping="Wrap" FontSize="13"

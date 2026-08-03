@@ -186,13 +186,15 @@ public partial class RaporlamalarView : UserControl, IModulKlavyeKisayollari
 
     private static Border OzetKartiOlustur(RaporModulOzeti ozet, decimal genelToplam)
     {
-        var renk = (Color)ColorConverter.ConvertFromString(ozet.Renk)!;
         var pay = genelToplam > 0 ? ozet.ToplamTutar / genelToplam * 100m : 0;
 
         var border = new Border
         {
-            Style = (Style)Application.Current.FindResource("StatChipStyle"),
-            MinWidth = 150
+            Style = (Style)Application.Current.FindResource("SapMetricItem"),
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            Margin = new Thickness(0, 0, 0, 4),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            MinWidth = 0
         };
 
         var panel = new StackPanel();
@@ -208,7 +210,7 @@ public partial class RaporlamalarView : UserControl, IModulKlavyeKisayollari
             Text = $"₺{ozet.ToplamTutar:N0}",
             FontSize = 20,
             FontWeight = FontWeights.SemiBold,
-            Foreground = new SolidColorBrush(renk),
+            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#32363A")!),
             Margin = new Thickness(0, 2, 0, 0)
         });
         panel.Children.Add(new TextBlock
@@ -227,9 +229,11 @@ public partial class RaporlamalarView : UserControl, IModulKlavyeKisayollari
     {
         var border = new Border
         {
-            Style = (Style)Application.Current.FindResource("StatChipStyle"),
-            MinWidth = 160,
-            Margin = new Thickness(0)
+            Style = (Style)Application.Current.FindResource("SapMetricItem"),
+            BorderThickness = new Thickness(0),
+            Margin = new Thickness(0, 8, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            MinWidth = 0
         };
 
         var panel = new StackPanel();
@@ -245,7 +249,7 @@ public partial class RaporlamalarView : UserControl, IModulKlavyeKisayollari
             Text = $"₺{genelToplam:N0}",
             FontSize = 24,
             FontWeight = FontWeights.Bold,
-            Foreground = new SolidColorBrush(Color.FromRgb(8, 145, 178)),
+            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#32363A")!),
             Margin = new Thickness(0, 2, 0, 0)
         });
         panel.Children.Add(new TextBlock

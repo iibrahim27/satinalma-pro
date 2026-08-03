@@ -101,6 +101,23 @@ public static class IconProvider
     {
         "Finansman Raporlama" => "Finansman",
         "Raporlamalar" => "Raporlar",
+        "Satınalma" => "Talep Pro",
         _ => modulBaslik
+    };
+
+    /// <summary>Dar ikon rayı için kısa etiket (2 satıra sığar).</summary>
+    public static string ModulRailAd(string modulBaslik) => modulBaslik switch
+    {
+        "Alınan Malzemeler" => "Alınan",
+        "Stok Yönetimi" => "Stok",
+        "Akaryakıt Takip" => "Akaryakıt",
+        "Araç Filo Takip" => "Filo",
+        "Finansman Raporlama" => "Finans",
+        "Satınalma" => "Talep Pro",
+        "Raporlamalar" => "Raporlar",
+        "Ayarlar" => "Ayarlar",
+        "Agrega" => "Agrega",
+        "Çimento" => "Çimento",
+        _ => ModulKisaAd(modulBaslik)
     };
 }

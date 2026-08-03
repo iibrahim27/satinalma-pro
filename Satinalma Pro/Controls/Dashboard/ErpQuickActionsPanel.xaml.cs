@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
 
@@ -27,19 +28,18 @@ public partial class ErpQuickActionsPanel : UserControl
             Ekle("Stok Çıkışı", DashboardIconKind.Warehouse, "Stok Yönetimi");
             Ekle("Stok Durumu", DashboardIconKind.ClipboardList, "Stok Yönetimi");
             Ekle("Hareketler", DashboardIconKind.FileBarChart, "Stok Yönetimi");
-            Ekle("Yoldaki / Mal Kabul", DashboardIconKind.ShoppingCart, "Satınalma");
+            Ekle("Alınan Malzeme", DashboardIconKind.ShoppingCart, "Alınan Malzemeler");
             Ekle("Stok Kartı", DashboardIconKind.Package, "Stok Yönetimi");
             return;
         }
 
         if (key is KullaniciRolleri.Sef or KullaniciRolleri.Saha)
         {
-            Ekle("Yeni Talep", DashboardIconKind.ShoppingCart, "Satınalma");
-            Ekle("Talepler", DashboardIconKind.ClipboardList, "Satınalma");
-            Ekle("Onay / Sipariş", DashboardIconKind.Package, "Satınalma");
-            Ekle("Yoldaki Malzeme", DashboardIconKind.Warehouse, "Satınalma");
+            Ekle("Talep Pro", DashboardIconKind.ShoppingCart, "__TalepPro__");
             Ekle("Stok Durumu", DashboardIconKind.Warehouse, "Stok Yönetimi");
-            Ekle("Panosu", DashboardIconKind.FileBarChart, "Satınalma");
+            Ekle("Filo", DashboardIconKind.Package, "Araç Filo Takip");
+            Ekle("Alınan Malzeme", DashboardIconKind.ClipboardList, "Alınan Malzemeler");
+            Ekle("Raporlar", DashboardIconKind.FileBarChart, "Raporlamalar");
             return;
         }
 
@@ -47,17 +47,17 @@ public partial class ErpQuickActionsPanel : UserControl
         {
             Ekle("Stok Durumu", DashboardIconKind.Warehouse, "Stok Yönetimi");
             Ekle("Stok Hareket", DashboardIconKind.FileBarChart, "Stok Yönetimi");
-            Ekle("Yoldaki Malzeme", DashboardIconKind.Package, "Satınalma");
+            Ekle("Alınan Malzeme", DashboardIconKind.Package, "Alınan Malzemeler");
             Ekle("Stok Kartı", DashboardIconKind.ClipboardList, "Stok Yönetimi");
             return;
         }
 
-        Ekle("Yeni Talep", DashboardIconKind.ShoppingCart, "Satınalma");
-        Ekle("Teklif Girişi", DashboardIconKind.ClipboardList, "Satınalma");
         Ekle("Malzeme Kaydı", DashboardIconKind.Package, "Alınan Malzemeler");
         Ekle("Tahsilat Girişi", DashboardIconKind.Wallet, "Finansman Raporlama");
         Ekle("Stok Kartı", DashboardIconKind.Warehouse, "Stok Yönetimi");
+        Ekle("Filo", DashboardIconKind.Package, "Araç Filo Takip");
         Ekle("Raporlar", DashboardIconKind.FileBarChart, "Raporlamalar");
+        Ekle("Talep Pro", DashboardIconKind.ShoppingCart, "__TalepPro__");
     }
 
     private void Ekle(string baslik, DashboardIconKind icon, string modul)
@@ -97,7 +97,14 @@ public partial class ErpQuickActionsPanel : UserControl
 
     private void HizliIslem_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is string modul)
-            ModulSecildi?.Invoke(modul);
+        if (sender is not Button btn || btn.Tag is not string modul)
+            return;
+        if (modul == "__TalepPro__")
+        {
+            UygulamaKoordinasyonu.TalepProAc();
+            return;
+        }
+
+        ModulSecildi?.Invoke(modul);
     }
 }

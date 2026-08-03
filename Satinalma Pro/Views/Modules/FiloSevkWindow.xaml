@@ -20,7 +20,7 @@
     <StackPanel Grid.Row="1">
       <TextBlock Text="Kaynak Saha" Style="{StaticResource FilterLabelStyle}" />
       <TextBox x:Name="TxtKaynakSaha" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True"
-               Background="#F8FAFC" Margin="0,0,0,12" />
+               Background="#EEF2F5" Margin="0,0,0,12" />
       <TextBlock Text="Hedef Şantiye / Saha" Style="{StaticResource FilterLabelStyle}" />
       <TextBox x:Name="TxtHedefSaha" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,12" />
       <TextBlock Text="Açıklama" Style="{StaticResource FilterLabelStyle}" />

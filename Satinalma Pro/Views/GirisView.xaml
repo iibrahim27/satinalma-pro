@@ -31,17 +31,17 @@
                                          HorizontalAlignment="Center"
                                          Margin="0,0,0,12" />
         <TextBlock Text="Giriş Yap" FontSize="22" FontWeight="Bold"
-                   Foreground="{StaticResource InkBrush}" Margin="0,0,0,4" />
+                   Foreground="{StaticResource LoginTextBrush}" Margin="0,0,0,4" />
         <TextBlock Text="Hesabınıza erişmek için bilgilerinizi girin" FontSize="13"
-                   Foreground="{StaticResource InkMutedBrush}" Margin="0,0,0,20" />
+                   Foreground="{StaticResource LoginMutedBrush}" Margin="0,0,0,20" />
       </StackPanel>
 
       <StackPanel x:Name="PanelTamBaslik">
         <controls:UygulamaIkonAnimasyonu IkonBoyutu="80" GirisModu="True" HorizontalAlignment="Center" Margin="0,0,0,16" />
         <TextBlock Text="Satınalma Pro" FontSize="24" FontWeight="SemiBold"
-                   Foreground="{StaticResource InkBrush}" HorizontalAlignment="Center" Margin="0,0,0,4" />
+                   Foreground="{StaticResource LoginTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,4" />
         <TextBlock Text="Kurumsal Satınalma Yönetim Sistemi" FontSize="13"
-                   Foreground="{StaticResource InkMutedBrush}" HorizontalAlignment="Center"
+                   Foreground="{StaticResource LoginMutedBrush}" HorizontalAlignment="Center"
                    TextAlignment="Center" Margin="0,0,0,28" />
       </StackPanel>
 
@@ -58,21 +58,22 @@
         <Button x:Name="BtnSifreGoster" Content="👁" HorizontalAlignment="Right"
                 VerticalAlignment="Center" Margin="0,0,8,0" Width="32" Height="32"
                 Background="Transparent" BorderThickness="0" Cursor="Hand"
+                Foreground="{StaticResource LoginMutedBrush}"
                 Click="BtnSifreGoster_Click" ToolTip="Şifreyi göster/gizle" />
       </Grid>
 
       <Button Style="{StaticResource ToolbarButtonStyle}" Content="Şifremi unuttum"
               HorizontalAlignment="Right" Padding="8,4" FontSize="11" Margin="0,0,0,12"
-              BorderThickness="0" Background="Transparent" Foreground="#4F46E5"
+              BorderThickness="0" Background="Transparent" Foreground="#5EEAD4"
               Click="SifremiUnuttum_Click" />
 
       <CheckBox x:Name="ChkBeniHatirla" Content="Beni hatırla" FontSize="13"
-                Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"
+                Foreground="{StaticResource LoginTextBrush}" Margin="0,0,0,4"
                 IsChecked="False"
                 Checked="TercihKutusu_Degisti" Unchecked="TercihKutusu_Degisti" />
 
       <CheckBox x:Name="ChkSifremiHatirla" Content="Şifreyi hatırla" FontSize="13"
-                Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"
+                Foreground="{StaticResource LoginTextBrush}" Margin="0,0,0,4"
                 IsChecked="False"
                 Checked="TercihKutusu_Degisti" Unchecked="TercihKutusu_Degisti" />
 
@@ -93,11 +94,11 @@
       <StackPanel Margin="0,20,0,0">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
           <Ellipse x:Name="SunucuDurumNokta" Width="8" Height="8" Fill="#22C55E" Margin="0,0,8,0" VerticalAlignment="Center" />
-          <TextBlock x:Name="TxtSunucuDurum" FontSize="11" Foreground="{StaticResource InkMutedBrush}" VerticalAlignment="Center" />
+          <TextBlock x:Name="TxtSunucuDurum" FontSize="11" Foreground="{StaticResource LoginMutedBrush}" VerticalAlignment="Center" />
         </StackPanel>
-        <TextBlock x:Name="TxtVersiyon" FontSize="11" Foreground="{StaticResource InkMutedBrush}"
+        <TextBlock x:Name="TxtVersiyon" FontSize="11" Foreground="{StaticResource LoginMutedBrush}"
                    HorizontalAlignment="Center" Margin="0,8,0,0" />
-        <TextBlock Text="Satınalma Pro" FontSize="11" Foreground="{StaticResource InkMutedBrush}"
+        <TextBlock Text="Satınalma Pro" FontSize="11" Foreground="{StaticResource LoginMutedBrush}"
                    HorizontalAlignment="Center" Margin="0,4,0,0" Opacity="0.8" />
       </StackPanel>
     </StackPanel>
@@ -105,20 +106,22 @@
     <StackPanel x:Name="PanelSifreSifir" Visibility="Collapsed">
       <Button Style="{StaticResource ToolbarButtonStyle}" HorizontalAlignment="Left"
               Padding="0,4" Margin="0,0,0,16" BorderThickness="0" Background="Transparent"
+              Foreground="{StaticResource LoginTextBrush}"
               Click="GeriGiris_Click">
         <StackPanel Orientation="Horizontal">
           <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                     Foreground="{StaticResource LoginTextBrush}"
                      Margin="0,0,8,0" VerticalAlignment="Center" />
-          <TextBlock Text="Girişe dön" VerticalAlignment="Center" />
+          <TextBlock Text="Girişe dön" Foreground="{StaticResource LoginTextBrush}" VerticalAlignment="Center" />
         </StackPanel>
       </Button>
 
       <controls:UygulamaIkonAnimasyonu IkonBoyutu="64" GirisModu="True" HorizontalAlignment="Center" Margin="0,0,0,16" />
 
       <TextBlock Text="Şifremi Unuttum" FontSize="24" FontWeight="SemiBold"
-                 Foreground="{StaticResource InkBrush}" Margin="0,0,0,6" />
+                 Foreground="{StaticResource LoginTextBrush}" Margin="0,0,0,6" />
       <TextBlock Text="E-posta adresinize şifre sıfırlama bağlantısı gönderilir."
-                 FontSize="13" Foreground="{StaticResource InkMutedBrush}"
+                 FontSize="13" Foreground="{StaticResource LoginMutedBrush}"
                  TextWrapping="Wrap" Margin="0,0,0,24" />
 
       <TextBlock Text="E-posta" Style="{StaticResource LoginFieldLabelStyle}" />

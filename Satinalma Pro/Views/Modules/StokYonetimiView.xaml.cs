@@ -31,10 +31,6 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
     private bool _stokYogunGorunum;
     private bool _stokTamEkran;
     private bool _arayuzHazir;
-    private GridLength _solPanelGenislik;
-    private GridLength _araBoslukGenislik;
-    private GridLength _stokTabloSatirYukseklik;
-    private int _stokTabloOrijinalSatir;
 
     private static readonly (string Baslik, string Alan)[] StokGrupSecenekleri =
     [
@@ -103,38 +99,46 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
     {
         StokKpiPanel.Children.Clear();
         _stokKpiMetinleri.Clear();
-        var kpiler = new (string Baslik, string Deger, string Renk, string Ikon)[]
+        var kpiler = new (string Baslik, string Deger)[]
         {
-            ("Toplam Stok Kalemi", "0", "#2563EB", "\uE8F1"),
-            ("Toplam Stok Miktarı", "0", "#16A34A", "\uE7BF"),
-            ("Toplam Stok Değeri", "₺0", "#14B8A6", "\uE8C7"),
-            ("Kritik Stok", "0", "#DC2626", "\uE7BA"),
-            ("Minimum Altı", "0", "#F59E0B", "\uE823"),
-            ("Pasif Ürün", "0", "#64748B", "\uE9D9")
+            ("Toplam Stok Kalemi", "0"),
+            ("Toplam Stok Miktarı", "0"),
+            ("Toplam Stok Değeri", "₺0"),
+            ("Kritik Stok", "0"),
+            ("Minimum Altı", "0"),
+            ("Pasif Ürün", "0")
         };
+
+        var labelBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#6A6D70")!);
+        var valueBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#32363A")!);
 
         foreach (var kpi in kpiler)
         {
-            var renk = (Color)ColorConverter.ConvertFromString(kpi.Renk)!;
-            var degerTb = new TextBlock { Text = kpi.Deger, Style = (Style)FindResource("ErpKpiValue") };
-            var kart = new Border { Style = (Style)FindResource("ErpKpiCard") };
+            var degerTb = new TextBlock
+            {
+                Text = kpi.Deger,
+                FontSize = 15,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = valueBrush
+            };
+            var kart = new Border
+            {
+                BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D9D9D9")!),
+                BorderThickness = new Thickness(0, 0, 1, 0),
+                Padding = new Thickness(0, 0, 14, 0),
+                Margin = new Thickness(0, 0, 14, 0)
+            };
             kart.Child = new StackPanel
             {
                 Children =
                 {
-                    new Border
+                    new TextBlock
                     {
-                        Width = 36, Height = 36, CornerRadius = new CornerRadius(10),
-                        Background = new SolidColorBrush(renk) { Opacity = 0.12 },
-                        Child = new TextBlock
-                        {
-                            Text = kpi.Ikon, FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 16,
-                            Foreground = new SolidColorBrush(renk),
-                            HorizontalAlignment = HorizontalAlignment.Center,
-                            VerticalAlignment = VerticalAlignment.Center
-                        }
+                        Text = kpi.Baslik,
+                        FontSize = 10,
+                        FontWeight = FontWeights.SemiBold,
+                        Foreground = labelBrush
                     },
-                    new TextBlock { Text = kpi.Baslik, Style = (Style)FindResource("ErpKpiLabel"), Margin = new Thickness(0, 10, 0, 0) },
                     degerTb
                 }
             };
@@ -455,43 +459,12 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
     private void StokTamEkran_Click(object sender, RoutedEventArgs e)
     {
         _stokTamEkran = !_stokTamEkran;
-
-        if (_stokTamEkran)
-        {
-            _solPanelGenislik = PanelDurum.ColumnDefinitions[0].Width;
-            _araBoslukGenislik = PanelDurum.ColumnDefinitions[1].Width;
-            PanelDurum.ColumnDefinitions[0].Width = new GridLength(0);
-            PanelDurum.ColumnDefinitions[1].Width = new GridLength(0);
-            Grid.SetColumn(StokIcerikGrid, 0);
-            Grid.SetColumnSpan(StokIcerikGrid, 3);
-
-            _stokTabloOrijinalSatir = Grid.GetRow(StokTabloKart);
-            _stokTabloSatirYukseklik = StokIcerikGrid.RowDefinitions[2].Height;
-            StokKpiScroll.Visibility = Visibility.Collapsed;
-            StokFiltreKart.Visibility = Visibility.Collapsed;
-            StokIcerikGrid.RowDefinitions[0].Height = new GridLength(0);
-            StokIcerikGrid.RowDefinitions[1].Height = new GridLength(0);
-            Grid.SetRow(StokTabloKart, 0);
-            Grid.SetRowSpan(StokTabloKart, 3);
-            StokIcerikGrid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Star);
-            BtnStokTamEkran.Content = "Çıkış";
-        }
-        else
-        {
-            PanelDurum.ColumnDefinitions[0].Width = _solPanelGenislik;
-            PanelDurum.ColumnDefinitions[1].Width = _araBoslukGenislik;
-            Grid.SetColumn(StokIcerikGrid, 2);
-            Grid.SetColumnSpan(StokIcerikGrid, 1);
-
-            StokKpiScroll.Visibility = Visibility.Visible;
-            StokFiltreKart.Visibility = Visibility.Visible;
-            StokIcerikGrid.RowDefinitions[0].Height = GridLength.Auto;
-            StokIcerikGrid.RowDefinitions[1].Height = GridLength.Auto;
-            Grid.SetRow(StokTabloKart, _stokTabloOrijinalSatir);
-            Grid.SetRowSpan(StokTabloKart, 1);
-            StokIcerikGrid.RowDefinitions[2].Height = _stokTabloSatirYukseklik;
-            BtnStokTamEkran.Content = "Tam Ekran";
-        }
+        AnaIcerikGrid.RowDefinitions[0].Height = _stokTamEkran ? new GridLength(0) : GridLength.Auto;
+        PanelDurum.RowDefinitions[0].Height = _stokTamEkran ? new GridLength(0) : GridLength.Auto;
+        StokFiltreKart.Visibility = _stokTamEkran ? Visibility.Collapsed : Visibility.Visible;
+        StokKpiScroll.Visibility = _stokTamEkran ? Visibility.Collapsed : Visibility.Visible;
+        if (BtnStokTamEkran is not null)
+            BtnStokTamEkran.Content = _stokTamEkran ? "Küçült" : "Tam Ekran";
     }
 
     private void StokSayfaBoyutuDegisti(object sender, SelectionChangedEventArgs e)

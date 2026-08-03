@@ -35,7 +35,7 @@
         <ItemsControl.ItemTemplate>
           <DataTemplate>
             <Border Padding="20,12" BorderBrush="{StaticResource DashBorderBrush}" BorderThickness="0,0,0,1"
-                    Background="White">
+                    Background="#FFFFFF">
               <Border.Style>
                 <Style TargetType="Border">
                   <Style.Triggers>

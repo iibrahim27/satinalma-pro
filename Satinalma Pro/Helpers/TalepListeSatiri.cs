@@ -6,8 +6,8 @@ namespace SatinalmaPro.Helpers;
 
 public class TalepListeSatiri
 {
-    private static readonly SolidColorBrush BenimKartArka = new(Color.FromRgb(0xDB, 0xEA, 0xFE));
-    private static readonly SolidColorBrush BenimKartKenar = new(Color.FromRgb(0x3B, 0x82, 0xF6));
+    private static readonly SolidColorBrush BenimKartArka = new(Color.FromRgb(0xE8, 0xF3, 0xFF));
+    private static readonly SolidColorBrush BenimKartKenar = new(Color.FromRgb(0x00, 0x70, 0xF2));
 
     public TalepListeSatiri(
         SatinalmaTalep talep,

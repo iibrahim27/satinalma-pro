@@ -10,48 +10,49 @@
         MinHeight="580"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResizeWithGrip"
-        Background="#F4F6FA">
+        Background="#0B1220">
 
   <Grid>
-  <Grid.ColumnDefinitions>
-    <ColumnDefinition Width="1.15*" />
-    <ColumnDefinition Width="0.85*" />
-  </Grid.ColumnDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="1.15*" />
+      <ColumnDefinition Width="0.85*" />
+    </Grid.ColumnDefinitions>
 
-  <!-- Sol: marka + animasyonlu arka plan -->
-  <Grid Grid.Column="0">
-    <controls:LoginArkaPlanKontrolu />
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="40">
-      <controls:UygulamaIkonAnimasyonu IkonBoyutu="128" GirisModu="True" HorizontalAlignment="Center" Margin="0,0,0,24" />
-      <TextBlock Text="Hoş Geldiniz" FontSize="32" FontWeight="Bold" Foreground="White"
-                 HorizontalAlignment="Center" Margin="0,0,0,8" />
-      <TextBlock Text="Kurumsal Satınalma Yönetim Sistemi"
-                 FontSize="15" Foreground="#DDE7FF" TextAlignment="Center" TextWrapping="Wrap"
-                 MaxWidth="360" HorizontalAlignment="Center" Opacity="0.9" />
-      <TextBlock Text="Talep, teklif, onay ve stok süreçlerinizi tek merkezden yönetin."
-                 FontSize="13" Foreground="#B8C9E8" TextAlignment="Center" TextWrapping="Wrap"
-                 MaxWidth="340" HorizontalAlignment="Center" Margin="0,14,0,0" Opacity="0.85" />
-    </StackPanel>
-  </Grid>
+    <Grid Grid.Column="0">
+      <controls:LoginArkaPlanKontrolu />
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="40">
+        <controls:UygulamaIkonAnimasyonu IkonBoyutu="128" GirisModu="True" HorizontalAlignment="Center" Margin="0,0,0,24" />
+        <TextBlock x:Name="TxtMarka" Text="Satınalma Pro" FontSize="28" FontWeight="Bold" Foreground="White"
+                   HorizontalAlignment="Center" Margin="0,0,0,12" />
+        <TextBlock x:Name="TxtAltBaslik" Text="Kurumsal Satınalma Yönetim Sistemi"
+                   FontSize="15" Foreground="#CBD5E1" TextAlignment="Center" TextWrapping="Wrap"
+                   MaxWidth="360" HorizontalAlignment="Center" Opacity="0.95" />
+        <TextBlock x:Name="TxtAciklama" Text="Talep, teklif, onay ve stok süreçlerinizi tek merkezden yönetin."
+                   FontSize="13" Foreground="#94A3B8" TextAlignment="Center" TextWrapping="Wrap"
+                   MaxWidth="340" HorizontalAlignment="Center" Margin="0,14,0,0" Opacity="0.9" />
+      </StackPanel>
+    </Grid>
 
-  <!-- Sağ: giriş kartı -->
-  <Grid Grid.Column="1" Background="#F4F6FA">
-    <Border Style="{StaticResource LoginGlassCardStyle}"
-            VerticalAlignment="Center"
-            Margin="24,32,36,32"
-            MaxWidth="420"
-            HorizontalAlignment="Center"
-            RenderTransformOrigin="0.5,0.5">
-      <Border.RenderTransform>
-        <TranslateTransform Y="0" />
-      </Border.RenderTransform>
-      <Border.Triggers>
-        <EventTrigger RoutedEvent="Loaded">
-          <BeginStoryboard Storyboard="{StaticResource LoginCardEnterStoryboard}" />
-        </EventTrigger>
-      </Border.Triggers>
-      <views:GirisView x:Name="GirisKontrol" KartModu="True" />
-    </Border>
-  </Grid>
+    <Grid Grid.Column="1" Background="#0B1220">
+      <Border Style="{StaticResource LoginGlassCardStyle}"
+              VerticalAlignment="Center"
+              Margin="24,32,36,32"
+              MaxWidth="420"
+              HorizontalAlignment="Center"
+              Background="#151C2C"
+              BorderBrush="#243044"
+              CornerRadius="8"
+              RenderTransformOrigin="0.5,0.5">
+        <Border.RenderTransform>
+          <TranslateTransform Y="0" />
+        </Border.RenderTransform>
+        <Border.Triggers>
+          <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard Storyboard="{StaticResource LoginCardEnterStoryboard}" />
+          </EventTrigger>
+        </Border.Triggers>
+        <views:GirisView x:Name="GirisKontrol" KartModu="True" />
+      </Border>
+    </Grid>
   </Grid>
 </Window>

@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.93",
-    "build":  163,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.93/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.93/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.93/SatinalmaPro.apk",
-    "notes":  "2.1.93 - Sef imza kiraci izolasyonu: firma arasi imza sizintisi engellendi",
+    "version":  "2.1.94",
+    "build":  165,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.94/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.94/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.94/SatinalmaPro.apk",
+    "notes":  "2.1.94 - Talep Pro ayri uygulama (indigo TP ikon, otomatik baslat, profesyonel shell); Pro dashboard genislendi; ust cubukta Talep Pro yu ac",
     "zorunlu":  false
 }

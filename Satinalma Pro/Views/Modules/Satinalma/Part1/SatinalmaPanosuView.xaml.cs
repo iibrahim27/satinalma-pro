@@ -148,7 +148,8 @@ public partial class SatinalmaPanosuView : UserControl
                 Style = KaynakStili("SatModWorkflowCard"),
                 Tag = adim.Route,
                 Width = 168,
-                Margin = new Thickness(0, 0, 0, 0)
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Margin = new Thickness(0, 0, 8, 0)
             };
             kart.MouseLeftButtonUp += (_, _) =>
             {
@@ -210,10 +211,10 @@ public partial class SatinalmaPanosuView : UserControl
     private static TextBlock Oklar() => new()
     {
         Text = "→",
-        FontSize = 18,
-        Foreground = new SolidColorBrush(Color.FromRgb(203, 213, 225)),
+        FontSize = 14,
         VerticalAlignment = VerticalAlignment.Center,
-        Margin = new Thickness(8, 0, 8, 0)
+        Foreground = new SolidColorBrush(Color.FromRgb(98, 125, 152)),
+        Margin = new Thickness(0, 0, 8, 0)
     };
 
     private void KpiOlustur(IReadOnlyList<SatinalmaPanosuOzetKpi> kpis)
@@ -222,7 +223,12 @@ public partial class SatinalmaPanosuView : UserControl
         foreach (var kpi in kpis)
         {
             var renk = (Color)ColorConverter.ConvertFromString(kpi.RenkHex)!;
-            var kart = new Border { Style = KaynakStili("SatModMiniKpiCard"), Margin = new Thickness(0, 0, 8, 8) };
+            var kart = new Border
+            {
+                Style = KaynakStili("SatModMiniKpiCard"),
+                Width = 168,
+                Margin = new Thickness(0, 0, 8, 0)
+            };
             kart.Child = new StackPanel
             {
                 Children =

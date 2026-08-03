@@ -2,15 +2,19 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:controls="clr-namespace:SatinalmaPro.Controls">
 
-  <Color x:Key="LoginNavy">#0F2A5A</Color>
-  <Color x:Key="LoginAccentStart">#4F46E5</Color>
-  <Color x:Key="LoginAccentEnd">#6D5BFF</Color>
-  <Color x:Key="LoginGlassFill">#F2FFFFFF</Color>
-  <Color x:Key="LoginGlassStroke">#66FFFFFF</Color>
+  <Color x:Key="LoginNavy">#0F172A</Color>
+  <Color x:Key="LoginAccentStart">#0D7377</Color>
+  <Color x:Key="LoginAccentEnd">#14919B</Color>
+  <Color x:Key="LoginGlassFill">#F2151C2C</Color>
+  <Color x:Key="LoginGlassStroke">#243044</Color>
 
   <SolidColorBrush x:Key="LoginNavyBrush" Color="{StaticResource LoginNavy}" />
   <SolidColorBrush x:Key="LoginGlassFillBrush" Color="{StaticResource LoginGlassFill}" />
   <SolidColorBrush x:Key="LoginGlassStrokeBrush" Color="{StaticResource LoginGlassStroke}" />
+  <SolidColorBrush x:Key="LoginTextBrush" Color="#F1F5F9" />
+  <SolidColorBrush x:Key="LoginMutedBrush" Color="#94A3B8" />
+  <SolidColorBrush x:Key="LoginFieldBgBrush" Color="#0B1220" />
+  <SolidColorBrush x:Key="LoginAccentBrush" Color="#0D7377" />
 
   <LinearGradientBrush x:Key="LoginAccentGradientBrush" StartPoint="0,0" EndPoint="1,1">
     <GradientStop Color="{StaticResource LoginAccentStart}" Offset="0" />
@@ -18,13 +22,13 @@
   </LinearGradientBrush>
 
   <LinearGradientBrush x:Key="LoginHeroBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
-    <GradientStop Color="#0A1F42" Offset="0" />
+    <GradientStop Color="#0B1220" Offset="0" />
     <GradientStop Color="{StaticResource LoginNavy}" Offset="0.55" />
-    <GradientStop Color="#1E4A8C" Offset="1" />
+    <GradientStop Color="#1A2740" Offset="1" />
   </LinearGradientBrush>
 
-  <DropShadowEffect x:Key="LoginCardShadow" BlurRadius="28" ShadowDepth="0" Opacity="0.14" Color="#0F2A5A" />
-  <DropShadowEffect x:Key="LoginGlowShadow" BlurRadius="20" ShadowDepth="0" Opacity="0.35" Color="#4F46E5" />
+  <DropShadowEffect x:Key="LoginCardShadow" BlurRadius="20" ShadowDepth="0" Opacity="0.4" Color="#000000" />
+  <DropShadowEffect x:Key="LoginGlowShadow" BlurRadius="16" ShadowDepth="0" Opacity="0.28" Color="#0D7377" />
 
   <controls:LoginBoyutCarpanConverter x:Key="LoginBoyutCarpanConverter" />
 
@@ -32,7 +36,7 @@
     <Setter Property="Background" Value="{StaticResource LoginGlassFillBrush}" />
     <Setter Property="BorderBrush" Value="{StaticResource LoginGlassStrokeBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="CornerRadius" Value="8" />
     <Setter Property="Padding" Value="28,24" />
     <Setter Property="Effect" Value="{StaticResource LoginCardShadow}" />
   </Style>
@@ -40,18 +44,26 @@
   <Style x:Key="LoginFieldLabelStyle" TargetType="TextBlock">
     <Setter Property="FontSize" Value="12" />
     <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Foreground" Value="{StaticResource InkMutedBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource LoginMutedBrush}" />
     <Setter Property="Margin" Value="4,0,0,6" />
   </Style>
 
-  <Style x:Key="LoginTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource FilterBoxStyle}">
+  <!-- Koyu kutu + AÇIK yazı (InkBrush kullanma — görünmez olur) -->
+  <Style x:Key="LoginTextBoxStyle" TargetType="TextBox">
     <Setter Property="Height" Value="44" />
     <Setter Property="Padding" Value="14,10" />
     <Setter Property="FontSize" Value="14" />
-    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="Background" Value="{StaticResource LoginFieldBgBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource LoginTextBrush}" />
+    <Setter Property="CaretBrush" Value="{StaticResource LoginTextBrush}" />
+    <Setter Property="SelectionBrush" Value="{StaticResource LoginAccentBrush}" />
+    <Setter Property="SelectionTextBrush" Value="White" />
+    <Setter Property="BorderBrush" Value="#334155" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
     <Style.Triggers>
       <Trigger Property="IsKeyboardFocused" Value="True">
-        <Setter Property="BorderBrush" Value="{StaticResource LoginAccentStart}" />
+        <Setter Property="BorderBrush" Value="{StaticResource LoginAccentBrush}" />
       </Trigger>
     </Style.Triggers>
   </Style>
@@ -60,15 +72,16 @@
     <Setter Property="Height" Value="44" />
     <Setter Property="Padding" Value="14,10" />
     <Setter Property="FontSize" Value="14" />
-    <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+    <Setter Property="Background" Value="{StaticResource LoginFieldBgBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource LoginTextBrush}" />
+    <Setter Property="CaretBrush" Value="{StaticResource LoginTextBrush}" />
+    <Setter Property="SelectionBrush" Value="{StaticResource LoginAccentBrush}" />
+    <Setter Property="BorderBrush" Value="#334155" />
     <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
     <Style.Triggers>
       <Trigger Property="IsKeyboardFocused" Value="True">
-        <Setter Property="BorderBrush">
-          <Setter.Value>
-            <SolidColorBrush Color="{StaticResource LoginAccentStart}" />
-          </Setter.Value>
-        </Setter>
+        <Setter Property="BorderBrush" Value="{StaticResource LoginAccentBrush}" />
       </Trigger>
     </Style.Triggers>
   </Style>
@@ -79,26 +92,19 @@
     <Setter Property="FontSize" Value="14" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Padding" Value="16,12" />
-    <Setter Property="Background" Value="{StaticResource LoginAccentGradientBrush}" />
+    <Setter Property="Foreground" Value="White" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="Button">
-          <Border x:Name="BtnBorder" CornerRadius="14" Background="{TemplateBinding Background}"
+          <Border x:Name="BtnBorder" CornerRadius="8" Background="#0D7377"
                   Padding="{TemplateBinding Padding}">
-            <Border.Effect>
-              <DropShadowEffect BlurRadius="14" ShadowDepth="0" Opacity="0.22" Color="#4F46E5" />
-            </Border.Effect>
-            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                              TextElement.Foreground="{TemplateBinding Foreground}" />
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-              <Setter TargetName="BtnBorder" Property="RenderTransform">
-                <Setter.Value>
-                  <ScaleTransform ScaleX="1.02" ScaleY="1.02" />
-                </Setter.Value>
-              </Setter>
-              <Setter TargetName="BtnBorder" Property="RenderTransformOrigin" Value="0.5,0.5" />
+              <Setter TargetName="BtnBorder" Property="Background" Value="#14919B" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
               <Setter TargetName="BtnBorder" Property="Opacity" Value="0.55" />

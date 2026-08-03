@@ -27,7 +27,7 @@
     <Border Grid.Row="1" Style="{StaticResource ModulePageCardStyle}" Padding="24,20">
       <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0">
       <StackPanel>
-        <Border Background="#F8FAFC" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+        <Border Background="#EEF2F5" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
                 CornerRadius="12" Padding="16" Margin="0,0,0,14">
           <Grid>
             <Grid.ColumnDefinitions>
@@ -123,7 +123,7 @@
           <Border Grid.Column="0" Margin="0,0,8,0" Style="{StaticResource ModulePageCardStyle}" Padding="14">
             <StackPanel>
               <TextBlock Text="Ruhsat" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,10" />
-              <Border Height="140" Background="#F8FAFC" BorderBrush="{StaticResource LineBrush}"
+              <Border Height="140" Background="#EEF2F5" BorderBrush="{StaticResource LineBrush}"
                       BorderThickness="1" CornerRadius="8" Margin="0,0,0,10">
                 <Image x:Name="ImgRuhsat" Stretch="Uniform" Margin="8" />
               </Border>

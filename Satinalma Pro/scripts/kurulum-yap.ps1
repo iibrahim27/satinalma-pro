@@ -77,21 +77,43 @@ if (Test-Path $googleYol) {
 $imzaScript = Join-Path (Split-Path $projeKok -Parent) "scripts\kod-imzala.ps1"
 $publishExe = Join-Path $publish "SatinalmaPro.exe"
 
-Write-Host "`n[4/8] Publish exe imzalanıyor (kod imza)..."
+Write-Host "`n[4/9] Talep Pro publish (aynı klasöre)..."
+$talepProje = Join-Path (Split-Path $projeKok -Parent) "TalepPro\TalepPro.csproj"
+if (-not (Test-Path $talepProje)) { throw "TalepPro.csproj bulunamadi: $talepProje" }
+# Not: "$publish\" PowerShell'de tırnağı kaçırır; -o kullan
+dotnet publish $talepProje -c Release -r win-x64 --self-contained true `
+    -p:UseAppHost=true `
+    -o $publish `
+    -p:Version=$Version `
+    -p:AssemblyVersion="$Version.0" `
+    -p:FileVersion="$Version.0" `
+    -p:InformationalVersion=$Version
+if ($LASTEXITCODE -ne 0) { throw "Talep Pro publish basarisiz (cikis: $LASTEXITCODE)" }
+$talepExe = Join-Path $publish "TalepPro.exe"
+if (-not (Test-Path $talepExe)) { throw "TalepPro.exe publish icinde yok: $talepExe" }
+$talepIco = Join-Path (Split-Path $talepProje -Parent) "Assets\app.ico"
+if (Test-Path $talepIco) {
+    Copy-Item $talepIco (Join-Path $publish "TalepPro.ico") -Force
+    Write-Host "  TalepPro.exe + TalepPro.ico (TP) eklendi" -ForegroundColor Green
+} else {
+    Write-Host "  TalepPro.exe eklendi" -ForegroundColor Green
+}
+
+Write-Host "`n[5/9] Publish exe imzalanıyor (kod imza)..."
 if (Test-Path $imzaScript) {
-    & $imzaScript -Dosyalar @($publishExe)
+    & $imzaScript -Dosyalar @($publishExe, $talepExe)
 }
 else {
     Write-Host "  UYARI: kod-imzala.ps1 bulunamadi, imza atlandi." -ForegroundColor Yellow
 }
 
-Write-Host "`n[5/8] Zip olusturuluyor..."
+Write-Host "`n[6/9] Zip olusturuluyor..."
 $zipAdi = "SatinalmaPro.zip"
 $zipYol = Join-Path $projeKok $zipAdi
 if (Test-Path $zipYol) { Remove-Item $zipYol -Force }
 Compress-Archive -Path "$publish\*" -DestinationPath $zipYol -CompressionLevel Optimal
 
-Write-Host "`n[6/8] Inno Setup kurulum exe derleniyor..."
+Write-Host "`n[7/9] Inno Setup kurulum exe derleniyor..."
 $kurulumExe = Join-Path $projeKok "SatinalmaPro_Kurulum.exe"
 $iscc = @(
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
@@ -112,12 +134,12 @@ if (-not (Test-Path $kurulumExe)) {
     throw "Kurulum exe olusturulamadi: $kurulumExe"
 }
 
-Write-Host "`n[7/8] Kurulum exe imzalanıyor..."
+Write-Host "`n[8/9] Kurulum exe imzalanıyor..."
 if (Test-Path $imzaScript) {
     & $imzaScript -Dosyalar @($kurulumExe)
 }
 
-Write-Host "`n[8/8] Android APK derleniyor (Compose, 1-2 dakika)..."
+Write-Host "`n[9/9] Android APK derleniyor (Compose, 1-2 dakika)..."
 $androidKok = Join-Path (Split-Path $projeKok -Parent) "SatinalmaPro.Android"
 $gradlew = Join-Path $androidKok "gradlew.bat"
 if (-not (Test-Path $gradlew)) {
