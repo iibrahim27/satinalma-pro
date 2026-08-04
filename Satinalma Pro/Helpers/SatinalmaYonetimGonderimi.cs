@@ -46,6 +46,7 @@ public static class SatinalmaYonetimGonderimi
         {
             talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
             talep.Status = ProcurementStatus.ManagementQuoteReview;
+            talep.TeklifDuzeltmeNotu = "";
             SatinalmaTalepYardimcisi.Dokun(talep);
             await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
 

@@ -188,12 +188,13 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
 
         talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
         talep.Status = ProcurementStatus.QuoteRequested;
-        talep.TeklifDuzeltmeNotu = string.IsNullOrWhiteSpace(gerekce) ? "" : gerekce.Trim();
+        // Boş notta da revize kuyruğu / birleştirme koruması çalışsın.
+        talep.TeklifDuzeltmeNotu = string.IsNullOrWhiteSpace(gerekce) ? "Revize istendi" : gerekce.Trim();
         talep.YonetimOnayKilitli = false;
         talep.OnaylananTeklifId = null;
         talep.Kalemler ??= [];
         foreach (var kalem in talep.Kalemler)
-            kalem.OnaylananTeklifId = null;
+            KalemFirmaAtamaYardimcisi.Temizle(kalem);
 
         await TalepKaydetAsync(talep, iptal);
         var actorUid = _depo.AktifKullanici?.Uid;

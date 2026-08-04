@@ -1,4 +1,5 @@
 using SatinalmaPro.Shared.Models;
+using SatinalmaPro.Shared.Procurement;
 
 namespace SatinalmaPro.Shared.Helpers;
 
@@ -68,18 +69,18 @@ public static class SatinalmaTalepBirlestirme
             return;
         }
 
-        // Yönetim «teklif iste»: skor YonetimOnayinda > TeklifGirişi olsa da Teklif kazanır.
+        // Yönetim «teklif iste» / «revizeye gönder»: Teklif Girişi kazanır.
         if (TeklifIstemeGecisiMi(hedef, kaynak))
         {
             UygulaSurecDurumu(hedef, kaynak);
             return;
         }
 
-        // Ters: teklifsiz stale Yönetim/İmza, güncel Teklif Girişi'ni ezmesin.
+        // Revize / teklif iste sonrası Teklif Girişi'ni stale Yönetim Onayına geri çekme.
         if (TeklifIstemeKorumaMi(hedef, kaynak))
             return;
 
-        // Teklifler yönetime gönderildi: Teklif/Karşılaştırma → Yonetim Onayında (teklifli).
+        // Teklifler yönetime gönderildi: Karşılaştırma → Yonetim Onayında (teklifli, daha yeni).
         if (TeklifYonetimIncelemeGecisiMi(hedef, kaynak))
         {
             UygulaSurecDurumu(hedef, kaynak);
@@ -102,34 +103,48 @@ public static class SatinalmaTalepBirlestirme
         }
     }
 
-    /// <summary>Yönetim onay/imza → Teklif Girişi (henüz gerçek teklif yok veya düzeltme).</summary>
     private static bool TeklifIstemeGecisiMi(SatinalmaTalep hedef, SatinalmaTalep kaynak)
     {
         if (kaynak.Durum != SatinalmaTalepDurumlari.TeklifGirisi)
             return false;
         if (hedef.Durum is not (SatinalmaTalepDurumlari.YonetimOnayinda
             or SatinalmaTalepDurumlari.ImzaSurecinde
-            or SatinalmaTalepDurumlari.Hazirlaniyor))
+            or SatinalmaTalepDurumlari.Hazirlaniyor
+            or SatinalmaTalepDurumlari.Karsilastirma))
             return false;
 
-        // Yönetim teklif incelemesindeyken (teklifler var) boş teklif iste ile geri alma — yalnızca düzeltme notu ile.
-        if (SatinalmaTalepYardimcisi.GercekTeklifVar(hedef)
-            && string.IsNullOrWhiteSpace(kaynak.TeklifDuzeltmeNotu))
-            return false;
+        if (!SatinalmaTalepYardimcisi.GercekTeklifVar(hedef))
+            return true;
 
+        if (!RevizeTeklifGirisiMi(kaynak))
+            return false;
+        if (hedef.Durum == SatinalmaTalepDurumlari.YonetimOnayinda
+            && hedef.GuncellemeUtc > kaynak.GuncellemeUtc
+            && string.IsNullOrWhiteSpace(hedef.TeklifDuzeltmeNotu)
+            && SatinalmaTalepYardimcisi.GercekTeklifVar(hedef))
+            return false;
         return true;
     }
 
     private static bool TeklifIstemeKorumaMi(SatinalmaTalep hedef, SatinalmaTalep kaynak)
     {
-        if (hedef.Durum != SatinalmaTalepDurumlari.TeklifGirisi)
-            return false;
         if (kaynak.Durum is not (SatinalmaTalepDurumlari.YonetimOnayinda
             or SatinalmaTalepDurumlari.ImzaSurecinde
             or SatinalmaTalepDurumlari.Hazirlaniyor))
             return false;
 
-        // Hedefte teklif girişi var; kaynak teklifsiz yönetim/imza — ezme.
+        // Revize: Teklif Girişi / Karşılaştırma + not — skor ile yönetime geri alma.
+        if ((hedef.Durum is SatinalmaTalepDurumlari.TeklifGirisi
+                or SatinalmaTalepDurumlari.Karsilastirma)
+            && !string.IsNullOrWhiteSpace(hedef.TeklifDuzeltmeNotu))
+            return true;
+
+        if (hedef.Durum == SatinalmaTalepDurumlari.TeklifGirisi && RevizeTeklifGirisiMi(hedef))
+            return true;
+
+        if (hedef.Durum != SatinalmaTalepDurumlari.TeklifGirisi)
+            return false;
+
         return !SatinalmaTalepYardimcisi.GercekTeklifVar(kaynak);
     }
 
@@ -137,13 +152,22 @@ public static class SatinalmaTalepBirlestirme
     {
         if (kaynak.Durum != SatinalmaTalepDurumlari.YonetimOnayinda)
             return false;
-        if (hedef.Durum is not (SatinalmaTalepDurumlari.TeklifGirisi
-            or SatinalmaTalepDurumlari.Karsilastirma))
+        if (hedef.Durum != SatinalmaTalepDurumlari.Karsilastirma)
+            return false;
+        if (RevizeTeklifGirisiMi(hedef) || !string.IsNullOrWhiteSpace(hedef.TeklifDuzeltmeNotu))
+            return false;
+        if (!SatinalmaTalepYardimcisi.GercekTeklifVar(kaynak)
+            && !SatinalmaTalepYardimcisi.GercekTeklifVar(hedef))
             return false;
 
-        return SatinalmaTalepYardimcisi.GercekTeklifVar(kaynak)
-            || SatinalmaTalepYardimcisi.GercekTeklifVar(hedef);
+        return kaynak.GuncellemeUtc >= hedef.GuncellemeUtc;
     }
+
+    private static bool RevizeTeklifGirisiMi(SatinalmaTalep t) =>
+        t.Durum == SatinalmaTalepDurumlari.TeklifGirisi
+        && (!string.IsNullOrWhiteSpace(t.TeklifDuzeltmeNotu)
+            || (SatinalmaTalepYardimcisi.GercekTeklifVar(t)
+                && string.Equals(t.Status, ProcurementStatus.QuoteRequested, StringComparison.OrdinalIgnoreCase)));
 
     private static void UygulaSurecDurumu(SatinalmaTalep hedef, SatinalmaTalep kaynak)
     {
@@ -151,14 +175,16 @@ public static class SatinalmaTalepBirlestirme
         if (!string.IsNullOrWhiteSpace(kaynak.Status))
             hedef.Status = kaynak.Status;
 
-        if (kaynak.TeklifsizYonetimOnayi)
-            hedef.TeklifsizYonetimOnayi = true;
-        if (kaynak.YonetimOnayKilitli)
-            hedef.YonetimOnayKilitli = true;
+        hedef.TeklifsizYonetimOnayi = kaynak.TeklifsizYonetimOnayi;
+        hedef.YonetimOnayKilitli = kaynak.YonetimOnayKilitli;
+
         if (!string.IsNullOrWhiteSpace(kaynak.RedGerekcesi))
             hedef.RedGerekcesi = kaynak.RedGerekcesi;
         if (kaynak.OnaylananTeklifId is { } onayId)
             hedef.OnaylananTeklifId = onayId;
+        else if (kaynak.Durum == SatinalmaTalepDurumlari.TeklifGirisi)
+            hedef.OnaylananTeklifId = null;
+
         if (!string.IsNullOrWhiteSpace(kaynak.YonetimOnaylayanUid))
         {
             hedef.YonetimOnaylayanUid = kaynak.YonetimOnaylayanUid;
@@ -166,18 +192,18 @@ public static class SatinalmaTalepBirlestirme
             hedef.YonetimOnaylayanEposta = kaynak.YonetimOnaylayanEposta;
             hedef.YonetimOnayTarihi = kaynak.YonetimOnayTarihi;
         }
-        if (!string.IsNullOrWhiteSpace(kaynak.TeklifDuzeltmeNotu)
-            && string.IsNullOrWhiteSpace(hedef.TeklifDuzeltmeNotu))
+
+        if (!string.IsNullOrWhiteSpace(kaynak.TeklifDuzeltmeNotu))
             hedef.TeklifDuzeltmeNotu = kaynak.TeklifDuzeltmeNotu;
+        else if (kaynak.Durum == SatinalmaTalepDurumlari.YonetimOnayinda)
+            hedef.TeklifDuzeltmeNotu = "";
     }
 
     private static void BirlestirKararAlanlari(SatinalmaTalep hedef, SatinalmaTalep kaynak)
     {
-        // Karar bayrakları / gerekçe — daha dolu olanı koru (UTC'den bağımsız OR).
+        // Onay kilidi burada OR ile yapışkan kalmasın — SurecDurumu uygular.
         if (kaynak.TeklifsizYonetimOnayi)
             hedef.TeklifsizYonetimOnayi = true;
-        if (kaynak.YonetimOnayKilitli)
-            hedef.YonetimOnayKilitli = true;
         if (string.IsNullOrWhiteSpace(hedef.RedGerekcesi)
             && !string.IsNullOrWhiteSpace(kaynak.RedGerekcesi))
             hedef.RedGerekcesi = kaynak.RedGerekcesi;

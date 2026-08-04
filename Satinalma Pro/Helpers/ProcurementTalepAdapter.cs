@@ -27,14 +27,27 @@ public static class ProcurementTalepAdapter
             return ProcurementStatus.Approved;
 
         if (talep.Durum == SatinalmaTalepDurumlari.Karsilastirma)
+        {
+            if (SatinalmaTalepYardimcisi.TeklifDuzeltmeBekliyor(talep))
+                return ProcurementStatus.QuoteRequested;
             return ProcurementStatus.Comparison;
+        }
 
         if (talep.Durum == SatinalmaTalepDurumlari.TeklifGirisi)
         {
-            return SatinalmaTalepKuyrugu.YonetimTeklifBekleyen(talep)
-                ? ProcurementStatus.QuoteRequested
-                : ProcurementStatus.QuoteEntry;
+            if (SatinalmaTalepYardimcisi.TeklifDuzeltmeBekliyor(talep)
+                || SatinalmaTalepKuyrugu.YonetimTeklifBekleyen(talep))
+                return ProcurementStatus.QuoteRequested;
+            return ProcurementStatus.QuoteEntry;
         }
+
+        // Revize notu varken stale Yönetim Durum → quote_requested (senkron Durum'u da çeker).
+        if (talep.Durum == SatinalmaTalepDurumlari.YonetimOnayinda
+            && !string.IsNullOrWhiteSpace(talep.TeklifDuzeltmeNotu)
+            && SatinalmaTalepYardimcisi.GercekTeklifVar(talep)
+            && !talep.HerhangiKalemOnayli
+            && !talep.YonetimOnayKilitli)
+            return ProcurementStatus.QuoteRequested;
 
         if (talep.Durum == SatinalmaTalepDurumlari.YonetimOnayinda
             && (talep.Teklifler?.Count ?? 0) > 0
@@ -78,15 +91,33 @@ public static class ProcurementTalepAdapter
 
         var status = ProcurementStatus.Normalize(talep.Status);
 
-        // quote_requested skoru YonetimOnayinda'dan düşük; teklifsiz yönetim→teklif iste özel geçişi.
+        // quote_requested skoru YonetimOnayinda'dan düşük; teklif iste / revize yine Teklif Girişi.
         if ((status is ProcurementStatus.QuoteRequested or ProcurementStatus.QuoteEntry)
             && (talep.Durum is SatinalmaTalepDurumlari.YonetimOnayinda
                 or SatinalmaTalepDurumlari.ImzaSurecinde
                 or SatinalmaTalepDurumlari.Hazirlaniyor)
-            && !SatinalmaTalepYardimcisi.GercekTeklifVar(talep))
+            && (!SatinalmaTalepYardimcisi.GercekTeklifVar(talep)
+                || !string.IsNullOrWhiteSpace(talep.TeklifDuzeltmeNotu)))
         {
             talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
             return true;
+        }
+
+        // Stale management_quote_review + revize notu → yönetime yükseltme.
+        if (status == ProcurementStatus.ManagementQuoteReview
+            && !string.IsNullOrWhiteSpace(talep.TeklifDuzeltmeNotu)
+            && !talep.YonetimOnayKilitli)
+        {
+            if (talep.Durum is SatinalmaTalepDurumlari.TeklifGirisi
+                or SatinalmaTalepDurumlari.Karsilastirma)
+                return false;
+            if (talep.Durum is SatinalmaTalepDurumlari.YonetimOnayinda
+                or SatinalmaTalepDurumlari.ImzaSurecinde
+                or SatinalmaTalepDurumlari.Hazirlaniyor)
+            {
+                talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
+                return true;
+            }
         }
 
         var durumAsama = SatinalmaPro.Shared.Models.SatinalmaTalepDurumlari.SurecAsamaSkoru(talep.Durum);

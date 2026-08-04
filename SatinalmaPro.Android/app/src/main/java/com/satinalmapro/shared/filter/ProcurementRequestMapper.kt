@@ -65,6 +65,9 @@ fun TalepItem.resolvedEnterpriseStatus(): String {
             }
             val kalemOnayli = safeKalemler().any { !it.onaylananTeklifId.isNullOrBlank() }
             when {
+                // Revize notu varken stale yönetim → satınalma düzeltme kuyruğu
+                teklifDuzeltmeNotu.isNotBlank() && gercekTeklif && !kalemOnayli && !yonetimOnayKilitli ->
+                    ProcurementStatus.QUOTE_REQUESTED
                 gercekTeklif && !kalemOnayli -> ProcurementStatus.MANAGEMENT_QUOTE_REVIEW
                 // Kalem/teklif onayı var ama Durum güncellenmemiş
                 kalemOnayli || teklifsizYonetimOnayi || yonetimOnayKilitli -> ProcurementStatus.APPROVED

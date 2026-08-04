@@ -57,7 +57,9 @@ public static class PurchaseRequestDetailServisi
             talep.RedGerekcesi = mutation.RejectionReason;
 
         if (mutation.QuoteCorrectionNote is not null)
-            talep.TeklifDuzeltmeNotu = mutation.QuoteCorrectionNote;
+            talep.TeklifDuzeltmeNotu = string.IsNullOrWhiteSpace(mutation.QuoteCorrectionNote)
+                ? "Revize istendi"
+                : mutation.QuoteCorrectionNote.Trim();
 
         if (mutation.ClearApprovedQuote)
             talep.OnaylananTeklifId = null;

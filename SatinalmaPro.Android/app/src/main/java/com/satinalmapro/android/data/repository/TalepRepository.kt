@@ -59,8 +59,7 @@ class TalepRepository(
         val st = ProcurementStatus.normalize(status)
         val durumAsama = surecAsamaSkoru(durum)
         val statusAsama = statusAsamaSkoru(st)
-        if (statusAsama <= durumAsama) return this
-        // quote_requested skoru yönetim onayından düşük; teklifsiz yönetim/imza → teklif girişi.
+        // quote_requested skoru yönetimden düşük; teklif iste / revize yine de Teklif Girişi olmalı.
         if (st == ProcurementStatus.QUOTE_REQUESTED || st == ProcurementStatus.QUOTE_ENTRY) {
             val yonetimOncesi = durum == TalepDurumlari.YONETIM_ONAY
                 || durum == TalepDurumlari.IMZA
@@ -68,8 +67,27 @@ class TalepRepository(
             val gercekTeklif = teklifler.any {
                 it.firmaAdi.isNotBlank() || it.fiyatlar.any { f -> f.birimFiyat > 0 }
             }
-            if (yonetimOncesi && !gercekTeklif && durum != TalepDurumlari.TEKLIF_GIRISI)
+            // İlk teklif iste (teklif yok) veya revize notu olan geri gönderim.
+            if (yonetimOncesi && durum != TalepDurumlari.TEKLIF_GIRISI
+                && (!gercekTeklif || teklifDuzeltmeNotu.isNotBlank())
+            ) {
                 return copy(durum = TalepDurumlari.TEKLIF_GIRISI)
+            }
+        }
+
+        // Stale management_quote_review + revize notu → yönetime yükseltme / takılma.
+        if (st == ProcurementStatus.MANAGEMENT_QUOTE_REVIEW
+            && teklifDuzeltmeNotu.isNotBlank()
+            && !yonetimOnayKilitli
+        ) {
+            if (durum == TalepDurumlari.TEKLIF_GIRISI || durum == TalepDurumlari.KARSILASTIRMA)
+                return this
+            if (durum == TalepDurumlari.YONETIM_ONAY
+                || durum == TalepDurumlari.IMZA
+                || durum == TalepDurumlari.HAZIRLANIYOR
+            ) {
+                return copy(durum = TalepDurumlari.TEKLIF_GIRISI)
+            }
         }
 
         if (statusAsama <= durumAsama) return this
@@ -759,10 +777,11 @@ class TalepRepository(
         val result = mutateTalep(talepId) { talep ->
             if (!TalepKuyrugu.teklifYonetimOnayiBekliyor(talep))
                 throw IllegalStateException("Bu talep için geri gönderilecek teklif onayı bulunamadı")
+            val not = gerekce?.trim().orEmpty().ifBlank { "Revize istendi" }
             talep.copy(
                 durum = TalepDurumlari.TEKLIF_GIRISI,
                 status = "quote_requested",
-                teklifDuzeltmeNotu = gerekce?.trim().orEmpty(),
+                teklifDuzeltmeNotu = not,
                 yonetimOnayKilitli = false,
                 onaylananTeklifId = null,
                 kalemler = talep.kalemler.map { KalemFirmaAtamaYardimcisi.temizle(it) }
@@ -1131,7 +1150,11 @@ class TalepRepository(
         updated = updated.copy(yonetimOnayKilitli = mutation.yonetimOnayKilitli)
 
         mutation.rejectionReason?.let { updated = updated.copy(redGerekcesi = it) }
-        mutation.quoteCorrectionNote?.let { updated = updated.copy(teklifDuzeltmeNotu = it) }
+        mutation.quoteCorrectionNote?.let { not ->
+            updated = updated.copy(
+                teklifDuzeltmeNotu = not.trim().ifBlank { "Revize istendi" }
+            )
+        }
 
         if (mutation.clearApprovedQuote) {
             updated = updated.copy(onaylananTeklifId = null)

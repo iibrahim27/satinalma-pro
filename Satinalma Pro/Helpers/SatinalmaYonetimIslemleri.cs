@@ -93,7 +93,8 @@ public static class SatinalmaYonetimIslemleri
         talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
         talep.Status = ProcurementStatus.QuoteRequested;
         talep.Priority = ProcurementTalepAdapter.EffectivePriority(talep);
-        talep.TeklifDuzeltmeNotu = string.IsNullOrWhiteSpace(gerekce) ? "" : gerekce.Trim();
+        // Boş notta da revize kuyruğu / birleştirme koruması çalışsın.
+        talep.TeklifDuzeltmeNotu = string.IsNullOrWhiteSpace(gerekce) ? "Revize istendi" : gerekce.Trim();
         talep.YonetimOnayKilitli = false;
         talep.OnaylananTeklifId = null;
         talep.Kalemler ??= [];

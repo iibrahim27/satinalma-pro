@@ -58,6 +58,14 @@ public static class ProcurementStatusResolver
             return ProcurementStatus.QuoteEntry;
         }
 
+        // Revize notu varken stale Yönetim Durum → quote_requested.
+        if (talep.Durum == SatinalmaTalepDurumlari.YonetimOnayinda
+            && !string.IsNullOrWhiteSpace(talep.TeklifDuzeltmeNotu)
+            && SatinalmaTalepYardimcisi.GercekTeklifVar(talep)
+            && !talep.HerhangiKalemOnayli
+            && !talep.YonetimOnayKilitli)
+            return ProcurementStatus.QuoteRequested;
+
         if (talep.Durum == SatinalmaTalepDurumlari.YonetimOnayinda
             && (talep.Teklifler?.Count ?? 0) > 0
             && !talep.HerhangiKalemOnayli)
@@ -103,15 +111,33 @@ public static class ProcurementStatusResolver
 
         var status = ProcurementStatus.Normalize(talep.Status);
 
-        // quote_requested skoru YonetimOnayinda'dan düşük; teklifsiz yönetim→teklif iste özel geçişi.
+        // quote_requested skoru YonetimOnayinda'dan düşük; teklif iste / revize yine Teklif Girişi.
         if ((status is ProcurementStatus.QuoteRequested or ProcurementStatus.QuoteEntry)
             && (talep.Durum is SatinalmaTalepDurumlari.YonetimOnayinda
                 or SatinalmaTalepDurumlari.ImzaSurecinde
                 or SatinalmaTalepDurumlari.Hazirlaniyor)
-            && !SatinalmaTalepYardimcisi.GercekTeklifVar(talep))
+            && (!SatinalmaTalepYardimcisi.GercekTeklifVar(talep)
+                || !string.IsNullOrWhiteSpace(talep.TeklifDuzeltmeNotu)))
         {
             talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
             return true;
+        }
+
+        // Stale management_quote_review + revize notu → yönetime yükseltme.
+        if (status == ProcurementStatus.ManagementQuoteReview
+            && !string.IsNullOrWhiteSpace(talep.TeklifDuzeltmeNotu)
+            && !talep.YonetimOnayKilitli)
+        {
+            if (talep.Durum is SatinalmaTalepDurumlari.TeklifGirisi
+                or SatinalmaTalepDurumlari.Karsilastirma)
+                return false;
+            if (talep.Durum is SatinalmaTalepDurumlari.YonetimOnayinda
+                or SatinalmaTalepDurumlari.ImzaSurecinde
+                or SatinalmaTalepDurumlari.Hazirlaniyor)
+            {
+                talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
+                return true;
+            }
         }
 
         var durumAsama = SatinalmaTalepDurumlari.SurecAsamaSkoru(talep.Durum);

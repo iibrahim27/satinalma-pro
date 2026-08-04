@@ -1,4 +1,5 @@
 using SatinalmaPro.Shared.Models;
+using SatinalmaPro.Shared.Procurement;
 
 namespace SatinalmaPro.Shared.Helpers;
 
@@ -138,6 +139,7 @@ public static class SatinalmaIsAkisi
             talep.YonetimOnerilenTeklifId = oneri.Id;
 
         talep.Durum = SatinalmaTalepDurumlari.YonetimOnayinda;
+        talep.Status = ProcurementStatus.ManagementQuoteReview;
         talep.TeklifDuzeltmeNotu = "";
         SatinalmaTalepSenkronYardimcisi.Dokun(talep);
     }
