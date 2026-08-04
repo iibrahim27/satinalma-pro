@@ -32,7 +32,7 @@
             <ColumnDefinition Width="Auto" />
           </Grid.ColumnDefinitions>
           <StackPanel>
-            <TextBlock Text="OPERASYON ÖZETİ" FontSize="11" FontWeight="Bold" Foreground="#9FE7E5" Margin="0,0,0,8" />
+            <TextBlock Text="MALZEME &amp; TAKİP ÖZETİ" FontSize="11" FontWeight="Bold" Foreground="#9FE7E5" Margin="0,0,0,8" />
             <TextBlock x:Name="TxtKarsilama" FontSize="28" FontWeight="SemiBold" Foreground="White" />
             <TextBlock x:Name="TxtAltBaslik" FontSize="14" Foreground="#D9E2EC" Margin="0,8,0,0" TextWrapping="Wrap" MaxWidth="640" />
             <TextBlock x:Name="TxtTarihSaat" FontSize="12" Foreground="#9FB3C8" Margin="0,10,0,0" />
@@ -51,7 +51,7 @@
               </Button.Template>
             </Button>
             <Button x:Name="BtnRaporOlustur" Padding="16,12" Cursor="Hand"
-                    Click="BtnRaporOlustur_Click" Content="Raporlar" FontWeight="SemiBold"
+                    Click="BtnRaporOlustur_Click" Content="Alınan" FontWeight="SemiBold"
                     Background="#0D7377" Foreground="White" BorderThickness="0">
               <Button.Template>
                 <ControlTemplate TargetType="Button">
@@ -79,9 +79,9 @@
       <!-- KPI -->
       <UniformGrid x:Name="StatGrid" Grid.Row="2" Rows="1" Columns="5" Margin="0,0,0,24" />
 
-      <!-- Modüller -->
+      <!-- Modüller — yalnızca malzeme / takip -->
       <StackPanel Grid.Row="3" Margin="0,0,0,24">
-        <TextBlock Text="Modüller" FontSize="15" FontWeight="SemiBold" Foreground="#102A43" Margin="0,0,0,14" />
+        <TextBlock Text="Takip Modülleri" FontSize="15" FontWeight="SemiBold" Foreground="#102A43" Margin="0,0,0,14" />
         <WrapPanel x:Name="ModulPanel" />
       </StackPanel>
 

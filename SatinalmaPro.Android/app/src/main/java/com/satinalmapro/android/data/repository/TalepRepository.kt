@@ -46,17 +46,76 @@ class TalepRepository(
     private val listType = object : TypeToken<List<TalepItem>>() {}.type
     private val ayarType = object : TypeToken<SatinalmaAyarlar>() {}.type
 
-    /** Durum kaynağından enterprise status senkronu — stale Status sekmeleri boşaltmasın. */
+    /** Status ileri aşamadaysa Durum yükselt; sonra Durum→Status hizala. */
     private fun TalepItem.withSyncedStatus(): TalepItem {
-        val dogru = resolvedEnterpriseStatus()
-        return if (status.equals(dogru, ignoreCase = true)) this else copy(status = dogru)
+        val lifted = withDurumFromStatusIfAhead()
+        val dogru = lifted.resolvedEnterpriseStatus()
+        return if (lifted.status.equals(dogru, ignoreCase = true)) lifted
+        else lifted.copy(status = dogru)
+    }
+
+    private fun TalepItem.withDurumFromStatusIfAhead(): TalepItem {
+        if (status.isBlank()) return this
+        val st = ProcurementStatus.normalize(status)
+        val durumAsama = surecAsamaSkoru(durum)
+        val statusAsama = statusAsamaSkoru(st)
+        if (statusAsama <= durumAsama) return this
+        // quote_requested skoru yönetim onayından düşük; teklifsiz yönetim/imza → teklif girişi.
+        if (st == ProcurementStatus.QUOTE_REQUESTED || st == ProcurementStatus.QUOTE_ENTRY) {
+            val yonetimOncesi = durum == TalepDurumlari.YONETIM_ONAY
+                || durum == TalepDurumlari.IMZA
+                || durum == TalepDurumlari.HAZIRLANIYOR
+            val gercekTeklif = teklifler.any {
+                it.firmaAdi.isNotBlank() || it.fiyatlar.any { f -> f.birimFiyat > 0 }
+            }
+            if (yonetimOncesi && !gercekTeklif && durum != TalepDurumlari.TEKLIF_GIRISI)
+                return copy(durum = TalepDurumlari.TEKLIF_GIRISI)
+        }
+
+        if (statusAsama <= durumAsama) return this
+        val yeni = when (st) {
+            ProcurementStatus.REJECTED -> TalepDurumlari.REDDEDILDI
+            ProcurementStatus.APPROVED -> TalepDurumlari.ONAYLANDI
+            ProcurementStatus.ORDERED, ProcurementStatus.COMPLETED -> TalepDurumlari.SIPARIS
+            ProcurementStatus.COMPARISON -> TalepDurumlari.KARSILASTIRMA
+            ProcurementStatus.QUOTE_REQUESTED, ProcurementStatus.QUOTE_ENTRY -> TalepDurumlari.TEKLIF_GIRISI
+            ProcurementStatus.MANAGEMENT_QUOTE_REVIEW -> TalepDurumlari.YONETIM_ONAY
+            else -> return this
+        }
+        return if (durum == yeni) this else copy(durum = yeni)
+    }
+
+    private fun surecAsamaSkoru(d: String): Int = when (d) {
+        TalepDurumlari.SIPARIS -> 90
+        TalepDurumlari.ONAYLANDI -> 70
+        TalepDurumlari.REDDEDILDI -> 65
+        TalepDurumlari.YONETIM_ONAY -> 60
+        TalepDurumlari.KARSILASTIRMA -> 50
+        TalepDurumlari.TEKLIF_GIRISI -> 40
+        TalepDurumlari.IMZA -> 30
+        TalepDurumlari.HAZIRLANIYOR -> 20
+        TalepDurumlari.TASLAK -> 0
+        else -> 0
+    }
+
+    private fun statusAsamaSkoru(st: String): Int = when (st) {
+        ProcurementStatus.COMPLETED -> 95
+        ProcurementStatus.ORDERED -> 90
+        ProcurementStatus.APPROVED -> 70
+        ProcurementStatus.REJECTED -> 65
+        ProcurementStatus.MANAGEMENT_QUOTE_REVIEW -> 60
+        ProcurementStatus.COMPARISON -> 50
+        ProcurementStatus.QUOTE_ENTRY, ProcurementStatus.QUOTE_REQUESTED -> 40
+        ProcurementStatus.SUBMITTED -> 30
+        ProcurementStatus.DRAFT -> 0
+        else -> 0
     }
 
     private fun syncStatuses(list: List<TalepItem>): Pair<List<TalepItem>, Boolean> {
         var degisti = false
         val synced = list.map { talep ->
             val guncel = talep.withSyncedStatus()
-            if (guncel.status != talep.status) degisti = true
+            if (guncel.status != talep.status || guncel.durum != talep.durum) degisti = true
             guncel
         }
         return synced to degisti
@@ -525,6 +584,7 @@ class TalepRepository(
             } else {
                 talep.copy(
                     durum = TalepDurumlari.TEKLIF_GIRISI,
+                    status = ProcurementStatus.QUOTE_REQUESTED,
                     yonetimOnayKilitli = false,
                     teklifsizYonetimOnayi = false
                 )

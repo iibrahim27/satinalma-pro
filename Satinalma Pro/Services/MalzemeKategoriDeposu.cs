@@ -51,6 +51,50 @@ public static class MalzemeKategoriDeposu
         return true;
     }
 
+    /// <summary>Kategoriye ait alınan malzeme kayıt sayısı (büyük/küçük harf duyarsız).</summary>
+    public static int AlinanMalzemeKayitSayisi(string kategoriAdi)
+    {
+        if (string.IsNullOrWhiteSpace(kategoriAdi))
+            return 0;
+
+        ModulVeriDeposu.Yukle();
+        return ModulVeriDeposu.AlinanMalzemeler.Count(k =>
+            !string.IsNullOrWhiteSpace(k.Kategori)
+            && k.Kategori.Trim().Equals(kategoriAdi.Trim(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Kategoriyi ayarlardan siler ve o kategoriye ait tüm alınan malzeme kayıtlarını kaldırır.
+    /// </summary>
+    /// <returns>Silinen alınan malzeme kayıt sayısı; kategori silinemediyse -1.</returns>
+    public static int SilVeAlinanMalzemeKayitlariniTemizle(string ad)
+    {
+        ad = ad.Trim();
+        if (string.IsNullOrWhiteSpace(ad))
+            return -1;
+
+        var liste = UygulamaAyarDeposu.Ayarlar.MalzemeKategorileri;
+        var bulunan = liste.FirstOrDefault(k => k.Equals(ad, StringComparison.OrdinalIgnoreCase));
+        if (bulunan is null || liste.Count <= 1)
+            return -1;
+
+        ModulVeriDeposu.Yukle();
+        var silinecekler = ModulVeriDeposu.AlinanMalzemeler
+            .Where(k => !string.IsNullOrWhiteSpace(k.Kategori)
+                        && k.Kategori.Trim().Equals(bulunan, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (var kayit in silinecekler)
+            ModulVeriDeposu.AlinanMalzemeler.Remove(kayit);
+
+        if (silinecekler.Count > 0)
+            ModulVeriDeposu.KaydetAlinanMalzemeler();
+
+        liste.Remove(bulunan);
+        UygulamaAyarDeposu.Kaydet();
+        return silinecekler.Count;
+    }
+
     /// <summary>Ayarlar + alınan malzeme + stok kayıtlarındaki tüm kategoriler.</summary>
     public static IEnumerable<string> TumListe()
     {

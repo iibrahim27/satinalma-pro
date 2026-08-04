@@ -428,13 +428,29 @@ public partial class AyarlarView : UserControl
             return;
         }
 
-        if (!MalzemeKategoriDeposu.Sil(secili))
+        var kayitSayisi = MalzemeKategoriDeposu.AlinanMalzemeKayitSayisi(secili);
+        var mesaj = kayitSayisi > 0
+            ? $"«{secili}» kategorisi ve bu kategoriye ait {kayitSayisi} alınan malzeme kaydı kalıcı olarak silinecek.\n\nDevam etmek istiyor musunuz?"
+            : $"«{secili}» kategorisini silmek istiyor musunuz?";
+
+        if (MessageBox.Show(mesaj, UygulamaBilgisi.Ad, MessageBoxButton.YesNo, MessageBoxImage.Warning)
+            != MessageBoxResult.Yes)
+            return;
+
+        var silinen = MalzemeKategoriDeposu.SilVeAlinanMalzemeKayitlariniTemizle(secili);
+        if (silinen < 0)
         {
             MessageBox.Show("Kategori silinemedi.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         KategoriListesiniYenile();
+        if (silinen > 0)
+        {
+            MessageBox.Show(
+                $"Kategori silindi. {silinen} alınan malzeme kaydı kaldırıldı.",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 
     private void BirimListesiniYenile()

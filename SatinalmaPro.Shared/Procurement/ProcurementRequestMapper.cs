@@ -77,17 +77,80 @@ public static class ProcurementStatusResolver
     }
 
     /// <summary>
-    /// Durum'dan türetilen Status'ü talep üzerine yazar.
-    /// Eski kayıtların sekmelerde kaybolmasını önler; buluta bir sonraki kayıtta yansır.
+    /// Status ileri aşamadaysa stale Durum'u yükseltir; sonra Durum→Status hizalar.
+    /// Android kararları Status'te kalıp Durum İmza'da takılı kaldığında masaüstü etiketi düzelir.
     /// </summary>
     public static bool SenkronizeEt(SatinalmaTalep talep)
     {
+        var degisti = DurumuStatusTenYukselt(talep);
         var dogru = Resolve(talep);
-        if (string.Equals(talep.Status, dogru, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(talep.Status, dogru, StringComparison.OrdinalIgnoreCase))
+        {
+            talep.Status = dogru;
+            degisti = true;
+        }
+        return degisti;
+    }
+
+    /// <summary>
+    /// Kayıtlı enterprise Status, legacy Durum'dan ileriyse Durum'u yükselt.
+    /// Stale Status (ör. quote_requested + Durum=Karşılaştırma) geri çekmez.
+    /// </summary>
+    public static bool DurumuStatusTenYukselt(SatinalmaTalep talep)
+    {
+        if (string.IsNullOrWhiteSpace(talep.Status))
             return false;
-        talep.Status = dogru;
+
+        var status = ProcurementStatus.Normalize(talep.Status);
+
+        // quote_requested skoru YonetimOnayinda'dan düşük; teklifsiz yönetim→teklif iste özel geçişi.
+        if ((status is ProcurementStatus.QuoteRequested or ProcurementStatus.QuoteEntry)
+            && (talep.Durum is SatinalmaTalepDurumlari.YonetimOnayinda
+                or SatinalmaTalepDurumlari.ImzaSurecinde
+                or SatinalmaTalepDurumlari.Hazirlaniyor)
+            && !SatinalmaTalepYardimcisi.GercekTeklifVar(talep))
+        {
+            talep.Durum = SatinalmaTalepDurumlari.TeklifGirisi;
+            return true;
+        }
+
+        var durumAsama = SatinalmaTalepDurumlari.SurecAsamaSkoru(talep.Durum);
+        var statusAsama = StatusAsamaSkoru(status);
+        if (statusAsama <= durumAsama)
+            return false;
+
+        var yeniDurum = status switch
+        {
+            ProcurementStatus.Rejected => SatinalmaTalepDurumlari.Reddedildi,
+            ProcurementStatus.Approved => SatinalmaTalepDurumlari.Onaylandi,
+            ProcurementStatus.Ordered or ProcurementStatus.Completed => SatinalmaTalepDurumlari.SiparisOlusturuldu,
+            ProcurementStatus.Comparison => SatinalmaTalepDurumlari.Karsilastirma,
+            ProcurementStatus.QuoteRequested or ProcurementStatus.QuoteEntry => SatinalmaTalepDurumlari.TeklifGirisi,
+            ProcurementStatus.ManagementQuoteReview => SatinalmaTalepDurumlari.YonetimOnayinda,
+            _ => null
+        };
+
+        if (yeniDurum is null || string.Equals(talep.Durum, yeniDurum, StringComparison.Ordinal))
+            return false;
+
+        talep.Durum = yeniDurum;
         return true;
     }
+
+    private static int StatusAsamaSkoru(string status) => status switch
+    {
+        ProcurementStatus.Completed => 95,
+        ProcurementStatus.Ordered => 90,
+        ProcurementStatus.Approved => 70,
+        ProcurementStatus.Rejected => 65,
+        ProcurementStatus.ManagementQuoteReview => 60,
+        ProcurementStatus.Comparison => 50,
+        ProcurementStatus.QuoteEntry => 40,
+        ProcurementStatus.QuoteRequested => 40,
+        ProcurementStatus.Submitted => 30,
+        ProcurementStatus.Draft => 0,
+        _ => 0
+    };
 
     public static bool SenkronizeEt(IEnumerable<SatinalmaTalep> talepler)
     {

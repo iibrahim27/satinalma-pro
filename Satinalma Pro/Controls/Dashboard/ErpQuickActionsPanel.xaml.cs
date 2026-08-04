@@ -22,42 +22,23 @@ public partial class ErpQuickActionsPanel : UserControl
         ActionsGrid.Children.Clear();
         var key = KullaniciRolleri.Normalize(rol);
 
-        if (key == KullaniciRolleri.Depo)
+        if (key == KullaniciRolleri.Depo || key == KullaniciRolleri.Atolye)
         {
+            Ekle("Stok Durumu", DashboardIconKind.Warehouse, "Stok Yönetimi");
             Ekle("Stok Girişi", DashboardIconKind.Package, "Stok Yönetimi");
-            Ekle("Stok Çıkışı", DashboardIconKind.Warehouse, "Stok Yönetimi");
-            Ekle("Stok Durumu", DashboardIconKind.ClipboardList, "Stok Yönetimi");
-            Ekle("Hareketler", DashboardIconKind.FileBarChart, "Stok Yönetimi");
+            Ekle("Stok Çıkışı", DashboardIconKind.ClipboardList, "Stok Yönetimi");
             Ekle("Alınan Malzeme", DashboardIconKind.ShoppingCart, "Alınan Malzemeler");
-            Ekle("Stok Kartı", DashboardIconKind.Package, "Stok Yönetimi");
+            Ekle("Akaryakıt", DashboardIconKind.Wallet, "Akaryakıt Takip");
+            Ekle("Agrega", DashboardIconKind.FileBarChart, "Agrega");
             return;
         }
 
-        if (key is KullaniciRolleri.Sef or KullaniciRolleri.Saha)
-        {
-            Ekle("Talep Pro", DashboardIconKind.ShoppingCart, "__TalepPro__");
-            Ekle("Stok Durumu", DashboardIconKind.Warehouse, "Stok Yönetimi");
-            Ekle("Filo", DashboardIconKind.Package, "Araç Filo Takip");
-            Ekle("Alınan Malzeme", DashboardIconKind.ClipboardList, "Alınan Malzemeler");
-            Ekle("Raporlar", DashboardIconKind.FileBarChart, "Raporlamalar");
-            return;
-        }
-
-        if (key == KullaniciRolleri.Atolye)
-        {
-            Ekle("Stok Durumu", DashboardIconKind.Warehouse, "Stok Yönetimi");
-            Ekle("Stok Hareket", DashboardIconKind.FileBarChart, "Stok Yönetimi");
-            Ekle("Alınan Malzeme", DashboardIconKind.Package, "Alınan Malzemeler");
-            Ekle("Stok Kartı", DashboardIconKind.ClipboardList, "Stok Yönetimi");
-            return;
-        }
-
-        Ekle("Malzeme Kaydı", DashboardIconKind.Package, "Alınan Malzemeler");
-        Ekle("Tahsilat Girişi", DashboardIconKind.Wallet, "Finansman Raporlama");
-        Ekle("Stok Kartı", DashboardIconKind.Warehouse, "Stok Yönetimi");
-        Ekle("Filo", DashboardIconKind.Package, "Araç Filo Takip");
-        Ekle("Raporlar", DashboardIconKind.FileBarChart, "Raporlamalar");
-        Ekle("Talep Pro", DashboardIconKind.ShoppingCart, "__TalepPro__");
+        Ekle("Alınan Malzeme", DashboardIconKind.Package, "Alınan Malzemeler");
+        Ekle("Stok Yönetimi", DashboardIconKind.Warehouse, "Stok Yönetimi");
+        Ekle("Agrega", DashboardIconKind.ClipboardList, "Agrega");
+        Ekle("Çimento", DashboardIconKind.Package, "Çimento");
+        Ekle("Akaryakıt", DashboardIconKind.Wallet, "Akaryakıt Takip");
+        Ekle("Stok Hareket", DashboardIconKind.FileBarChart, "Stok Yönetimi");
     }
 
     private void Ekle(string baslik, DashboardIconKind icon, string modul)

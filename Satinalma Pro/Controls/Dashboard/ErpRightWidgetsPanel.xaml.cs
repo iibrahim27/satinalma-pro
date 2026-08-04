@@ -20,9 +20,9 @@ public partial class ErpRightWidgetsPanel : UserControl
             Renk = AppTheme.Brush(h.RenkHex)
         }).ToList();
 
-        TxtGelir.Text = $"Gelir: {finans.Gelir}";
-        TxtGider.Text = $"Gider: {finans.Gider}";
-        TxtKar.Text = $"Kâr: {finans.Kar}";
+        TxtGelir.Text = $"Stok değeri: {finans.Gelir}";
+        TxtGider.Text = $"Bu ay harcama: {finans.Gider}";
+        TxtKar.Text = $"Fark: {finans.Kar}";
         TxtMarj.Text = $"%{finans.KarMarjiYuzde:0.#}";
 
         TopUrunListe.ItemsSource = topUrunler;

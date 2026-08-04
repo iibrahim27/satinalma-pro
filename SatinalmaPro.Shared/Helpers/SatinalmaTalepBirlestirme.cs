@@ -45,37 +45,152 @@ public static class SatinalmaTalepBirlestirme
     }
 
     /// <summary>
-    /// Bulut birleştirmede «Hazırlanıyor» kaydı «İmza Sürecinde» gönderimini ezmesin.
-    /// Red yalnızca daha yeni bilinçli red kaydıysa uygulanır.
+    /// Süreç durumu birleştirme: ileri aşama her zaman kazanır.
+    /// Masaüstü «Dokun» ile daha yeni UTC ama İmza/Hazırlanıyor kalan kayıt,
+    /// Android onay / teklif iste / red kararını ezemez.
     /// </summary>
     private static void SurecDurumunuBirlestir(SatinalmaTalep hedef, SatinalmaTalep kaynak)
     {
         if (ReferenceEquals(hedef, kaynak))
             return;
 
-        // Daha yeni kazanan kaydın durumu korunur — «Yeniden Gönder» sonrası eski bulut aşaması ezmez.
-        if (hedef.GuncellemeUtc > kaynak.GuncellemeUtc)
-            return;
-
-        if (kaynak.Durum == SatinalmaTalepDurumlari.Reddedildi
-            && hedef.Durum != SatinalmaTalepDurumlari.Reddedildi
-            && kaynak.GuncellemeUtc > hedef.GuncellemeUtc)
-        {
-            hedef.Durum = kaynak.Durum;
-            return;
-        }
-
-        if (hedef.Durum == SatinalmaTalepDurumlari.Reddedildi
-            && kaynak.Durum != SatinalmaTalepDurumlari.Reddedildi)
-            return;
+        BirlestirKararAlanlari(hedef, kaynak);
 
         var hedefAsama = SatinalmaTalepDurumlari.SurecAsamaSkoru(hedef.Durum);
         var kaynakAsama = SatinalmaTalepDurumlari.SurecAsamaSkoru(kaynak.Durum);
-        if (kaynakAsama > hedefAsama)
-            hedef.Durum = kaynak.Durum;
 
-        if (SatinalmaTalepYardimcisi.GercekTeklifVar(hedef) && kaynakAsama < hedefAsama)
+        // Red hedefte kaldıysa yalnızca daha yeni ve daha ileri aşama (nadir yeniden açılış) ezebilir.
+        if (hedef.Durum == SatinalmaTalepDurumlari.Reddedildi
+            && kaynak.Durum != SatinalmaTalepDurumlari.Reddedildi)
+        {
+            if (kaynak.GuncellemeUtc > hedef.GuncellemeUtc && kaynakAsama > hedefAsama)
+                UygulaSurecDurumu(hedef, kaynak);
             return;
+        }
+
+        // Yönetim «teklif iste»: skor YonetimOnayinda > TeklifGirişi olsa da Teklif kazanır.
+        if (TeklifIstemeGecisiMi(hedef, kaynak))
+        {
+            UygulaSurecDurumu(hedef, kaynak);
+            return;
+        }
+
+        // Ters: teklifsiz stale Yönetim/İmza, güncel Teklif Girişi'ni ezmesin.
+        if (TeklifIstemeKorumaMi(hedef, kaynak))
+            return;
+
+        // Teklifler yönetime gönderildi: Teklif/Karşılaştırma → Yonetim Onayında (teklifli).
+        if (TeklifYonetimIncelemeGecisiMi(hedef, kaynak))
+        {
+            UygulaSurecDurumu(hedef, kaynak);
+            return;
+        }
+
+        // İleri aşama — UTC'den bağımsız (Android kararları masaüstü stale İmza'yı geçer).
+        if (kaynakAsama > hedefAsama)
+        {
+            UygulaSurecDurumu(hedef, kaynak);
+            return;
+        }
+
+        // Aynı aşama, kaynak daha yeni: durum metni / status hizası.
+        if (kaynakAsama == hedefAsama
+            && kaynak.GuncellemeUtc > hedef.GuncellemeUtc
+            && !string.Equals(kaynak.Durum, hedef.Durum, StringComparison.Ordinal))
+        {
+            UygulaSurecDurumu(hedef, kaynak);
+        }
+    }
+
+    /// <summary>Yönetim onay/imza → Teklif Girişi (henüz gerçek teklif yok veya düzeltme).</summary>
+    private static bool TeklifIstemeGecisiMi(SatinalmaTalep hedef, SatinalmaTalep kaynak)
+    {
+        if (kaynak.Durum != SatinalmaTalepDurumlari.TeklifGirisi)
+            return false;
+        if (hedef.Durum is not (SatinalmaTalepDurumlari.YonetimOnayinda
+            or SatinalmaTalepDurumlari.ImzaSurecinde
+            or SatinalmaTalepDurumlari.Hazirlaniyor))
+            return false;
+
+        // Yönetim teklif incelemesindeyken (teklifler var) boş teklif iste ile geri alma — yalnızca düzeltme notu ile.
+        if (SatinalmaTalepYardimcisi.GercekTeklifVar(hedef)
+            && string.IsNullOrWhiteSpace(kaynak.TeklifDuzeltmeNotu))
+            return false;
+
+        return true;
+    }
+
+    private static bool TeklifIstemeKorumaMi(SatinalmaTalep hedef, SatinalmaTalep kaynak)
+    {
+        if (hedef.Durum != SatinalmaTalepDurumlari.TeklifGirisi)
+            return false;
+        if (kaynak.Durum is not (SatinalmaTalepDurumlari.YonetimOnayinda
+            or SatinalmaTalepDurumlari.ImzaSurecinde
+            or SatinalmaTalepDurumlari.Hazirlaniyor))
+            return false;
+
+        // Hedefte teklif girişi var; kaynak teklifsiz yönetim/imza — ezme.
+        return !SatinalmaTalepYardimcisi.GercekTeklifVar(kaynak);
+    }
+
+    private static bool TeklifYonetimIncelemeGecisiMi(SatinalmaTalep hedef, SatinalmaTalep kaynak)
+    {
+        if (kaynak.Durum != SatinalmaTalepDurumlari.YonetimOnayinda)
+            return false;
+        if (hedef.Durum is not (SatinalmaTalepDurumlari.TeklifGirisi
+            or SatinalmaTalepDurumlari.Karsilastirma))
+            return false;
+
+        return SatinalmaTalepYardimcisi.GercekTeklifVar(kaynak)
+            || SatinalmaTalepYardimcisi.GercekTeklifVar(hedef);
+    }
+
+    private static void UygulaSurecDurumu(SatinalmaTalep hedef, SatinalmaTalep kaynak)
+    {
+        hedef.Durum = kaynak.Durum;
+        if (!string.IsNullOrWhiteSpace(kaynak.Status))
+            hedef.Status = kaynak.Status;
+
+        if (kaynak.TeklifsizYonetimOnayi)
+            hedef.TeklifsizYonetimOnayi = true;
+        if (kaynak.YonetimOnayKilitli)
+            hedef.YonetimOnayKilitli = true;
+        if (!string.IsNullOrWhiteSpace(kaynak.RedGerekcesi))
+            hedef.RedGerekcesi = kaynak.RedGerekcesi;
+        if (kaynak.OnaylananTeklifId is { } onayId)
+            hedef.OnaylananTeklifId = onayId;
+        if (!string.IsNullOrWhiteSpace(kaynak.YonetimOnaylayanUid))
+        {
+            hedef.YonetimOnaylayanUid = kaynak.YonetimOnaylayanUid;
+            hedef.YonetimOnaylayanAd = kaynak.YonetimOnaylayanAd;
+            hedef.YonetimOnaylayanEposta = kaynak.YonetimOnaylayanEposta;
+            hedef.YonetimOnayTarihi = kaynak.YonetimOnayTarihi;
+        }
+        if (!string.IsNullOrWhiteSpace(kaynak.TeklifDuzeltmeNotu)
+            && string.IsNullOrWhiteSpace(hedef.TeklifDuzeltmeNotu))
+            hedef.TeklifDuzeltmeNotu = kaynak.TeklifDuzeltmeNotu;
+    }
+
+    private static void BirlestirKararAlanlari(SatinalmaTalep hedef, SatinalmaTalep kaynak)
+    {
+        // Karar bayrakları / gerekçe — daha dolu olanı koru (UTC'den bağımsız OR).
+        if (kaynak.TeklifsizYonetimOnayi)
+            hedef.TeklifsizYonetimOnayi = true;
+        if (kaynak.YonetimOnayKilitli)
+            hedef.YonetimOnayKilitli = true;
+        if (string.IsNullOrWhiteSpace(hedef.RedGerekcesi)
+            && !string.IsNullOrWhiteSpace(kaynak.RedGerekcesi))
+            hedef.RedGerekcesi = kaynak.RedGerekcesi;
+        if (hedef.OnaylananTeklifId is null && kaynak.OnaylananTeklifId is { } id)
+            hedef.OnaylananTeklifId = id;
+        if (string.IsNullOrWhiteSpace(hedef.YonetimOnaylayanUid)
+            && !string.IsNullOrWhiteSpace(kaynak.YonetimOnaylayanUid))
+        {
+            hedef.YonetimOnaylayanUid = kaynak.YonetimOnaylayanUid;
+            hedef.YonetimOnaylayanAd = kaynak.YonetimOnaylayanAd;
+            hedef.YonetimOnaylayanEposta = kaynak.YonetimOnaylayanEposta;
+            hedef.YonetimOnayTarihi = kaynak.YonetimOnayTarihi;
+        }
     }
 
     private static SatinalmaTalep KazananKayit(SatinalmaTalep a, SatinalmaTalep b)

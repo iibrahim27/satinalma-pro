@@ -1,13 +1,15 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Services;
 
 namespace SatinalmaPro.Views.Controls;
 
-/// <summary>Malzeme adı yazarken bilinen adları filtreleyip altta listeler; eşleşme yoksa serbest giriş.</summary>
+/// <summary>
+/// Malzeme adı yazarken bilinen adları filtreleyip Popup'ta listeler; eşleşme yoksa serbest giriş.
+/// DataGrid satırlarında yalnızca klavye odağındayken açılır — yüklemede tüm satırlar açılmaz.
+/// </summary>
 public partial class MalzemeOneriGiris : UserControl
 {
     public static readonly DependencyProperty MetinProperty = DependencyProperty.Register(
@@ -26,6 +28,17 @@ public partial class MalzemeOneriGiris : UserControl
     {
         InitializeComponent();
         OneriListesi.PreviewKeyDown += OneriListesi_PreviewKeyDown;
+        Loaded += (_, _) =>
+        {
+            Unloaded -= MalzemeOneriGiris_Unloaded;
+            Unloaded += MalzemeOneriGiris_Unloaded;
+        };
+        IsVisibleChanged += (_, _) =>
+        {
+            if (!IsVisible)
+                OnerileriGizle();
+        };
+        DataContextChanged += (_, _) => OnerileriGizle();
     }
 
     public string Metin
@@ -52,6 +65,9 @@ public partial class MalzemeOneriGiris : UserControl
         OnerileriGizle();
     }
 
+    private void MalzemeOneriGiris_Unloaded(object sender, RoutedEventArgs e) =>
+        OnerileriGizle();
+
     private static void MetinDegisti(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not MalzemeOneriGiris ctrl || ctrl._icGuncelleme)
@@ -64,7 +80,7 @@ public partial class MalzemeOneriGiris : UserControl
         ctrl._icGuncelleme = true;
         ctrl.MetinKutusu.Text = yeni;
         ctrl._icGuncelleme = false;
-        ctrl.OnerileriGuncelle(yeni);
+        // Binding / satır yüklemesinde popup açma — yalnızca kullanıcı yazarken.
     }
 
     private void MetinKutusu_TextChanged(object sender, TextChangedEventArgs e)
@@ -76,12 +92,28 @@ public partial class MalzemeOneriGiris : UserControl
         _icGuncelleme = true;
         Metin = metin;
         _icGuncelleme = false;
-        OnerileriGuncelle(metin);
+
+        if (MetinKutusu.IsKeyboardFocusWithin)
+            OnerileriGuncelle(metin);
+        else
+            OnerileriGizle();
+
         MetinYazildi?.Invoke(this, metin);
+    }
+
+    private void MetinKutusu_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        // Odak alınca mevcut metin için otomatik liste açma — düzenlemede sayfa bozulmasın.
     }
 
     private void OnerileriGuncelle(string metin)
     {
+        if (!MetinKutusu.IsKeyboardFocusWithin || !IsVisible || !IsEnabled)
+        {
+            OnerileriGizle();
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(metin))
         {
             OnerileriGizle();
@@ -99,6 +131,8 @@ public partial class MalzemeOneriGiris : UserControl
 
             OneriListesi.ItemsSource = liste;
             OneriListesi.SelectedIndex = -1;
+            OneriPopup.PlacementTarget = MetinKutusu;
+            OneriPopup.MinWidth = Math.Max(200, MetinKutusu.ActualWidth);
             OneriPopup.IsOpen = true;
         }
         catch
@@ -167,7 +201,18 @@ public partial class MalzemeOneriGiris : UserControl
                 return;
         }
 
-        OnerileriGizle();
+        // Popup tıklamasına zaman tanı — aksi halde liste hemen kapanır.
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!MetinKutusu.IsKeyboardFocusWithin
+                && (Keyboard.FocusedElement is not DependencyObject f
+                    || (!AltElemanMi(OneriListesi, f)
+                        && !(OneriPopup.Child is DependencyObject c && AltElemanMi(c, f)))))
+            {
+                OnerileriGizle();
+            }
+        }, System.Windows.Threading.DispatcherPriority.Input);
+
         var metin = (MetinKutusu.Text ?? "").Trim();
         if (!string.IsNullOrWhiteSpace(metin))
             MetinOnaylandi?.Invoke(this, metin);
@@ -243,7 +288,8 @@ public partial class MalzemeOneriGiris : UserControl
 
     private void OnerileriGizle()
     {
-        OneriPopup.IsOpen = false;
+        if (OneriPopup.IsOpen)
+            OneriPopup.IsOpen = false;
         OneriListesi.ItemsSource = null;
         OneriListesi.SelectedIndex = -1;
     }

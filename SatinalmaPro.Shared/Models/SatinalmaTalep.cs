@@ -247,17 +247,20 @@ public static class SatinalmaTalepDurumlari
         Karsilastirma, Onaylandi, Reddedildi, SiparisOlusturuldu
     ];
 
-    /// <summary>İş akışı aşaması — bulut/yerel birleştirmede ileri aşama tercih edilir.</summary>
+    /// <summary>
+    /// İş akışı aşaması — bulut/yerel birleştirmede ileri aşama tercih edilir.
+    /// Red, onay öncesi aşamalardan (imza/teklif) üstündür; Onaylandı/Sipariş'in altındadır.
+    /// </summary>
     public static int SurecAsamaSkoru(string? durum) => durum switch
     {
         SiparisOlusturuldu => 90,
         Onaylandi => 70,
+        Reddedildi => 65,
         YonetimOnayinda => 60,
         Karsilastirma => 50,
         TeklifGirisi => 40,
         ImzaSurecinde => 30,
         Hazirlaniyor => 20,
-        Reddedildi => 15,
         Taslak => 0,
         _ => 0
     };

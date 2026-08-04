@@ -58,11 +58,9 @@ public partial class HomeView : UserControl
         var rol = KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol);
         TxtAltBaslik.Text = rol switch
         {
-            KullaniciRolleri.Depo => "Stok ve mal kabul işlemlerinizi buradan yönetin.",
-            KullaniciRolleri.Atolye => "Stok durumu ve malzeme hareketlerini takip edin.",
-            KullaniciRolleri.Sef or KullaniciRolleri.Saha =>
-                "Stok, filo ve saha modüllerine buradan ulaşın.",
-            _ => "Alınan malzemeler, stok, filo ve rapor modülleri"
+            KullaniciRolleri.Depo or KullaniciRolleri.Atolye =>
+                "Stok, alınan malzeme ve akaryakıt hareketlerini buradan izleyin.",
+            _ => "Alınan malzemeler, stok, agrega, çimento ve akaryakıt özeti"
         };
     }
 
@@ -73,7 +71,7 @@ public partial class HomeView : UserControl
     }
 
     private void BtnRaporOlustur_Click(object sender, RoutedEventArgs e) =>
-        ModuleSelected?.Invoke("Raporlamalar");
+        ModuleSelected?.Invoke("Alınan Malzemeler");
 
     private void BtnStokGit_Click(object sender, RoutedEventArgs e) =>
         ModuleSelected?.Invoke("Stok Yönetimi");
@@ -95,9 +93,12 @@ public partial class HomeView : UserControl
             return;
         }
 
+        var dashboardModulleri = AnaSayfaVeriServisi.DashboardModulBasliklari
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         foreach (var modul in ModuleCatalog.All)
         {
-            if (modul.Title.Equals("Satınalma", StringComparison.OrdinalIgnoreCase))
+            if (!dashboardModulleri.Contains(modul.Title))
                 continue;
             if (!KullaniciYetkileri.ModulGorebilir(modul.Title))
                 continue;
@@ -112,7 +113,7 @@ public partial class HomeView : UserControl
 
         for (var i = Modules.Count - 1; i >= 0; i--)
         {
-            if (Modules[i].Title.Equals("Satınalma", StringComparison.OrdinalIgnoreCase)
+            if (!dashboardModulleri.Contains(Modules[i].Title)
                 || !ModuleCatalog.All.Any(m => m.Title == Modules[i].Title)
                 || !KullaniciYetkileri.ModulGorebilir(Modules[i].Title))
                 Modules.RemoveAt(i);
