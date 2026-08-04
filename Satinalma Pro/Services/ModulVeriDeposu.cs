@@ -14,6 +14,7 @@ public static class ModulVeriDeposu
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
@@ -76,7 +77,22 @@ public static class ModulVeriDeposu
     {
         var tid = KiracıOturumu.TenantId;
         if (_yuklendi && string.Equals(_yuklenenTenantId, tid, StringComparison.Ordinal))
+        {
+            // Bellek boş kaldıysa (PDF / senkron yarışı) diskten alınan malzemeyi yeniden oku.
+            if (AlinanMalzemeler.Count == 0 && YerelListeDosyasiDoluMu("alinan_malzemeler.json"))
+            {
+                _yukleniyor = true;
+                try
+                {
+                    JsonOku(AlinanMalzemeler, "alinan_malzemeler.json", () => { });
+                }
+                finally
+                {
+                    _yukleniyor = false;
+                }
+            }
             return;
+        }
 
         if (_yuklendi && !string.Equals(_yuklenenTenantId, tid, StringComparison.Ordinal))
             KiraciDegisti();
@@ -234,6 +250,22 @@ public static class ModulVeriDeposu
         return modul is null || KullaniciYetkileri.ModulYazabilir(modul);
     }
 
+    private static bool YerelListeDosyasiDoluMu(string dosyaAdi)
+    {
+        try
+        {
+            var yol = YerelYol(dosyaAdi);
+            if (!File.Exists(yol))
+                return false;
+            var info = new FileInfo(yol);
+            return info.Length > 4; // "[]" / boş değil
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static void JsonOku<T>(ObservableCollection<T> koleksiyon, string dosyaAdi, Action ornekVeri)
     {
         koleksiyon.Clear();
@@ -259,8 +291,9 @@ public static class ModulVeriDeposu
                 EndBatch();
             }
         }
-        catch
+        catch (Exception ex)
         {
+            HataGunlugu.Kaydet(ex, $"ModulVeriDeposu.JsonOku:{dosyaAdi}");
             if (!OturumYoneticisi.BulutAktif)
                 ornekVeri();
         }

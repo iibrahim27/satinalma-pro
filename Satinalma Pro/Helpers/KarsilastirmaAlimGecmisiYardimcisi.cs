@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
 using SatinalmaPro.Models;
 
 namespace SatinalmaPro.Helpers;
@@ -28,7 +30,9 @@ public static class KarsilastirmaAlimGecmisiYardimcisi
     {
         var referans = (referansTarih ?? DateTime.Today).Date;
         var esik = referans.AddMonths(-2);
-        var kaynak = (alinanMalzemeler ?? []).ToList();
+        var kaynak = (alinanMalzemeler ?? [])
+            .Where(k => !string.IsNullOrWhiteSpace(k.MalzemeHizmet))
+            .ToList();
         var sonuc = new List<AlimSatiri>();
 
         foreach (var kalem in kalemler.OrderBy(k => k.SiraNo))
@@ -37,11 +41,7 @@ public static class KarsilastirmaAlimGecmisiYardimcisi
             if (string.IsNullOrWhiteSpace(malzemeAdi))
                 continue;
 
-            var eslesen = kaynak
-                .Where(k => string.Equals(
-                    (k.MalzemeHizmet ?? "").Trim(),
-                    malzemeAdi,
-                    StringComparison.OrdinalIgnoreCase))
+            var eslesen = MalzemeIcinAlimlariBul(kaynak, malzemeAdi)
                 .Select(k => (kayit: k, tarih: TarihCoz(k.Tarih)))
                 .OrderByDescending(x => x.tarih)
                 .ThenByDescending(x => x.kayit.BirimFiyati)
@@ -75,6 +75,82 @@ public static class KarsilastirmaAlimGecmisiYardimcisi
         }
 
         return sonuc;
+    }
+
+    /// <summary>
+    /// Talep kalemi ↔ Alınan Malzemeler eşleşmesi.
+    /// Boşluk / 6,80↔6.80 / NBSP farklarını yok sayar; gerekirse gevşek eşleşme dener.
+    /// </summary>
+    private static List<AlinanMalzemeKaydi> MalzemeIcinAlimlariBul(
+        List<AlinanMalzemeKaydi> kaynak, string malzemeAdi)
+    {
+        var anahtar = MalzemeAnahtari(malzemeAdi);
+        if (string.IsNullOrEmpty(anahtar))
+            return [];
+
+        var tam = kaynak
+            .Where(k => MalzemeAnahtari(k.MalzemeHizmet) == anahtar)
+            .ToList();
+        if (tam.Count > 0)
+            return tam;
+
+        // Gevşek: normalize edilmiş adlardan biri diğerini içeriyor (kısa gürültüyü ele)
+        if (anahtar.Length < 4)
+            return [];
+
+        var gevsek = kaynak
+            .Where(k =>
+            {
+                var a = MalzemeAnahtari(k.MalzemeHizmet);
+                if (a.Length < 4)
+                    return false;
+                return a == anahtar
+                    || a.Contains(anahtar, StringComparison.Ordinal)
+                    || anahtar.Contains(a, StringComparison.Ordinal);
+            })
+            .ToList();
+
+        // Birden fazla farklı malzeme tutarsa (çok geniş eşleşme) güvenme — en uzun ortak olanları tercih et
+        if (gevsek.Count == 0)
+            return [];
+
+        var enIyiUzunluk = gevsek.Max(k => OrtakSkor(anahtar, MalzemeAnahtari(k.MalzemeHizmet)));
+        return gevsek
+            .Where(k => OrtakSkor(anahtar, MalzemeAnahtari(k.MalzemeHizmet)) == enIyiUzunluk)
+            .ToList();
+    }
+
+    private static int OrtakSkor(string a, string b)
+    {
+        if (a == b) return 10_000 + a.Length;
+        if (a.Contains(b, StringComparison.Ordinal)) return 1_000 + b.Length;
+        if (b.Contains(a, StringComparison.Ordinal)) return 1_000 + a.Length;
+        return 0;
+    }
+
+    /// <summary>Eşleştirme anahtarı: trim, NBSP, çoklu boşluk, ondalık virgül/nokta birliği.</summary>
+    public static string MalzemeAnahtari(string? ad)
+    {
+        if (string.IsNullOrWhiteSpace(ad))
+            return "";
+
+        var s = ad.Trim()
+            .Replace('\u00A0', ' ')
+            .Replace("\u200B", "", StringComparison.Ordinal)
+            .Replace("\uFEFF", "", StringComparison.Ordinal);
+        try
+        {
+            s = s.Normalize(NormalizationForm.FormC);
+        }
+        catch
+        {
+            // ignore
+        }
+
+        s = Regex.Replace(s, @"\s+", " ");
+        // 6,80 / 6.80 → aynı anahtar
+        s = Regex.Replace(s, @"(\d),(\d)", "$1.$2");
+        return s.ToUpperInvariant();
     }
 
     private static AlimSatiri AlimdanSatir(
@@ -113,13 +189,16 @@ public static class KarsilastirmaAlimGecmisiYardimcisi
         IEnumerable<SatinalmaTeklif> teklifler,
         IReadOnlyList<AlimSatiri> alimSatirlari)
     {
-        var sonAlimlar = new Dictionary<string, AlimSatiri>(StringComparer.OrdinalIgnoreCase);
+        // Malzeme anahtarına göre en son (listenin ilk gerçek) alım
+        var sonAlimlar = new Dictionary<string, AlimSatiri>(StringComparer.Ordinal);
         foreach (var satir in alimSatirlari)
         {
-            if (satir.KayitYok || string.IsNullOrWhiteSpace(satir.Malzeme))
+            if (satir.KayitYok || string.IsNullOrWhiteSpace(satir.Malzeme) || satir.BirimFiyati <= 0)
                 continue;
-            if (!sonAlimlar.ContainsKey(satir.Malzeme))
-                sonAlimlar[satir.Malzeme] = satir;
+            var key = MalzemeAnahtari(satir.Malzeme);
+            if (string.IsNullOrEmpty(key) || sonAlimlar.ContainsKey(key))
+                continue;
+            sonAlimlar[key] = satir;
         }
 
         var teklifListesi = (teklifler ?? []).ToList();
@@ -131,7 +210,8 @@ public static class KarsilastirmaAlimGecmisiYardimcisi
             if (string.IsNullOrWhiteSpace(malzemeAdi))
                 continue;
 
-            var sonAlimYok = !sonAlimlar.TryGetValue(malzemeAdi, out var sonAlim);
+            var key = MalzemeAnahtari(malzemeAdi);
+            var sonAlimYok = !sonAlimlar.TryGetValue(key, out var sonAlim);
             decimal? sonFiyat = sonAlimYok ? null : sonAlim!.BirimFiyati;
 
             decimal? enDusuk = null;

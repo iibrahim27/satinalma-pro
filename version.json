@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.97",
-    "build":  168,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.97/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.97/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.97/SatinalmaPro.apk",
-    "notes":  "2.1.97 - Android/masaüstü talep durum senkronu (teklif iste/onay/red); anasayfa 5 modül dashboard; kategori silince kayıtlar; talep form malzeme öneri popup düzeltmesi",
+    "version":  "2.1.98",
+    "build":  169,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.98/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.98/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.98/SatinalmaPro.apk",
+    "notes":  "2.1.98 - Fiyat karsilastirma PDF son alim birim fiyati / fark / artis % (Alinan Malzemeler eslesmesi)",
     "zorunlu":  false
 }

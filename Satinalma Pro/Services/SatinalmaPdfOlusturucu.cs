@@ -39,6 +39,15 @@ public static class SatinalmaPdfOlusturucu
     private static void PdfOnizle(string onerilenDosyaAdi, string baslik, Action<string> uret) =>
         PdfOnizlemeServisi.Goster(uret, onerilenDosyaAdi, baslik);
 
+    /// <summary>
+    /// Talep Pro / PDF: Alınan Malzemeler bellekte boş kalmışsa diskten yeniden yükle.
+    /// </summary>
+    private static IReadOnlyList<AlinanMalzemeKaydi> PdfIcinAlinanMalzemeler()
+    {
+        ModulVeriDeposu.Yukle();
+        return ModulVeriDeposu.AlinanMalzemeler.ToList();
+    }
+
     public static void TalepFormuYazdir(SatinalmaTalep talep, SatinalmaAyarlar ayarlar)
     {
         try
@@ -47,7 +56,7 @@ public static class SatinalmaPdfOlusturucu
 
         var ad = $"Talep_{talep.TalepNo}.pdf";
         var sonAlimlar = KarsilastirmaAlimGecmisiYardimcisi.MalzemeBazliAlimlariTopla(
-            talep.Kalemler, ModulVeriDeposu.AlinanMalzemeler);
+            talep.Kalemler, PdfIcinAlinanMalzemeler());
         var stokSatirlari = TalepStokSatirlariTopla(talep.Kalemler);
 
         PdfOnizle(ad, "Satın Alma Talep Formu", dosya =>
@@ -579,7 +588,7 @@ public static class SatinalmaPdfOlusturucu
 
             // Sayfa 2+: karşılaştırma kalemlerinin son alım geçmişi
             var alimSatirlari = KarsilastirmaAlimGecmisiYardimcisi.MalzemeBazliAlimlariTopla(
-                kalemler, ModulVeriDeposu.AlinanMalzemeler);
+                kalemler, PdfIcinAlinanMalzemeler());
             KarsilastirmaAlimGecmisiSayfasiEkle(container, talep, ayarlar, alimSatirlari, yonetimFormu);
         }).GeneratePdf(dosya);
             });

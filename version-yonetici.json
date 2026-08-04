@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.50",
-    "build":  52,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.50/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.50/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.50/SatinalmaYonetici.apk",
-    "notes":  "1.0.50 - Pro 2.1.97 ile birlikte (talep durum senkronu, dashboard, kategori silme)",
+    "version":  "1.0.51",
+    "build":  53,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.51/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.51/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.51/SatinalmaYonetici.apk",
+    "notes":  "1.0.51 - Pro 2.1.98 ile birlikte (fiyat karsilastirma PDF son alim)",
     "zorunlu":  false
 }
