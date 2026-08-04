@@ -55,7 +55,9 @@ public static class SatinalmaTalepYardimcisi
         !talep.YonetimOnayKilitli
         && !talep.HerhangiKalemOnayli
         && talep.Durum is SatinalmaTalepDurumlari.TeklifGirisi
-            or SatinalmaTalepDurumlari.ImzaSurecinde;
+            or SatinalmaTalepDurumlari.ImzaSurecinde
+            or SatinalmaTalepDurumlari.Karsilastirma
+            or SatinalmaTalepDurumlari.YonetimOnayinda;
 
     public static bool TalepKalemleriDuzenlenebilir(SatinalmaTalep talep) =>
         FormDuzenlenebilir(talep)

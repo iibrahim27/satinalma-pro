@@ -42,7 +42,7 @@ public partial class GelenTalepDetayView : UserControl
             ? Visibility.Visible : Visibility.Collapsed;
         BtnReddet.Content = ui.LabelFor(PurchaseRequestDetailAction.RejectRequest);
         BtnMiktarDuzenle.Visibility = _talep is not null
-            && KullaniciYetkileri.YonetimTalepMiktarDuzenleyebilir(_talep)
+            && KullaniciYetkileri.TalepKalemMiktarDuzenleyebilir(_talep)
             ? Visibility.Visible
             : Visibility.Collapsed;
         var aktif = ui.VisibleActions.Count > 0;
@@ -54,10 +54,10 @@ public partial class GelenTalepDetayView : UserControl
 
     private async void MiktarDuzenle_Click(object sender, RoutedEventArgs e)
     {
-        if (_talep is null || !KullaniciYetkileri.YonetimTalepMiktarDuzenleyebilir(_talep))
+        if (_talep is null || !KullaniciYetkileri.TalepKalemMiktarDuzenleyebilir(_talep))
         {
             MessageBox.Show(
-                "Talep miktarı yalnızca onay öncesinde Yönetim rolü tarafından düzenlenebilir.",
+                "Bu talep için kalem düzenleme yetkiniz yok veya talep kilitli (onay/sipariş).",
                 UygulamaBilgisi.Ad,
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -73,13 +73,12 @@ public partial class GelenTalepDetayView : UserControl
 
         try
         {
-            SatinalmaTalepYardimcisi.TalepKalemleriniTekliflerleSenkronla(_talep);
-            SatinalmaTalepYardimcisi.Dokun(_talep);
+            SatinalmaDepo.TeklifDegisikligiIsle(_talep);
             await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(_talep);
             Yukle(_talep);
             Degisti?.Invoke();
             MessageBox.Show(
-                "Talep miktarları güncellendi. Teklif tutarları yeni miktarlara göre hesaplandı.",
+                "Kalemler güncellendi.\nTeklif tutarları yeniden hesaplandı; yönetime gönderilmişse talep karşılaştırma / revizyon aşamasına alındı.",
                 UygulamaBilgisi.Ad,
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);

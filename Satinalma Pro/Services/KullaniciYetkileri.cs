@@ -258,10 +258,14 @@ public static class KullaniciYetkileri
     }
 
     /// <summary>
-    /// Yönetim, onay öncesinde yalnız talep kalemlerinin miktarını değiştirebilir.
-    /// Malzeme, birim, talep bilgisi ve teklif alanları bu yetkinin dışındadır.
+    /// Onay/sipariş kilidi yokken talep kalem miktarını değiştirme veya kalem silme.
+    /// Yönetim, Satınalma ve Admin — teklif girilmiş olsa bile (revizyon tetiklenir).
     /// </summary>
-    public static bool YonetimTalepMiktarDuzenleyebilir(SatinalmaTalep talep)
+    public static bool YonetimTalepMiktarDuzenleyebilir(SatinalmaTalep talep) =>
+        TalepKalemMiktarDuzenleyebilir(talep);
+
+    /// <summary>Teklif girilmiş taleplerde miktar/kalem silme (teklifler revize olur).</summary>
+    public static bool TalepKalemMiktarDuzenleyebilir(SatinalmaTalep talep)
     {
         if (!OturumYoneticisi.BulutAktif)
             return true;
@@ -270,10 +274,16 @@ public static class KullaniciYetkileri
         if (kullanici is null || !kullanici.Aktif)
             return false;
 
+        if (!ModulYazabilir("Satınalma"))
+            return false;
+
+        if (!SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(talep))
+            return false;
+
         var rol = KullaniciRolleri.Normalize(kullanici.Rol);
-        return rol == KullaniciRolleri.Yonetim
-            && ModulYazabilir("Satınalma")
-            && SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(talep);
+        return rol is KullaniciRolleri.Yonetim
+            or KullaniciRolleri.Satinalma
+            or KullaniciRolleri.Admin;
     }
 
     /// <summary>Satınalma — talep eden adı ve tarih düzenleyebilir.</summary>

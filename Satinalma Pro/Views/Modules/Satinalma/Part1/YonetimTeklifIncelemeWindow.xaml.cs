@@ -219,9 +219,49 @@ public partial class YonetimTeklifIncelemeWindow : Window
             : Visibility.Collapsed;
         BtnGeriGonder.Content = ui.LabelFor(PurchaseRequestDetailAction.SendQuotesForRevision);
 
+        BtnKalemDuzenle.Visibility = KullaniciYetkileri.TalepKalemMiktarDuzenleyebilir(talep)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
         BtnOneriyiUygula.Visibility = _secimAktif && talep.OnerilenTeklif() is not null
             ? Visibility.Visible
             : Visibility.Collapsed;
+    }
+
+    private async void KalemDuzenle_Click(object sender, RoutedEventArgs e)
+    {
+        var talep = GuncelTalep();
+        if (talep is null || !KullaniciYetkileri.TalepKalemMiktarDuzenleyebilir(talep))
+        {
+            MessageBox.Show(
+                "Bu talep için kalem düzenleme yetkiniz yok veya talep kilitli.",
+                UygulamaBilgisi.Ad,
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var pencere = new TalepMiktarDuzenlemeWindow(talep) { Owner = this };
+        if (pencere.ShowDialog() != true)
+            return;
+
+        try
+        {
+            SatinalmaDepo.TeklifDegisikligiIsle(talep);
+            await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
+            _degisti = true;
+            Yukle(talep);
+            MessageBox.Show(
+                "Kalemler güncellendi.\nTeklif tutarları yeniden hesaplandı; talep karşılaştırma / revizyon aşamasına alındı. " +
+                "Gerekirse «Yeniden Yönetime Gönder» ile tekrar iletin.",
+                UygulamaBilgisi.Ad,
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private void KarsilastirmaTablosunuYukle()

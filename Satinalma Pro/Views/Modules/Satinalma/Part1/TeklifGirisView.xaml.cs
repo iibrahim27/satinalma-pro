@@ -111,9 +111,14 @@ public partial class TeklifGirisView : UserControl
         talep.Kalemler ??= [];
         talep.Teklifler ??= [];
         KalemTablosu.ItemsSource = talep.Kalemler.OrderBy(k => k.SiraNo).ToList();
-        var kalemDuzenlenebilir = KullaniciYetkileri.SatinalmaTalepKalemDuzenleyebilir(talep)
-            && SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(talep);
+        var kalemDuzenlenebilir = KullaniciYetkileri.TalepKalemMiktarDuzenleyebilir(talep)
+            || (KullaniciYetkileri.SatinalmaTalepKalemDuzenleyebilir(talep)
+                && SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(talep));
         KalemTablosu.IsReadOnly = !kalemDuzenlenebilir;
+        BtnKalemDuzenlePencere.Visibility = kalemDuzenlenebilir ? Visibility.Visible : Visibility.Collapsed;
+        BtnKalemSil.Visibility = kalemDuzenlenebilir ? Visibility.Visible : Visibility.Collapsed;
+        if (kalemDuzenlenebilir)
+            KalemExpander.IsExpanded = true;
         TeklifListesiniYenile();
         SatinalmaOnerisiniGuncelle();
 
@@ -540,6 +545,79 @@ public partial class TeklifGirisView : UserControl
             SatinalmaOnerisiniGuncelle();
             KalemOneriPaneliniGuncelle();
         });
+    }
+
+    private async void KalemDuzenle_Click(object sender, RoutedEventArgs e)
+    {
+        var talep = GuncelTalep();
+        if (talep is null || !KullaniciYetkileri.TalepKalemMiktarDuzenleyebilir(talep))
+            return;
+
+        var pencere = new TalepMiktarDuzenlemeWindow(talep)
+        {
+            Owner = Window.GetWindow(this)
+        };
+        if (pencere.ShowDialog() != true)
+            return;
+
+        try
+        {
+            SatinalmaDepo.TeklifDegisikligiIsle(talep);
+            await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
+            ArayuzuGuncelle();
+            Degisti?.Invoke();
+            MessageBox.Show(
+                "Kalemler güncellendi. Teklif tutarları yeniden hesaplandı.",
+                UygulamaBilgisi.Ad,
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private async void KalemSil_Click(object sender, RoutedEventArgs e)
+    {
+        var talep = GuncelTalep();
+        if (talep is null || !KullaniciYetkileri.TalepKalemMiktarDuzenleyebilir(talep))
+            return;
+
+        if (KalemTablosu.SelectedItem is not SatinalmaTalepKalemi kalem)
+        {
+            MessageBox.Show("Silmek için bir kalem seçin.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if ((talep.Kalemler?.Count ?? 0) <= 1)
+        {
+            MessageBox.Show("En az bir kalem kalmalıdır.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var onay = MessageBox.Show(
+            $"'{kalem.Malzeme}' silinsin mi? Tekliflerden de düşülecek.",
+            UygulamaBilgisi.Ad,
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (onay != MessageBoxResult.Yes)
+            return;
+
+        SatinalmaPart1Servisi.KalemSil(talep, kalem);
+        try
+        {
+            SatinalmaDepo.TeklifDegisikligiIsle(talep);
+            await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
+            ArayuzuGuncelle();
+            Degisti?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private async void Kaydet_Click(object sender, RoutedEventArgs e)
