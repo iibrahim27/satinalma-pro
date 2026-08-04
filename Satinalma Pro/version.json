@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.95",
-    "build":  166,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.95/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.95/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.95/SatinalmaPro.apk",
-    "notes":  "2.1.95 - Teklif girilen taleplerde miktar/kalem silme; teklifler otomatik revize",
+    "version":  "2.1.96",
+    "build":  167,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.96/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.96/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.96/SatinalmaPro.apk",
+    "notes":  "2.1.96 - Talep Pro yeni tema/arayuz; Satinalma Panosu dashboard; Teklif Inceleme modern liste",
     "zorunlu":  false
 }

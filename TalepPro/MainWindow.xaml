@@ -10,37 +10,7 @@
         MinHeight="740"
         MinWidth="1180"
         WindowStartupLocation="CenterScreen"
-        Background="#F1F5F9"
-        FontFamily="Segoe UI Variable, Segoe UI">
-  <Grid>
-    <Grid.RowDefinitions>
-      <RowDefinition Height="52" />
-      <RowDefinition Height="*" />
-    </Grid.RowDefinitions>
-
-    <!-- Üst şerit -->
-    <Border Grid.Row="0" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="0,0,0,1">
-      <DockPanel Margin="18,0">
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <Border Width="32" Height="32" CornerRadius="8" Background="#4F46E5" Margin="0,0,12,0">
-            <TextBlock Text="TP" Foreground="White" FontWeight="Bold" FontSize="11"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <StackPanel VerticalAlignment="Center">
-            <TextBlock Text="Talep Pro" FontSize="15" FontWeight="SemiBold" Foreground="White" />
-            <TextBlock Text="Satınalma talep · teklif · onay" FontSize="11" Foreground="#94A3B8" />
-          </StackPanel>
-        </StackPanel>
-
-        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-          <TextBlock x:Name="TxtUstKullanici" Text="" FontSize="12" Foreground="#94A3B8"
-                     VerticalAlignment="Center" Margin="0,0,14,0" />
-          <Button Content="Satınalma Pro'ya dön" Style="{StaticResource TpGhostButton}"
-                  Click="BtnSatinalmaPro_Click" />
-        </StackPanel>
-      </DockPanel>
-    </Border>
-
-    <ContentControl x:Name="IcerikAlani" Grid.Row="1" />
-  </Grid>
+        Background="{DynamicResource AppBackgroundBrush}"
+        FontFamily="Segoe UI">
+  <ContentControl x:Name="IcerikAlani" />
 </Window>

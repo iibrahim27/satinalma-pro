@@ -6,7 +6,7 @@
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
-        <ui:ThemeResources RequestedTheme="Light" AccentColor="#4F46E5" />
+        <ui:ThemeResources RequestedTheme="Light" AccentColor="#07858E" />
         <ui:XamlControlsResources />
         <ResourceDictionary Source="pack://application:,,,/SatinalmaPro;component/Resources/Theme.xaml" />
         <ResourceDictionary Source="pack://application:,,,/SatinalmaPro;component/Resources/SapControls.xaml" />

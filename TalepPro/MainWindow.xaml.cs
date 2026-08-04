@@ -21,12 +21,6 @@ public partial class MainWindow : Window
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        var ad = OturumYoneticisi.AktifKullanici?.AdSoyad
-                 ?? KullaniciYetkileri.AktifKullaniciAdi()
-                 ?? "Kullanıcı";
-        var rol = OturumYoneticisi.AktifKullanici?.Rol ?? "";
-        TxtUstKullanici.Text = string.IsNullOrWhiteSpace(rol) ? ad : $"{ad} · {rol}";
-
         _shell = new SatinalmaShellView();
         _shell.StokModuluIstendi += () =>
         {
@@ -47,9 +41,6 @@ public partial class MainWindow : Window
         if (talepId is not null || !string.IsNullOrWhiteSpace(sekme))
             _shell.BildirimdenAc(talepId, 0, sekme ?? "talepler");
     }
-
-    private void BtnSatinalmaPro_Click(object sender, RoutedEventArgs e) =>
-        UygulamaKoordinasyonu.SatinalmaProModulAc(null);
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {

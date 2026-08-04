@@ -13,6 +13,86 @@
   <SolidColorBrush x:Key="SatModBgBrush" Color="{StaticResource SatModBg}" />
   <SolidColorBrush x:Key="SatModInkBrush" Color="{StaticResource SatModInk}" />
 
+  <!-- Talep Pro shell / liste — fallback (TalepProTheme override eder) -->
+  <SolidColorBrush x:Key="PrimaryTealBrush" Color="#0D7377" />
+  <SolidColorBrush x:Key="PrimaryTealDarkBrush" Color="#0A5C5F" />
+  <SolidColorBrush x:Key="PrimaryTealLightBrush" Color="#E0FCFF" />
+  <SolidColorBrush x:Key="NavyTextBrush" Color="#102A43" />
+  <SolidColorBrush x:Key="SecondaryTextBrush" Color="#627D98" />
+  <SolidColorBrush x:Key="AppBackgroundBrush" Color="#EEF2F5" />
+  <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="BorderBrush" Color="#D9E2EC" />
+  <SolidColorBrush x:Key="DangerBrush" Color="#E83F45" />
+  <SolidColorBrush x:Key="WarningBrush" Color="#F28C28" />
+  <SolidColorBrush x:Key="SuccessBrush" Color="#24964A" />
+  <SolidColorBrush x:Key="InfoBrush" Color="#246FE5" />
+  <SolidColorBrush x:Key="PurpleBrush" Color="#7447D8" />
+  <SolidColorBrush x:Key="BadgeCreamBrush" Color="#F5E6A8" />
+  <SolidColorBrush x:Key="RowHoverBrush" Color="#F0F4F8" />
+  <SolidColorBrush x:Key="RowSelectedBrush" Color="#E0FCFF" />
+  <SolidColorBrush x:Key="HeaderSurfaceBrush" Color="#F8FAFC" />
+
+  <Style x:Key="SectionTitle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource NavyTextBrush}" />
+  </Style>
+  <Style x:Key="SectionSubtitle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style x:Key="BreadcrumbText" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+  </Style>
+  <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource PrimaryToolbarButtonStyle}">
+    <Setter Property="Background" Value="{StaticResource PrimaryTealBrush}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}" />
+  <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
+    <Setter Property="Padding" Value="8" />
+    <Setter Property="MinWidth" Value="36" />
+  </Style>
+  <Style x:Key="UserProfilePanel" TargetType="Border">
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+    <Setter Property="Padding" Value="14,12" />
+  </Style>
+  <Style x:Key="NotificationBadge" TargetType="Border">
+    <Setter Property="Background" Value="{StaticResource DangerBrush}" />
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="MinWidth" Value="18" />
+    <Setter Property="Height" Value="18" />
+    <Setter Property="Padding" Value="5,0" />
+  </Style>
+  <Style x:Key="SummaryCard" TargetType="Border">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="16,14" />
+  </Style>
+  <Style x:Key="SearchBox" TargetType="TextBox" BasedOn="{StaticResource FilterBoxStyle}" />
+  <Style x:Key="FilterButton" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}" />
+  <Style x:Key="TabButton" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style x:Key="PaginationButton" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="MinWidth" Value="32" />
+  </Style>
+  <Style x:Key="StatusBadge" TargetType="Border">
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="8,3" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style x:Key="OutlineButton" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}" />
+  <Style x:Key="PurpleOutlineButton" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}" />
+
   <LinearGradientBrush x:Key="SatModHeroGradient" StartPoint="0,0" EndPoint="1,0">
     <GradientStop Color="#102A43" Offset="0" />
     <GradientStop Color="#0D7377" Offset="1" />
@@ -57,6 +137,8 @@
     <Setter Property="FontSize" Value="13" />
     <Setter Property="AlternatingRowBackground" Value="#EEF2F5" />
   </Style>
+
+  <Style x:Key="ModernDataGrid" TargetType="DataGrid" BasedOn="{StaticResource SatModDataGrid}" />
 
   <Style x:Key="SatModListItem" TargetType="ListViewItem">
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -150,6 +232,9 @@
       </Setter.Value>
     </Setter>
   </Style>
+
+  <Style x:Key="NavigationItem" TargetType="Button" BasedOn="{StaticResource SatModSideNavItem}" />
+  <Style x:Key="ActiveNavigationItem" TargetType="Button" BasedOn="{StaticResource SatModSideNavItem}" />
 
   <Style x:Key="SatModSideNavLabel" TargetType="TextBlock">
     <Setter Property="FontSize" Value="13" />

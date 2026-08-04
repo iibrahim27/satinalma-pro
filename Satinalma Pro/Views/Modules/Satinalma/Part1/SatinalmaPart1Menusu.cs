@@ -53,10 +53,92 @@ public static class SatinalmaPart1Menusu
     public static IReadOnlyList<MenuGrubu> MenuGruplari(string? rol)
     {
         var uid = OturumYoneticisi.AktifKullanici?.Uid;
-        return DesktopRoleTabManager.GetSatinalmaMenuGroups(rol, uid)
+        var ham = DesktopRoleTabManager.GetSatinalmaMenuGroups(rol, uid)
             .Select(g => new MenuGrubu(g.Baslik, g.Ogeler.Select(i => new Oge(i.Baslik, i.Route)).ToList()))
             .ToList();
+
+        return MasaustuMenuGruplariniDuzenle(rol, ham);
     }
+
+    /// <summary>Talep Pro sol menü: GENEL / TALEP SÜRECİ / OPERASYON.</summary>
+    private static IReadOnlyList<MenuGrubu> MasaustuMenuGruplariniDuzenle(
+        string? rol, IReadOnlyList<MenuGrubu> ham)
+    {
+        var key = KullaniciRolleri.Normalize(rol);
+        if (key is not ("admin" or "satinalma"))
+            return ham;
+
+        var flat = ham.SelectMany(g => g.Ogeler).ToList();
+        Oge? Bul(string route) => flat.FirstOrDefault(o => o.Route == route);
+        Oge? YenidenAdlandir(string route, string baslik)
+        {
+            var o = Bul(route);
+            return o is null ? null : o with { Baslik = baslik };
+        }
+
+        var genel = new List<Oge>();
+        if (Bul(SatinalmaPanosu) is { } pano) genel.Add(pano);
+        if (YenidenAdlandir(SatinalmaTalep, "Yeni Talep") is { } yeni) genel.Add(yeni);
+
+        var surecRouteSirasi = new (string Route, string? Baslik)[]
+        {
+            (SatinalmaTalepler, null),
+            (YonetimGelenTalepler, null),
+            (SatinalmaTeklifIstenen, "Teklif İstemi Yapılanlar"),
+            (SatinalmaTeklifGirilen, null),
+            (YonetimTeklifGirilen, null),
+            (SatinalmaKarsilastirma, "Fiyat Karşılaştırma"),
+            (SatinalmaOnaylanan, "Onaylananlar"),
+            (YonetimOnaylananTeklifler, "Onaylananlar"),
+            (SatinalmaOnayGecmisi, "Geçmiş Onaylananlar"),
+            (YonetimOnayGecmisi, "Geçmiş Onaylananlar"),
+            (YonetimRedVerilen, "Reddedilenler")
+        };
+
+        var surec = new List<Oge>();
+        foreach (var (route, baslik) in surecRouteSirasi)
+        {
+            var o = baslik is null ? Bul(route) : YenidenAdlandir(route, baslik);
+            if (o is not null && surec.All(x => x.Route != o.Route))
+                surec.Add(o);
+        }
+
+        var operasyon = new List<Oge>();
+        foreach (var route in new[] { SatinalmaSiparis, SatinalmaMalKabul, SatinalmaIade, SatinalmaTedarikciler })
+        {
+            if (Bul(route) is { } o)
+                operasyon.Add(o);
+        }
+
+        // Admin yönetim arşivleri süreç sonunda kalsın
+        foreach (var o in flat)
+        {
+            if (surec.Any(x => x.Route == o.Route) || genel.Any(x => x.Route == o.Route)
+                || operasyon.Any(x => x.Route == o.Route))
+                continue;
+            if (o.Route is YonetimDirekOnaylanan or YonetimGecmis or YonetimTeklifBekleyen
+                or YonetimOnayGecmisi)
+                surec.Add(o);
+        }
+
+        var sonuc = new List<MenuGrubu>();
+        if (genel.Count > 0) sonuc.Add(new MenuGrubu("Genel", genel));
+        if (surec.Count > 0) sonuc.Add(new MenuGrubu("Talep Süreci", surec));
+        if (operasyon.Count > 0) sonuc.Add(new MenuGrubu("Operasyon", operasyon));
+        return sonuc.Count > 0 ? sonuc : ham;
+    }
+
+    public static string Breadcrumb(string route) => route switch
+    {
+        YonetimTeklifGirilen or SatinalmaKarsilastirma or SatinalmaTeklifIstenen
+            or SatinalmaTeklifGirilen or YonetimTeklifBekleyen
+            => "Satınalma / Teklif Süreci",
+        SatinalmaSiparis or SatinalmaMalKabul or SatinalmaIade or SatinalmaTedarikciler
+            => "Satınalma / Operasyon",
+        SatinalmaPanosu => "Satınalma / Genel",
+        SatinalmaTalep or SatinalmaTalepler => "Satınalma / Genel",
+        _ => "Satınalma / Talep Süreci"
+    };
 
     public static bool TalepAcabilir(string? rol) =>
         DesktopRoleTabManager.TalepFormuAcabilir(rol);
@@ -121,7 +203,7 @@ public static class SatinalmaPart1Menusu
     {
         YonetimGelenTalepler => ("Gelen Talepler", "Onaya gönderilen talepler"),
         YonetimTeklifBekleyen => ("Teklif Bekleyen Talepler", "Satınalmadan teklif beklenen talepler"),
-        YonetimTeklifGirilen => ("Teklif İnceleme & Onay", "Teklif girilmiş — onay / red / revize bekleyen talepler"),
+        YonetimTeklifGirilen => ("Teklif İnceleme & Onay", "Teklifleri karşılaştırın, değerlendirin ve onaylayın."),
         YonetimOnaylananTeklifler => ("Onaylanan Teklifler", "Yönetim tarafından onaylanmış teklifli talepler"),
         YonetimOnayGecmisi => ("Yönetim Onay Geçmişi", "Teklifsiz ve teklifli tüm yönetim onayları — arşiv ve PDF"),
         YonetimDirekOnaylanan => ("Direk Onaylanan Talepler", "Teklif süreci olmadan onaylanan talepler"),
@@ -129,7 +211,7 @@ public static class SatinalmaPart1Menusu
         YonetimGecmis => ("Talep ve Onaylanan Teklifler Geçmişi", "Tamamlanan talep ve teklif geçmişi"),
 
         SatinalmaTalep => ("Talep", "Malzeme talebi oluşturun"),
-        SatinalmaPanosu => ("Satınalma Panosu", "Satınalma alımları ve sevkiyat kayıtları"),
+        SatinalmaPanosu => ("Satınalma Panosu", "Satınalma performansını, bekleyen işleri ve hızlı işlemleri tek ekranda görün."),
         SatinalmaTalepler => ("Talepler", "Oluşturduğunuz talepler"),
         SatinalmaTeklifIstenen => ("Teklif İstenen Talepler", "Yönetim teklif istedi — tek teklif ile de yönetime gönderebilirsiniz"),
         SatinalmaTeklifGirilen => ("Teklif Girişi Bekleyenler", "Teklif girişi yapılacak talepler"),

@@ -41,6 +41,11 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
     private bool _rozetGuncelleniyor;
     private DispatcherTimer? _rozetZamanlayici;
     private int _panoYenilemeSira;
+    private bool _menuDaraltildi;
+    private readonly Dictionary<string, Border> _navRozetCerceveleri = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Border> _navAccentBarlari = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, TextBlock> _navMetinleri = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, TextBlock> _navIkonlari = new(StringComparer.Ordinal);
 
     public SatinalmaShellView()
     {
@@ -53,11 +58,10 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
                 SatinalmaMasaustuSifirlama.IlkAcilistaUygula();
                 SatinalmaDepo.Yukle();
 
-                var ad = KullaniciYetkileri.AktifKullaniciAdi() ?? "Kullanıcı";
-                var rol = OturumYoneticisi.AktifKullanici?.Rol ?? "";
-                TxtKullanici.Text = $"{ad} · {rol}";
-
+                KullaniciPaneliniGuncelle();
                 NavigasyonuOlustur();
+                BildirimRozetiniGuncelle();
+                var rol = OturumYoneticisi.AktifKullanici?.Rol ?? "";
                 var ilkRoute = SatinalmaPart1Menusu.IlkRoute(rol);
                 Dispatcher.BeginInvoke(DispatcherPriority.Background,
                     () => RouteAc(ilkRoute, null));
@@ -74,13 +78,51 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
         };
 
         SatinalmaDepo.TaleplerGuncellendi += IcerikYenile;
+        BildirimYoneticisi.BildirimlerDegisti += BildirimRozetiniGuncelle;
         Unloaded += (_, _) =>
         {
             SatinalmaDepo.TaleplerGuncellendi -= IcerikYenile;
+            BildirimYoneticisi.BildirimlerDegisti -= BildirimRozetiniGuncelle;
             OturumYoneticisi.OturumDegisti -= OturumDegistiIsle;
         };
 
         OturumYoneticisi.OturumDegisti += OturumDegistiIsle;
+    }
+
+    private void KullaniciPaneliniGuncelle()
+    {
+        var ad = OturumYoneticisi.AktifKullanici?.AdSoyad
+                 ?? KullaniciYetkileri.AktifKullaniciAdi()
+                 ?? "Kullanıcı";
+        var rol = OturumYoneticisi.AktifKullanici?.Rol ?? "";
+        var rolEtiket = string.IsNullOrWhiteSpace(rol) ? "Satınalma" : KullaniciRolleri.GorunenAd(rol);
+        TxtKullaniciAd.Text = ad;
+        TxtKullaniciRol.Text = rolEtiket;
+        var bas = AvatarBasHarfler(ad);
+        TxtAvatar.Text = bas;
+        TxtHeaderAvatar.Text = bas;
+    }
+
+    private static string AvatarBasHarfler(string ad)
+    {
+        var parcalar = ad.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parcalar.Length == 0) return "?";
+        if (parcalar.Length == 1) return parcalar[0][..Math.Min(2, parcalar[0].Length)].ToLowerInvariant();
+        return $"{char.ToLowerInvariant(parcalar[0][0])}{char.ToLowerInvariant(parcalar[^1][0])}";
+    }
+
+    private void BildirimRozetiniGuncelle()
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(BildirimRozetiniGuncelle, DispatcherPriority.Background);
+            return;
+        }
+
+        var sayi = BildirimYoneticisi.OkunmamisSayisi;
+        var gorunur = sayi > 0;
+        TxtBildirimSayi.Text = sayi > 99 ? "99+" : sayi.ToString();
+        BildirimRozet.Visibility = gorunur ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OturumDegistiIsle()
@@ -91,10 +133,9 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
         Dispatcher.BeginInvoke(DispatcherPriority.Normal, () =>
         {
             var rol = OturumYoneticisi.AktifKullanici?.Rol ?? "";
-            var ad = KullaniciYetkileri.AktifKullaniciAdi() ?? "Kullanıcı";
-            TxtKullanici.Text = $"{ad} · {rol}";
-
+            KullaniciPaneliniGuncelle();
             NavigasyonuOlustur();
+            BildirimRozetiniGuncelle();
 
             if (!_navButtons.ContainsKey(_aktifRoute))
             {
@@ -224,8 +265,13 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
         NavPanel.Children.Clear();
         _navButtons.Clear();
         _navRozetleri.Clear();
+        _navRozetCerceveleri.Clear();
+        _navAccentBarlari.Clear();
+        _navMetinleri.Clear();
+        _navIkonlari.Clear();
 
         var rol = OturumYoneticisi.AktifKullanici?.Rol;
+        var muted = BrushKaynak("SecondaryTextBrush", Color.FromRgb(0x60, 0x70, 0x89));
         foreach (var grup in SatinalmaPart1Menusu.MenuGruplari(rol))
         {
             if (!string.IsNullOrWhiteSpace(grup.Baslik))
@@ -235,8 +281,10 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
                     Text = grup.Baslik.ToUpperInvariant(),
                     FontSize = 10,
                     FontWeight = FontWeights.Bold,
-                    Foreground = new SolidColorBrush(Color.FromRgb(0x64, 0x74, 0x8B)),
-                    Margin = new Thickness(12, 14, 8, 6)
+                    Foreground = muted,
+                    Margin = new Thickness(14, 14, 8, 6),
+                    Visibility = _menuDaraltildi ? Visibility.Collapsed : Visibility.Visible,
+                    Tag = "NavGroup"
                 });
             }
 
@@ -250,6 +298,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
 
         NavRozetleriniGuncelle();
         AktifNavGuncelle(_aktifRoute);
+        MenuDaraltmaUygula();
     }
 
     private Button NavOgesi(string route, string baslik)
@@ -265,7 +314,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
         };
         var rozetCer = new Border
         {
-            Background = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44)),
+            Background = BrushKaynak("DangerBrush", Color.FromRgb(0xE8, 0x3F, 0x45)),
             CornerRadius = new CornerRadius(9),
             MinWidth = 18,
             Height = 18,
@@ -276,30 +325,70 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
             VerticalAlignment = VerticalAlignment.Center
         };
         _navRozetleri[route] = rozet;
+        _navRozetCerceveleri[route] = rozetCer;
+
+        var navy = BrushKaynak("NavyTextBrush", Color.FromRgb(0x10, 0x23, 0x3F));
+        var mutedIcon = BrushKaynak("SecondaryTextBrush", Color.FromRgb(0x60, 0x70, 0x89));
+
+        var ikon = new TextBlock
+        {
+            Text = NavIkon(route),
+            FontFamily = new FontFamily("Segoe MDL2 Assets"),
+            FontSize = 14,
+            Foreground = mutedIcon,
+            Width = 20,
+            Margin = new Thickness(0, 0, 10, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        _navIkonlari[route] = ikon;
 
         var metin = new TextBlock
         {
             Text = baslik,
             FontSize = 13,
             FontWeight = FontWeights.Medium,
-            Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xD5, 0xE1)),
+            Foreground = navy,
             VerticalAlignment = VerticalAlignment.Center,
-            TextWrapping = TextWrapping.Wrap,
-            MaxWidth = 170
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxWidth = 160
         };
+        _navMetinleri[route] = metin;
+
+        var sol = new StackPanel { Orientation = Orientation.Horizontal };
+        sol.Children.Add(ikon);
+        sol.Children.Add(metin);
 
         var icerik = new DockPanel { LastChildFill = true };
         DockPanel.SetDock(rozetCer, Dock.Right);
         icerik.Children.Add(rozetCer);
-        icerik.Children.Add(metin);
+        icerik.Children.Add(sol);
+
+        var accent = new Border
+        {
+            Width = 3,
+            CornerRadius = new CornerRadius(2),
+            Background = Brushes.Transparent,
+            Margin = new Thickness(0, 2, 8, 2),
+            VerticalAlignment = VerticalAlignment.Stretch
+        };
+        _navAccentBarlari[route] = accent;
+
+        var satir = new Grid();
+        satir.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        satir.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        Grid.SetColumn(accent, 0);
+        Grid.SetColumn(icerik, 1);
+        satir.Children.Add(accent);
+        satir.Children.Add(icerik);
 
         var shell = new Border
         {
             Background = Brushes.Transparent,
             CornerRadius = new CornerRadius(10),
-            Padding = new Thickness(12, 10, 12, 10),
-            Margin = new Thickness(0, 1, 0, 1),
-            Child = icerik
+            Padding = new Thickness(8, 9, 10, 9),
+            Child = satir
         };
 
         var btn = new Button
@@ -308,10 +397,11 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
             Padding = new Thickness(0),
+            Margin = new Thickness(8, 1, 8, 1),
             Cursor = Cursors.Hand,
             Tag = route,
             ToolTip = baslik,
-            Focusable = false,
+            Focusable = true,
             HorizontalContentAlignment = HorizontalAlignment.Stretch
         };
         var t = new ControlTemplate(typeof(Button));
@@ -319,10 +409,44 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
         t.VisualTree = f;
         btn.Template = t;
         btn.Click += (_, _) => RouteAc(route, null);
+        btn.MouseEnter += (_, _) =>
+        {
+            if (!string.Equals(btn.Tag as string, "Active", StringComparison.Ordinal)
+                && shell.Background == Brushes.Transparent)
+                shell.Background = BrushKaynak("RowHoverBrush", Color.FromRgb(0xF3, 0xF6, 0xF9));
+        };
+        btn.MouseLeave += (_, _) =>
+        {
+            if (!string.Equals(btn.Tag as string, "Active", StringComparison.Ordinal))
+                shell.Background = Brushes.Transparent;
+        };
 
         _navButtons[route] = btn;
         return btn;
     }
+
+    private Brush BrushKaynak(string key, Color fallback) =>
+        TryFindResource(key) as Brush ?? new SolidColorBrush(fallback);
+
+    private static string NavIkon(string route) => route switch
+    {
+        SatinalmaPart1Menusu.SatinalmaPanosu => "\uE80F",
+        SatinalmaPart1Menusu.SatinalmaTalep => "\uE710",
+        SatinalmaPart1Menusu.SatinalmaTalepler => "\uE8A5",
+        SatinalmaPart1Menusu.YonetimGelenTalepler => "\uE8F1",
+        SatinalmaPart1Menusu.SatinalmaTeklifIstenen => "\uE8FD",
+        SatinalmaPart1Menusu.SatinalmaTeklifGirilen => "\uE70F",
+        SatinalmaPart1Menusu.YonetimTeklifGirilen => "\uE8FB",
+        SatinalmaPart1Menusu.SatinalmaKarsilastirma => "\uE9D2",
+        SatinalmaPart1Menusu.SatinalmaOnaylanan or SatinalmaPart1Menusu.YonetimOnaylananTeklifler => "\uE73E",
+        SatinalmaPart1Menusu.SatinalmaOnayGecmisi or SatinalmaPart1Menusu.YonetimOnayGecmisi => "\uE81C",
+        SatinalmaPart1Menusu.YonetimRedVerilen => "\uE711",
+        SatinalmaPart1Menusu.SatinalmaSiparis => "\uE7BF",
+        SatinalmaPart1Menusu.SatinalmaMalKabul => "\uE7B8",
+        SatinalmaPart1Menusu.SatinalmaIade => "\uE72C",
+        SatinalmaPart1Menusu.SatinalmaTedarikciler => "\uE716",
+        _ => "\uE8A5"
+    };
 
     private void RouteAc(string route, Guid? talepId)
     {
@@ -337,6 +461,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
         var (baslik, aciklama) = SatinalmaPart1Menusu.Baslik(route);
         TxtBaslik.Text = baslik;
         TxtAciklama.Text = aciklama;
+        TxtBreadcrumb.Text = SatinalmaPart1Menusu.Breadcrumb(route);
         AktifNavGuncelle(route);
 
         if (SatinalmaPart1Menusu.PanosuRoute(route))
@@ -682,42 +807,88 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
 
     private void AktifNavGuncelle(string route)
     {
+        var aktifBg = BrushKaynak("PrimaryTealLightBrush", Color.FromRgb(0xE8, 0xF7, 0xF7));
+        var aktifFg = BrushKaynak("PrimaryTealDarkBrush", Color.FromRgb(0x04, 0x6C, 0x75));
+        var navy = BrushKaynak("NavyTextBrush", Color.FromRgb(0x10, 0x23, 0x3F));
+        var muted = BrushKaynak("SecondaryTextBrush", Color.FromRgb(0x60, 0x70, 0x89));
+        var cream = BrushKaynak("BadgeCreamBrush", Color.FromRgb(0xF5, 0xE6, 0xA8));
+        var danger = BrushKaynak("DangerBrush", Color.FromRgb(0xE8, 0x3F, 0x45));
+
         foreach (var (id, btn) in _navButtons)
         {
-            btn.Tag = id == route ? "Active" : id;
+            var aktif = id == route;
+            btn.Tag = aktif ? "Active" : id;
             if (btn.Content is not Border shell) continue;
 
-            var aktif = id == route;
-            shell.Background = aktif
-                ? new SolidColorBrush(Color.FromRgb(0x4F, 0x46, 0xE5))
-                : Brushes.Transparent;
+            shell.Background = aktif ? aktifBg : Brushes.Transparent;
 
-            TextBlock? metin = null;
-            if (shell.Child is DockPanel dp)
+            if (_navMetinleri.TryGetValue(id, out var metin))
             {
-                foreach (var child in dp.Children)
-                {
-                    if (child is TextBlock tb)
-                    {
-                        metin = tb;
-                        break;
-                    }
-                }
-            }
-            else if (shell.Child is StackPanel sp && sp.Children.Count > 0 && sp.Children[0] is TextBlock eski)
-            {
-                metin = eski;
-            }
-
-            if (metin is not null)
-            {
-                metin.Foreground = new SolidColorBrush(aktif
-                    ? Colors.White
-                    : Color.FromRgb(0xCB, 0xD5, 0xE1));
+                metin.Foreground = aktif ? aktifFg : navy;
                 metin.FontWeight = aktif ? FontWeights.SemiBold : FontWeights.Medium;
+            }
+
+            if (_navIkonlari.TryGetValue(id, out var ikon))
+                ikon.Foreground = aktif ? aktifFg : muted;
+
+            if (_navAccentBarlari.TryGetValue(id, out var accent))
+                accent.Background = aktif ? aktifFg : Brushes.Transparent;
+
+            if (_navRozetCerceveleri.TryGetValue(id, out var rozetCer)
+                && _navRozetleri.TryGetValue(id, out var rozet)
+                && rozetCer.Visibility == Visibility.Visible)
+            {
+                if (aktif)
+                {
+                    rozetCer.Background = cream;
+                    rozet.Foreground = navy;
+                }
+                else
+                {
+                    rozetCer.Background = danger;
+                    rozet.Foreground = Brushes.White;
+                }
             }
         }
     }
+
+    private void BtnMenuDaralt_Click(object sender, RoutedEventArgs e)
+    {
+        _menuDaraltildi = !_menuDaraltildi;
+        MenuDaraltmaUygula();
+    }
+
+    private void MenuDaraltmaUygula()
+    {
+        ColNav.Width = new GridLength(_menuDaraltildi ? 72 : 268);
+        PanelMarkaMetin.Visibility = _menuDaraltildi ? Visibility.Collapsed : Visibility.Visible;
+        PanelKullaniciMetin.Visibility = _menuDaraltildi ? Visibility.Collapsed : Visibility.Visible;
+        BtnMenuDaralt.Content = _menuDaraltildi ? "\uE76C" : "\uE76B";
+        BtnMenuDaralt.ToolTip = _menuDaraltildi ? "Menüyü genişlet" : "Menüyü daralt";
+
+        foreach (var child in NavPanel.Children)
+        {
+            if (child is TextBlock { Tag: "NavGroup" } grup)
+                grup.Visibility = _menuDaraltildi ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        foreach (var (route, metin) in _navMetinleri)
+            metin.Visibility = _menuDaraltildi ? Visibility.Collapsed : Visibility.Visible;
+
+        foreach (var (route, rozet) in _navRozetleri)
+        {
+            if (_navRozetCerceveleri.TryGetValue(route, out var cer))
+            {
+                if (_menuDaraltildi)
+                    cer.Visibility = Visibility.Collapsed;
+                else if (rozet.Visibility == Visibility.Visible)
+                    cer.Visibility = Visibility.Visible;
+            }
+        }
+    }
+
+    private void BtnSatinalmaProDon_Click(object sender, RoutedEventArgs e) =>
+        UygulamaKoordinasyonu.SatinalmaProModulAc(null);
 
     private void PanoYenilemeyiPlanla()
     {
@@ -772,13 +943,17 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
             foreach (var (route, metin) in _navRozetleri)
             {
                 var sayi = sayaclar.GetValueOrDefault(route);
-                var gorunur = sayi > 0;
+                var gorunur = sayi > 0 && !_menuDaraltildi;
                 metin.Text = sayi > 99 ? "99+" : sayi.ToString();
-                metin.Visibility = gorunur ? Visibility.Visible : Visibility.Collapsed;
+                metin.Visibility = sayi > 0 ? Visibility.Visible : Visibility.Collapsed;
 
-                if (metin.Parent is Border cerceve)
+                if (_navRozetCerceveleri.TryGetValue(route, out var cerceve))
                     cerceve.Visibility = gorunur ? Visibility.Visible : Visibility.Collapsed;
+                else if (metin.Parent is Border eski)
+                    eski.Visibility = gorunur ? Visibility.Visible : Visibility.Collapsed;
             }
+
+            AktifNavGuncelle(_aktifRoute);
         }
         finally
         {
@@ -861,6 +1036,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
     {
         var pencere = new BildirimlerWindow { Owner = Window.GetWindow(this) };
         pencere.ShowDialog();
+        BildirimRozetiniGuncelle();
     }
 
     private void Yenile_Click(object sender, RoutedEventArgs e) => KisayolYenile();

@@ -1,8 +1,9 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
@@ -17,14 +18,15 @@ public partial class SatinalmaPanosuView : UserControl
     public event Action<Guid>? TalepAcIstendi;
     public event Action? Degisti;
 
-    private List<SatinalmaPanosuTalepSatir> _tumSatirlar = [];
-    private string _aktifTab = "Tumu";
+    private static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
     private int _yenilemeSira;
+    private IReadOnlyList<PanosuAylikHarcama> _aylik = [];
+    private IReadOnlyList<PanosuKritikSatir> _kritik = [];
 
     public SatinalmaPanosuView()
     {
         InitializeComponent();
-        TalepHoverOnizleme.Etkinlestir(TalepGrid);
+        TxtYilEtiket.Text = DateTime.Now.Year.ToString(Tr);
     }
 
     public void Yenile()
@@ -35,11 +37,11 @@ public partial class SatinalmaPanosuView : UserControl
         {
             try
             {
-                var adimlar = SatinalmaPanosuVeriServisi.WorkflowAdimlari();
-                var kpis = SatinalmaPanosuVeriServisi.OzetKpi();
-                var satirlar = SatinalmaPanosuVeriServisi.SonTalepler(50).ToList();
-                var aylik = SatinalmaPanosuVeriServisi.AylikSatinalma();
-                var kategori = SatinalmaPanosuVeriServisi.KategoriDagilimi();
+                var kpi = SatinalmaPanosuVeriServisi.DashboardUstKpi();
+                var aylik = SatinalmaPanosuVeriServisi.AylikHarcamaSerisi();
+                var durum = SatinalmaPanosuVeriServisi.TalepDurumDagilimi();
+                var kritik = SatinalmaPanosuVeriServisi.KritikBekleyenTalepler(5);
+                var kategori = SatinalmaPanosuVeriServisi.KategoriHarcamaDagilimi(4);
 
                 Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
                 {
@@ -48,13 +50,19 @@ public partial class SatinalmaPanosuView : UserControl
 
                     try
                     {
-                        HizliEylemleriOlustur();
-                        WorkflowOlustur(adimlar);
-                        KpiOlustur(kpis);
-                        _tumSatirlar = satirlar;
-                        TabloyuFiltrele();
-                        AylikGrafik.Bagla(aylik);
-                        KategoriGrafik.Bagla(kategori);
+                        TxtKpiOnay.Text = kpi.OnayBekleyen;
+                        TxtKpiTeklif.Text = kpi.TeklifSurecinde;
+                        TxtKpiSiparis.Text = kpi.SipariseDonusen;
+                        TxtKpiHarcama.Text = kpi.BuAyHarcama;
+                        TxtKpiGeciken.Text = kpi.Geciken;
+
+                        _aylik = aylik;
+                        CizAylikGrafik();
+                        CizDonut(durum);
+                        _kritik = kritik;
+                        KritikListe.ItemsSource = kritik;
+                        CizKategori(kategori);
+                        TxtSonGuncelleme.Text = $"Son güncelleme: Bugün {DateTime.Now:HH:mm}";
                     }
                     catch (Exception ex)
                     {
@@ -83,9 +91,7 @@ public partial class SatinalmaPanosuView : UserControl
     }
 
     public IReadOnlyList<SatinalmaPanosuTalepSatir> GorunenSatirlar() =>
-        TalepGrid.ItemsSource as IReadOnlyList<SatinalmaPanosuTalepSatir>
-        ?? (TalepGrid.ItemsSource as IEnumerable<SatinalmaPanosuTalepSatir>)?.ToList()
-        ?? _tumSatirlar;
+        SatinalmaPanosuVeriServisi.SonTalepler(50);
 
     public void ExcelDisAktar() =>
         SatinalmaPanosuExcelService.TalepListesiKaydet(GorunenSatirlar());
@@ -96,296 +102,263 @@ public partial class SatinalmaPanosuView : UserControl
     public void PdfYazdir() =>
         SatinalmaPanosuPdfOlusturucu.TalepListesiYazdir(GorunenSatirlar());
 
-    private void HizliEylemleriOlustur()
+    private void Yenile_Click(object sender, RoutedEventArgs e) => Yenile();
+
+    private void AylikCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => CizAylikGrafik();
+
+    private void CizAylikGrafik()
     {
-        HizliEylemPanel.Children.Clear();
+        AylikCanvas.Children.Clear();
+        if (_aylik.Count == 0) return;
 
-        var rol = OturumYoneticisi.AktifKullanici?.Rol;
-        TxtPanoKapsam.Text = KullaniciRolleri.KendiTalepleriniTakipEder(rol)
-            ? "Tüm talepleri görüntüleyin; yalnızca kendi taleplerinizi düzenleyip silebilirsiniz."
-            : "Rolünüze açık bekleyen işlemlere tek tıklamayla geçin.";
+        var w = AylikCanvas.ActualWidth;
+        var h = AylikCanvas.ActualHeight;
+        if (w < 40 || h < 40) return;
 
-        var eylemler = new (string Baslik, string Route)[]
+        var maxHarcama = (double)_aylik.Max(x => x.Harcama);
+        var maxTalep = (double)_aylik.Max(x => x.TalepSayisi);
+        if (maxHarcama <= 0) maxHarcama = 1;
+        if (maxTalep <= 0) maxTalep = 1;
+
+        const double left = 8, right = 8, top = 10, bottom = 28;
+        var plotW = w - left - right;
+        var plotH = h - top - bottom;
+        var n = _aylik.Count;
+        var slot = plotW / n;
+        var barW = Math.Max(10, slot * 0.42);
+
+        var teal = BrushHex("#07858E");
+        var blue = BrushHex("#246FE5");
+        var muted = BrushHex("#94A3B8");
+
+        var line = new Polyline
         {
-            ("Talepleri İncele", SatinalmaPart1Menusu.YonetimGelenTalepler),
-            ("Taleplerim", SatinalmaPart1Menusu.SatinalmaTalepler),
-            ("Teklif Girişi", SatinalmaPart1Menusu.SatinalmaTeklifIstenen),
-            ("Teklif Onayı", SatinalmaPart1Menusu.YonetimTeklifGirilen),
-            ("Sipariş Takibi", SatinalmaPart1Menusu.SatinalmaSiparis),
-            ("Mal Kabul Takibi", SatinalmaPart1Menusu.SatinalmaMalKabul)
+            Stroke = blue,
+            StrokeThickness = 2.2,
+            StrokeLineJoin = PenLineJoin.Round
         };
 
-        foreach (var (baslik, route) in eylemler)
+        for (var i = 0; i < n; i++)
         {
-            if (!DesktopRoleTabManager.RouteVisible(rol, route))
-                continue;
-
-            var buton = new Button
+            var item = _aylik[i];
+            var cx = left + slot * i + slot / 2;
+            var barH = (double)item.Harcama / maxHarcama * plotH;
+            var bar = new Rectangle
             {
-                Content = baslik,
-                Style = (Style)FindResource("ToolbarButtonStyle"),
-                Margin = new Thickness(0, 0, 8, 6),
-                Padding = new Thickness(12, 7, 12, 7),
-                ToolTip = baslik
+                Width = barW,
+                Height = Math.Max(2, barH),
+                Fill = teal,
+                RadiusX = 4,
+                RadiusY = 4
             };
-            buton.Click += (_, _) => RouteIstendi?.Invoke(route);
-            HizliEylemPanel.Children.Add(buton);
+            Canvas.SetLeft(bar, cx - barW / 2);
+            Canvas.SetTop(bar, top + plotH - bar.Height);
+            AylikCanvas.Children.Add(bar);
+
+            var ly = top + plotH - item.TalepSayisi / maxTalep * plotH;
+            line.Points.Add(new Point(cx, ly));
+
+            var lbl = new TextBlock
+            {
+                Text = item.Etiket,
+                FontSize = 11,
+                Foreground = muted,
+                Width = slot,
+                TextAlignment = TextAlignment.Center
+            };
+            Canvas.SetLeft(lbl, left + slot * i);
+            Canvas.SetTop(lbl, h - 22);
+            AylikCanvas.Children.Add(lbl);
+        }
+
+        AylikCanvas.Children.Add(line);
+
+        foreach (Point p in line.Points)
+        {
+            var dot = new Ellipse
+            {
+                Width = 7,
+                Height = 7,
+                Fill = blue,
+                Stroke = Brushes.White,
+                StrokeThickness = 1.5
+            };
+            Canvas.SetLeft(dot, p.X - 3.5);
+            Canvas.SetTop(dot, p.Y - 3.5);
+            AylikCanvas.Children.Add(dot);
         }
     }
 
-    private void WorkflowOlustur(IReadOnlyList<SatinalmaWorkflowAdim> adimlar)
+    private void CizDonut(IReadOnlyList<PanosuDurumDilimi> dilimler)
     {
-        WorkflowPanel.Children.Clear();
-
-        for (var i = 0; i < adimlar.Count; i++)
-        {
-            if (i > 0)
-                WorkflowPanel.Children.Add(Oklar());
-
-            var adim = adimlar[i];
-            var kart = new Border
-            {
-                Style = KaynakStili("SatModWorkflowCard"),
-                Tag = adim.Route,
-                Width = 168,
-                VerticalAlignment = VerticalAlignment.Stretch,
-                Margin = new Thickness(0, 0, 8, 0)
-            };
-            kart.MouseLeftButtonUp += (_, _) =>
-            {
-                if (!string.IsNullOrEmpty(adim.Route))
-                    RouteIstendi?.Invoke(adim.Route);
-            };
-
-            var renk = (Color)ColorConverter.ConvertFromString(adim.RenkHex)!;
-            var ikonZemin = new SolidColorBrush(renk) { Opacity = 0.12 };
-
-            kart.Child = new StackPanel
-            {
-                Children =
-                {
-                    new Grid
-                    {
-                        Children =
-                        {
-                            new Border
-                            {
-                                Width = 36, Height = 36, CornerRadius = new CornerRadius(10),
-                                Background = ikonZemin, HorizontalAlignment = HorizontalAlignment.Left,
-                                Child = new TextBlock
-                                {
-                                    Text = adim.Ikon, FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                                    FontSize = 16, Foreground = new SolidColorBrush(renk),
-                                    HorizontalAlignment = HorizontalAlignment.Center,
-                                    VerticalAlignment = VerticalAlignment.Center
-                                }
-                            },
-                            new TextBlock
-                            {
-                                Text = adim.Adet.ToString(), FontSize = 22, FontWeight = FontWeights.Bold,
-                                HorizontalAlignment = HorizontalAlignment.Right,
-                                Foreground = KaynakFircasi("DashTextBrush")
-
-                            }
-                        }
-                    },
-                    new TextBlock
-                    {
-                        Text = adim.Baslik, FontSize = 12, FontWeight = FontWeights.SemiBold,
-                        Foreground = KaynakFircasi("DashTextBrush"), Margin = new Thickness(0, 10, 0, 0),
-                        TextWrapping = TextWrapping.Wrap
-                    },
-                    new TextBlock
-                    {
-                        Text = adim.SonHareket, FontSize = 10,
-                        Foreground = KaynakFircasi("InkMutedBrush"),
-                        Margin = new Thickness(0, 6, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis
-                    }
-                }
-            };
-
-            WorkflowPanel.Children.Add(kart);
-        }
-    }
-
-    private static TextBlock Oklar() => new()
-    {
-        Text = "→",
-        FontSize = 14,
-        VerticalAlignment = VerticalAlignment.Center,
-        Foreground = new SolidColorBrush(Color.FromRgb(98, 125, 152)),
-        Margin = new Thickness(0, 0, 8, 0)
-    };
-
-    private void KpiOlustur(IReadOnlyList<SatinalmaPanosuOzetKpi> kpis)
-    {
-        KpiPanel.Children.Clear();
-        foreach (var kpi in kpis)
-        {
-            var renk = (Color)ColorConverter.ConvertFromString(kpi.RenkHex)!;
-            var kart = new Border
-            {
-                Style = KaynakStili("SatModMiniKpiCard"),
-                Width = 168,
-                Margin = new Thickness(0, 0, 8, 0)
-            };
-            kart.Child = new StackPanel
-            {
-                Children =
-                {
-                    new Border
-                    {
-                        Width = 32, Height = 32, CornerRadius = new CornerRadius(8),
-                        Background = new SolidColorBrush(renk) { Opacity = 0.12 },
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        Child = new TextBlock
-                        {
-                            Text = kpi.Ikon, FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14,
-                            Foreground = new SolidColorBrush(renk),
-                            HorizontalAlignment = HorizontalAlignment.Center,
-                            VerticalAlignment = VerticalAlignment.Center
-                        }
-                    },
-                    new TextBlock
-                    {
-                        Text = kpi.Baslik, FontSize = 11, Foreground = KaynakFircasi("InkMutedBrush"),
-                        Margin = new Thickness(0, 8, 0, 0)
-                    },
-                    new TextBlock
-                    {
-                        Text = kpi.Deger, FontSize = 18, FontWeight = FontWeights.Bold,
-                        Foreground = KaynakFircasi("DashTextBrush"), Margin = new Thickness(0, 2, 0, 0)
-                    },
-                    new TextBlock
-                    {
-                        Text = kpi.Alt, FontSize = 10, Foreground = KaynakFircasi("InkMutedBrush"),
-                        Margin = new Thickness(0, 2, 0, 0)
-                    }
-                }
-            };
-            KpiPanel.Children.Add(kart);
-        }
-    }
-
-    private void TabloyuFiltrele()
-    {
-        var arama = TxtArama.Text.Trim();
-        IEnumerable<SatinalmaPanosuTalepSatir> liste = _tumSatirlar;
-
-        liste = _aktifTab switch
-        {
-            "Bekleyen" => liste.Where(s => s.Durum is "Bekliyor" or "Karşılaştırılıyor"),
-            "Teklif" => liste.Where(s => s.Durum == "Teklif Geldi"),
-            "Onay" => liste.Where(s => s.Durum == "Onaylandı"),
-            "Siparis" => liste.Where(s => s.Durum == "Sipariş"),
-            _ => liste
-        };
-
-        if (!string.IsNullOrEmpty(arama))
-        {
-            liste = liste.Where(s =>
-                string.Join(" ", s.TalepNo, s.TalepEden, s.Santiye, s.Malzeme, s.Kategori, s.Durum)
-                    .Contains(arama, StringComparison.OrdinalIgnoreCase));
-        }
-
-        TalepGrid.ItemsSource = liste.ToList();
-    }
-
-    private void AramaDegisti(object sender, TextChangedEventArgs e) => TabloyuFiltrele();
-
-    private void Tab_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button btn || btn.Tag is not string tag)
+        DonutCanvas.Children.Clear();
+        DonutLegend.Children.Clear();
+        var toplam = dilimler.Sum(d => d.Adet);
+        TxtDonutToplam.Text = toplam.ToString("N0", Tr);
+        if (dilimler.Count == 0 || toplam == 0)
             return;
 
-        _aktifTab = tag;
-        foreach (var b in new[] { TabTumu, TabBekleyen, TabTeklif, TabOnay, TabSiparis })
-            b.Style = (Style)FindResource("SatModTabButton");
+        const double cx = 80, cy = 80, r = 62, inner = 40;
+        var start = -90.0;
 
-        btn.Style = (Style)FindResource("SatModTabButtonActive");
-        TabloyuFiltrele();
+        foreach (var d in dilimler)
+        {
+            if (d.Adet <= 0) continue;
+            var sweep = d.Adet * 360.0 / toplam;
+            DonutCanvas.Children.Add(DonutDilim(cx, cy, r, inner, start, sweep, BrushHex(d.RenkHex)));
+            start += sweep;
+
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+            row.Children.Add(new Border
+            {
+                Width = 10,
+                Height = 10,
+                CornerRadius = new CornerRadius(2),
+                Background = BrushHex(d.RenkHex),
+                Margin = new Thickness(0, 0, 8, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            row.Children.Add(new TextBlock
+            {
+                Text = $"{d.Etiket}  {d.Adet}  (%{d.Yuzde:0})",
+                FontSize = 12,
+                Foreground = BrushHex("#10233F"),
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            DonutLegend.Children.Add(row);
+        }
     }
 
-    private void TumTalepler_Click(object sender, RoutedEventArgs e) =>
-        RouteIstendi?.Invoke(SatinalmaPart1Menusu.SatinalmaTalepler);
-
-    private void TalepGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
-
-    private void TalepGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private void CizKategori(IReadOnlyList<PanosuKategoriHarcama> kategoriler)
     {
-        if (TalepGrid.SelectedItem is SatinalmaPanosuTalepSatir satir)
+        KategoriPanel.Children.Clear();
+        if (kategoriler.Count == 0)
+        {
+            KategoriPanel.Children.Add(new TextBlock
+            {
+                Text = "Henüz kategori harcaması yok.",
+                FontSize = 12,
+                Foreground = BrushHex("#607089"),
+                Margin = new Thickness(0, 8, 0, 0)
+            });
+            return;
+        }
+
+        var max = kategoriler.Max(k => k.Tutar);
+        if (max <= 0) max = 1;
+
+        foreach (var k in kategoriler)
+        {
+            var row = new Grid { Margin = new Thickness(0, 0, 0, 14) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var ad = new TextBlock
+            {
+                Text = k.Etiket,
+                FontSize = 12,
+                Foreground = BrushHex("#10233F"),
+                VerticalAlignment = VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            row.Children.Add(ad);
+
+            var barHost = new Grid { Height = 10, Margin = new Thickness(8, 0, 12, 0) };
+            barHost.Children.Add(new Border
+            {
+                Background = BrushHex("#EEF2F6"),
+                CornerRadius = new CornerRadius(5)
+            });
+            var fill = new Border
+            {
+                Background = BrushHex("#07858E"),
+                CornerRadius = new CornerRadius(5),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Width = 8
+            };
+            barHost.Children.Add(fill);
+            var oran = (double)(k.Tutar / max);
+            barHost.SizeChanged += (_, _) =>
+            {
+                fill.Width = Math.Max(8, barHost.ActualWidth * oran);
+            };
+            Grid.SetColumn(barHost, 1);
+            row.Children.Add(barHost);
+
+            var metin = new TextBlock
+            {
+                Text = $"{k.Tutar.ToString("C0", Tr)}  %{k.Yuzde.ToString("0.#", Tr)}",
+                FontSize = 12,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = BrushHex("#10233F"),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(metin, 2);
+            row.Children.Add(metin);
+
+            KategoriPanel.Children.Add(row);
+        }
+    }
+
+    private static Path DonutDilim(double cx, double cy, double r, double inner,
+        double startDeg, double sweepDeg, Brush fill)
+    {
+        var start = startDeg * Math.PI / 180.0;
+        var end = (startDeg + sweepDeg) * Math.PI / 180.0;
+        var large = sweepDeg > 180 ? 1 : 0;
+
+        var x1 = cx + r * Math.Cos(start);
+        var y1 = cy + r * Math.Sin(start);
+        var x2 = cx + r * Math.Cos(end);
+        var y2 = cy + r * Math.Sin(end);
+        var ix1 = cx + inner * Math.Cos(end);
+        var iy1 = cy + inner * Math.Sin(end);
+        var ix2 = cx + inner * Math.Cos(start);
+        var iy2 = cy + inner * Math.Sin(start);
+
+        var fig = new PathFigure { StartPoint = new Point(x1, y1), IsClosed = true };
+        fig.Segments.Add(new ArcSegment(new Point(x2, y2), new Size(r, r), 0, large == 1, SweepDirection.Clockwise, true));
+        fig.Segments.Add(new LineSegment(new Point(ix1, iy1), true));
+        fig.Segments.Add(new ArcSegment(new Point(ix2, iy2), new Size(inner, inner), 0, large == 1, SweepDirection.Counterclockwise, true));
+        return new Path { Fill = fill, Data = new PathGeometry([fig]) };
+    }
+
+    private static Brush BrushHex(string hex) =>
+        (Brush)new BrushConverter().ConvertFromString(hex)!;
+
+    private void KpiOnay_Click(object sender, MouseButtonEventArgs e) =>
+        RouteIstendi?.Invoke(SatinalmaPart1Menusu.YonetimTeklifGirilen);
+
+    private void KpiTeklif_Click(object sender, MouseButtonEventArgs e) =>
+        RouteIstendi?.Invoke(SatinalmaPart1Menusu.SatinalmaTeklifIstenen);
+
+    private void KpiSiparis_Click(object sender, MouseButtonEventArgs e) =>
+        RouteIstendi?.Invoke(SatinalmaPart1Menusu.SatinalmaSiparis);
+
+    private void KpiGeciken_Click(object sender, MouseButtonEventArgs e) =>
+        RouteIstendi?.Invoke(SatinalmaPart1Menusu.YonetimGelenTalepler);
+
+    private void TumKritik_Click(object sender, RoutedEventArgs e) =>
+        RouteIstendi?.Invoke(SatinalmaPart1Menusu.YonetimGelenTalepler);
+
+    private void Kritik_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (KritikListe.SelectedItem is PanosuKritikSatir satir)
             TalepAcIstendi?.Invoke(satir.Id);
     }
 
-    private void SatirMenu_Tikla(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button { Tag: SatinalmaPanosuTalepSatir satir })
-            return;
+    private void HizliYeniTalep_Click(object sender, MouseButtonEventArgs e) =>
+        RouteIstendi?.Invoke(SatinalmaPart1Menusu.SatinalmaTalep);
 
-        var menu = new ContextMenu { PlacementTarget = sender as UIElement, Placement = PlacementMode.Bottom };
-        Ekle(menu, "Talebi Aç", () => TalepAcIstendi?.Invoke(satir.Id));
-        Ekle(menu, "Teklifleri Gör", () => RouteIstendi?.Invoke(SatinalmaPart1Menusu.SatinalmaTeklifGirilen));
-        Ekle(menu, "Karşılaştır", () => RouteIstendi?.Invoke(SatinalmaPart1Menusu.SatinalmaKarsilastirma));
-        Ekle(menu, "Sipariş Oluştur", () => RouteIstendi?.Invoke(SatinalmaPart1Menusu.SatinalmaSiparis));
-        menu.Items.Add(new Separator());
-        Ekle(menu, "PDF", () => TalepPdfAc(satir.Id));
-        Ekle(menu, "Yazdır", () => TalepPdfAc(satir.Id));
-        Ekle(menu, "Sil", () => TalepSil(satir.Id));
-        menu.IsOpen = true;
-    }
+    private void HizliTeklifIstemi_Click(object sender, MouseButtonEventArgs e) =>
+        RouteIstendi?.Invoke(SatinalmaPart1Menusu.YonetimGelenTalepler);
 
-    private static void TalepPdfAc(Guid talepId)
-    {
-        var talep = SatinalmaDepo.Talepler.FirstOrDefault(t => t.Id == talepId);
-        if (talep is null)
-            return;
+    private void HizliTeklifOnay_Click(object sender, MouseButtonEventArgs e) =>
+        RouteIstendi?.Invoke(SatinalmaPart1Menusu.YonetimTeklifGirilen);
 
-        SatinalmaPdfOlusturucu.TalepFormuYazdir(talep, SatinalmaDepo.Ayarlar);
-    }
-
-    private async void TalepSil(Guid talepId)
-    {
-        var talep = SatinalmaDepo.Talepler.FirstOrDefault(t => t.Id == talepId);
-        if (talep is null)
-            return;
-
-        if (!KullaniciYetkileri.SatinalmaTalepSilebilir(talep))
-        {
-            MessageBox.Show("Bu talebi silme yetkiniz yok.", UygulamaBilgisi.Ad,
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        var onay = MessageBox.Show($"{talep.TalepNo} silinsin mi?", UygulamaBilgisi.Ad,
-            MessageBoxButton.YesNo, MessageBoxImage.Warning);
-        if (onay != MessageBoxResult.Yes)
-            return;
-
-        try
-        {
-            await SatinalmaPart1Servisi.SilAsync(talep);
-            Yenile();
-            Degisti?.Invoke();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    private static Style KaynakStili(string anahtar) =>
-        (Style)(Application.Current.TryFindResource(anahtar)
-            ?? throw new InvalidOperationException($"Stil bulunamadı: {anahtar}"));
-
-    private static Brush KaynakFircasi(string anahtar) =>
-        Application.Current.TryFindResource(anahtar) as Brush ?? Brushes.Black;
-
-    private static void Ekle(ContextMenu menu, string baslik, Action action)
-    {
-        var item = new MenuItem { Header = baslik };
-        item.Click += (_, _) => action();
-        menu.Items.Add(item);
-    }
+    private void HizliKarsilastirma_Click(object sender, MouseButtonEventArgs e) =>
+        RouteIstendi?.Invoke(SatinalmaPart1Menusu.SatinalmaKarsilastirma);
 
     public static string TalepIcinRoute(SatinalmaTalep talep) => talep.Durum switch
     {
