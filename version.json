@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.99",
-    "build":  170,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.99/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.99/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.99/SatinalmaPro.apk",
-    "notes":  "2.1.99 - Teklif revize senkronu: revizeye gonderilen talepler yonetim incelemeye geri dusmesin; masaustu/Android durum hizasi",
+    "version":  "2.1.100",
+    "build":  173,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.100/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.100/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.100/SatinalmaPro.apk",
+    "notes":  "2.1.100 - Depo giris listesi tam ekran + satir duzenleme; stok cikis kategori otomatik (malzemeden)",
     "zorunlu":  false
 }

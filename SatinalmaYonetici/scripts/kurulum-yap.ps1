@@ -24,12 +24,9 @@ $csproj = Join-Path $projeKok "SatinalmaYonetici.csproj"
 $tfm = "net9.0-windows10.0.17763.0"
 
 Write-Host "`n[1/5] Release derleniyor..."
+# Surum csproj'de (surum-guncelle); -p:Version Shared 1.0.0.0'i ezer.
 dotnet publish $csproj -c Release -r win-x64 --self-contained true `
-    -p:UseAppHost=true `
-    -p:Version=$Version `
-    -p:AssemblyVersion="$Version.0" `
-    -p:FileVersion="$Version.0" `
-    -p:InformationalVersion=$Version
+    -p:UseAppHost=true
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish basarisiz" }
 
 $publish = Join-Path $projeKok "bin\Release\$tfm\win-x64\publish"

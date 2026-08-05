@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
@@ -14,6 +15,7 @@ public partial class DepoTopluGirisWindow : Window
     private readonly ObservableCollection<StokIslemSatirKaydi> _satirlar = [];
     private List<string> _tumKategoriler = [];
     private bool _kategoriIcGuncelleme;
+    private StokIslemSatirKaydi? _duzenlenenSatir;
 
     public DepoTopluGirisWindow()
     {
@@ -174,28 +176,97 @@ public partial class DepoTopluGirisWindow : Window
             CmbBirim.Text = "";
     }
 
+    private void SatiriFormaYukle(StokIslemSatirKaydi satir)
+    {
+        _duzenlenenSatir = satir;
+        _kategoriIcGuncelleme = true;
+        CmbKategori.Text = satir.Kategori;
+        _kategoriIcGuncelleme = false;
+        MalzemeGiris.Metin = satir.Malzeme;
+        TxtMiktar.Text = satir.Miktar.ToString("N2", CultureInfo.CurrentCulture);
+        MalzemeBirimDeposu.ComboDoldur(CmbBirim, satir.Birim);
+
+        TxtSatirBaslik.Text = "Satır Düzenle";
+        BtnSatirEkle.Content = "Güncelle";
+        BtnDuzenlemeIptal.Visibility = Visibility.Visible;
+        BtnSatirDuzenle.IsEnabled = false;
+    }
+
+    private void DuzenlemeModunuBitir()
+    {
+        _duzenlenenSatir = null;
+        TxtSatirBaslik.Text = "Yeni Satır";
+        BtnSatirEkle.Content = "Satır Ekle";
+        BtnDuzenlemeIptal.Visibility = Visibility.Collapsed;
+        SatirFormunuTemizle();
+        BtnSatirDuzenle.IsEnabled = SatirGrid.SelectedItem is not null;
+    }
+
     private void SatirEkle_Click(object sender, RoutedEventArgs e)
     {
         if (!SatirFormuDogrula(out var satir))
             return;
 
+        if (_duzenlenenSatir is not null)
+        {
+            _duzenlenenSatir.Kategori = satir.Kategori;
+            _duzenlenenSatir.Malzeme = satir.Malzeme;
+            _duzenlenenSatir.Miktar = satir.Miktar;
+            _duzenlenenSatir.Birim = satir.Birim;
+            _duzenlenenSatir.DepoSaha = satir.DepoSaha;
+            SatirGrid.Items.Refresh();
+            DuzenlemeModunuBitir();
+            return;
+        }
+
         _satirlar.Add(satir);
         SatirFormunuTemizle();
     }
 
-    private void SatirSil_Click(object sender, RoutedEventArgs e)
+    private void SatirDuzenle_Click(object sender, RoutedEventArgs e)
     {
         if (SatirGrid.SelectedItem is StokIslemSatirKaydi satir)
-            _satirlar.Remove(satir);
+            SatiriFormaYukle(satir);
     }
 
-    private void SatirGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
-        BtnSatirSil.IsEnabled = SatirGrid.SelectedItem is not null;
+    private void SatirGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (SatirGrid.SelectedItem is StokIslemSatirKaydi satir)
+            SatiriFormaYukle(satir);
+    }
+
+    private void DuzenlemeIptal_Click(object sender, RoutedEventArgs e) =>
+        DuzenlemeModunuBitir();
+
+    private void SatirSil_Click(object sender, RoutedEventArgs e)
+    {
+        if (SatirGrid.SelectedItem is not StokIslemSatirKaydi satir)
+            return;
+
+        if (ReferenceEquals(_duzenlenenSatir, satir))
+            DuzenlemeModunuBitir();
+
+        _satirlar.Remove(satir);
+    }
+
+    private void SatirGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var secili = SatirGrid.SelectedItem is not null;
+        BtnSatirSil.IsEnabled = secili;
+        BtnSatirDuzenle.IsEnabled = secili && _duzenlenenSatir is null;
+    }
 
     private void DepoyuTamamla_Click(object sender, RoutedEventArgs e)
     {
         if (KullaniciYetkileri.StokYazmaIslemiEngellendi())
             return;
+
+        if (_duzenlenenSatir is not null)
+        {
+            MessageBox.Show("Önce düzenlenen satırı güncelleyin veya iptal edin.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
 
         if (_satirlar.Count == 0)
         {

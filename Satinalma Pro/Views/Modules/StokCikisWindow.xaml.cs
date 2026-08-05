@@ -5,14 +5,12 @@ using System.Windows.Controls;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
-using SatinalmaPro.Views.Controls;
 
 namespace SatinalmaPro.Views.Modules;
 
 public partial class StokCikisWindow : Window
 {
     private readonly ObservableCollection<StokIslemSatirKaydi> _satirlar = [];
-    private bool _malzemeIcGuncelleme;
     private StokKaydi? _seciliStok;
 
     public StokCikisWindow()
@@ -24,33 +22,14 @@ public partial class StokCikisWindow : Window
         TxtBelge.Text = StokBelgeNoUretici.SonrakiCikisBelgeNo();
         TxtTeslimEden.Text = StokCikisPdfOlusturucu.TeslimEdenMetni();
 
-        MalzemeKategoriDeposu.ComboDoldur(CmbKategori);
-        MalzemeKaynaginiGuncelle();
-        MalzemeGiris.MetinOnaylandi += (_, metin) => StoktanBilgileriDoldur(metin);
-    }
-
-    private string? SeciliKategori => CmbKategori.SelectedItem?.ToString();
-
-    private void MalzemeKaynaginiGuncelle()
-    {
         MalzemeGiris.OneriKaynaginiAyarla(arama =>
-            StokIslemServisi.MalzemeListesi(SeciliKategori, arama, sadeceMevcutStok: true));
-    }
-
-    private void KategoriDegisti(object sender, SelectionChangedEventArgs e)
-    {
-        if (_malzemeIcGuncelleme) return;
-
-        _seciliStok = null;
-        TxtMevcut.Clear();
-        CmbBirim.Items.Clear();
-        MalzemeKaynaginiGuncelle();
+            StokIslemServisi.MalzemeListesi(kategori: null, arama, sadeceMevcutStok: true));
+        MalzemeGiris.MetinOnaylandi += (_, metin) => StoktanBilgileriDoldur(metin);
     }
 
     private void StoktanBilgileriDoldur(string malzemeAdi)
     {
-        var stok = StokIslemServisi.StokBulMalzemeAdi(malzemeAdi, SeciliKategori, sadeceMevcutStok: true)
-            ?? StokIslemServisi.StokBulMalzemeAdi(malzemeAdi, sadeceMevcutStok: true);
+        var stok = StokIslemServisi.StokBulMalzemeAdi(malzemeAdi, sadeceMevcutStok: true);
 
         if (stok is null)
         {
@@ -62,20 +41,6 @@ public partial class StokCikisWindow : Window
 
         _seciliStok = stok;
         TxtMevcut.Text = $"{stok.MevcutMiktar:N2} {stok.Birim}";
-
-        if (!string.IsNullOrWhiteSpace(stok.Kategori))
-        {
-            _malzemeIcGuncelleme = true;
-            for (var i = 0; i < CmbKategori.Items.Count; i++)
-            {
-                if (CmbKategori.Items[i]?.ToString()?.Equals(stok.Kategori, StringComparison.OrdinalIgnoreCase) == true)
-                {
-                    CmbKategori.SelectedIndex = i;
-                    break;
-                }
-            }
-            _malzemeIcGuncelleme = false;
-        }
 
         if (!string.IsNullOrWhiteSpace(stok.Birim))
             MalzemeBirimDeposu.ComboDoldur(CmbBirim, stok.Birim);
@@ -93,20 +58,19 @@ public partial class StokCikisWindow : Window
             return false;
         }
 
-        var kategori = SeciliKategori?.Trim() ?? "";
-        if (string.IsNullOrWhiteSpace(kategori))
-        {
-            MessageBox.Show("Kategori seçin.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
-            return false;
-        }
-
         stok = _seciliStok
-            ?? StokIslemServisi.StokBulMalzemeAdi(malzeme, kategori, sadeceMevcutStok: true)
-            ?? StokIslemServisi.StokBulMalzemeAdi(malzeme, sadeceMevcutStok: true)!;
+            ?? StokIslemServisi.StokBulMalzemeAdi(malzeme, sadeceMevcutStok: true);
 
         if (stok is null)
         {
             MessageBox.Show("Seçilen malzeme için yeterli stok bulunamadı.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(stok.Kategori))
+        {
+            MessageBox.Show("Bu malzemenin stok kaydında kategori yok.", UygulamaBilgisi.Ad,
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
@@ -124,7 +88,7 @@ public partial class StokCikisWindow : Window
             return false;
         }
 
-        satir.Kategori = kategori;
+        satir.Kategori = stok.Kategori.Trim();
         satir.Malzeme = stok.MalzemeAdi;
         satir.Miktar = miktar;
         satir.Birim = stok.Birim;

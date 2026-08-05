@@ -32,12 +32,9 @@ $tfm = [regex]::Match($csprojRaw, '<TargetFramework>([^<]+)</TargetFramework>').
 if (-not $tfm) { throw "TargetFramework bulunamadi: $csprojYol" }
 
 Write-Host "`n[2/8] Release derleniyor ($tfm, win-x64, self-contained)..."
+# Surum csproj'de (surum-guncelle); -p:Version vermeyin — Shared 1.0.0.0'i ezer.
 dotnet publish $csprojYol -c Release -r win-x64 --self-contained true `
-    -p:UseAppHost=true `
-    -p:Version=$Version `
-    -p:AssemblyVersion="$Version.0" `
-    -p:FileVersion="$Version.0" `
-    -p:InformationalVersion=$Version
+    -p:UseAppHost=true
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish basarisiz (cikis: $LASTEXITCODE)" }
 
 $publish = Join-Path $projeKok "bin\Release\$tfm\win-x64\publish"
@@ -80,14 +77,10 @@ $publishExe = Join-Path $publish "SatinalmaPro.exe"
 Write-Host "`n[4/9] Talep Pro publish (aynı klasöre)..."
 $talepProje = Join-Path (Split-Path $projeKok -Parent) "TalepPro\TalepPro.csproj"
 if (-not (Test-Path $talepProje)) { throw "TalepPro.csproj bulunamadi: $talepProje" }
-# Not: "$publish\" PowerShell'de tırnağı kaçırır; -o kullan
+# Not: "$publish\" PowerShell'de tırnağı kaçırır; -o kullan. Surum TalepPro.csproj'de.
 dotnet publish $talepProje -c Release -r win-x64 --self-contained true `
     -p:UseAppHost=true `
-    -o $publish `
-    -p:Version=$Version `
-    -p:AssemblyVersion="$Version.0" `
-    -p:FileVersion="$Version.0" `
-    -p:InformationalVersion=$Version
+    -o $publish
 if ($LASTEXITCODE -ne 0) { throw "Talep Pro publish basarisiz (cikis: $LASTEXITCODE)" }
 $talepExe = Join-Path $publish "TalepPro.exe"
 if (-not (Test-Path $talepExe)) { throw "TalepPro.exe publish icinde yok: $talepExe" }
