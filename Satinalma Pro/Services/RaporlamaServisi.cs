@@ -155,7 +155,8 @@ public static class RaporlamaServisi
 
 
 
-                var fiyatli = sirali.Where(x => x.s.BirimFiyati > 0).ToList();
+                // Döviz kayıtları TL'ye çevrilerek karşılaştırılır.
+                var fiyatli = sirali.Where(x => x.s.TlBirimFiyati > 0).ToList();
 
                 var ilk = fiyatli.FirstOrDefault();
 
@@ -167,13 +168,13 @@ public static class RaporlamaServisi
                 decimal karZiyanTl = 0;
                 decimal karZiyanToplamTl = 0;
 
-                if (ilk.s != null && son.s != null && ilk.s.BirimFiyati > 0)
+                if (ilk.s != null && son.s != null && ilk.s.TlBirimFiyati > 0)
                 {
-                    karZiyanTl = son.s.BirimFiyati - ilk.s.BirimFiyati;
+                    karZiyanTl = son.s.TlBirimFiyati - ilk.s.TlBirimFiyati;
                     karZiyanToplamTl = Math.Round(karZiyanTl * (decimal)g.Sum(x => x.Miktar), 2);
 
                     if (!ReferenceEquals(ilk.s, son.s))
-                        toplamArtis = (double)(karZiyanTl / ilk.s.BirimFiyati * 100m);
+                        toplamArtis = (double)(karZiyanTl / ilk.s.TlBirimFiyati * 100m);
                 }
 
 
@@ -196,17 +197,21 @@ public static class RaporlamaServisi
 
                     Birim = birimler.Count == 1 ? birimler[0] : birimler.Count > 1 ? "Karışık" : "—",
 
-                    MinBirimFiyat = fiyatli.Count > 0 ? fiyatli.Min(x => x.s.BirimFiyati) : 0,
+                    MinBirimFiyat = fiyatli.Count > 0 ? fiyatli.Min(x => x.s.TlBirimFiyati) : 0,
 
-                    MaxBirimFiyat = fiyatli.Count > 0 ? fiyatli.Max(x => x.s.BirimFiyati) : 0,
+                    MaxBirimFiyat = fiyatli.Count > 0 ? fiyatli.Max(x => x.s.TlBirimFiyati) : 0,
 
                     OrtBirimFiyat = fiyatli.Count > 0
-                        ? Math.Round((decimal)fiyatli.Average(x => (double)x.s.BirimFiyati), 2, MidpointRounding.AwayFromZero)
+                        ? Math.Round((decimal)fiyatli.Average(x => (double)x.s.TlBirimFiyati), 2, MidpointRounding.AwayFromZero)
                         : 0,
 
-                    IlkBirimFiyat = ilk.s?.BirimFiyati ?? 0,
+                    IlkBirimFiyat = ilk.s?.TlBirimFiyati ?? 0,
 
-                    SonBirimFiyat = son.s?.BirimFiyati ?? 0,
+                    SonBirimFiyat = son.s?.TlBirimFiyati ?? 0,
+
+                    IlkBirimFiyatMetin = ilk.s?.BirimFiyatiMetin ?? "—",
+
+                    SonBirimFiyatMetin = son.s?.BirimFiyatiMetin ?? "—",
 
                     ToplamArtisYuzdesi = toplamArtis,
 
@@ -253,8 +258,8 @@ public static class RaporlamaServisi
 
             var ortFiyat = miktar > 0
                 ? Math.Round(tutar / (decimal)miktar, 2, MidpointRounding.AwayFromZero)
-                : liste.Where(s => s.BirimFiyati > 0).Any()
-                    ? Math.Round((decimal)liste.Where(s => s.BirimFiyati > 0).Average(s => (double)s.BirimFiyati), 2,
+                : liste.Where(s => s.TlBirimFiyati > 0).Any()
+                    ? Math.Round((decimal)liste.Where(s => s.TlBirimFiyati > 0).Average(s => (double)s.TlBirimFiyati), 2,
                         MidpointRounding.AwayFromZero)
                     : 0m;
 
@@ -422,7 +427,9 @@ public static class RaporlamaServisi
 
                 liste.Add(SatirOlustur(RaporModulleri.AlinanMalzemeler, k.Tarih, k.FaturaNo, k.MalzemeHizmet,
 
-                    k.Kategori, k.Tedarikci, k.IndirildigiSaha, k.Miktar, k.Birim, k.BirimFiyati, k.ToplamTutar));
+                    k.Kategori, k.Tedarikci, k.IndirildigiSaha, k.Miktar, k.Birim, k.BirimFiyati, k.ToplamTutar,
+
+                    k.ParaBirimi, k.UsdKuru, k.EurKuru));
 
             }
 
@@ -564,7 +571,9 @@ public static class RaporlamaServisi
 
         string modul, string tarih, string belgeNo, string aciklama, string kategori,
 
-        string tedarikci, string saha, double miktar, string birim, decimal birimFiyati, decimal tutar) =>
+        string tedarikci, string saha, double miktar, string birim, decimal birimFiyati, decimal tutar,
+
+        string? paraBirimi = null, decimal usdKuru = 0, decimal eurKuru = 0) =>
 
         new()
 
@@ -589,6 +598,12 @@ public static class RaporlamaServisi
             Birim = birim,
 
             BirimFiyati = birimFiyati,
+
+            ParaBirimi = string.IsNullOrWhiteSpace(paraBirimi) ? "TRY" : paraBirimi.Trim().ToUpperInvariant(),
+
+            UsdKuru = usdKuru,
+
+            EurKuru = eurKuru,
 
             Tutar = tutar
 

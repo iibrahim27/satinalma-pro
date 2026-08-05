@@ -19,6 +19,15 @@ public partial class AlinanMalzemeDuzenleWindow : Window
         MalzemeKategoriDeposu.ComboDoldur(CmbKategori, kayit.Kategori);
         MalzemeBirimDeposu.ComboDoldur(CmbBirim, kayit.Birim);
         CmbParaBirimi.ItemsSource = ParaBirimleri.Liste;
+
+        MalzemeGiris.OneriKaynaginiAyarla(MalzemeAdiOneriServisi.AlinanMalzemelerdenAra);
+        TedarikciGiris.ListeSeciciAktif = false;
+        TedarikciGiris.OneriKaynaginiAyarla(MalzemeAdiOneriServisi.AlinanTedarikciAra);
+        SahaGiris.ListeSeciciAktif = false;
+        SahaGiris.OneriKaynaginiAyarla(MalzemeAdiOneriServisi.AlinanSahaAra);
+        TeslimAlanGiris.ListeSeciciAktif = false;
+        TeslimAlanGiris.OneriKaynaginiAyarla(MalzemeAdiOneriServisi.AlinanTeslimAlanAra);
+
         FormuDoldur();
     }
 
@@ -33,7 +42,7 @@ public partial class AlinanMalzemeDuzenleWindow : Window
             TxtFaturaNo.Text = _kayit.FaturaNo;
             if (!string.IsNullOrWhiteSpace(_kayit.Kategori))
                 CmbKategori.Text = _kayit.Kategori;
-            TxtMalzemeHizmet.Text = _kayit.MalzemeHizmet;
+            MalzemeGiris.Metin = _kayit.MalzemeHizmet ?? "";
             TxtMiktar.Text = _kayit.Miktar.ToString(CultureInfo.CurrentCulture);
 
             if (!string.IsNullOrWhiteSpace(_kayit.Birim))
@@ -46,14 +55,15 @@ public partial class AlinanMalzemeDuzenleWindow : Window
                 : _kayit.ParaBirimi.Trim().ToUpperInvariant();
             CmbParaBirimi.SelectedItem = ParaBirimleri.Liste.Contains(pb) ? pb : ParaBirimleri.Try;
 
+            // Kayıttaki kur öncelikli; yoksa Ayarlar varsayılanı (faturada değiştirilebilir).
             var usd = _kayit.UsdKuru > 0 ? _kayit.UsdKuru : SatinalmaDepo.Ayarlar.VarsayilanUsdKuru;
             var eur = _kayit.EurKuru > 0 ? _kayit.EurKuru : SatinalmaDepo.Ayarlar.VarsayilanEurKuru;
             TxtUsdKuru.Text = usd > 0 ? usd.ToString(CultureInfo.CurrentCulture) : "";
             TxtEurKuru.Text = eur > 0 ? eur.ToString(CultureInfo.CurrentCulture) : "";
 
-            TxtTedarikci.Text = _kayit.Tedarikci;
-            TxtIndirildigiSaha.Text = _kayit.IndirildigiSaha;
-            TxtTeslimAlan.Text = _kayit.TeslimAlan;
+            TedarikciGiris.Metin = _kayit.Tedarikci ?? "";
+            SahaGiris.Metin = _kayit.IndirildigiSaha ?? "";
+            TeslimAlanGiris.Metin = _kayit.TeslimAlan ?? "";
             TxtAciklama.Text = _kayit.Aciklama;
             DovizPaneliniGuncelle();
         }
@@ -75,10 +85,10 @@ public partial class AlinanMalzemeDuzenleWindow : Window
 
     private void DovizPaneliniGuncelle()
     {
-        var pb = SeciliParaBirimi();
-        PanelDovizKurlari.Visibility = ParaBirimleri.TryMi(pb)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        // Kur alanları her zaman görünür ve düzenlenebilir (faturaya özel kur).
+        PanelDovizKurlari.Visibility = Visibility.Visible;
+        TxtUsdKuru.IsEnabled = true;
+        TxtEurKuru.IsEnabled = true;
     }
 
     private string SeciliParaBirimi() =>
@@ -125,13 +135,13 @@ public partial class AlinanMalzemeDuzenleWindow : Window
 
         if (string.Equals(paraBirimi, ParaBirimleri.Usd, StringComparison.OrdinalIgnoreCase) && usd <= 0)
         {
-            MessageBox.Show("USD için döviz kuru girin.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("USD için döviz kuru girin (faturadaki kuru yazabilirsiniz).", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         if (string.Equals(paraBirimi, ParaBirimleri.Eur, StringComparison.OrdinalIgnoreCase) && eur <= 0)
         {
-            MessageBox.Show("EUR için döviz kuru girin.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("EUR için döviz kuru girin (faturadaki kuru yazabilirsiniz).", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -145,22 +155,23 @@ public partial class AlinanMalzemeDuzenleWindow : Window
         _kayit.Tarih = TxtTarih.Text.Trim();
         _kayit.FaturaNo = TxtFaturaNo.Text.Trim();
         _kayit.Kategori = CmbKategori.Text.Trim();
-        _kayit.MalzemeHizmet = TxtMalzemeHizmet.Text.Trim();
+        _kayit.MalzemeHizmet = (MalzemeGiris.Metin ?? "").Trim();
         _kayit.Miktar = miktar;
         _kayit.Birim = birim;
         _kayit.BirimFiyati = birimFiyati;
         _kayit.ParaBirimi = paraBirimi;
         _kayit.UsdKuru = usd;
         _kayit.EurKuru = eur;
-        _kayit.Tedarikci = TxtTedarikci.Text.Trim();
-        _kayit.IndirildigiSaha = TxtIndirildigiSaha.Text.Trim();
-        _kayit.TeslimAlan = TxtTeslimAlan.Text.Trim();
+        _kayit.Tedarikci = (TedarikciGiris.Metin ?? "").Trim();
+        _kayit.IndirildigiSaha = (SahaGiris.Metin ?? "").Trim();
+        _kayit.TeslimAlan = (TeslimAlanGiris.Metin ?? "").Trim();
         _kayit.Aciklama = TxtAciklama.Text.Trim();
         _kayit.ToplamTutariHesapla();
 
         if (!string.IsNullOrWhiteSpace(_kayit.Kategori))
             MalzemeKategoriDeposu.Ekle(_kayit.Kategori);
         MalzemeBirimDeposu.Ekle(_kayit.Birim);
+        MalzemeAdiOneriServisi.OnbellekSifirla();
 
         ModulVeriDeposu.KaydetAlinanMalzemeler();
         DialogResult = true;

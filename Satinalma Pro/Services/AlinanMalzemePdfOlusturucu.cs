@@ -160,7 +160,7 @@ public static class AlinanMalzemePdfOlusturucu
                             table.Cell().Element(HucreVeri).Text(k.MalzemeHizmet);
                             table.Cell().Element(HucreVeri).AlignRight().Text(k.Miktar.ToString("N2", Tr));
                             table.Cell().Element(HucreVeri).Text(k.Birim);
-                            table.Cell().Element(HucreVeri).AlignRight().Text(k.BirimFiyati.ToString("N2", Tr));
+                            table.Cell().Element(HucreVeri).AlignRight().Text(k.BirimFiyatiMetin);
                             table.Cell().Element(HucreVeri).AlignRight().Text(k.ToplamTutar.ToString("N2", Tr));
                             table.Cell().Element(HucreVeri).Text(k.Tedarikci);
                             table.Cell().Element(HucreVeri).Text(k.IndirildigiSaha);

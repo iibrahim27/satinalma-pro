@@ -99,7 +99,8 @@ public static class RaporlamaExcelService
         var basliklar = new[]
         {
             "Modül", "Tarih", "Belge No", "Kategori", "Açıklama", "Miktar", "Birim",
-            "Birim Fiyat", "Artış %", "Tedarikçi", "Saha", "Tutar"
+            "Para Birimi", "Birim Fiyat", "USD Kuru", "EUR Kuru", "Birim Fiyat (gösterim)",
+            "Artış %", "Tedarikçi", "Saha", "Tutar (₺)"
         };
         for (var i = 0; i < basliklar.Length; i++)
             sayfa.Cell(1, i + 1).Value = basliklar[i];
@@ -115,11 +116,15 @@ public static class RaporlamaExcelService
             sayfa.Cell(satir, 5).Value = d.Aciklama;
             sayfa.Cell(satir, 6).Value = d.Miktar;
             sayfa.Cell(satir, 7).Value = d.Birim;
-            sayfa.Cell(satir, 8).Value = d.BirimFiyati;
-            sayfa.Cell(satir, 9).Value = d.ArtisYuzdesiMetin;
-            sayfa.Cell(satir, 10).Value = d.Tedarikci;
-            sayfa.Cell(satir, 11).Value = d.Saha;
-            sayfa.Cell(satir, 12).Value = d.Tutar;
+            sayfa.Cell(satir, 8).Value = d.ParaBirimi;
+            sayfa.Cell(satir, 9).Value = d.BirimFiyati;
+            sayfa.Cell(satir, 10).Value = d.UsdKuru;
+            sayfa.Cell(satir, 11).Value = d.EurKuru;
+            sayfa.Cell(satir, 12).Value = d.BirimFiyatiMetin;
+            sayfa.Cell(satir, 13).Value = d.ArtisYuzdesiMetin;
+            sayfa.Cell(satir, 14).Value = d.Tedarikci;
+            sayfa.Cell(satir, 15).Value = d.Saha;
+            sayfa.Cell(satir, 16).Value = d.Tutar;
             satir++;
         }
 

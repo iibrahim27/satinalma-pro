@@ -21,6 +21,9 @@ public partial class MalzemeOneriGiris : UserControl
     private bool _icGuncelleme;
     private Func<string, IEnumerable<string>> _ara = MalzemeAdiOneriServisi.Ara;
 
+    /// <summary>false ise F2 liste seçici açılmaz (saha / teslim gibi alanlar).</summary>
+    public bool ListeSeciciAktif { get; set; } = true;
+
     public event EventHandler<string>? MetinOnaylandi;
     public event EventHandler<string>? MetinYazildi;
 
@@ -220,7 +223,7 @@ public partial class MalzemeOneriGiris : UserControl
 
     private void MetinKutusu_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.F2)
+        if (e.Key == Key.F2 && ListeSeciciAktif)
         {
             OnerileriGizle();
             var listeSecimi = MalzemeSecimWindow.Goster(Window.GetWindow(this), MetinKutusu.Text);

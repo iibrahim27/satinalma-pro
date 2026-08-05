@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.102",
-    "build":  175,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.102/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.102/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.102/SatinalmaPro.apk",
-    "notes":  "2.1.102 - Siparis/onay geri alma senkron duzeltmesi; teklif bekleyen acile cevir+onay; doviz kuru Pro/Talep Pro senkronu; Alinan Malzeme birim/para/doviz",
+    "version":  "2.1.103",
+    "build":  176,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.103/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.103/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.103/SatinalmaPro.apk",
+    "notes":  "2.1.103 - Alinan Malzeme yazarak filtre (malzeme/saha/teslim); faturaya ozel doviz kuru; raporlarda doviz birim fiyat gosterimi",
     "zorunlu":  false
 }

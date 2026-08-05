@@ -79,4 +79,26 @@ public static class MalzemeAdiOneriServisi
             .OrderBy(s => s, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
     }
+
+    public static IEnumerable<string> AlinanSahaAra(string? arama) =>
+        AlanAra(k => k.IndirildigiSaha, arama);
+
+    public static IEnumerable<string> AlinanTeslimAlanAra(string? arama) =>
+        AlanAra(k => k.TeslimAlan, arama);
+
+    public static IEnumerable<string> AlinanTedarikciAra(string? arama) =>
+        AlanAra(k => k.Tedarikci, arama);
+
+    private static IEnumerable<string> AlanAra(
+        Func<Models.AlinanMalzemeKaydi, string?> secici,
+        string? arama)
+    {
+        ModulVeriDeposu.Yukle();
+        var adlar = ModulVeriDeposu.AlinanMalzemeler
+            .Select(secici)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s!.Trim())
+            .Distinct(StringComparer.CurrentCultureIgnoreCase);
+        return MalzemeAdiOneriYardimcisi.Filtrele(adlar, arama);
+    }
 }

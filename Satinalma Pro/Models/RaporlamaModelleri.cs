@@ -1,3 +1,5 @@
+using SatinalmaPro.Helpers;
+
 namespace SatinalmaPro.Models;
 
 
@@ -70,11 +72,25 @@ public class RaporDetaySatiri
 
     public decimal BirimFiyati { get; set; }
 
+    public string ParaBirimi { get; set; } = "TRY";
+
+    public decimal UsdKuru { get; set; }
+
+    public decimal EurKuru { get; set; }
+
     public decimal Tutar { get; set; }
 
     public double? ArtisYuzdesi { get; set; }
 
+    /// <summary>TL karşılığı (analiz / karşılaştırma için).</summary>
+    public decimal TlBirimFiyati =>
+        ParaBirimleri.TlCevir(BirimFiyati, ParaBirimi, UsdKuru, EurKuru);
 
+    /// <summary>Rapor hücreleri — döviz varsa kur ile birlikte.</summary>
+    public string BirimFiyatiMetin =>
+        BirimFiyati <= 0
+            ? "—"
+            : ParaBirimleri.BirimFiyatGosterim(BirimFiyati, ParaBirimi, UsdKuru, EurKuru);
 
     public string ArtisYuzdesiMetin => ArtisYuzdesi switch
 
@@ -131,6 +147,11 @@ public class RaporMalzemeAnalizi
     public decimal IlkBirimFiyat { get; set; }
 
     public decimal SonBirimFiyat { get; set; }
+
+    /// <summary>İlk/son alımın orijinal para birimi + kur gösterimi.</summary>
+    public string IlkBirimFiyatMetin { get; set; } = "—";
+
+    public string SonBirimFiyatMetin { get; set; } = "—";
 
     public double? ToplamArtisYuzdesi { get; set; }
 

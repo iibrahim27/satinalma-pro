@@ -291,7 +291,7 @@ public static class RaporlamaPdfOlusturucu
                 table.Cell().Element(HucreVeri).Text(s.Aciklama);
                 table.Cell().Element(HucreVeri).AlignRight().Text(s.Miktar.ToString("N2", Tr));
                 table.Cell().Element(HucreVeri).Text(s.Birim);
-                table.Cell().Element(HucreVeri).AlignRight().Text(s.BirimFiyati > 0 ? s.BirimFiyati.ToString("N2", Tr) : "—");
+                table.Cell().Element(HucreVeri).AlignRight().Text(s.BirimFiyatiMetin);
                 table.Cell().Element(HucreVeri).AlignRight().Text(s.Tutar.ToString("N2", Tr));
                 table.Cell().Element(HucreVeri).Text(s.Tedarikci);
             }
@@ -345,8 +345,14 @@ public static class RaporlamaPdfOlusturucu
                 table.Cell().Element(HucreVeri).Text(a.Birim);
                 table.Cell().Element(HucreVeri).AlignRight().Text(a.ToplamTutar.ToString("N2", Tr));
                 table.Cell().Element(HucreVeri).AlignRight().Text(a.AgirlikliOrtalamaFiyat.ToString("N2", Tr));
-                table.Cell().Element(HucreVeri).AlignRight().Text(a.IlkBirimFiyat > 0 ? a.IlkBirimFiyat.ToString("N2", Tr) : "—");
-                table.Cell().Element(HucreVeri).AlignRight().Text(a.SonBirimFiyat > 0 ? a.SonBirimFiyat.ToString("N2", Tr) : "—");
+                table.Cell().Element(HucreVeri).AlignRight().Text(
+                    string.IsNullOrWhiteSpace(a.IlkBirimFiyatMetin) || a.IlkBirimFiyatMetin == "—"
+                        ? (a.IlkBirimFiyat > 0 ? $"{a.IlkBirimFiyat:N2} ₺" : "—")
+                        : a.IlkBirimFiyatMetin);
+                table.Cell().Element(HucreVeri).AlignRight().Text(
+                    string.IsNullOrWhiteSpace(a.SonBirimFiyatMetin) || a.SonBirimFiyatMetin == "—"
+                        ? (a.SonBirimFiyat > 0 ? $"{a.SonBirimFiyat:N2} ₺" : "—")
+                        : a.SonBirimFiyatMetin);
                 table.Cell().Element(HucreVeri).AlignRight().Text(a.ToplamArtisMetin);
             }
 
@@ -509,7 +515,8 @@ public static class RaporlamaPdfOlusturucu
                 table.Cell().Element(HucreVeri).AlignRight().Text(a.ToplamMiktar.ToString("N2", Tr));
                 table.Cell().Element(HucreVeri).Text(a.Birim);
                 table.Cell().Element(HucreVeri).AlignRight().Text(a.ToplamTutar.ToString("N2", Tr));
-                table.Cell().Element(HucreVeri).AlignRight().Text(a.OrtBirimFiyat > 0 ? a.OrtBirimFiyat.ToString("N2", Tr) : "—");
+                table.Cell().Element(HucreVeri).AlignRight().Text(
+                    a.OrtBirimFiyat > 0 ? $"{a.OrtBirimFiyat.ToString("N2", Tr)} ₺" : "—");
                 table.Cell().Element(HucreVeri).AlignRight().Text(a.ArtisTlMetin);
                 table.Cell().Element(HucreVeri).AlignRight().Text(a.ArtisYuzdesiMetin);
             }
@@ -657,7 +664,7 @@ public static class RaporlamaPdfOlusturucu
                 table.Cell().Element(HucreVeri).Text(s.Aciklama);
                 table.Cell().Element(HucreVeri).AlignRight().Text(s.Miktar.ToString("N2", Tr));
                 table.Cell().Element(HucreVeri).Text(s.Birim);
-                table.Cell().Element(HucreVeri).AlignRight().Text(s.BirimFiyati > 0 ? s.BirimFiyati.ToString("N2", Tr) : "—");
+                table.Cell().Element(HucreVeri).AlignRight().Text(s.BirimFiyatiMetin);
                 table.Cell().Element(HucreVeri).Text(s.Tedarikci);
                 table.Cell().Element(HucreVeri).Text(s.Saha);
                 table.Cell().Element(HucreVeri).AlignRight().Text(s.Tutar.ToString("N2", Tr));
