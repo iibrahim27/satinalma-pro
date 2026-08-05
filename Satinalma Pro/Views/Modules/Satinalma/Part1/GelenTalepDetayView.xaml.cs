@@ -32,9 +32,13 @@ public partial class GelenTalepDetayView : UserControl
     }
     private void AksiyonlariUygula(PurchaseRequestDetailUiState ui)
     {
-        BtnOnayla.Visibility = ui.IsActionVisible(PurchaseRequestDetailAction.DirectApprove)
+        var acilCevirOnay = ui.IsActionVisible(PurchaseRequestDetailAction.ConvertToUrgentAndApprove);
+        var direktOnay = ui.IsActionVisible(PurchaseRequestDetailAction.DirectApprove);
+        BtnOnayla.Visibility = acilCevirOnay || direktOnay
             ? Visibility.Visible : Visibility.Collapsed;
-        BtnOnayla.Content = ui.LabelFor(PurchaseRequestDetailAction.DirectApprove);
+        BtnOnayla.Content = acilCevirOnay
+            ? ui.LabelFor(PurchaseRequestDetailAction.ConvertToUrgentAndApprove)
+            : ui.LabelFor(PurchaseRequestDetailAction.DirectApprove);
         BtnTeklifAl.Visibility = ui.IsActionVisible(PurchaseRequestDetailAction.StartQuoteProcess)
             ? Visibility.Visible : Visibility.Collapsed;
         BtnTeklifAl.Content = ui.LabelFor(PurchaseRequestDetailAction.StartQuoteProcess);
@@ -102,8 +106,14 @@ public partial class GelenTalepDetayView : UserControl
             MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
-    private async void Onayla_Click(object sender, RoutedEventArgs e) =>
-        await AksiyonCalistirAsync(PurchaseRequestDetailAction.DirectApprove, null);
+    private async void Onayla_Click(object sender, RoutedEventArgs e)
+    {
+        var action = _ui is not null
+            && _ui.IsActionVisible(PurchaseRequestDetailAction.ConvertToUrgentAndApprove)
+            ? PurchaseRequestDetailAction.ConvertToUrgentAndApprove
+            : PurchaseRequestDetailAction.DirectApprove;
+        await AksiyonCalistirAsync(action, null);
+    }
     private async void TeklifAl_Click(object sender, RoutedEventArgs e) =>
         await AksiyonCalistirAsync(PurchaseRequestDetailAction.StartQuoteProcess, null);
     private async void Reddet_Click(object sender, RoutedEventArgs e)
@@ -125,9 +135,12 @@ public partial class GelenTalepDetayView : UserControl
         var onayMesaji = action switch
         {
             PurchaseRequestDetailAction.DirectApprove =>
-                "Talep doÄŸrudan onaylansÄ±n mÄ±?\nSatÄ±nalma bilgilendirilir.",
+                "Talep doğrudan onaylansın mı?\nSatınalma bilgilendirilir.",
+            PurchaseRequestDetailAction.ConvertToUrgentAndApprove =>
+                "Talep acil alıma çevrilip teklifsiz onaylansın mı?\n" +
+                "Teklif süreci iptal olur; satınalma firma/fiyat girer.",
             PurchaseRequestDetailAction.StartQuoteProcess =>
-                "Teklif sÃ¼reci baÅŸlatÄ±lsÄ±n mÄ±?\nTalep satÄ±nalma ekibine iletilecek.",
+                "Teklif süreci başlatılsın mı?\nTalep satınalma ekibine iletilecek.",
             PurchaseRequestDetailAction.RejectRequest =>
                 "Talep reddedilsin mi?",
             _ => null
@@ -148,18 +161,22 @@ public partial class GelenTalepDetayView : UserControl
             await PurchaseRequestDetailServisi.UygulaAsync(_talep, action, rol, not: not);
             var basari = action switch
             {
-                PurchaseRequestDetailAction.DirectApprove => "Talep onaylandÄ±.",
+                PurchaseRequestDetailAction.DirectApprove => "Talep onaylandı.",
+                PurchaseRequestDetailAction.ConvertToUrgentAndApprove =>
+                    "Talep acil alıma çevrildi ve onaylandı.\n«Direk Onaylananlar» / satınalma firma-fiyat kuyruğunda görünür.",
                 PurchaseRequestDetailAction.StartQuoteProcess =>
-                    "Teklif sÃ¼reci baÅŸlatÄ±ldÄ±.\nÂ«Teklif Ä°stenenlerÂ» sekmesinde gÃ¶rÃ¼necek.",
+                    "Teklif süreci başlatıldı.\n«Teklif İstenenler» sekmesinde görünecek.",
                 PurchaseRequestDetailAction.RejectRequest => "Talep reddedildi.",
-                _ => "Ä°ÅŸlem tamamlandÄ±."
+                _ => "İşlem tamamlandı."
             };
             MessageBox.Show(basari, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
             Degisti?.Invoke();
             var hedefRoute = action switch
             {
                 PurchaseRequestDetailAction.RejectRequest => SatinalmaPart1Menusu.YonetimRedVerilen,
-                PurchaseRequestDetailAction.DirectApprove => SatinalmaPart1Menusu.YonetimDirekOnaylanan,
+                PurchaseRequestDetailAction.DirectApprove
+                    or PurchaseRequestDetailAction.ConvertToUrgentAndApprove
+                    => SatinalmaPart1Menusu.YonetimDirekOnaylanan,
                 PurchaseRequestDetailAction.StartQuoteProcess =>
                     KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol) == KullaniciRolleri.Satinalma
                         ? SatinalmaPart1Menusu.SatinalmaTeklifIstenen

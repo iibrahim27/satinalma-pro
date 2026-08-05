@@ -27,6 +27,7 @@ import com.satinalmapro.android.core.roles.TalepYetkileri
 import com.satinalmapro.android.core.saas.TenantSession
 import com.satinalmapro.android.data.firebase.FirebaseAuthClient
 import com.satinalmapro.android.data.firebase.FirestoreClient
+import com.satinalmapro.shared.filter.ProcurementPriority
 import com.satinalmapro.shared.filter.ProcurementStatus
 import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailAction
 import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailMutation
@@ -88,6 +89,15 @@ class TalepRepository(
             ) {
                 return copy(durum = TalepDurumlari.TEKLIF_GIRISI)
             }
+        }
+
+        // Sipariş/onay geri alındı: stale ordered Durum'u tekrar Sipariş'e çekmesin.
+        if (st == ProcurementStatus.ORDERED
+            && (durum == TalepDurumlari.ONAYLANDI
+                || durum == TalepDurumlari.KARSILASTIRMA
+                || durum == TalepDurumlari.TEKLIF_GIRISI)
+        ) {
+            return this
         }
 
         if (statusAsama <= durumAsama) return this
@@ -798,11 +808,12 @@ class TalepRepository(
     }
 
     private fun malKabulBaslamis(talep: TalepItem): Boolean {
-        if (talep.kalemler.any { it.kabulEdilenMiktar > 0.0001 || it.siparisTamamlandi })
+        // Yalnız gerçek kabul miktarı — siparisTamamlandi tek başına yanlış pozitif üretebiliyor.
+        if (talep.kalemler.any { it.kabulEdilenMiktar > 0.0001 })
             return true
         return talep.kalemler.any { kalem ->
             KalemFirmaAtamaYardimcisi.etkinAtamalar(kalem)
-                .any { it.kabulEdilenMiktar > 0.0001 || it.siparisTamamlandi }
+                .any { it.kabulEdilenMiktar > 0.0001 }
         }
     }
 
@@ -1143,7 +1154,8 @@ class TalepRepository(
         }
 
         when (action) {
-            PurchaseRequestDetailAction.DIRECT_APPROVE -> {
+            PurchaseRequestDetailAction.DIRECT_APPROVE,
+            PurchaseRequestDetailAction.CONVERT_TO_URGENT_AND_APPROVE -> {
                 val hedefler = OnayBildirimYardimcisi.onaylandiHedefleri(result.olusturanUid, user.role)
                 bildirimler?.talepBildirimleriToplu(
                     BildirimTipleri.ONAYLANDI,
@@ -1198,9 +1210,17 @@ class TalepRepository(
     ): TalepItem {
         var updated = copy(
             status = mutation.newStatus,
-            priority = resolvedEnterprisePriority(),
             guncellemeUtc = mutation.updatedAtUtcMs
         )
+
+        if (mutation.setUrgentRequestType) {
+            updated = updated.copy(
+                talepTuru = "Acil",
+                priority = ProcurementPriority.URGENT
+            )
+        } else {
+            updated = updated.copy(priority = updated.resolvedEnterprisePriority())
+        }
 
         mutation.newLegacyDurum?.let { updated = updated.copy(durum = it) }
 

@@ -19,7 +19,12 @@ public enum PurchaseRequestDetailAction
     RejectEntireRequest,
 
     /// <summary>Teklifleri revizeye gönder → <c>comparison</c> + <c>quoteCorrectionNote</c></summary>
-    SendQuotesForRevision
+    SendQuotesForRevision,
+
+    /// <summary>
+    /// Teklif bekleyen talebi Acil alıma çevirip teklifsiz onayla → <c>approved</c> + Acil / urgent.
+    /// </summary>
+    ConvertToUrgentAndApprove
 }
 
 public enum PurchaseRequestDetailScreen

@@ -149,6 +149,9 @@ public static class SatinalmaPart1Servisi
         SatinalmaTeklif teklif,
         IEnumerable<SatinalmaTalepKalemi> kalemler)
     {
+        // Pro Ayarlar'da girilen kurlar Talep Pro sürecine disk üzerinden gelsin.
+        SatinalmaDepo.DovizKurlariniDisktenSenkronizeEt();
+
         var pencere = new SatinalmaPro.Views.Modules.SatinalmaTeklifDuzenleWindow(
             teklif, kalemler, SatinalmaDepo.Ayarlar)
         {

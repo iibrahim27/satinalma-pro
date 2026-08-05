@@ -140,6 +140,13 @@ public static class ProcurementStatusResolver
             }
         }
 
+        // Sipariş/onay geri alındı: stale ordered Durum'u tekrar Sipariş'e çekmesin.
+        if (status == ProcurementStatus.Ordered
+            && talep.Durum is SatinalmaTalepDurumlari.Onaylandi
+                or SatinalmaTalepDurumlari.Karsilastirma
+                or SatinalmaTalepDurumlari.TeklifGirisi)
+            return false;
+
         var durumAsama = SatinalmaTalepDurumlari.SurecAsamaSkoru(talep.Durum);
         var statusAsama = StatusAsamaSkoru(status);
         if (statusAsama <= durumAsama)

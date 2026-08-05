@@ -16,6 +16,8 @@ public sealed class PurchaseRequestDetailMutation
     public bool ClearApprovedQuote { get; init; }
     public bool ClearLineItemApprovals { get; init; }
     public bool ApplyQuoteToAllLineItems { get; init; }
+    /// <summary>Talep türünü Acil + priority urgent yap (teklif bekleyen → acil onay).</summary>
+    public bool SetUrgentRequestType { get; init; }
     public long UpdatedAtUtcMs { get; init; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
     public static PurchaseRequestDetailMutation Reject(string reason) => new()
@@ -60,6 +62,15 @@ public sealed class PurchaseRequestDetailMutation
         ClearApprovedQuote = true,
         ClearLineItemApprovals = true,
         YonetimOnayKilitli = false
+    };
+
+    public static PurchaseRequestDetailMutation ConvertToUrgentAndApprove() => new()
+    {
+        NewStatus = ProcurementStatus.Approved,
+        NewLegacyDurum = "Onaylandı",
+        TeklifsizYonetimOnayi = true,
+        YonetimOnayKilitli = true,
+        SetUrgentRequestType = true
     };
 }
 

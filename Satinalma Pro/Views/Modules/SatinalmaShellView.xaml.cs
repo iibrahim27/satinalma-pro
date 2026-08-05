@@ -685,9 +685,10 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
 
         if (_aktifRoute == SatinalmaPart1Menusu.YonetimTeklifBekleyen)
         {
-            _yonetimDetay ??= OlusturYonetimDetay();
-            _yonetimDetay.Yukle(talep, YonetimTalepDetayModu.Gecmis);
-            IcerikAlani.Content = _yonetimDetay;
+            // Teklif bekleyen: acil alıma çevir + onay / red (Gelen detay aksiyonları).
+            _gelenDetay ??= OlusturGelenDetay();
+            _gelenDetay.Yukle(talep);
+            IcerikAlani.Content = _gelenDetay;
             return;
         }
 

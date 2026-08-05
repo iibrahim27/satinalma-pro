@@ -345,10 +345,14 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
 
     private void YeniKayit_Click(object sender, RoutedEventArgs e)
     {
+        SatinalmaDepo.DovizKurlariniDisktenSenkronizeEt();
         var yeni = new AlinanMalzemeKaydi
         {
             Tarih = DateTime.Now.ToString("dd.MM.yyyy"),
-            Birim = "Ton"
+            Birim = "Ton",
+            ParaBirimi = ParaBirimleri.Try,
+            UsdKuru = SatinalmaDepo.Ayarlar.VarsayilanUsdKuru,
+            EurKuru = SatinalmaDepo.Ayarlar.VarsayilanEurKuru
         };
 
         var pencere = new AlinanMalzemeDuzenleWindow(yeni) { Owner = Window.GetWindow(this) };
@@ -630,7 +634,7 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
         yield return $"Malzeme: {kayit.MalzemeHizmet}";
         yield return $"Kategori: {kayit.Kategori}";
         yield return $"Miktar: {kayit.Miktar:N2} {kayit.Birim}";
-        yield return $"Birim fiyat: ₺{kayit.BirimFiyati:N2}";
+        yield return $"Birim fiyat: {kayit.BirimFiyatiMetin}";
         yield return $"Toplam: ₺{kayit.ToplamTutar:N2}";
         yield return $"Tedarikçi: {kayit.Tedarikci}";
         yield return $"Şantiye: {kayit.IndirildigiSaha}";

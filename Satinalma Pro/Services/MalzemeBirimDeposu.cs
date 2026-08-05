@@ -72,7 +72,8 @@ public static class MalzemeBirimDeposu
             }
         }
 
-        if (combo.Items.Count > 0)
-            combo.SelectedIndex = 0;
+        // Listede yoksa ekle — seçilebilsin (eski kayıt / özel birim).
+        combo.Items.Add(secili.Trim());
+        combo.SelectedItem = secili.Trim();
     }
 }

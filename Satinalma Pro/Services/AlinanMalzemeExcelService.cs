@@ -18,7 +18,8 @@ public static class AlinanMalzemeExcelService
     private static readonly string[] DisaAktarBasliklari =
     [
         "Tarih", "Fatura No", "Kategori", "Malzeme / Hizmet", "Miktar", "Birim",
-        "Birim Fiyatı", "Toplam Tutar", "Tedarikçi", "İndirildiği Saha", "Teslim Alan", "Açıklama"
+        "Para Birimi", "Birim Fiyatı", "USD Kuru", "EUR Kuru", "Toplam Tutar",
+        "Tedarikçi", "İndirildiği Saha", "Teslim Alan", "Açıklama"
     ];
 
     private static readonly string[] TedarikciBasliklari =
@@ -227,12 +228,15 @@ public static class AlinanMalzemeExcelService
             sayfa.Cell(satirNo, 4).Value = k.MalzemeHizmet;
             sayfa.Cell(satirNo, 5).Value = k.Miktar;
             sayfa.Cell(satirNo, 6).Value = k.Birim;
-            sayfa.Cell(satirNo, 7).Value = k.BirimFiyati;
-            sayfa.Cell(satirNo, 8).Value = k.ToplamTutar;
-            sayfa.Cell(satirNo, 9).Value = k.Tedarikci;
-            sayfa.Cell(satirNo, 10).Value = k.IndirildigiSaha;
-            sayfa.Cell(satirNo, 11).Value = k.TeslimAlan;
-            sayfa.Cell(satirNo, 12).Value = k.Aciklama;
+            sayfa.Cell(satirNo, 7).Value = k.ParaBirimi;
+            sayfa.Cell(satirNo, 8).Value = k.BirimFiyati;
+            sayfa.Cell(satirNo, 9).Value = k.UsdKuru;
+            sayfa.Cell(satirNo, 10).Value = k.EurKuru;
+            sayfa.Cell(satirNo, 11).Value = k.ToplamTutar;
+            sayfa.Cell(satirNo, 12).Value = k.Tedarikci;
+            sayfa.Cell(satirNo, 13).Value = k.IndirildigiSaha;
+            sayfa.Cell(satirNo, 14).Value = k.TeslimAlan;
+            sayfa.Cell(satirNo, 15).Value = k.Aciklama;
             satirNo++;
         }
 

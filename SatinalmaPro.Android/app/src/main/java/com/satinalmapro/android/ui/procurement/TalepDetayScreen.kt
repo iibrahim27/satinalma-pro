@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.satinalmapro.android.core.model.OnaylananMalzemeSatiri
+import com.satinalmapro.android.core.roles.KalemFirmaAtamaYardimcisi
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.core.roles.OnaylananMalzemeOlusturucu
 import com.satinalmapro.android.core.roles.TalepDurumlari
@@ -105,7 +106,10 @@ fun TalepDetayScreen(viewModel: AppViewModel, talepId: String, viewMode: String?
     val teklifsizFirmaGir = KullaniciRolleri.canEnterQuotes(role) &&
         TalepKuyrugu.teklifsizFirmaFiyatBekliyor(item)
     val canPlaceOrder = KullaniciRolleri.canPlaceOrder(role) && item.durum == TalepDurumlari.ONAYLANDI
-    val malKabulBaslamis = item.kalemler.any { it.kabulEdilenMiktar > 0.0001 || it.siparisTamamlandi }
+    val malKabulBaslamis = item.kalemler.any { kalem ->
+        kalem.kabulEdilenMiktar > 0.0001 ||
+            KalemFirmaAtamaYardimcisi.etkinAtamalar(kalem).any { it.kabulEdilenMiktar > 0.0001 }
+    }
     val canSiparisGeriAl = KullaniciRolleri.canPlaceOrder(role)
         && item.durum == TalepDurumlari.SIPARIS
         && !malKabulBaslamis
@@ -382,6 +386,25 @@ private fun OzetTabContent(
                         viewModel.applyTalepDetayAction(
                             item.id,
                             PurchaseRequestDetailAction.DIRECT_APPROVE
+                        ) {
+                            viewModel.navigate(IsAkisRotalari.teklifsizOnaySonrasi(role, item.id))
+                        }
+                    }
+                )
+            }
+            if (detailUi.isVisible(PurchaseRequestDetailAction.CONVERT_TO_URGENT_AND_APPROVE)) {
+                Text(
+                    "Teklif bekleniyor — acil alıma çevirerek teklifsiz onaylayabilirsiniz.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.Danger
+                )
+                AppPrimaryButton(
+                    detailUi.labelFor(PurchaseRequestDetailAction.CONVERT_TO_URGENT_AND_APPROVE),
+                    loading = loading,
+                    onClick = {
+                        viewModel.applyTalepDetayAction(
+                            item.id,
+                            PurchaseRequestDetailAction.CONVERT_TO_URGENT_AND_APPROVE
                         ) {
                             viewModel.navigate(IsAkisRotalari.teklifsizOnaySonrasi(role, item.id))
                         }

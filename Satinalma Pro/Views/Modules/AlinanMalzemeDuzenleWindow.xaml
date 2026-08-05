@@ -4,10 +4,10 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Kayıt Düzenle"
-        Width="560"
-        Height="720"
-        MinWidth="480"
-        MinHeight="600"
+        Width="580"
+        Height="780"
+        MinWidth="500"
+        MinHeight="640"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         Background="{StaticResource DashBackgroundBrush}">
@@ -28,7 +28,8 @@
     </StackPanel>
 
     <Border Grid.Row="1" Style="{StaticResource ModulePageCardStyle}" Padding="24,20">
-      <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}" Padding="0">
+      <!-- Padding stilinden gelsin; 0 ile ezmeyin — kaydırma çubuğu birimi örtmesin -->
+      <ScrollViewer Style="{StaticResource ModuleScrollViewerStyle}">
       <StackPanel>
         <TextBlock Text="Tarih" Style="{StaticResource ModuleFormLabelStyle}" />
         <TextBox x:Name="TxtTarih" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />
@@ -56,7 +57,9 @@
           </StackPanel>
           <StackPanel Grid.Column="2">
             <TextBlock Text="Birim" Style="{StaticResource ModuleFormLabelStyle}" />
-            <TextBox x:Name="TxtBirim" Style="{StaticResource FilterBoxStyle}" />
+            <ComboBox x:Name="CmbBirim"
+                      Style="{StaticResource FilterComboStyle}"
+                      IsEditable="True" />
           </StackPanel>
         </Grid>
 
@@ -67,19 +70,45 @@
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
           <StackPanel Grid.Column="0">
+            <TextBlock Text="Para Birimi" Style="{StaticResource ModuleFormLabelStyle}" />
+            <ComboBox x:Name="CmbParaBirimi"
+                      Style="{StaticResource FilterComboStyle}"
+                      SelectionChanged="ParaBirimi_SelectionChanged" />
+          </StackPanel>
+          <StackPanel Grid.Column="2">
             <TextBlock Text="Birim Fiyatı" Style="{StaticResource ModuleFormLabelStyle}" />
             <TextBox x:Name="TxtBirimFiyati"
                      Style="{StaticResource FilterBoxStyle}"
                      TextChanged="TutarHesapla" />
           </StackPanel>
-          <StackPanel Grid.Column="2">
-            <TextBlock Text="Toplam Tutar" Style="{StaticResource ModuleFormLabelStyle}" />
-            <TextBox x:Name="TxtToplamTutar"
+        </Grid>
+
+        <Grid x:Name="PanelDovizKurlari" Margin="0,0,0,14" Visibility="Collapsed">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+            <TextBlock Text="USD Kuru (₺)" Style="{StaticResource ModuleFormLabelStyle}" />
+            <TextBox x:Name="TxtUsdKuru"
                      Style="{StaticResource FilterBoxStyle}"
-                     IsReadOnly="True"
-                     Background="#EEF2F5" />
+                     TextChanged="TutarHesapla" />
+          </StackPanel>
+          <StackPanel Grid.Column="2">
+            <TextBlock Text="EUR Kuru (₺)" Style="{StaticResource ModuleFormLabelStyle}" />
+            <TextBox x:Name="TxtEurKuru"
+                     Style="{StaticResource FilterBoxStyle}"
+                     TextChanged="TutarHesapla" />
           </StackPanel>
         </Grid>
+
+        <TextBlock Text="Toplam Tutar (₺)" Style="{StaticResource ModuleFormLabelStyle}" />
+        <TextBox x:Name="TxtToplamTutar"
+                 Style="{StaticResource FilterBoxStyle}"
+                 IsReadOnly="True"
+                 Background="#EEF2F5"
+                 Margin="0,0,0,14" />
 
         <TextBlock Text="Tedarikçi" Style="{StaticResource ModuleFormLabelStyle}" />
         <TextBox x:Name="TxtTedarikci" Style="{StaticResource FilterBoxStyle}" Margin="0,0,0,14" />

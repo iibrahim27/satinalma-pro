@@ -190,11 +190,47 @@ public static class SatinalmaDepo
 
     public static void KaydetAyarlar()
     {
+        // Talep Pro bellekte kur=0 iken Kaydet, Pro'nun diske yazdığı kurları silmesin.
+        DovizKurlariniDisktenSenkronizeEt(yalnizBoslariDoldur: true);
+
         Directory.CreateDirectory(Klasor);
         KiraciDamgasiniYaz(Ayarlar);
         var ayarJson = JsonSerializer.Serialize(Ayarlar, JsonSecenekleri);
         File.WriteAllText(AyarDosyasi, ayarJson);
         BulutVeriSenkronu.Planla("satinalma_ayarlar");
+    }
+
+    /// <summary>
+    /// Satınalma Pro ve Talep Pro ayrı süreç — döviz kurları ortak JSON dosyasından okunur.
+    /// </summary>
+    /// <param name="yalnizBoslariDoldur">
+    /// true: yalnızca bellekteki 0 kurları diskten doldur (Kaydet koruması).
+    /// false: diskte pozitif kur varsa belleği güncelle (teklif girişi öncesi).
+    /// </param>
+    public static void DovizKurlariniDisktenSenkronizeEt(bool yalnizBoslariDoldur = false)
+    {
+        try
+        {
+            if (!File.Exists(AyarDosyasi))
+                return;
+
+            var gelen = JsonSerializer.Deserialize<SatinalmaAyarlar>(
+                File.ReadAllText(AyarDosyasi), JsonSecenekleri);
+            if (gelen is null || !AyarBuKiraciyaAitMi(gelen))
+                return;
+
+            if (gelen.VarsayilanUsdKuru > 0
+                && (!yalnizBoslariDoldur || Ayarlar.VarsayilanUsdKuru <= 0))
+                Ayarlar.VarsayilanUsdKuru = gelen.VarsayilanUsdKuru;
+
+            if (gelen.VarsayilanEurKuru > 0
+                && (!yalnizBoslariDoldur || Ayarlar.VarsayilanEurKuru <= 0))
+                Ayarlar.VarsayilanEurKuru = gelen.VarsayilanEurKuru;
+        }
+        catch
+        {
+            // disk okunamazsa bellekteki değerlerle devam
+        }
     }
 
     private static void KiraciDamgasiniYaz(SatinalmaAyarlar ayarlar)
@@ -374,9 +410,10 @@ public static class SatinalmaDepo
 
         if (birlestir)
         {
-            if (Ayarlar.VarsayilanUsdKuru <= 0 && gelen.VarsayilanUsdKuru > 0)
+            // Döviz günlük değişir — bulut/diskteki pozitif kuru her zaman al.
+            if (gelen.VarsayilanUsdKuru > 0)
                 Ayarlar.VarsayilanUsdKuru = gelen.VarsayilanUsdKuru;
-            if (Ayarlar.VarsayilanEurKuru <= 0 && gelen.VarsayilanEurKuru > 0)
+            if (gelen.VarsayilanEurKuru > 0)
                 Ayarlar.VarsayilanEurKuru = gelen.VarsayilanEurKuru;
             if (string.IsNullOrWhiteSpace(Ayarlar.FirmaAdi) && !string.IsNullOrWhiteSpace(gelen.FirmaAdi))
                 Ayarlar.FirmaAdi = gelen.FirmaAdi;
@@ -582,6 +619,8 @@ public static class SatinalmaDepo
 
         if (girisler.Count == 0)
             throw new InvalidOperationException("Kaydedilecek kalem bulunamadı.");
+
+        DovizKurlariniDisktenSenkronizeEt();
 
         foreach (var grup in girisler.GroupBy(g => g.firma, StringComparer.OrdinalIgnoreCase))
         {

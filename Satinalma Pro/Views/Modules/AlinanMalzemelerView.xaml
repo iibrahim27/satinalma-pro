@@ -144,9 +144,10 @@
             <DataGridTextColumn Header="Kategori" Binding="{Binding Kategori}" Width="100" />
             <DataGridTextColumn Header="Miktar" Binding="{Binding Miktar, StringFormat=N2}" Width="80" />
             <DataGridTextColumn Header="Birim" Binding="{Binding Birim}" Width="60" />
-            <DataGridTextColumn Header="Birim Fiyat" Binding="{Binding BirimFiyati, StringFormat='₺{0:N2}'}" Width="100" />
+            <DataGridTextColumn Header="Para" Binding="{Binding ParaBirimi}" Width="60" />
+            <DataGridTextColumn Header="Birim Fiyat" Binding="{Binding BirimFiyatiMetin}" Width="140" />
             <DataGridTextColumn Header="% Artış" Binding="{Binding ArtisYuzdesiMetin}" Width="75" />
-            <DataGridTextColumn Header="Toplam" Binding="{Binding ToplamTutar, StringFormat='₺{0:N2}'}" Width="110" />
+            <DataGridTextColumn Header="Toplam (₺)" Binding="{Binding ToplamTutar, StringFormat='₺{0:N2}'}" Width="110" />
             <DataGridTextColumn Header="Tedarikçi" Binding="{Binding Tedarikci}" Width="120" />
             <DataGridTextColumn Header="Şantiye" Binding="{Binding IndirildigiSaha}" Width="110" />
             <DataGridTextColumn Header="Teslim Alan" Binding="{Binding TeslimAlan}" Width="100" />

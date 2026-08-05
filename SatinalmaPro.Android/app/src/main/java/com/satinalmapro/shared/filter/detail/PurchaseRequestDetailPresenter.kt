@@ -2,6 +2,7 @@ package com.satinalmapro.shared.filter.detail
 
 import com.satinalmapro.android.core.model.TalepItem
 import com.satinalmapro.android.core.roles.KullaniciRolleri
+import com.satinalmapro.android.core.roles.TalepDurumlari
 import com.satinalmapro.shared.filter.ProcurementPriority
 import com.satinalmapro.shared.filter.ProcurementStatus
 import com.satinalmapro.shared.filter.resolvedEnterprisePriority
@@ -18,7 +19,8 @@ object PurchaseRequestDetailPresenter {
         PurchaseRequestDetailAction.START_QUOTE_PROCESS to "Teklif İste",
         PurchaseRequestDetailAction.APPROVE_QUOTE to "Bu Firmayı Onayla",
         PurchaseRequestDetailAction.REJECT_ENTIRE_REQUEST to "Talebi Komple Reddet",
-        PurchaseRequestDetailAction.SEND_QUOTES_FOR_REVISION to "Teklifleri Revizeye Gönder"
+        PurchaseRequestDetailAction.SEND_QUOTES_FOR_REVISION to "Teklifleri Revizeye Gönder",
+        PurchaseRequestDetailAction.CONVERT_TO_URGENT_AND_APPROVE to "Acil Alıma Çevir ve Onayla"
     )
 
     fun resolveScreen(talep: TalepItem): PurchaseRequestDetailScreen =
@@ -50,6 +52,13 @@ object PurchaseRequestDetailPresenter {
             if (!urgent)
                 actions += PurchaseRequestDetailAction.START_QUOTE_PROCESS
             actions += PurchaseRequestDetailAction.REJECT_REQUEST
+        }
+
+        // Teklif bekleyen (henüz gerçek teklif yok): acile çevir + teklifsiz onay / red.
+        if (canManage && teklifBekleyenTeiklifsizMi(talep, status)) {
+            actions += PurchaseRequestDetailAction.CONVERT_TO_URGENT_AND_APPROVE
+            if (PurchaseRequestDetailAction.REJECT_REQUEST !in actions)
+                actions += PurchaseRequestDetailAction.REJECT_REQUEST
         }
 
         var showQuotes = false
@@ -110,6 +119,8 @@ object PurchaseRequestDetailPresenter {
 
         return when (action) {
             PurchaseRequestDetailAction.DIRECT_APPROVE -> PurchaseRequestDetailMutation.directApprove()
+            PurchaseRequestDetailAction.CONVERT_TO_URGENT_AND_APPROVE ->
+                PurchaseRequestDetailMutation.convertToUrgentAndApprove()
             PurchaseRequestDetailAction.REJECT_REQUEST,
             PurchaseRequestDetailAction.REJECT_ENTIRE_REQUEST -> PurchaseRequestDetailMutation.reject(note.orEmpty())
             PurchaseRequestDetailAction.START_QUOTE_PROCESS -> PurchaseRequestDetailMutation.startQuoteProcess()
@@ -120,6 +131,18 @@ object PurchaseRequestDetailPresenter {
 
     fun canManagementDecide(role: String?): Boolean =
         KullaniciRolleri.canManagementDecide(role)
+
+    private fun teklifBekleyenTeiklifsizMi(talep: TalepItem, status: String): Boolean {
+        if (talep.yonetimOnayKilitli || talep.teklifsizYonetimOnayi || talep.herhangiKalemOnayli)
+            return false
+        val gercekTeklif = talep.teklifler.any {
+            it.firmaAdi.isNotBlank() || it.fiyatlar.any { f -> f.birimFiyat > 0 }
+        }
+        if (gercekTeklif) return false
+        return status.equals(ProcurementStatus.QUOTE_REQUESTED, ignoreCase = true)
+            || status.equals(ProcurementStatus.QUOTE_ENTRY, ignoreCase = true)
+            || talep.durum == TalepDurumlari.TEKLIF_GIRISI
+    }
 }
 
 private val TalepItem.herhangiKalemOnayli: Boolean

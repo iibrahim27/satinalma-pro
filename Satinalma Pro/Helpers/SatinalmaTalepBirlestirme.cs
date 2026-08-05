@@ -82,6 +82,17 @@ public static class SatinalmaTalepBirlestirme
         if (TeklifIstemeKorumaMi(hedef, kaynak))
             return;
 
+        // Sipariş / onay geri alma: stale «Sipariş Oluşturuldu» skorla Onaylandı/Karşılaştırma'yı ezmesin.
+        if (SiparisGeriAlKorumaMi(hedef, kaynak))
+            return;
+
+        // Geri alınmış kopya kazanan değilse (UTC eşit / skor) Sipariş'ten düşür.
+        if (SiparisGeriAlGecisiMi(hedef, kaynak))
+        {
+            UygulaSurecDurumu(hedef, kaynak);
+            return;
+        }
+
         // Teklifler yönetime gönderildi: Karşılaştırma → Yonetim Onayında (teklifli, daha yeni).
         if (TeklifYonetimIncelemeGecisiMi(hedef, kaynak))
         {
@@ -153,6 +164,34 @@ public static class SatinalmaTalepBirlestirme
 
         // Teklifsiz stale yönetim/imza
         return !SatinalmaTalepYardimcisi.GercekTeklifVar(kaynak);
+    }
+
+    /// <summary>
+    /// Siparişi/onayı geri alınmış kayıt: kaynak hâlâ Sipariş Oluşturuldu ise skor ile geri alma.
+    /// Yalnız UTC — stale Status ile yeni siparişi engelleme.
+    /// </summary>
+    private static bool SiparisGeriAlKorumaMi(SatinalmaTalep hedef, SatinalmaTalep kaynak)
+    {
+        if (kaynak.Durum != SatinalmaTalepDurumlari.SiparisOlusturuldu)
+            return false;
+        if (hedef.Durum is not (SatinalmaTalepDurumlari.Onaylandi
+            or SatinalmaTalepDurumlari.Karsilastirma
+            or SatinalmaTalepDurumlari.TeklifGirisi))
+            return false;
+
+        return hedef.GuncellemeUtc >= kaynak.GuncellemeUtc;
+    }
+
+    private static bool SiparisGeriAlGecisiMi(SatinalmaTalep hedef, SatinalmaTalep kaynak)
+    {
+        if (hedef.Durum != SatinalmaTalepDurumlari.SiparisOlusturuldu)
+            return false;
+        if (kaynak.Durum is not (SatinalmaTalepDurumlari.Onaylandi
+            or SatinalmaTalepDurumlari.Karsilastirma
+            or SatinalmaTalepDurumlari.TeklifGirisi))
+            return false;
+
+        return kaynak.GuncellemeUtc >= hedef.GuncellemeUtc;
     }
 
     private static bool TeklifYonetimIncelemeGecisiMi(SatinalmaTalep hedef, SatinalmaTalep kaynak)

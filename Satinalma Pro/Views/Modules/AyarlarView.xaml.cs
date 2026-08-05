@@ -630,7 +630,9 @@ public partial class AyarlarView : UserControl
     {
         SatinalmaDepo.Ayarlar.VarsayilanUsdKuru = OndalikOku(TxtVarsayilanUsdKuru.Text);
         SatinalmaDepo.Ayarlar.VarsayilanEurKuru = OndalikOku(TxtVarsayilanEurKuru.Text);
-        SatinalmaDepo.Kaydet();
+        SatinalmaDepo.KaydetAyarlar();
+        // Talep Pro teklif girişinin buluttan da alabilmesi için hemen gönder.
+        _ = BulutVeriSenkronu.AyarlariHemenGonderAsync();
     }
 
     private static decimal OndalikOku(string? metin)

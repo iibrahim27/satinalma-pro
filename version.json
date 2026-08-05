@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.101",
-    "build":  174,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.101/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.101/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.101/SatinalmaPro.apk",
-    "notes":  "2.1.101 - Siparis/onay geri alma (mal kabul oncesi); Stok Yonetimi Tukenen Stoklar sekmesi",
+    "version":  "2.1.102",
+    "build":  175,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.102/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.102/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.102/SatinalmaPro.apk",
+    "notes":  "2.1.102 - Siparis/onay geri alma senkron duzeltmesi; teklif bekleyen acile cevir+onay; doviz kuru Pro/Talep Pro senkronu; Alinan Malzeme birim/para/doviz",
     "zorunlu":  false
 }

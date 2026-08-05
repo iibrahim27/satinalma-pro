@@ -1,3 +1,5 @@
+using SatinalmaPro.Helpers;
+
 namespace SatinalmaPro.Models;
 
 public class AlinanMalzemeKaydi
@@ -9,6 +11,9 @@ public class AlinanMalzemeKaydi
     public double Miktar { get; set; }
     public string Birim { get; set; } = "";
     public decimal BirimFiyati { get; set; }
+    public string ParaBirimi { get; set; } = ParaBirimleri.Try;
+    public decimal UsdKuru { get; set; }
+    public decimal EurKuru { get; set; }
     public decimal ToplamTutar { get; set; }
     public double? ArtisYuzdesi { get; set; }
     public string Tedarikci { get; set; } = "";
@@ -33,8 +38,14 @@ public class AlinanMalzemeKaydi
 
     public string SiparisNoGoster => "—";
 
+    public string BirimFiyatiMetin =>
+        ParaBirimleri.BirimFiyatGosterim(BirimFiyati, ParaBirimi, UsdKuru, EurKuru);
+
+    public decimal TlBirimFiyati =>
+        ParaBirimleri.TlCevir(BirimFiyati, ParaBirimi, UsdKuru, EurKuru);
+
     public void ToplamTutariHesapla() =>
-        ToplamTutar = Math.Round((decimal)Miktar * BirimFiyati, 2);
+        ToplamTutar = Math.Round((decimal)Miktar * TlBirimFiyati, 2);
 
     public AlinanMalzemeKaydi Kopyala() => new()
     {
@@ -45,6 +56,9 @@ public class AlinanMalzemeKaydi
         Miktar = Miktar,
         Birim = Birim,
         BirimFiyati = BirimFiyati,
+        ParaBirimi = ParaBirimi,
+        UsdKuru = UsdKuru,
+        EurKuru = EurKuru,
         ToplamTutar = ToplamTutar,
         ArtisYuzdesi = ArtisYuzdesi,
         Tedarikci = Tedarikci,

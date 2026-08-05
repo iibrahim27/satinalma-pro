@@ -43,10 +43,16 @@ public static class PurchaseRequestDetailServisi
         string? rol)
     {
         talep.Status = mutation.NewStatus;
-        talep.Priority = PurchaseRequestDetailPresenter.ResolvePriority(PaylasimaCevir(talep));
+
+        if (mutation.SetUrgentRequestType)
+            talep.TalepTuru = Models.TalepTurleri.Acil;
 
         if (!string.IsNullOrWhiteSpace(mutation.NewLegacyDurum))
             talep.Durum = mutation.NewLegacyDurum;
+
+        talep.Priority = mutation.SetUrgentRequestType
+            ? ProcurementPriority.Urgent
+            : PurchaseRequestDetailPresenter.ResolvePriority(PaylasimaCevir(talep));
 
         if (mutation.TeklifsizYonetimOnayi)
             talep.TeklifsizYonetimOnayi = true;
@@ -152,6 +158,7 @@ public static class PurchaseRequestDetailServisi
             switch (action)
             {
                 case PurchaseRequestDetailAction.DirectApprove:
+                case PurchaseRequestDetailAction.ConvertToUrgentAndApprove:
                 case PurchaseRequestDetailAction.ApproveQuote:
                     await SatinalmaBildirimleri.OnaylandiBildirimleriGonderAsync(talep);
                     break;

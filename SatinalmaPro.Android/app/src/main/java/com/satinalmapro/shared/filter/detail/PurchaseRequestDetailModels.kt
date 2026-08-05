@@ -8,7 +8,9 @@ enum class PurchaseRequestDetailAction {
     START_QUOTE_PROCESS,
     APPROVE_QUOTE,
     REJECT_ENTIRE_REQUEST,
-    SEND_QUOTES_FOR_REVISION
+    SEND_QUOTES_FOR_REVISION,
+    /** Teklif bekleyen → Acil + teklifsiz onay */
+    CONVERT_TO_URGENT_AND_APPROVE
 }
 
 enum class PurchaseRequestDetailScreen {
@@ -50,6 +52,7 @@ data class PurchaseRequestDetailMutation(
     val clearApprovedQuote: Boolean = false,
     val clearLineItemApprovals: Boolean = false,
     val applyQuoteToAllLineItems: Boolean = false,
+    val setUrgentRequestType: Boolean = false,
     val updatedAtUtcMs: Long = System.currentTimeMillis()
 ) {
     companion object {
@@ -89,6 +92,14 @@ data class PurchaseRequestDetailMutation(
             clearApprovedQuote = true,
             clearLineItemApprovals = true,
             yonetimOnayKilitli = false
+        )
+
+        fun convertToUrgentAndApprove() = PurchaseRequestDetailMutation(
+            newStatus = ProcurementStatus.APPROVED,
+            newLegacyDurum = "Onaylandı",
+            teklifsizYonetimOnayi = true,
+            yonetimOnayKilitli = true,
+            setUrgentRequestType = true
         )
     }
 }

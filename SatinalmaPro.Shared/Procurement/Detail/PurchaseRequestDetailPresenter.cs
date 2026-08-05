@@ -9,7 +9,7 @@ namespace SatinalmaPro.Shared.Procurement.Detail;
 /// </summary>
 public static class PurchaseRequestDetailPresenter
 {
-    private static readonly IReadOnlyDictionary<PurchaseRequestDetailAction, string> DefaultLabels =
+        private static readonly IReadOnlyDictionary<PurchaseRequestDetailAction, string> DefaultLabels =
         new Dictionary<PurchaseRequestDetailAction, string>
         {
             [PurchaseRequestDetailAction.DirectApprove] = "Talebi Onayla",
@@ -17,7 +17,8 @@ public static class PurchaseRequestDetailPresenter
             [PurchaseRequestDetailAction.StartQuoteProcess] = "Teklif İste",
             [PurchaseRequestDetailAction.ApproveQuote] = "Bu Firmayı Onayla",
             [PurchaseRequestDetailAction.RejectEntireRequest] = "Talebi Komple Reddet",
-            [PurchaseRequestDetailAction.SendQuotesForRevision] = "Teklifleri Revizeye Gönder"
+            [PurchaseRequestDetailAction.SendQuotesForRevision] = "Teklifleri Revizeye Gönder",
+            [PurchaseRequestDetailAction.ConvertToUrgentAndApprove] = "Acil Alıma Çevir ve Onayla"
         };
 
     public static PurchaseRequestDetailScreen ResolveScreen(SatinalmaTalep talep)
@@ -62,6 +63,14 @@ public static class PurchaseRequestDetailPresenter
             if (!urgent)
                 actions.Add(PurchaseRequestDetailAction.StartQuoteProcess);
             actions.Add(PurchaseRequestDetailAction.RejectRequest);
+        }
+
+        // Teklif bekleyen (henüz gerçek teklif yok): acile çevir + teklifsiz onay / red.
+        if (canSubmitted && TeklifBekleyenTeiklifsizMi(talep, status))
+        {
+            actions.Add(PurchaseRequestDetailAction.ConvertToUrgentAndApprove);
+            if (!actions.Contains(PurchaseRequestDetailAction.RejectRequest))
+                actions.Add(PurchaseRequestDetailAction.RejectRequest);
         }
 
         var showQuotes = false;
@@ -139,6 +148,8 @@ public static class PurchaseRequestDetailPresenter
         return action switch
         {
             PurchaseRequestDetailAction.DirectApprove => PurchaseRequestDetailMutation.DirectApprove(),
+            PurchaseRequestDetailAction.ConvertToUrgentAndApprove
+                => PurchaseRequestDetailMutation.ConvertToUrgentAndApprove(),
             PurchaseRequestDetailAction.RejectRequest or PurchaseRequestDetailAction.RejectEntireRequest
                 => PurchaseRequestDetailMutation.Reject(note ?? ""),
             PurchaseRequestDetailAction.StartQuoteProcess => PurchaseRequestDetailMutation.StartQuoteProcess(),
@@ -146,6 +157,19 @@ public static class PurchaseRequestDetailPresenter
                 => PurchaseRequestDetailMutation.SendForRevision(note ?? ""),
             _ => null
         };
+    }
+
+    /// <summary>Yönetim «Teklif Bekleyen»: teklif istendi, satınalma henüz teklif girmedi.</summary>
+    private static bool TeklifBekleyenTeiklifsizMi(SatinalmaTalep talep, string status)
+    {
+        if (talep.YonetimOnayKilitli || talep.TeklifsizYonetimOnayi || talep.HerhangiKalemOnayli)
+            return false;
+        if (SatinalmaTalepYardimcisi.GercekTeklifVar(talep))
+            return false;
+
+        return status.Equals(ProcurementStatus.QuoteRequested, StringComparison.OrdinalIgnoreCase)
+            || status.Equals(ProcurementStatus.QuoteEntry, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(talep.Durum, SatinalmaTalepDurumlari.TeklifGirisi, StringComparison.Ordinal);
     }
 
     /// <summary>Gelen talep: teklif iste / direkt onay / red — Yönetim, Satınalma, Admin.</summary>

@@ -130,6 +130,7 @@ public static class SatinalmaSiparisIslemleri
 
         talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
         talep.Status = ProcurementStatus.Approved;
+        talep.Priority = ProcurementTalepAdapter.EffectivePriority(talep);
         SatinalmaTalepYardimcisi.Dokun(talep);
         SatinalmaDepo.Kaydet();
     }
@@ -137,7 +138,7 @@ public static class SatinalmaSiparisIslemleri
     public static async Task SiparisiGeriAlAsync(SatinalmaTalep talep)
     {
         SiparisiGeriAl(talep);
-        await SatinalmaKayitYardimcisi.BulutaHemenGonderAsync();
+        await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
         try { await BildirimYoneticisi.GecersizleriOkunduYapAsync(); } catch { /* */ }
     }
 
@@ -191,6 +192,7 @@ public static class SatinalmaSiparisIslemleri
             talep.Status = ProcurementStatus.QuoteEntry;
         }
 
+        talep.Priority = ProcurementTalepAdapter.EffectivePriority(talep);
         SatinalmaTalepYardimcisi.Dokun(talep);
         SatinalmaDepo.Kaydet();
     }
@@ -198,30 +200,27 @@ public static class SatinalmaSiparisIslemleri
     public static async Task FirmaOnaylariniGeriAlAsync(SatinalmaTalep talep)
     {
         FirmaOnaylariniGeriAl(talep);
-        await SatinalmaKayitYardimcisi.BulutaHemenGonderAsync();
+        await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
         try { await BildirimYoneticisi.GecersizleriOkunduYapAsync(); } catch { /* */ }
     }
 
     public static bool MalKabulBaslamis(SatinalmaTalep talep)
     {
+        // Yalnız gerçek kabul miktarı — SiparisTamamlandi tek başına yanlış pozitif üretebiliyor.
         talep.Kalemler ??= [];
         foreach (var kalem in talep.Kalemler)
         {
-            if (kalem.KabulEdilenMiktar > 0.0001 || kalem.SiparisTamamlandi)
+            if (kalem.KabulEdilenMiktar > 0.0001)
                 return true;
             foreach (var atama in KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem))
             {
-                if (atama.KabulEdilenMiktar > 0.0001 || atama.SiparisTamamlandi)
+                if (atama.KabulEdilenMiktar > 0.0001)
                     return true;
             }
         }
 
-        if (SatinalmaDepo.OnaylananMalzemeleriOlustur()
-            .Any(s => s.TalepId == talep.Id
-                && (s.KabulEdilenMiktar > 0.0001 || s.SiparisTamamlandi)))
-            return true;
-
-        return ModulVeriDeposu.AlinanMalzemeler.Any(a => a.SatinalmaTalepId == talep.Id);
+        return ModulVeriDeposu.AlinanMalzemeler.Any(a =>
+            a.SatinalmaTalepId == talep.Id && a.Miktar > 0.0001);
     }
 
     /// <returns>Sahaya direkt ise çıkış fişi satırı; aksi halde null.</returns>
