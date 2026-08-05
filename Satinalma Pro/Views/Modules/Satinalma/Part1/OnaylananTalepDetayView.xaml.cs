@@ -63,9 +63,12 @@ public partial class OnaylananTalepDetayView : UserControl
 
         var onayiGeriAlabilir = satinalmaModu
             && KullaniciYetkileri.SatinalmaFirmaOnayiDuzenlenebilir()
-            && talep.Durum != SatinalmaTalepDurumlari.SiparisOlusturuldu
+            && (talep.Durum == SatinalmaTalepDurumlari.Onaylandi
+                || (talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu
+                    && !SatinalmaSiparisIslemleri.MalKabulBaslamis(talep)))
             && (talep.YonetimOnayKilitli || talep.HerhangiKalemOnayli
-                || talep.Durum == SatinalmaTalepDurumlari.Onaylandi);
+                || talep.Durum is SatinalmaTalepDurumlari.Onaylandi
+                    or SatinalmaTalepDurumlari.SiparisOlusturuldu);
 
         BtnOnayiGeriAl.Visibility = onayiGeriAlabilir ? Visibility.Visible : Visibility.Collapsed;
         BtnFirmaFiyat.Visibility = teklifsizBekliyor && satinalmaModu

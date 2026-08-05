@@ -266,13 +266,39 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
     private bool FirmaOnayiSaltOkunur(SatinalmaTalep talep) =>
         SatinalmaOnayYetkisi.FirmaOnayiSaltOkunur(talep, _depo.AktifKullanici);
 
+    public async Task SiparisiGeriAlAsync(SatinalmaTalep talep, CancellationToken iptal = default)
+    {
+        YetkiKontrol(
+            !FirmaOnayiSaltOkunur(talep)
+            || MobilYetkiServisi.MalKabulVeStokAktarYapabilir(_depo.AktifKullanici?.Rol),
+            "Siparişi geri alma yetkiniz yok.");
+
+        if (talep.Durum != SatinalmaTalepDurumlari.SiparisOlusturuldu)
+            throw new InvalidOperationException("Yalnızca sipariş verilmiş talepler geri alınabilir.");
+
+        if (MalKabulBaslamis(talep))
+            throw new InvalidOperationException(
+                "Mal kabul yapılmış sipariş geri alınamaz.");
+
+        talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
+        talep.Status = ProcurementStatus.Approved;
+        await TalepKaydetAsync(talep, iptal);
+        await _bildirimler.GecersizleriOkunduYapAsync(iptal);
+    }
+
     public async Task FirmaOnaylariniGeriAlAsync(SatinalmaTalep talep, CancellationToken iptal = default)
     {
         if (FirmaOnayiSaltOkunur(talep))
             throw new InvalidOperationException("Bu onayı geri alma yetkiniz yok.");
 
         if (talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu)
-            throw new InvalidOperationException("Sipariş verilmiş taleplerde onay geri alınamaz.");
+        {
+            if (MalKabulBaslamis(talep))
+                throw new InvalidOperationException(
+                    "Mal kabul yapılmış siparişte onay geri alınamaz.");
+            talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
+            talep.Status = ProcurementStatus.Approved;
+        }
 
         if (!talep.HerhangiKalemOnayli
             && !talep.YonetimOnayKilitli
@@ -310,6 +336,24 @@ public sealed class SatinalmaMobilServisi : ISatinalmaDashboardSorgu
         }
 
         await TalepKaydetAsync(talep, iptal);
+        await _bildirimler.GecersizleriOkunduYapAsync(iptal);
+    }
+
+    private static bool MalKabulBaslamis(SatinalmaTalep talep)
+    {
+        talep.Kalemler ??= [];
+        foreach (var kalem in talep.Kalemler)
+        {
+            if (kalem.KabulEdilenMiktar > 0.0001 || kalem.SiparisTamamlandi)
+                return true;
+            foreach (var atama in KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem))
+            {
+                if (atama.KabulEdilenMiktar > 0.0001 || atama.SiparisTamamlandi)
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     public async Task KalemTeklifiAtaAsync(SatinalmaTalep talep, Guid kalemId, Guid? teklifId, CancellationToken iptal = default)

@@ -114,13 +114,47 @@ public static class SatinalmaSiparisIslemleri
         try { await SatinalmaBildirimleri.SiparisOlusturulduAsync(talep); } catch { /* */ }
     }
 
+    /// <summary>Sipariş Oluşturuldu → Onaylandı (mal kabul başlamamış olmalı).</summary>
+    public static void SiparisiGeriAl(SatinalmaTalep talep)
+    {
+        if (!KullaniciYetkileri.SatinalmaFirmaOnayiDuzenlenebilir()
+            && !KullaniciYetkileri.MalKabulVeStokAktarYapabilir())
+            throw new InvalidOperationException("Siparişi geri alma yetkiniz yok.");
+
+        if (talep.Durum != SatinalmaTalepDurumlari.SiparisOlusturuldu)
+            throw new InvalidOperationException("Yalnızca sipariş verilmiş talepler geri alınabilir.");
+
+        if (MalKabulBaslamis(talep))
+            throw new InvalidOperationException(
+                "Mal kabul yapılmış sipariş geri alınamaz. Önce mal kabul kayıtlarını kontrol edin.");
+
+        talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
+        talep.Status = ProcurementStatus.Approved;
+        SatinalmaTalepYardimcisi.Dokun(talep);
+        SatinalmaDepo.Kaydet();
+    }
+
+    public static async Task SiparisiGeriAlAsync(SatinalmaTalep talep)
+    {
+        SiparisiGeriAl(talep);
+        await SatinalmaKayitYardimcisi.BulutaHemenGonderAsync();
+        try { await BildirimYoneticisi.GecersizleriOkunduYapAsync(); } catch { /* */ }
+    }
+
     public static void FirmaOnaylariniGeriAl(SatinalmaTalep talep)
     {
         if (!KullaniciYetkileri.SatinalmaFirmaOnayiDuzenlenebilir())
             throw new InvalidOperationException("Bu onayı geri alma yetkiniz yok.");
 
         if (talep.Durum == SatinalmaTalepDurumlari.SiparisOlusturuldu)
-            throw new InvalidOperationException("Sipariş verilmiş taleplerde onay geri alınamaz.");
+        {
+            if (MalKabulBaslamis(talep))
+                throw new InvalidOperationException(
+                    "Mal kabul yapılmış siparişte onay geri alınamaz.");
+            // Sipariş adımını da düşür; onay temizliği aşağıda.
+            talep.Durum = SatinalmaTalepDurumlari.Onaylandi;
+            talep.Status = ProcurementStatus.Approved;
+        }
 
         if (!talep.HerhangiKalemOnayli
             && !talep.YonetimOnayKilitli
@@ -165,6 +199,29 @@ public static class SatinalmaSiparisIslemleri
     {
         FirmaOnaylariniGeriAl(talep);
         await SatinalmaKayitYardimcisi.BulutaHemenGonderAsync();
+        try { await BildirimYoneticisi.GecersizleriOkunduYapAsync(); } catch { /* */ }
+    }
+
+    public static bool MalKabulBaslamis(SatinalmaTalep talep)
+    {
+        talep.Kalemler ??= [];
+        foreach (var kalem in talep.Kalemler)
+        {
+            if (kalem.KabulEdilenMiktar > 0.0001 || kalem.SiparisTamamlandi)
+                return true;
+            foreach (var atama in KalemFirmaAtamaYardimcisi.EtkinAtamalar(kalem))
+            {
+                if (atama.KabulEdilenMiktar > 0.0001 || atama.SiparisTamamlandi)
+                    return true;
+            }
+        }
+
+        if (SatinalmaDepo.OnaylananMalzemeleriOlustur()
+            .Any(s => s.TalepId == talep.Id
+                && (s.KabulEdilenMiktar > 0.0001 || s.SiparisTamamlandi)))
+            return true;
+
+        return ModulVeriDeposu.AlinanMalzemeler.Any(a => a.SatinalmaTalepId == talep.Id);
     }
 
     /// <returns>Sahaya direkt ise çıkış fişi satırı; aksi halde null.</returns>

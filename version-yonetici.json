@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.53",
-    "build":  56,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.53/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.53/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.53/SatinalmaYonetici.apk",
-    "notes":  "1.0.53 - Pro 2.1.100 ile birlikte (depo giris/cikis UI)",
+    "version":  "1.0.54",
+    "build":  57,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.54/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.54/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.54/SatinalmaYonetici.apk",
+    "notes":  "1.0.54 - Pro 2.1.101 ile birlikte (siparis/onay geri alma, tukenen stoklar)",
     "zorunlu":  false
 }

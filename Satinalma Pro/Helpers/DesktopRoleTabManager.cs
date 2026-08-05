@@ -160,21 +160,23 @@ public static class DesktopRoleTabManager
         "depo" =>
         [
             StokRoutes.StokDurumu,
+            StokRoutes.TukenenStoklar,
             StokRoutes.StokGirisi,
             StokRoutes.StokCikisi,
             StokRoutes.StokHareketleri
         ],
-        "atolye" => [StokRoutes.StokDurumu],
-        "sef" or "saha" => [StokRoutes.StokDurumu, StokRoutes.StokHareketleri],
+        "atolye" => [StokRoutes.StokDurumu, StokRoutes.TukenenStoklar],
+        "sef" or "saha" => [StokRoutes.StokDurumu, StokRoutes.TukenenStoklar, StokRoutes.StokHareketleri],
         "admin" or "yonetim" or "satinalma" =>
         [
             StokRoutes.StokDurumu,
+            StokRoutes.TukenenStoklar,
             StokRoutes.StokGirisi,
             StokRoutes.StokCikisi,
             StokRoutes.StokHareketleri,
             StokRoutes.StokSayim
         ],
-        _ => [StokRoutes.StokDurumu, StokRoutes.StokHareketleri]
+        _ => [StokRoutes.StokDurumu, StokRoutes.TukenenStoklar, StokRoutes.StokHareketleri]
     };
 
     public static bool StockTabVisible(string? role, string tabName) =>

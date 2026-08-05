@@ -909,6 +909,22 @@ class AppContainer(private val context: Context) {
         return result
     }
 
+    suspend fun siparisiGeriAl(talepId: String): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepler.siparisiGeriAl(talepId, user)
+        reloadTalepler()
+        refreshNotifications()
+        return result
+    }
+
+    suspend fun firmaOnaylariniGeriAl(talepId: String): TalepItem {
+        val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
+        val result = talepler.firmaOnaylariniGeriAl(talepId, user)
+        reloadTalepler()
+        refreshNotifications()
+        return result
+    }
+
     suspend fun teklifsizFirmaFiyatKaydet(talepId: String, girdiler: List<Triple<String, String, Double>>): TalepItem {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         requireTeklifGirisYetkisi(user)

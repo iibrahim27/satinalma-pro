@@ -105,6 +105,15 @@ fun TalepDetayScreen(viewModel: AppViewModel, talepId: String, viewMode: String?
     val teklifsizFirmaGir = KullaniciRolleri.canEnterQuotes(role) &&
         TalepKuyrugu.teklifsizFirmaFiyatBekliyor(item)
     val canPlaceOrder = KullaniciRolleri.canPlaceOrder(role) && item.durum == TalepDurumlari.ONAYLANDI
+    val malKabulBaslamis = item.kalemler.any { it.kabulEdilenMiktar > 0.0001 || it.siparisTamamlandi }
+    val canSiparisGeriAl = KullaniciRolleri.canPlaceOrder(role)
+        && item.durum == TalepDurumlari.SIPARIS
+        && !malKabulBaslamis
+    val canOnayGeriAl = KullaniciRolleri.canPlaceOrder(role)
+        && (item.durum == TalepDurumlari.ONAYLANDI
+            || (item.durum == TalepDurumlari.SIPARIS && !malKabulBaslamis))
+        && (item.herhangiKalemOnayli || item.yonetimOnayKilitli || item.durum == TalepDurumlari.ONAYLANDI
+            || item.durum == TalepDurumlari.SIPARIS)
     val canMalKabul = KullaniciRolleri.canMalKabul(role)
     val duzenle = TalepYetkileri.talepDuzenleyebilir(role, item, user?.uid, user?.fullName)
     val sil = TalepYetkileri.talepSilebilir(role, item, user?.uid, user?.fullName)
@@ -147,7 +156,8 @@ fun TalepDetayScreen(viewModel: AppViewModel, talepId: String, viewMode: String?
                 0 -> OzetTabContent(
                     item, viewMode, acilTalep, readOnlyView, malzemeler, canMalKabul,
                     malKabulSatir, { malKabulSatir = it },
-                    teklifsizFirmaGir, canPlaceOrder, teklifGir, karsilastirma, yonetimeGonder,
+                    teklifsizFirmaGir, canPlaceOrder, canSiparisGeriAl, canOnayGeriAl,
+                    teklifGir, karsilastirma, yonetimeGonder,
                     duzenle, sil, silOnay, { silOnay = it }, yonetimKarar, redGerekce, { redGerekce = it },
                     teklifOnay, error, viewModel, talepId, loading, role
                 )
@@ -212,6 +222,8 @@ private fun OzetTabContent(
     onMalKabulSatir: (OnaylananMalzemeSatiri?) -> Unit,
     teklifsizFirmaGir: Boolean,
     canPlaceOrder: Boolean,
+    canSiparisGeriAl: Boolean,
+    canOnayGeriAl: Boolean,
     teklifGir: Boolean,
     karsilastirma: Boolean,
     yonetimeGonder: Boolean,
@@ -295,6 +307,18 @@ private fun OzetTabContent(
         }
         if (canPlaceOrder) {
             AppPrimaryButton("Sipariş Ver", onClick = { viewModel.siparisVer(item.id) {} })
+        }
+        if (canSiparisGeriAl) {
+            OutlinedButton(
+                onClick = { viewModel.siparisiGeriAl(item.id) {} },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Siparişi Geri Al") }
+        }
+        if (canOnayGeriAl) {
+            OutlinedButton(
+                onClick = { viewModel.firmaOnaylariniGeriAl(item.id) {} },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Onayı Geri Al") }
         }
         if (teklifGir) {
             AppPrimaryButton("Teklif Gir", onClick = { viewModel.navigate("teklif-gir?id=${item.id}") })

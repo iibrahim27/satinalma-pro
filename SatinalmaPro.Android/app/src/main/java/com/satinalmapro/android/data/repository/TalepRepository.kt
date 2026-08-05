@@ -797,6 +797,67 @@ class TalepRepository(
         return result
     }
 
+    private fun malKabulBaslamis(talep: TalepItem): Boolean {
+        if (talep.kalemler.any { it.kabulEdilenMiktar > 0.0001 || it.siparisTamamlandi })
+            return true
+        return talep.kalemler.any { kalem ->
+            KalemFirmaAtamaYardimcisi.etkinAtamalar(kalem)
+                .any { it.kabulEdilenMiktar > 0.0001 || it.siparisTamamlandi }
+        }
+    }
+
+    suspend fun siparisiGeriAl(talepId: String, user: UserProfile): TalepItem {
+        if (!KullaniciRolleri.canPlaceOrder(user.role))
+            throw IllegalStateException("Siparişi geri alma yetkiniz yok")
+
+        return mutateTalep(talepId) { talep ->
+            if (talep.durum != TalepDurumlari.SIPARIS)
+                throw IllegalStateException("Yalnızca sipariş verilmiş talepler geri alınabilir")
+            if (malKabulBaslamis(talep))
+                throw IllegalStateException("Mal kabul yapılmış sipariş geri alınamaz")
+            talep.copy(durum = TalepDurumlari.ONAYLANDI, status = "approved")
+        }
+    }
+
+    suspend fun firmaOnaylariniGeriAl(talepId: String, user: UserProfile): TalepItem {
+        if (!KullaniciRolleri.canPlaceOrder(user.role) && !KullaniciRolleri.canManagementDecide(user.role))
+            throw IllegalStateException("Onayı geri alma yetkiniz yok")
+
+        return mutateTalep(talepId) { talep ->
+            var t = talep
+            if (t.durum == TalepDurumlari.SIPARIS) {
+                if (malKabulBaslamis(t))
+                    throw IllegalStateException("Mal kabul yapılmış siparişte onay geri alınamaz")
+                t = t.copy(durum = TalepDurumlari.ONAYLANDI, status = "approved")
+            }
+            if (!t.herhangiKalemOnayli && !t.yonetimOnayKilitli && t.durum != TalepDurumlari.ONAYLANDI)
+                throw IllegalStateException("Geri alınacak onay bulunamadı")
+
+            val kalemler = t.kalemler.map { KalemFirmaAtamaYardimcisi.temizle(it) }
+            val teklifler = t.teklifler.map { it.copy(onaylandi = false) }
+            val (durum, status) = if (teklifler.isNotEmpty())
+                TalepDurumlari.KARSILASTIRMA to "comparison"
+            else
+                TalepDurumlari.TEKLIF_GIRISI to "quote_entry"
+
+            t.copy(
+                kalemler = kalemler,
+                teklifler = teklifler,
+                onaylananTeklifId = null,
+                firmaSiparisNolari = emptyMap(),
+                siparisNo = "",
+                teklifsizYonetimOnayi = false,
+                yonetimOnayKilitli = false,
+                yonetimOnaylayanUid = "",
+                yonetimOnaylayanAd = "",
+                yonetimOnaylayanEposta = "",
+                yonetimOnayTarihi = "",
+                durum = durum,
+                status = status
+            )
+        }
+    }
+
     suspend fun siparisVer(talepId: String, user: UserProfile): TalepItem {
         if (!KullaniciRolleri.canPlaceOrder(user.role))
             throw IllegalStateException("Sipariş verme yetkiniz yok")

@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.100",
-    "build":  173,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.100/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.100/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.100/SatinalmaPro.apk",
-    "notes":  "2.1.100 - Depo giris listesi tam ekran + satir duzenleme; stok cikis kategori otomatik (malzemeden)",
+    "version":  "2.1.101",
+    "build":  174,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.101/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.101/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.101/SatinalmaPro.apk",
+    "notes":  "2.1.101 - Siparis/onay geri alma (mal kabul oncesi); Stok Yonetimi Tukenen Stoklar sekmesi",
     "zorunlu":  false
 }

@@ -50,6 +50,10 @@
     <Border Grid.Row="2" Background="#FFFFFF" CornerRadius="14" BorderBrush="#D9E2EC"
             BorderThickness="1" Padding="16,12" Margin="0,12,0,0">
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+        <Button x:Name="BtnSiparisiGeriAl" Content="Siparişi Geri Al" Style="{StaticResource ToolbarButtonStyle}"
+                Click="SiparisiGeriAl_Click" Padding="18,8" Margin="0,0,8,0" Visibility="Collapsed" />
+        <Button x:Name="BtnOnayiGeriAl" Content="Onayı Geri Al" Style="{StaticResource ToolbarButtonStyle}"
+                Click="OnayiGeriAl_Click" Padding="18,8" Margin="0,0,8,0" Visibility="Collapsed" />
         <Button x:Name="BtnSevkiyatiTamamla" Content="Sevkiyatı Tamamla" Style="{StaticResource ToolbarButtonStyle}"
                 Click="SevkiyatiTamamla_Click" Padding="18,8" Margin="0,0,8,0" IsEnabled="False" />
         <Button x:Name="BtnTopluMalKabul" Content="Teklifin Tüm Kalemlerini Kabul Et" Style="{StaticResource ToolbarButtonStyle}"

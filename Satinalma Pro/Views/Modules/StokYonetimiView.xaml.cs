@@ -31,6 +31,8 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
     private bool _stokYogunGorunum;
     private bool _stokTamEkran;
     private bool _arayuzHazir;
+    /// <summary>true = Tükenen Stoklar sekmesi (MevcutMiktar &lt;= 0).</summary>
+    private bool _tukenenModu;
 
     private static readonly (string Baslik, string Alan)[] StokGrupSecenekleri =
     [
@@ -202,6 +204,8 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         var rol = OturumYoneticisi.AktifKullanici?.Rol;
         BtnNavDurum.Visibility = DesktopRoleTabManager.StockTabVisible(rol, StokRoutes.StokDurumu)
             ? Visibility.Visible : Visibility.Collapsed;
+        BtnNavTukenen.Visibility = DesktopRoleTabManager.StockTabVisible(rol, StokRoutes.TukenenStoklar)
+            ? Visibility.Visible : Visibility.Collapsed;
         BtnNavHareket.Visibility = DesktopRoleTabManager.StockTabVisible(rol, StokRoutes.StokHareketleri)
             ? Visibility.Visible : Visibility.Collapsed;
         BtnNavSayim.Visibility = DesktopRoleTabManager.StockTabVisible(rol, StokRoutes.StokSayim)
@@ -228,20 +232,44 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
     private void NavAktif(Button aktif)
     {
         BtnNavDurum.Style = (Style)FindResource(aktif == BtnNavDurum ? "StokNavActiveStyle" : "ErpNavPill");
+        BtnNavTukenen.Style = (Style)FindResource(aktif == BtnNavTukenen ? "StokNavActiveStyle" : "ErpNavPill");
         BtnNavHareket.Style = (Style)FindResource(aktif == BtnNavHareket ? "StokNavActiveStyle" : "ErpNavPill");
         BtnNavSayim.Style = (Style)FindResource(aktif == BtnNavSayim ? "StokNavActiveStyle" : "ErpNavPill");
     }
 
     private void NavDurum_Click(object sender, RoutedEventArgs e)
     {
+        _tukenenModu = false;
         NavAktif(BtnNavDurum);
         PanelDurum.Visibility = Visibility.Visible;
         PanelHareket.Visibility = Visibility.Collapsed;
         PanelSayim.Visibility = Visibility.Collapsed;
+        StokFiltreYenile();
+    }
+
+    private void NavTukenen_Click(object sender, RoutedEventArgs e)
+    {
+        _tukenenModu = true;
+        NavAktif(BtnNavTukenen);
+        PanelDurum.Visibility = Visibility.Visible;
+        PanelHareket.Visibility = Visibility.Collapsed;
+        PanelSayim.Visibility = Visibility.Collapsed;
+        // Durum combo'yu Tükendi ile hizala (kullanıcı başka seçerse yine miktar filtresi baskın).
+        for (var i = 0; i < CmbDurum.Items.Count; i++)
+        {
+            if (CmbDurum.Items[i] is ComboBoxItem { Content: string c }
+                && c.Equals("Tükendi", StringComparison.OrdinalIgnoreCase))
+            {
+                CmbDurum.SelectedIndex = i;
+                break;
+            }
+        }
+        StokFiltreYenile();
     }
 
     private void NavHareket_Click(object sender, RoutedEventArgs e)
     {
+        _tukenenModu = false;
         NavAktif(BtnNavHareket);
         PanelDurum.Visibility = Visibility.Collapsed;
         PanelHareket.Visibility = Visibility.Visible;
@@ -250,6 +278,7 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
 
     private void NavSayim_Click(object sender, RoutedEventArgs e)
     {
+        _tukenenModu = false;
         NavAktif(BtnNavSayim);
         PanelDurum.Visibility = Visibility.Collapsed;
         PanelHareket.Visibility = Visibility.Collapsed;
@@ -261,6 +290,8 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
     {
         if (BtnNavDurum.Visibility == Visibility.Visible)
             NavDurum_Click(BtnNavDurum, new RoutedEventArgs());
+        else if (BtnNavTukenen.Visibility == Visibility.Visible)
+            NavTukenen_Click(BtnNavTukenen, new RoutedEventArgs());
         else if (BtnNavHareket.Visibility == Visibility.Visible)
             NavHareket_Click(BtnNavHareket, new RoutedEventArgs());
         else if (BtnNavSayim.Visibility == Visibility.Visible)
@@ -271,6 +302,7 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
     {
         var hedef = sekme?.Trim().ToLowerInvariant() switch
         {
+            "stok-tukenen" or "tükenen stoklar" or "tukenen stoklar" => BtnNavTukenen,
             "stok-hareket" or "stok hareketleri" => BtnNavHareket,
             "stok-sayim" or "stok sayım" or "stok sayim" => BtnNavSayim,
             _ => BtnNavDurum
@@ -278,11 +310,14 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
 
         if (hedef.Visibility != Visibility.Visible)
             hedef = BtnNavDurum.Visibility == Visibility.Visible ? BtnNavDurum
+                : BtnNavTukenen.Visibility == Visibility.Visible ? BtnNavTukenen
                 : BtnNavHareket.Visibility == Visibility.Visible ? BtnNavHareket
                 : BtnNavSayim;
 
         if (hedef == BtnNavDurum)
             NavDurum_Click(hedef, new RoutedEventArgs());
+        else if (hedef == BtnNavTukenen)
+            NavTukenen_Click(hedef, new RoutedEventArgs());
         else if (hedef == BtnNavHareket)
             NavHareket_Click(hedef, new RoutedEventArgs());
         else
@@ -499,6 +534,17 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         if (item is not StokKaydi kayit)
             return false;
 
+        // Tükenen sekmesi: yalnız sıfır/negatif; Stok Durumu: tükenenleri bu sekmede tut.
+        if (_tukenenModu)
+        {
+            if (kayit.MevcutMiktar > 0)
+                return false;
+        }
+        else if (kayit.MevcutMiktar <= 0)
+        {
+            return false;
+        }
+
         var arama = TxtArama.Text.Trim();
         if (!string.IsNullOrEmpty(arama))
         {
@@ -517,10 +563,13 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
             !kayit.DepoSaha.Equals(depo, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        var durum = ComboDegeri(CmbDurum);
-        if (!string.IsNullOrEmpty(durum) && durum != "Tümü" &&
-            !kayit.DurumMetin.Equals(durum, StringComparison.OrdinalIgnoreCase))
-            return false;
+        if (!_tukenenModu)
+        {
+            var durum = ComboDegeri(CmbDurum);
+            if (!string.IsNullOrEmpty(durum) && durum != "Tümü" &&
+                !kayit.DurumMetin.Equals(durum, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
 
         if (_agacKategori is not null &&
             !kayit.Kategori.Equals(_agacKategori, StringComparison.OrdinalIgnoreCase))

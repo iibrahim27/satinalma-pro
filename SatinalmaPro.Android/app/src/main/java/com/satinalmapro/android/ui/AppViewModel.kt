@@ -835,6 +835,12 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun siparisVer(talepId: String, onSuccess: () -> Unit = {}) =
         runWorkflow(onSuccess) { container.siparisVer(talepId) }
 
+    fun siparisiGeriAl(talepId: String, onSuccess: () -> Unit = {}) =
+        runWorkflow(onSuccess) { container.siparisiGeriAl(talepId) }
+
+    fun firmaOnaylariniGeriAl(talepId: String, onSuccess: () -> Unit = {}) =
+        runWorkflow(onSuccess) { container.firmaOnaylariniGeriAl(talepId) }
+
     fun teklifsizFirmaFiyatKaydet(talepId: String, girdiler: List<Triple<String, String, Double>>, onSuccess: () -> Unit) =
         runWorkflow(onSuccess) { container.teklifsizFirmaFiyatKaydet(talepId, girdiler) }
 

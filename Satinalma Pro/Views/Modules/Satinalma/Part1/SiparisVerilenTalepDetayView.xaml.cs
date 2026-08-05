@@ -49,6 +49,15 @@ public partial class SiparisVerilenTalepDetayView : UserControl
         BtnSevkiyatiTamamla.Visibility = malKabulYapabilir ? Visibility.Visible : Visibility.Collapsed;
         BtnTopluMalKabul.Visibility = malKabulYapabilir ? Visibility.Visible : Visibility.Collapsed;
 
+        var malKabulBaslamis = SatinalmaSiparisIslemleri.MalKabulBaslamis(talep);
+        var geriAlabilir = !malKabulBaslamis
+            && (KullaniciYetkileri.SatinalmaFirmaOnayiDuzenlenebilir()
+                || KullaniciYetkileri.MalKabulVeStokAktarYapabilir());
+        BtnSiparisiGeriAl.Visibility = geriAlabilir ? Visibility.Visible : Visibility.Collapsed;
+        BtnOnayiGeriAl.Visibility = KullaniciYetkileri.SatinalmaFirmaOnayiDuzenlenebilir() && !malKabulBaslamis
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
         if (_seciliKalem is not null && kalemler.All(k => k.Kaynak.KalemId != _seciliKalem.KalemId))
             _seciliKalem = null;
 
@@ -151,6 +160,69 @@ public partial class SiparisVerilenTalepDetayView : UserControl
 
         if (GuncelTalep() is { } talep && SatinalmaPart1Filtreleri.MalKabulTamam(talep))
             Geri?.Invoke();
+    }
+
+    private async void SiparisiGeriAl_Click(object sender, RoutedEventArgs e)
+    {
+        var talep = GuncelTalep();
+        if (talep is null)
+            return;
+
+        var onay = MessageBox.Show(
+            $"{talep.TalepNo} siparişini geri almak istiyor musunuz?\n\n" +
+            "Talep tekrar «Onaylananlar» listesine döner; sipariş numaraları korunur.",
+            UygulamaBilgisi.Ad,
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (onay != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            await SatinalmaSiparisIslemleri.SiparisiGeriAlAsync(talep);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        MessageBox.Show("Sipariş geri alındı. Talep onaylananlara taşındı.",
+            UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+        Degisti?.Invoke();
+        Geri?.Invoke();
+    }
+
+    private async void OnayiGeriAl_Click(object sender, RoutedEventArgs e)
+    {
+        var talep = GuncelTalep();
+        if (talep is null)
+            return;
+
+        var onay = MessageBox.Show(
+            $"{talep.TalepNo} siparişini ve onayını geri almak istiyor musunuz?\n\n" +
+            "Sipariş ve onay kaldırılır; teklifleri düzenleyip yönetime yeniden gönderebilirsiniz.",
+            UygulamaBilgisi.Ad,
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (onay != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            await SatinalmaSiparisIslemleri.FirmaOnaylariniGeriAlAsync(talep);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        MessageBox.Show(
+            "Sipariş ve onay geri alındı. Karşılaştırma / teklif ekranından düzenleyebilirsiniz.",
+            UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+        Degisti?.Invoke();
+        Geri?.Invoke();
     }
 
     private void Geri_Click(object sender, RoutedEventArgs e) => Geri?.Invoke();

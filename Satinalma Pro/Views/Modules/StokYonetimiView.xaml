@@ -28,6 +28,7 @@
           <Border Background="#EEF2F5" CornerRadius="10" Padding="4" BorderBrush="#D9E2EC" BorderThickness="1" Margin="0,10,0,0">
             <StackPanel Orientation="Horizontal">
               <Button x:Name="BtnNavDurum" Style="{StaticResource StokNavActiveStyle}" Content="Stok Durumu" Click="NavDurum_Click" />
+              <Button x:Name="BtnNavTukenen" Style="{StaticResource ErpNavPill}" Content="Tükenen Stoklar" Click="NavTukenen_Click" />
               <Button x:Name="BtnNavHareket" Style="{StaticResource ErpNavPill}" Content="Stok Hareketleri" Click="NavHareket_Click" />
               <Button x:Name="BtnNavSayim" Style="{StaticResource ErpNavPill}" Content="Stok Sayım" Click="NavSayim_Click" />
             </StackPanel>

@@ -36,6 +36,7 @@ public static class SatinalmaRoutes
 public static class StokRoutes
 {
     public const string StokDurumu = "Stok Durumu";
+    public const string TukenenStoklar = "Tükenen Stoklar";
     public const string StokGirisi = "Stok Girişi";
     public const string StokCikisi = "Stok Çıkışı";
     public const string StokHareketleri = "Stok Hareketleri";
