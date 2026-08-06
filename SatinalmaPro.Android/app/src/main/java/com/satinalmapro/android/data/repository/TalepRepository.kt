@@ -100,6 +100,15 @@ class TalepRepository(
             return this
         }
 
+        // Onay geri alındı: stale approved Durum'u tekrar Onaylandı'ya çekmesin.
+        if (st == ProcurementStatus.APPROVED
+            && !yonetimOnayKilitli
+            && (durum == TalepDurumlari.KARSILASTIRMA
+                || durum == TalepDurumlari.TEKLIF_GIRISI)
+        ) {
+            return this
+        }
+
         if (statusAsama <= durumAsama) return this
         val yeni = when (st) {
             ProcurementStatus.REJECTED -> TalepDurumlari.REDDEDILDI

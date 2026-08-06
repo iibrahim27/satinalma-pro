@@ -80,12 +80,23 @@ public static class SatinalmaTalepBirlestirme
         if (TeklifIstemeKorumaMi(hedef, kaynak))
             return;
 
-        // Sipariş / onay geri alma: stale «Sipariş Oluşturuldu» skorla geri alma.
+        // Sipariş geri alma: stale «Sipariş Oluşturuldu» skorla geri alma.
         if (SiparisGeriAlKorumaMi(hedef, kaynak))
             return;
 
         // Geri alınmış kopya kazanan değilse (UTC eşit / skor) Sipariş'ten düşür.
         if (SiparisGeriAlGecisiMi(hedef, kaynak))
+        {
+            UygulaSurecDurumu(hedef, kaynak);
+            return;
+        }
+
+        // Onay geri alma: stale «Onaylandı» skorla Karşılaştırma/Teklif Girişi'ni ezmesin.
+        if (OnayGeriAlKorumaMi(hedef, kaynak))
+            return;
+
+        // Onay geri alınmış kopya kazanan değilse (UTC eşit / skor) Onaylandı'dan düşür.
+        if (OnayGeriAlGecisiMi(hedef, kaynak))
         {
             UygulaSurecDurumu(hedef, kaynak);
             return;
@@ -187,6 +198,35 @@ public static class SatinalmaTalepBirlestirme
         return kaynak.GuncellemeUtc >= hedef.GuncellemeUtc;
     }
 
+    /// <summary>
+    /// Onayı geri alınmış kayıt: kaynak hâlâ Onaylandı ise «ileri aşama» ile Karşılaştırma'yı ezmesin.
+    /// </summary>
+    private static bool OnayGeriAlKorumaMi(SatinalmaTalep hedef, SatinalmaTalep kaynak)
+    {
+        if (kaynak.Durum != SatinalmaTalepDurumlari.Onaylandi)
+            return false;
+        if (hedef.Durum is not (SatinalmaTalepDurumlari.Karsilastirma
+            or SatinalmaTalepDurumlari.TeklifGirisi))
+            return false;
+        if (hedef.YonetimOnayKilitli)
+            return false;
+
+        return hedef.GuncellemeUtc >= kaynak.GuncellemeUtc;
+    }
+
+    private static bool OnayGeriAlGecisiMi(SatinalmaTalep hedef, SatinalmaTalep kaynak)
+    {
+        if (hedef.Durum != SatinalmaTalepDurumlari.Onaylandi)
+            return false;
+        if (kaynak.Durum is not (SatinalmaTalepDurumlari.Karsilastirma
+            or SatinalmaTalepDurumlari.TeklifGirisi))
+            return false;
+        if (kaynak.YonetimOnayKilitli)
+            return false;
+
+        return kaynak.GuncellemeUtc >= hedef.GuncellemeUtc;
+    }
+
     private static bool TeklifYonetimIncelemeGecisiMi(SatinalmaTalep hedef, SatinalmaTalep kaynak)
     {
         if (kaynak.Durum != SatinalmaTalepDurumlari.YonetimOnayinda)
@@ -208,6 +248,11 @@ public static class SatinalmaTalepBirlestirme
             || (SatinalmaTalepYardimcisi.GercekTeklifVar(t)
                 && string.Equals(t.Status, ProcurementStatus.QuoteRequested, StringComparison.OrdinalIgnoreCase)));
 
+    private static bool OnayGeriAlinmisMi(SatinalmaTalep t) =>
+        !t.YonetimOnayKilitli
+        && t.Durum is (SatinalmaTalepDurumlari.Karsilastirma
+            or SatinalmaTalepDurumlari.TeklifGirisi);
+
     private static void UygulaSurecDurumu(SatinalmaTalep hedef, SatinalmaTalep kaynak)
     {
         hedef.Durum = kaynak.Durum;
@@ -221,7 +266,7 @@ public static class SatinalmaTalepBirlestirme
             hedef.RedGerekcesi = kaynak.RedGerekcesi;
         if (kaynak.OnaylananTeklifId is { } onayId)
             hedef.OnaylananTeklifId = onayId;
-        else if (kaynak.Durum == SatinalmaTalepDurumlari.TeklifGirisi)
+        else if (OnayGeriAlinmisMi(kaynak))
             hedef.OnaylananTeklifId = null;
 
         if (!string.IsNullOrWhiteSpace(kaynak.YonetimOnaylayanUid))
@@ -230,6 +275,13 @@ public static class SatinalmaTalepBirlestirme
             hedef.YonetimOnaylayanAd = kaynak.YonetimOnaylayanAd;
             hedef.YonetimOnaylayanEposta = kaynak.YonetimOnaylayanEposta;
             hedef.YonetimOnayTarihi = kaynak.YonetimOnayTarihi;
+        }
+        else if (OnayGeriAlinmisMi(kaynak))
+        {
+            hedef.YonetimOnaylayanUid = "";
+            hedef.YonetimOnaylayanAd = "";
+            hedef.YonetimOnaylayanEposta = "";
+            hedef.YonetimOnayTarihi = "";
         }
 
         if (!string.IsNullOrWhiteSpace(kaynak.TeklifDuzeltmeNotu))
@@ -241,11 +293,16 @@ public static class SatinalmaTalepBirlestirme
     private static void BirlestirKararAlanlari(SatinalmaTalep hedef, SatinalmaTalep kaynak)
     {
         // Onay kilidi burada OR ile yapışkan kalmasın — SurecDurumu uygular.
-        if (kaynak.TeklifsizYonetimOnayi)
+        if (kaynak.TeklifsizYonetimOnayi && !OnayGeriAlinmisMi(hedef))
             hedef.TeklifsizYonetimOnayi = true;
         if (string.IsNullOrWhiteSpace(hedef.RedGerekcesi)
             && !string.IsNullOrWhiteSpace(kaynak.RedGerekcesi))
             hedef.RedGerekcesi = kaynak.RedGerekcesi;
+
+        // Onay geri alındıysa stale Onaylandı alanlarını geri yapıştırma.
+        if (OnayGeriAlinmisMi(hedef))
+            return;
+
         if (hedef.OnaylananTeklifId is null && kaynak.OnaylananTeklifId is { } id)
             hedef.OnaylananTeklifId = id;
         if (string.IsNullOrWhiteSpace(hedef.YonetimOnaylayanUid)

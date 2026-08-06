@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.104",
-    "build":  177,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.104/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.104/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.104/SatinalmaPro.apk",
-    "notes":  "2.1.104 - Teklif girilmis taleplere sonradan kalem ekleme; yeni kalemler tekliflere otomatik duser; teklif duzenlemede birim fiyat uyarisi",
+    "version":  "2.1.105",
+    "build":  178,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.105/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.105/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.105/SatinalmaPro.apk",
+    "notes":  "2.1.105 - Onay geri alma bulut birlestirmede korunur (stale Onaylandi geri yazmaz); kalem ekleme kilidi acilir",
     "zorunlu":  false
 }

@@ -127,6 +127,13 @@ public static class ProcurementTalepAdapter
                 or SatinalmaTalepDurumlari.TeklifGirisi)
             return false;
 
+        // Onay geri alındı: stale «approved» Durum'u tekrar Onaylandı'ya çekmesin.
+        if (status == ProcurementStatus.Approved
+            && !talep.YonetimOnayKilitli
+            && talep.Durum is (SatinalmaTalepDurumlari.Karsilastirma
+                or SatinalmaTalepDurumlari.TeklifGirisi))
+            return false;
+
         var durumAsama = SatinalmaPro.Shared.Models.SatinalmaTalepDurumlari.SurecAsamaSkoru(talep.Durum);
         var statusAsama = StatusAsamaSkoru(status);
         if (statusAsama <= durumAsama)
