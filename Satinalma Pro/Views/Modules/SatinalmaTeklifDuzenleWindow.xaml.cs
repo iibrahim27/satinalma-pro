@@ -374,15 +374,11 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
         if (!FormuKaydet())
             return;
 
-        DialogResult = true;
-        Close();
+        ModalDialogYardimcisi.SonucAyarla(this, true);
     }
 
-    private void Iptal_Click(object sender, RoutedEventArgs e)
-    {
-        DialogResult = false;
-        Close();
-    }
+    private void Iptal_Click(object sender, RoutedEventArgs e) =>
+        ModalDialogYardimcisi.SonucAyarla(this, false);
 
     private static string KurMetni(decimal kur) =>
         kur > 0 ? kur.ToString("G", CultureInfo.CurrentCulture) : "";

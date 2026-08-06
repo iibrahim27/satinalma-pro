@@ -178,17 +178,17 @@ public partial class YonetimTeklifIncelemeWindow : Window
                 PurchaseRequestDetailAction.ApproveQuote,
                 rol,
                 quoteId: quoteId);
-
-            _degisti = true;
-            MessageBox.Show($"{talep.TalepNo} onaylandı.", UygulamaBilgisi.Ad,
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            DialogResult = true;
-            Close();
         }
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
         }
+
+        _degisti = true;
+        MessageBox.Show($"{talep.TalepNo} onaylandı.", UygulamaBilgisi.Ad,
+            MessageBoxButton.OK, MessageBoxImage.Information);
+        ModalDialogYardimcisi.SonucAyarla(this, true);
     }
 
     private void KararButonlariniGuncelle()
@@ -558,8 +558,7 @@ public partial class YonetimTeklifIncelemeWindow : Window
         _degisti = true;
         MessageBox.Show($"{talep.TalepNo} onaylandı.", UygulamaBilgisi.Ad,
             MessageBoxButton.OK, MessageBoxImage.Information);
-        DialogResult = true;
-        Close();
+        ModalDialogYardimcisi.SonucAyarla(this, true);
     }
 
     private async void Reddet_Click(object sender, RoutedEventArgs e)
@@ -595,8 +594,7 @@ public partial class YonetimTeklifIncelemeWindow : Window
         _degisti = true;
         MessageBox.Show("Talep reddedildi.", UygulamaBilgisi.Ad,
             MessageBoxButton.OK, MessageBoxImage.Information);
-        DialogResult = true;
-        Close();
+        ModalDialogYardimcisi.SonucAyarla(this, true);
     }
 
     private async void GeriGonder_Click(object sender, RoutedEventArgs e)
@@ -627,8 +625,7 @@ public partial class YonetimTeklifIncelemeWindow : Window
         _degisti = true;
         MessageBox.Show("Teklifler revizeye gönderildi.", UygulamaBilgisi.Ad,
             MessageBoxButton.OK, MessageBoxImage.Information);
-        DialogResult = true;
-        Close();
+        ModalDialogYardimcisi.SonucAyarla(this, true);
     }
 
     private void KarsilastirmaPdf_Click(object sender, RoutedEventArgs e)
@@ -656,9 +653,6 @@ public partial class YonetimTeklifIncelemeWindow : Window
         SatinalmaPdfOlusturucu.YonetimOnayBelgesiYazdir(talep, SatinalmaDepo.Ayarlar);
     }
 
-    private void Kapat_Click(object sender, RoutedEventArgs e)
-    {
-        DialogResult = _degisti;
-        Close();
-    }
+    private void Kapat_Click(object sender, RoutedEventArgs e) =>
+        ModalDialogYardimcisi.SonucAyarla(this, _degisti);
 }

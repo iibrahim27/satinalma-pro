@@ -5,6 +5,23 @@ namespace SatinalmaPro.Helpers;
 
 public static class ModalDialogYardimcisi
 {
+    /// <summary>
+    /// ShowDialog ile açılmamış / zaten kapanmış pencerede DialogResult atmak InvalidOperationException fırlatır.
+    /// Bu durumda Close() ile güvenli kapatır.
+    /// </summary>
+    public static void SonucAyarla(Window pencere, bool? sonuc)
+    {
+        try
+        {
+            pencere.DialogResult = sonuc;
+        }
+        catch (InvalidOperationException)
+        {
+            try { pencere.Close(); }
+            catch { /* zaten kapalı */ }
+        }
+    }
+
     public static void Kayit(Window pencere)
     {
         pencere.Closed += (_, _) =>

@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.105",
-    "build":  178,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.105/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.105/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.105/SatinalmaPro.apk",
-    "notes":  "2.1.105 - Onay geri alma bulut birlestirmede korunur (stale Onaylandi geri yazmaz); kalem ekleme kilidi acilir",
+    "version":  "2.1.106",
+    "build":  179,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.106/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.106/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.106/SatinalmaPro.apk",
+    "notes":  "2.1.106 - DialogResult guvenli kapanis (onay/kalem/teklif pencerelerinde sahte hata duzeltildi)",
     "zorunlu":  false
 }

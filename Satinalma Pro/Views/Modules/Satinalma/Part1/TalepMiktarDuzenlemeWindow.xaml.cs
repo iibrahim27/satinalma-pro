@@ -188,10 +188,11 @@ public partial class TalepMiktarDuzenlemeWindow : Window
 
         Sirala();
         _kaydedildi = true;
-        DialogResult = true;
+        ModalDialogYardimcisi.SonucAyarla(this, true);
     }
 
-    private void Vazgec_Click(object sender, RoutedEventArgs e) => Close();
+    private void Vazgec_Click(object sender, RoutedEventArgs e) =>
+        ModalDialogYardimcisi.SonucAyarla(this, false);
 
     protected override void OnClosed(EventArgs e)
     {
