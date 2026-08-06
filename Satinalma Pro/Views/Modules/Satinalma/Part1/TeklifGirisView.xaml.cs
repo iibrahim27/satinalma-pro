@@ -366,6 +366,10 @@ public partial class TeklifGirisView : UserControl
             return;
         }
 
+        // Yeni eklenen talep kalemleri teklif fiyat satırlarına düşsün.
+        SatinalmaTalepYardimcisi.TalepKalemleriniTekliflerleSenkronla(talep);
+        teklif = CanliTeklif(teklif.Id) ?? teklif;
+
         if (!TeklifPenceresiAc(teklif))
             return;
 
@@ -550,7 +554,13 @@ public partial class TeklifGirisView : UserControl
     private async void KalemDuzenle_Click(object sender, RoutedEventArgs e)
     {
         var talep = GuncelTalep();
-        if (talep is null || !KullaniciYetkileri.TalepKalemMiktarDuzenleyebilir(talep))
+        if (talep is null)
+            return;
+
+        var kalemDuzenlenebilir = KullaniciYetkileri.TalepKalemMiktarDuzenleyebilir(talep)
+            || (KullaniciYetkileri.SatinalmaTalepKalemDuzenleyebilir(talep)
+                && SatinalmaTalepYardimcisi.TalepKalemleriDuzenlenebilir(talep));
+        if (!kalemDuzenlenebilir)
             return;
 
         var pencere = new TalepMiktarDuzenlemeWindow(talep)
@@ -566,8 +576,15 @@ public partial class TeklifGirisView : UserControl
             await SatinalmaKayitYardimcisi.KaydetVeBulutaGonderAsync(talep);
             ArayuzuGuncelle();
             Degisti?.Invoke();
+
+            var fiyatsiz = talep.Teklifler?
+                .SelectMany(t => t.Fiyatlar ?? [])
+                .Count(f => f.BirimFiyat <= 0) ?? 0;
             MessageBox.Show(
-                "Kalemler güncellendi. Teklif tutarları yeniden hesaplandı.",
+                fiyatsiz > 0
+                    ? "Kalemler güncellendi; yeni kalemler tüm tekliflere eklendi.\n\n" +
+                      "Teklif listesinden «Düzenle» ile her firma için yeni kalemlerin birim fiyatını girin."
+                    : "Kalemler güncellendi. Teklif tutarları yeniden hesaplandı.",
                 UygulamaBilgisi.Ad,
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);

@@ -258,13 +258,13 @@ public static class KullaniciYetkileri
     }
 
     /// <summary>
-    /// Onay/sipariş kilidi yokken talep kalem miktarını değiştirme veya kalem silme.
+    /// Onay/sipariş kilidi yokken talep kalem miktarını değiştirme, kalem ekleme veya silme.
     /// Yönetim, Satınalma ve Admin — teklif girilmiş olsa bile (revizyon tetiklenir).
     /// </summary>
     public static bool YonetimTalepMiktarDuzenleyebilir(SatinalmaTalep talep) =>
         TalepKalemMiktarDuzenleyebilir(talep);
 
-    /// <summary>Teklif girilmiş taleplerde miktar/kalem silme (teklifler revize olur).</summary>
+    /// <summary>Teklif girilmiş taleplerde miktar/kalem ekleme/silme (teklifler revize olur).</summary>
     public static bool TalepKalemMiktarDuzenleyebilir(SatinalmaTalep talep)
     {
         if (!OturumYoneticisi.BulutAktif)

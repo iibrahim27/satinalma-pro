@@ -121,6 +121,7 @@ public static class SatinalmaTalepYardimcisi
     {
         TalepKalemleriniTekliflerleSenkronla(talep);
         Dokun(talep);
+        // Yönetim kuyruğundan çek — satınalma yeniden göndermeli (Shared: TeklifRevizyonuBaslat).
         if (talep.Durum == SatinalmaTalepDurumlari.YonetimOnayinda)
             talep.Durum = SatinalmaTalepDurumlari.Karsilastirma;
     }

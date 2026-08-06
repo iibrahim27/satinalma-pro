@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.103",
-    "build":  176,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.103/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.103/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.103/SatinalmaPro.apk",
-    "notes":  "2.1.103 - Alinan Malzeme yazarak filtre (malzeme/saha/teslim); faturaya ozel doviz kuru; raporlarda doviz birim fiyat gosterimi",
+    "version":  "2.1.104",
+    "build":  177,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.104/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.104/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.104/SatinalmaPro.apk",
+    "notes":  "2.1.104 - Teklif girilmis taleplere sonradan kalem ekleme; yeni kalemler tekliflere otomatik duser; teklif duzenlemede birim fiyat uyarisi",
     "zorunlu":  false
 }

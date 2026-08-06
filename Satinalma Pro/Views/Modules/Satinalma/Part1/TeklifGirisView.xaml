@@ -90,7 +90,7 @@
                      Foreground="#9A3412" />
         </Border>
 
-        <Expander x:Name="KalemExpander" Grid.Row="1" Header="Talep kalemleri (miktar / sil)"
+        <Expander x:Name="KalemExpander" Grid.Row="1" Header="Talep kalemleri (ekle / miktar / sil)"
                   IsExpanded="True" Margin="0,0,0,8" FontSize="12" Foreground="#102A43">
           <StackPanel>
             <DataGrid x:Name="KalemTablosu" Style="{StaticResource SatModDataGrid}"
@@ -106,7 +106,8 @@
             <StackPanel Orientation="Horizontal">
               <Button x:Name="BtnKalemDuzenlePencere" Content="Kalemleri Düzenle…"
                       Style="{StaticResource ToolbarButtonStyle}"
-                      Click="KalemDuzenle_Click" Margin="0,0,8,0" Padding="12,7" />
+                      Click="KalemDuzenle_Click" Margin="0,0,8,0" Padding="12,7"
+                      ToolTip="Miktar düzelt, kalem ekle veya sil — yeni kalemler tekliflere otomatik düşer" />
               <Button x:Name="BtnKalemSil" Content="Seçili kalemi sil"
                       Style="{StaticResource ToolbarButtonStyle}"
                       Click="KalemSil_Click" Padding="12,7" />

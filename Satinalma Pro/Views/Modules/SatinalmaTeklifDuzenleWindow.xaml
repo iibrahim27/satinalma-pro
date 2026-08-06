@@ -24,6 +24,12 @@
       <TextBlock Text="Firma Teklifi" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" />
       <TextBlock Text="Malzeme bazında marka, birim fiyat ve KDV girin" FontSize="12"
                  Foreground="{StaticResource InkMutedBrush}" Margin="0,4,0,0" />
+      <Border x:Name="FiyatsizUyariPanel" Background="#FFF7ED" BorderBrush="#F59E0B"
+              BorderThickness="1" CornerRadius="8" Padding="10,7" Margin="0,10,0,0"
+              Visibility="Collapsed">
+        <TextBlock x:Name="TxtFiyatsizUyari" TextWrapping="Wrap" FontSize="12" Foreground="#9A3412"
+                   Text="Fiyatsız kalem(ler) var — «Birim Fiyat» sütununa çift tıklayarak girin (yeni eklenen malzemeler dahil)." />
+      </Border>
     </StackPanel>
 
     <Grid Grid.Row="1" Margin="0,0,0,14">

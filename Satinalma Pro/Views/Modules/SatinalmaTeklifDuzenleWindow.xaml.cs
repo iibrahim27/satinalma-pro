@@ -35,6 +35,20 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
         SatirlariOlustur();
         FiyatGrid.ItemsSource = _satirlar;
         ToplamlariGuncelle();
+        FiyatsizUyarisiniGuncelle();
+    }
+
+    private void FiyatsizUyarisiniGuncelle()
+    {
+        if (FiyatsizUyariPanel is null)
+            return;
+
+        var adet = _satirlar.Count(s => s.BirimFiyat <= 0);
+        FiyatsizUyariPanel.Visibility = adet > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (adet > 0)
+            TxtFiyatsizUyari.Text =
+                $"{adet} kalemde birim fiyat yok. «Birim Fiyat» hücresine tıklayıp fiyat girin " +
+                "(talebe sonradan eklenen malzemeler için zorunludur).";
     }
 
     private void SatirlariOlustur()
@@ -124,7 +138,11 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
                 satir.ParaBirimi = para;
         }
 
-        Dispatcher.BeginInvoke(SatirToplamlariniGuncelle);
+        Dispatcher.BeginInvoke(() =>
+        {
+            SatirToplamlariniGuncelle();
+            FiyatsizUyarisiniGuncelle();
+        });
     }
 
     private void FiyatGrid_RowEditEnding(object sender, DataGridRowEditEndingEventArgs e)
@@ -142,6 +160,7 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
                 _hucreDuzenleniyor = false;
                 SatirToplamlariniGuncelle();
                 ToplamlariGuncelle();
+                FiyatsizUyarisiniGuncelle();
             }
             catch
             {
@@ -326,13 +345,20 @@ public partial class SatinalmaTeklifDuzenleWindow : Window
         _teklif.OdemeSekli = TxtOdeme.Text.Trim();
         _teklif.Aciklama = TxtAciklama.Text.Trim();
 
+        TeklifFiyatlariniHazirla();
         foreach (var satir in _satirlar)
         {
             var kalem = _kalemler.First(k => k.Id == satir.KalemId);
             if (satir.Miktar > 0)
                 kalem.Miktar = satir.Miktar;
 
-            var fiyat = _teklif.Fiyatlar.First(f => f.KalemId == satir.KalemId);
+            var fiyat = _teklif.Fiyatlar.FirstOrDefault(f => f.KalemId == satir.KalemId);
+            if (fiyat is null)
+            {
+                fiyat = new SatinalmaTeklifFiyati { KalemId = satir.KalemId };
+                _teklif.Fiyatlar.Add(fiyat);
+            }
+
             fiyat.Marka = satir.Marka.Trim();
             fiyat.ParaBirimi = satir.ParaBirimi;
             fiyat.BirimFiyat = satir.BirimFiyat;

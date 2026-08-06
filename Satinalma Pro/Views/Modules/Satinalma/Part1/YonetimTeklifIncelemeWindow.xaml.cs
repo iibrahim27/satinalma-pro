@@ -252,8 +252,8 @@ public partial class YonetimTeklifIncelemeWindow : Window
             _degisti = true;
             Yukle(talep);
             MessageBox.Show(
-                "Kalemler güncellendi.\nTeklif tutarları yeniden hesaplandı; talep karşılaştırma / revizyon aşamasına alındı. " +
-                "Gerekirse «Yeniden Yönetime Gönder» ile tekrar iletin.",
+                "Kalemler güncellendi.\nYeni kalemler tekliflere otomatik eklendi; birim fiyatları satınalma teklif düzenlemeden girilir.\n" +
+                "Talep karşılaştırma / revizyon aşamasına alındı. Gerekirse «Yeniden Yönetime Gönder» ile tekrar iletin.",
                 UygulamaBilgisi.Ad,
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);

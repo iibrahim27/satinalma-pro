@@ -82,7 +82,8 @@ public partial class GelenTalepDetayView : UserControl
             Yukle(_talep);
             Degisti?.Invoke();
             MessageBox.Show(
-                "Kalemler güncellendi.\nTeklif tutarları yeniden hesaplandı; yönetime gönderilmişse talep karşılaştırma / revizyon aşamasına alındı.",
+                "Kalemler güncellendi.\nYeni kalemler tekliflere otomatik eklendi; birim fiyatları teklif düzenlemeden girilir.\n" +
+                "Yönetime gönderilmişse talep karşılaştırma / revizyon aşamasına alındı.",
                 UygulamaBilgisi.Ad,
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);

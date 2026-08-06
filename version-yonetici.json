@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.56",
-    "build":  59,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.56/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.56/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.56/SatinalmaYonetici.apk",
-    "notes":  "1.0.56 - Pro 2.1.103 ile birlikte (alinan malzeme filtre/kur, raporlarda doviz)",
+    "version":  "1.0.57",
+    "build":  60,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.57/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.57/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.57/SatinalmaYonetici.apk",
+    "notes":  "1.0.57 - Pro 2.1.104 ile birlikte (talep kalem ekleme / teklif senkronu)",
     "zorunlu":  false
 }
