@@ -25,6 +25,8 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
     private readonly ModulSayfalamaYoneticisi<StokHareketKaydi> _sayimSayfalama = new();
     private readonly FiltreZamanlayici _filtreZamanlayici;
     private readonly FiltreZamanlayici _hareketFiltreZamanlayici;
+    /// <summary>Stok durumundan «Geçmiş Hareketleri» ile açılınca malzeme adına birebir filtre.</summary>
+    private string? _hareketMalzemeOdak;
     private readonly Dictionary<string, TextBlock> _stokKpiMetinleri = new(StringComparer.Ordinal);
     private string? _agacKategori;
     private string? _stokGrupAlani;
@@ -603,7 +605,7 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         var menu = new ContextMenu { PlacementTarget = sender as UIElement, Placement = PlacementMode.Bottom };
         EkleMenu(menu, "Görüntüle", () => KaydiDuzenle(kayit));
         EkleMenu(menu, "Düzenle", () => KaydiDuzenle(kayit));
-        EkleMenu(menu, "Geçmişi Göster", () => StokGecmisiGoster(kayit));
+        EkleMenu(menu, "Geçmiş Hareketleri Görüntüle", () => StokGecmisHareketleriniGoster(kayit));
         menu.Items.Add(new Separator());
         EkleMenu(menu, "Sil", () =>
         {
@@ -613,32 +615,41 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         menu.IsOpen = true;
     }
 
-    private void StokGecmisiGoster(StokKaydi kayit)
+    private void StokGecmisHareketleriniGoster(StokKaydi kayit)
     {
-        var baslik = string.IsNullOrWhiteSpace(kayit.MalzemeAdi)
-            ? "Stok kayıt özeti"
-            : $"{kayit.MalzemeAdi} — kayıt özeti";
+        var malzeme = (kayit.MalzemeAdi ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(malzeme))
+            return;
 
-        var pencere = new ErpKayitGecmisiWindow(baslik, StokGecmisiSatirlari(kayit))
+        // Hareket sekmesi yoksa (rol kısıtı) diyalogda listele
+        if (BtnNavHareket.Visibility != Visibility.Visible)
         {
-            Owner = Window.GetWindow(this)
-        };
-        pencere.ShowDialog();
-    }
+            var satirlar = ModulVeriDeposu.StokHareketleri
+                .Where(h => h.MalzemeAdi.Equals(malzeme, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(h => ModulSayfalamaYardimcisi.TarihSira(h.Tarih))
+                .Select(h =>
+                    $"{h.Tarih} · {h.HareketTipi} · {h.Miktar:N2} {h.Birim}" +
+                    (string.IsNullOrWhiteSpace(h.BelgeNo) ? "" : $" · Belge: {h.BelgeNo}") +
+                    (string.IsNullOrWhiteSpace(h.DepoSaha) ? "" : $" · {h.DepoSaha}") +
+                    (string.IsNullOrWhiteSpace(h.TeslimEdilen) ? "" : $" · → {h.TeslimEdilen}"))
+                .DefaultIfEmpty("Bu malzeme için giriş/çıkış hareketi bulunamadı.")
+                .ToList();
 
-    private static IEnumerable<string> StokGecmisiSatirlari(StokKaydi kayit)
-    {
-        yield return $"Stok adı: {kayit.MalzemeAdi}";
-        yield return $"Kategori: {kayit.Kategori}";
-        yield return $"Depo / saha: {kayit.DepoSaha}";
-        yield return $"Mevcut miktar: {kayit.MevcutMiktar:N2} {kayit.Birim}";
-        yield return $"Minimum stok: {kayit.MinimumStok:N2}";
-        yield return $"Birim maliyet: ₺{kayit.BirimMaliyet:N2}";
-        yield return $"Toplam değer: ₺{kayit.ToplamDeger:N2}";
-        yield return $"Durum: {kayit.DurumRozetMetin}";
-        yield return $"Son güncelleme: {kayit.SonGuncelleme}";
-        if (!string.IsNullOrWhiteSpace(kayit.Aciklama))
-            yield return $"Açıklama: {kayit.Aciklama}";
+            new ErpKayitGecmisiWindow($"{malzeme} — geçmiş hareketler", satirlar)
+            {
+                Owner = Window.GetWindow(this)
+            }.ShowDialog();
+            return;
+        }
+
+        _hareketMalzemeOdak = malzeme;
+        NavHareket_Click(BtnNavHareket, new RoutedEventArgs());
+        TxtHareketAra.Text = malzeme;
+        if (CmbHareketTip.Items.Count > 0)
+            CmbHareketTip.SelectedIndex = 0;
+        if (CmbHareketDepo.Items.Count > 0)
+            CmbHareketDepo.SelectedIndex = 0;
+        HareketFiltreYenile();
     }
 
     private static void EkleMenu(ContextMenu menu, string baslik, Action action)
@@ -698,13 +709,20 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
     private void HareketFiltreDegisti(object sender, RoutedEventArgs e)
     {
         if (sender is TextBox)
+        {
+            var yazilan = TxtHareketAra.Text.Trim();
+            if (_hareketMalzemeOdak is not null &&
+                !yazilan.Equals(_hareketMalzemeOdak, StringComparison.OrdinalIgnoreCase))
+                _hareketMalzemeOdak = null;
             _hareketFiltreZamanlayici.Tetikle();
+        }
         else
             HareketFiltreYenile();
     }
 
     private void HareketFiltreTemizle_Click(object sender, RoutedEventArgs e)
     {
+        _hareketMalzemeOdak = null;
         TxtHareketAra.Text = "";
         CmbHareketTip.SelectedIndex = 0;
         CmbHareketDepo.SelectedIndex = 0;
@@ -724,12 +742,21 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         if (item is not StokHareketKaydi h)
             return false;
 
-        var arama = TxtHareketAra.Text.Trim();
-        if (!string.IsNullOrEmpty(arama))
+        // Stok durumundan gelen odak: yalnızca o malzemenin tüm giriş/çıkış kayıtları
+        if (!string.IsNullOrWhiteSpace(_hareketMalzemeOdak))
         {
-            var metin = string.Join(" ", h.MalzemeAdi, h.BelgeNo, h.IslemYapan, h.Aciklama, h.HareketTipi, h.DepoSaha);
-            if (!metin.Contains(arama, StringComparison.OrdinalIgnoreCase))
+            if (!h.MalzemeAdi.Equals(_hareketMalzemeOdak, StringComparison.OrdinalIgnoreCase))
                 return false;
+        }
+        else
+        {
+            var arama = TxtHareketAra.Text.Trim();
+            if (!string.IsNullOrEmpty(arama))
+            {
+                var metin = string.Join(" ", h.MalzemeAdi, h.BelgeNo, h.IslemYapan, h.Aciklama, h.HareketTipi, h.DepoSaha);
+                if (!metin.Contains(arama, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
         }
 
         var tip = ComboDegeri(CmbHareketTip);

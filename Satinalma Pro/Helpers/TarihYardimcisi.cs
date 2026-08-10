@@ -53,6 +53,18 @@ public static class TarihYardimcisi
         return dt.ToString("dd.MM.yyyy", Tr);
     }
 
+    /// <summary>Tarih+saat varsa saati korur (stok SonGuncelleme damgası).</summary>
+    public static string NormalizeDateTime(string? tarih)
+    {
+        if (!TryParse(tarih, out var dt))
+            return tarih?.Trim() ?? "";
+
+        if (dt.TimeOfDay.TotalSeconds > 0)
+            return dt.ToString("dd.MM.yyyy HH:mm:ss", Tr);
+
+        return dt.ToString("dd.MM.yyyy", Tr);
+    }
+
     public static bool Aralikta(string? tarih, DateTime? baslangic, DateTime? bitis)
     {
         if (baslangic is null && bitis is null)

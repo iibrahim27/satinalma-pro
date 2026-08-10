@@ -552,7 +552,7 @@ public static class ModulVeriDeposu
         var bulut = JsonSerializer.Deserialize<List<StokKaydi>>(json, JsonSecenekleri) ?? [];
         if (!birlestir || _sifirlamaAktifMi())
         {
-            KoleksiyonuYenile(Stok, bulut);
+            KoleksiyonuYenile(Stok, StokKayitlariniBirlestir(bulut, []));
             return;
         }
 
@@ -573,9 +573,13 @@ public static class ModulVeriDeposu
 
     private static bool _sifirlamaAktifMi() => BulutVeriSenkronu.SifirlamaAktif;
 
+    /// <summary>Malzeme+depo tek satır — kategori farkıyla çoğalan hayalet stokları temizler.</summary>
+    public static string StokKimlikAnahtari(StokKaydi kayit) =>
+        $"{kayit.MalzemeAdi?.Trim()}|{kayit.DepoSaha?.Trim()}";
+
     /// <summary>
     /// Malzeme+depo anahtarına göre birleştir.
-    /// Daha yeni SonGuncelleme kazanır; eşitlikte yerel (son eklenen) kazanır.
+    /// Daha yeni SonGuncelleme kazanır; eşitlikte yerel kazanır.
     /// Miktar karşılaştırması yok — çıkış (düşük miktar) geri alınmasın.
     /// </summary>
     public static List<StokKaydi> StokKayitlariniBirlestir(
@@ -584,7 +588,10 @@ public static class ModulVeriDeposu
         var sozluk = new Dictionary<string, StokKaydi>(StringComparer.OrdinalIgnoreCase);
         void Ekle(StokKaydi kayit, bool yerelKayit)
         {
-            var anahtar = $"{kayit.MalzemeAdi}|{kayit.DepoSaha}";
+            var anahtar = StokKimlikAnahtari(kayit);
+            if (string.IsNullOrWhiteSpace(anahtar) || anahtar == "|")
+                return;
+
             if (!sozluk.TryGetValue(anahtar, out var mevcut))
             {
                 sozluk[anahtar] = kayit;
@@ -603,6 +610,19 @@ public static class ModulVeriDeposu
             .OrderBy(s => s.MalzemeAdi, StringComparer.OrdinalIgnoreCase)
             .ThenBy(s => s.DepoSaha, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    /// <summary>Aynı malzeme+depo için tek kayıt bırak (en yeni SonGuncelleme).</summary>
+    public static void StokTekillestir()
+    {
+        if (Stok.Count <= 1)
+            return;
+
+        var birlesik = StokKayitlariniBirlestir(Stok.ToList(), []);
+        if (birlesik.Count == Stok.Count)
+            return;
+
+        KoleksiyonuYenile(Stok, birlesik);
     }
 
     public static List<StokHareketKaydi> StokHareketleriniBirlestir(
@@ -659,7 +679,8 @@ public static class ModulVeriDeposu
             k.Tarih = TarihYardimcisi.Normalize(k.Tarih);
         foreach (var h in StokHareketleri)
             h.Tarih = TarihYardimcisi.Normalize(h.Tarih);
+        // SonGuncelleme saat damgasını koru — çıkış/giriş birleştirmesi için gerekli.
         foreach (var s in Stok)
-            s.SonGuncelleme = TarihYardimcisi.Normalize(s.SonGuncelleme);
+            s.SonGuncelleme = TarihYardimcisi.NormalizeDateTime(s.SonGuncelleme);
     }
 }

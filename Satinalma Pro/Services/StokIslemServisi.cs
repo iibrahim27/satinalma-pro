@@ -1,3 +1,4 @@
+using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 
 namespace SatinalmaPro.Services;
@@ -38,6 +39,7 @@ public static class StokIslemServisi
             stok.BirimMaliyet = birimMaliyet;
         stok.SonGuncelleme = Simdi();
         stok.ToplamDegerHesapla();
+        AyniMalzemeDepoTekBirak(stok);
 
         var hareket = new StokHareketKaydi
         {
@@ -71,6 +73,7 @@ public static class StokIslemServisi
         stok.MevcutMiktar -= miktar;
         stok.SonGuncelleme = Simdi();
         stok.ToplamDegerHesapla();
+        AyniMalzemeDepoTekBirak(stok);
 
         var hareket = new StokHareketKaydi
         {
@@ -100,6 +103,7 @@ public static class StokIslemServisi
         stok.MevcutMiktar = sayimMiktar;
         stok.SonGuncelleme = Simdi();
         stok.ToplamDegerHesapla();
+        AyniMalzemeDepoTekBirak(stok);
 
         var hareket = new StokHareketKaydi
         {
@@ -155,8 +159,21 @@ public static class StokIslemServisi
     /// </summary>
     private static void StokDegisikliginiKaydet()
     {
+        ModulVeriDeposu.StokTekillestir();
         ModulVeriDeposu.KaydetStok();
         ModulVeriDeposu.KaydetStokHareketleri();
+    }
+
+    /// <summary>Kategori farkıyla oluşmuş çift satırları sil; güncellenen kaydı bırak.</summary>
+    private static void AyniMalzemeDepoTekBirak(StokKaydi keeper)
+    {
+        var silinecek = ModulVeriDeposu.Stok
+            .Where(s => !ReferenceEquals(s, keeper)
+                        && s.MalzemeAdi.Equals(keeper.MalzemeAdi, StringComparison.OrdinalIgnoreCase)
+                        && s.DepoSaha.Equals(keeper.DepoSaha, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        foreach (var s in silinecek)
+            ModulVeriDeposu.Stok.Remove(s);
     }
 
     public static void HareketGuncelle(
@@ -226,7 +243,10 @@ public static class StokIslemServisi
         if (!string.IsNullOrWhiteSpace(kategori))
             liste = liste.Where(s => s.Kategori.Equals(kategori.Trim(), StringComparison.OrdinalIgnoreCase));
 
-        return liste.OrderByDescending(s => s.SonGuncelleme).FirstOrDefault();
+        return liste
+            .OrderByDescending(s => s.MevcutMiktar)
+            .ThenByDescending(s => TarihYardimcisi.SiralamaDegeri(s.SonGuncelleme))
+            .FirstOrDefault();
     }
 
     /// <summary>Malzeme adına göre kategori — stok / alınan malzeme kaydından; yoksa «Malzeme».</summary>

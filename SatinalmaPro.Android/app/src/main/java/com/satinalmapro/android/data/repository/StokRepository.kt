@@ -41,11 +41,12 @@ class StokRepository(
             val list = if (json.isNullOrBlank()) emptyList()
             else runCatching { gson.fromJson<List<StokKaydi>>(json, stokType) ?: emptyList() }
                 .getOrDefault(emptyList())
-            if (tid.isNotBlank()) offlineCache?.saveStok(tid, list)
-            list
+            val tekil = tekillestirStok(list, tercihYerel = false)
+            if (tid.isNotBlank()) offlineCache?.saveStok(tid, tekil)
+            tekil
         } catch (e: Exception) {
             if (NetworkError.isNetworkRelated(e) && tid.isNotBlank()) {
-                offlineCache?.loadStok(tid) ?: emptyList()
+                tekillestirStok(offlineCache?.loadStok(tid) ?: emptyList(), tercihYerel = true)
             } else {
                 throw e
             }
@@ -85,13 +86,30 @@ class StokRepository(
             "d.M.yyyy HH:mm", "d.M.yyyy", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd"
         )
         for (f in formatlar) {
-            runCatching {
-                val sdf = SimpleDateFormat(f, Locale("tr", "TR"))
-                sdf.isLenient = false
-                return sdf.parse(temiz)?.time ?: 0L
-            }
+            val t = runCatching {
+                SimpleDateFormat(f, Locale("tr", "TR")).apply { isLenient = false }.parse(temiz)?.time
+            }.getOrNull()
+            if (t != null) return t
         }
         return 0L
+    }
+
+    /** Aynı malzeme+depo için tek kayıt (en yeni damga; eşitlikte tercih edilen taraf). */
+    private fun tekillestirStok(liste: List<StokKaydi>, tercihYerel: Boolean = true): List<StokKaydi> {
+        val map = linkedMapOf<String, StokKaydi>()
+        for (s in liste) {
+            val key = stokAnahtar(s)
+            if (key == "|") continue
+            val mevcut = map[key]
+            if (mevcut == null) {
+                map[key] = s
+                continue
+            }
+            val tYeni = stokTarihMs(s.sonGuncelleme)
+            val tEski = stokTarihMs(mevcut.sonGuncelleme)
+            if (tYeni > tEski || (tYeni == tEski && tercihYerel)) map[key] = s
+        }
+        return map.values.toList()
     }
 
     /**
@@ -101,18 +119,28 @@ class StokRepository(
      */
     private fun birlestirStok(yerel: List<StokKaydi>, bulut: List<StokKaydi>): List<StokKaydi> {
         val map = linkedMapOf<String, StokKaydi>()
-        fun yerelDahaGuncelVeyaEsit(yerelKayit: StokKaydi, bulutKayit: StokKaydi): Boolean {
-            val tY = stokTarihMs(yerelKayit.sonGuncelleme)
-            val tB = stokTarihMs(bulutKayit.sonGuncelleme)
-            return tY >= tB
+        fun dahaGuncel(aday: StokKaydi, mevcut: StokKaydi, yerelAday: Boolean): Boolean {
+            val tA = stokTarihMs(aday.sonGuncelleme)
+            val tM = stokTarihMs(mevcut.sonGuncelleme)
+            return tA > tM || (tA == tM && yerelAday)
         }
-        for (s in bulut) map[stokAnahtar(s)] = s
-        for (s in yerel) {
+        for (s in tekillestirStok(bulut, tercihYerel = false)) {
+            map[stokAnahtar(s)] = s
+        }
+        for (s in tekillestirStok(yerel, tercihYerel = true)) {
             val key = stokAnahtar(s)
             val mevcut = map[key]
-            if (mevcut == null || yerelDahaGuncelVeyaEsit(s, mevcut)) map[key] = s
+            if (mevcut == null || dahaGuncel(s, mevcut, yerelAday = true)) map[key] = s
         }
         return map.values.toList()
+    }
+
+    private fun ayniMalzemeDepoTekBirak(list: MutableList<StokKaydi>, keeper: StokKaydi) {
+        list.removeAll {
+            it !== keeper &&
+                it.malzemeAdi.equals(keeper.malzemeAdi, true) &&
+                it.depoSaha.equals(keeper.depoSaha, true)
+        }
     }
 
     private fun birlestirHareket(yerel: List<StokHareket>, bulut: List<StokHareket>): List<StokHareket> {
@@ -125,14 +153,15 @@ class StokRepository(
     private suspend fun saveStok(list: List<StokKaydi>) {
         val uid = auth.uid ?: throw IllegalStateException("Oturum gerekli")
         val tid = tenantId()
-        if (tid.isNotBlank()) offlineCache?.saveStok(tid, list)
+        val temizYerel = tekillestirStok(list, tercihYerel = true)
+        if (tid.isNotBlank()) offlineCache?.saveStok(tid, temizYerel)
         try {
             val bulut = runCatching {
                 val json = firestore.readDocumentJson("veri/stok")
                 if (json.isNullOrBlank()) emptyList()
                 else gson.fromJson<List<StokKaydi>>(json, stokType) ?: emptyList()
             }.getOrDefault(emptyList())
-            val birlesik = if (bulut.isEmpty()) list else birlestirStok(list, bulut)
+            val birlesik = if (bulut.isEmpty()) temizYerel else birlestirStok(temizYerel, bulut)
             firestore.writeDocumentJson("veri/stok", gson.toJson(birlesik), uid)
             if (tid.isNotBlank()) offlineCache?.saveStok(tid, birlesik)
             lastStokCloudOk = true
@@ -290,6 +319,7 @@ class StokRepository(
             toplamDeger = (stok.mevcutMiktar + miktar) * (if (birimMaliyet > 0) birimMaliyet else stok.birimMaliyet)
         )
         stokList[index] = guncel
+        ayniMalzemeDepoTekBirak(stokList, guncel)
         hareketList.add(
             StokHareket(
                 id = UUID.randomUUID().toString(),
@@ -334,6 +364,7 @@ class StokRepository(
             toplamDeger = (stok.mevcutMiktar - miktar) * stok.birimMaliyet
         )
         stokList[index] = guncel
+        ayniMalzemeDepoTekBirak(stokList, guncel)
         hareketList.add(
             StokHareket(
                 id = UUID.randomUUID().toString(),
@@ -371,6 +402,7 @@ class StokRepository(
             toplamDeger = sayimMiktari * stok.birimMaliyet
         )
         stokList[index] = guncel
+        ayniMalzemeDepoTekBirak(stokList, guncel)
         hareketList.add(
             StokHareket(
                 id = UUID.randomUUID().toString(),
@@ -428,6 +460,7 @@ class StokRepository(
                 toplamDeger = (stok.mevcutMiktar + satir.miktar) * birimMaliyet
             )
             stokList[index] = guncel
+            ayniMalzemeDepoTekBirak(stokList, guncel)
             hareketList.add(
                 StokHareket(
                     id = UUID.randomUUID().toString(),
@@ -479,6 +512,7 @@ class StokRepository(
                 toplamDeger = (stok.mevcutMiktar - satir.miktar) * stok.birimMaliyet
             )
             stokList[index] = guncel
+            ayniMalzemeDepoTekBirak(stokList, guncel)
             hareketList.add(
                 StokHareket(
                     id = UUID.randomUUID().toString(),
