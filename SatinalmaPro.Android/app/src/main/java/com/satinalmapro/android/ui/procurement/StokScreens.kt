@@ -323,7 +323,8 @@ fun StokCikisScreen(viewModel: AppViewModel) {
     var malzeme by remember { mutableStateOf("") }
     var miktar by remember { mutableStateOf("") }
     val satirlar = remember { mutableStateListOf<StokRepository.CikisSatir>() }
-    val oneriler = remember(malzeme) { viewModel.stokMalzemeOnerileri(malzeme, sadeceMevcut = true) }
+    val oneriler = remember(malzeme) { viewModel.stokCikisOnerileri(malzeme) }
+    val mevcutStok = remember(malzeme) { viewModel.stokMevcutBul(malzeme) }
 
     Column(
         modifier = Modifier
@@ -333,7 +334,7 @@ fun StokCikisScreen(viewModel: AppViewModel) {
             .padding(horizontal = MetrikSpace.screen, vertical = MetrikSpace.lg),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StokHeader(title = "Stok Çıkışı", subtitle = "Belgeye birden fazla satır ekleyin")
+        StokHeader(title = "Stok Çıkışı", subtitle = "Belgeye birden fazla satır ekleyin — kategori stoktan otomatik gelir")
         if (!canWrite) {
             Text("Bu rol stok çıkışı yapamaz.", color = MetrikLight.Danger)
         } else {
@@ -351,11 +352,11 @@ fun StokCikisScreen(viewModel: AppViewModel) {
                 ) {
                     oneriler.take(6).forEach { o ->
                         Text(
-                            o,
+                            "${o.malzemeAdi} (${formatQty(o.mevcutMiktar, o.birim)})",
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(MetrikLight.Surface)
-                                .clickable { malzeme = o }
+                                .clickable { malzeme = o.malzemeAdi }
                                 .padding(horizontal = 10.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelMedium,
                             color = MetrikLight.TextSecondary,
@@ -364,6 +365,21 @@ fun StokCikisScreen(viewModel: AppViewModel) {
                     }
                 }
             }
+            if (mevcutStok != null) {
+                Text(
+                    "Mevcut stok: ${formatQty(mevcutStok.mevcutMiktar, mevcutStok.birim)}" +
+                        (if (mevcutStok.kategori.isNotBlank()) " · ${mevcutStok.kategori}" else ""),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MetrikLight.Primary
+                )
+            } else if (malzeme.isNotBlank()) {
+                Text(
+                    "Bu malzeme için mevcut stok bulunamadı",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MetrikLight.Danger
+                )
+            }
             MetrikField(
                 miktar, { miktar = it }, "Miktar",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
@@ -371,12 +387,16 @@ fun StokCikisScreen(viewModel: AppViewModel) {
             OutlinedButton(
                 onClick = {
                     val m = miktar.replace(',', '.').toDoubleOrNull() ?: 0.0
-                    if (malzeme.isBlank() || m <= 0) return@OutlinedButton
-                    satirlar.add(StokRepository.CikisSatir(malzeme = malzeme.trim(), miktar = m))
+                    val stok = viewModel.stokMevcutBul(malzeme) ?: return@OutlinedButton
+                    if (m <= 0 || m > stok.mevcutMiktar) return@OutlinedButton
+                    satirlar.add(StokRepository.CikisSatir(malzeme = stok.malzemeAdi, miktar = m))
                     malzeme = ""
                     miktar = ""
                 },
-                enabled = malzeme.isNotBlank() && miktar.isNotBlank(),
+                enabled = mevcutStok != null
+                    && (miktar.replace(',', '.').toDoubleOrNull() ?: 0.0).let { m ->
+                        m > 0 && m <= mevcutStok.mevcutMiktar
+                    },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))

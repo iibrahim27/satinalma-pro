@@ -263,8 +263,13 @@
           <DockPanel LastChildFill="False">
             <TextBlock Text="Filtreler" FontSize="13" FontWeight="SemiBold" Foreground="#102A43"
                        VerticalAlignment="Center" DockPanel.Dock="Left" />
-            <Button Style="{StaticResource ToolbarButtonStyle}" Content="Temizle" Click="HareketFiltreTemizle_Click"
-                    DockPanel.Dock="Right" Padding="14,7" />
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+              <Button Style="{StaticResource PrimaryToolbarButtonStyle}" Content="Fiş Yazdır"
+                      Click="HareketFisYazdir_Click" Padding="14,7" Margin="0,0,8,0"
+                      ToolTip="Seçili giriş/çıkış belgesinin fişini yeniden yazdırır" />
+              <Button Style="{StaticResource ToolbarButtonStyle}" Content="Temizle" Click="HareketFiltreTemizle_Click"
+                      Padding="14,7" />
+            </StackPanel>
           </DockPanel>
           <WrapPanel Grid.Row="1" Margin="0,12,0,0">
             <StackPanel Width="200" Margin="0,0,12,8">
@@ -290,7 +295,14 @@
             <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
           <DataGrid x:Name="HareketGrid" Style="{StaticResource ErpPremiumGrid}" BorderThickness="0" IsReadOnly="True"
-                    MouseDoubleClick="HareketGrid_MouseDoubleClick" PreviewMouseRightButtonDown="HareketGrid_PreviewMouseRightButtonDown">
+                    MouseDoubleClick="HareketGrid_MouseDoubleClick"
+                    PreviewMouseRightButtonDown="HareketGrid_PreviewMouseRightButtonDown">
+            <DataGrid.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="Fiş Yazdır" Click="HareketFisYazdir_Click" />
+                <MenuItem Header="Düzenle" Click="HareketDuzenle_Click" />
+              </ContextMenu>
+            </DataGrid.ContextMenu>
             <DataGrid.Columns>
               <DataGridTextColumn Header="Tarih" Binding="{Binding Tarih}" Width="90" />
               <DataGridTextColumn Header="Tip" Binding="{Binding HareketTipi}" Width="70" />

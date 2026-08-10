@@ -12,8 +12,25 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function userDoc() {
+    // SaaS: kullanıcı tenants/{tenantId}/users/{uid}; token.tenantId varsa onu kullan.
+    function hasTenantClaim() {
+      return isAuthenticated()
+        && request.auth.token.tenantId is string
+        && request.auth.token.tenantId.size() > 0;
+    }
+
+    function tenantUserDoc() {
+      return firestore.get(
+        /databases/(default)/documents/tenants/$(request.auth.token.tenantId)/users/$(request.auth.uid)
+      );
+    }
+
+    function legacyUserDoc() {
       return firestore.get(/databases/(default)/documents/users/$(request.auth.uid));
+    }
+
+    function userDoc() {
+      return hasTenantClaim() ? tenantUserDoc() : legacyUserDoc();
     }
 
     function userRole() {
@@ -21,8 +38,14 @@ service firebase.storage {
     }
 
     function isActiveUser() {
-      return isAuthenticated()
-        && userDoc().data.aktif == true;
+      return isAuthenticated() && (
+        (hasTenantClaim()
+          && firestore.exists(/databases/(default)/documents/tenants/$(request.auth.token.tenantId)/users/$(request.auth.uid))
+          && tenantUserDoc().data.aktif != false)
+        || (!hasTenantClaim()
+          && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+          && legacyUserDoc().data.aktif == true)
+      );
     }
 
     function isAdmin() {

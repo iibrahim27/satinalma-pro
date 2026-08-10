@@ -25,8 +25,10 @@ import com.satinalmapro.android.core.roles.OnaylananMalzemeOlusturucu
 import com.satinalmapro.android.core.roles.TalepKuyrugu
 import com.satinalmapro.android.core.roles.TalepYetkileri
 import com.satinalmapro.android.core.saas.TenantSession
+import com.satinalmapro.android.core.NetworkError
 import com.satinalmapro.android.data.firebase.FirebaseAuthClient
 import com.satinalmapro.android.data.firebase.FirestoreClient
+import com.satinalmapro.android.data.local.OfflineCache
 import com.satinalmapro.shared.filter.ProcurementPriority
 import com.satinalmapro.shared.filter.ProcurementStatus
 import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailAction
@@ -41,11 +43,30 @@ import java.util.UUID
 class TalepRepository(
     private val firestore: FirestoreClient,
     private val auth: FirebaseAuthClient,
-    private val bildirimler: BildirimRepository? = null
+    private val bildirimler: BildirimRepository? = null,
+    private val offlineCache: OfflineCache? = null
 ) {
     private val gson = JsonConfig.gson
     private val listType = object : TypeToken<List<TalepItem>>() {}.type
     private val ayarType = object : TypeToken<SatinalmaAyarlar>() {}.type
+
+    private fun tenantId(): String = TenantSession.tenantId().orEmpty()
+
+    /** Id bazlı birleştirme — daha yüksek guncellemeUtc kazanır. */
+    fun birlestirTalepler(yerel: List<TalepItem>, bulut: List<TalepItem>): List<TalepItem> {
+        val map = linkedMapOf<String, TalepItem>()
+        for (t in bulut) {
+            val key = t.id.trim().lowercase()
+            if (key.isNotBlank()) map[key] = t
+        }
+        for (t in yerel) {
+            val key = t.id.trim().lowercase()
+            if (key.isBlank()) continue
+            val mevcut = map[key]
+            if (mevcut == null || t.guncellemeUtc >= mevcut.guncellemeUtc) map[key] = t
+        }
+        return map.values.toList()
+    }
 
     /** Status ileri aşamadaysa Durum yükselt; sonra Durum→Status hizala. */
     private fun TalepItem.withSyncedStatus(): TalepItem {
@@ -164,12 +185,23 @@ class TalepRepository(
      * Boş listeyi "başarısız okuma" sanmayın; yalnızca gerçek `"[]"` için empty döner.
      */
     suspend fun loadTalepler(): List<TalepItem> {
+        val tid = tenantId()
+        if (tid.isNotBlank() && offlineCache?.hasTaleplerPending(tid) == true) {
+            return offlineCache.loadTalepler(tid)
+        }
         val ayarlar = loadAyarlar()
         val silinen = runCatching {
             ayarlar.silinenTalepIdleri.map { it.lowercase() }.toSet()
         }.getOrDefault(emptySet())
-        val json = firestore.readDocumentJson("veri/satinalma_talepler")
-            ?: throw IllegalStateException("Talep dokümanı okunamadı (boş/geçici yanıt)")
+        val json = try {
+            firestore.readDocumentJson("veri/satinalma_talepler")
+                ?: throw IllegalStateException("Talep dokümanı okunamadı (boş/geçici yanıt)")
+        } catch (e: Exception) {
+            if (NetworkError.isNetworkRelated(e) && tid.isNotBlank()) {
+                return offlineCache?.loadTalepler(tid) ?: throw e
+            }
+            throw e
+        }
         val raw = runCatching {
             gson.fromJson<List<TalepItem?>>(json, listType) ?: emptyList()
         }.getOrElse { ex ->
@@ -189,6 +221,7 @@ class TalepRepository(
         }
         // Okuma sırasında buluta yazma yok: sıfırlama sonrası eski listeyi geri yükler.
         val (synced, _) = syncStatuses(postReset)
+        if (tid.isNotBlank()) offlineCache?.saveTalepler(tid, synced)
         return synced
     }
 
@@ -224,6 +257,7 @@ class TalepRepository(
 
     suspend fun saveTalepler(talepler: List<TalepItem>) {
         val uid = auth.uid ?: throw IllegalStateException("Oturum gerekli")
+        val tid = tenantId()
         var (synced, _) = syncStatuses(talepler)
 
         // Sıfırlama sonrası: eski (pre-reset) talepleri asla buluta geri yazma.
@@ -244,8 +278,58 @@ class TalepRepository(
             synced = keep
         }
 
+        // Yazmadan önce buluttaki taze liste ile birleştir (masaüstü yarışını koru).
+        val bulutTaze = runCatching {
+            val raw = firestore.readDocumentJson("veri/satinalma_talepler") ?: return@runCatching emptyList()
+            (gson.fromJson<List<TalepItem?>>(raw, listType) ?: emptyList())
+                .mapNotNull { runCatching { it?.normalized() }.getOrNull() }
+        }.getOrDefault(emptyList())
+        if (bulutTaze.isNotEmpty()) {
+            synced = birlestirTalepler(synced, bulutTaze)
+            if (resetUtc > 0L) synced = synced.filter { it.guncellemeUtc >= resetUtc }
+        }
+
+        if (tid.isNotBlank()) offlineCache?.saveTalepler(tid, synced)
+
         val json = gson.toJson(synced)
-        firestore.writeDocumentJson("veri/satinalma_talepler", json, uid)
+        try {
+            firestore.writeDocumentJson("veri/satinalma_talepler", json, uid)
+            if (tid.isNotBlank()) offlineCache?.markTaleplerPending(tid, false)
+        } catch (e: Exception) {
+            if (NetworkError.isNetworkRelated(e) && tid.isNotBlank()) {
+                offlineCache?.markTaleplerPending(tid, true)
+                BildirimLog.w("SYNC", "Talep çevrimdışı kuyruğa alındı")
+                return
+            }
+            throw e
+        }
+    }
+
+    /** Bekleyen talep yazmalarını Firebase'e gönder. */
+    suspend fun flushPendingWrites(): Boolean {
+        val tid = tenantId()
+        val cache = offlineCache ?: return true
+        if (tid.isBlank() || !cache.hasTaleplerPending(tid)) return true
+        val uid = auth.uid ?: return false
+        val yerel = cache.loadTalepler(tid)
+        return try {
+            val bulutRaw = firestore.readDocumentJson("veri/satinalma_talepler")
+            val bulut = if (bulutRaw.isNullOrBlank()) emptyList()
+            else (gson.fromJson<List<TalepItem?>>(bulutRaw, listType) ?: emptyList())
+                .mapNotNull { runCatching { it?.normalized() }.getOrNull() }
+            val birlesik = birlestirTalepler(yerel, bulut)
+            firestore.writeDocumentJson("veri/satinalma_talepler", gson.toJson(birlesik), uid)
+            cache.saveTalepler(tid, birlesik)
+            cache.markTaleplerPending(tid, false)
+            true
+        } catch (e: Exception) {
+            if (NetworkError.isNetworkRelated(e)) false else throw e
+        }
+    }
+
+    fun hasPendingWrites(): Boolean {
+        val tid = tenantId()
+        return tid.isNotBlank() && offlineCache?.hasTaleplerPending(tid) == true
     }
 
     suspend fun saveAyarlar(ayarlar: SatinalmaAyarlar) {

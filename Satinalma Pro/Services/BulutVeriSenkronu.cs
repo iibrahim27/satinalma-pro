@@ -104,6 +104,16 @@ public static class BulutVeriSenkronu
         if (string.IsNullOrWhiteSpace(senkronTenantId))
             return;
 
+        // Önce bekleyen yerel yazmaları gönder — aksi halde çekme yereli ezer.
+        try
+        {
+            await BulutaGonderAsync(iptal).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            HataGunlugu.Kaydet(ex, "BulutVeriSenkronu.IkiliSenkron.OnceGonder");
+        }
+
         _senkronYukleniyor = true;
         var toplam = BelgeHaritasi.Count + 1;
         var tamamlanan = 0;
@@ -117,6 +127,16 @@ public static class BulutVeriSenkronu
                 iptal.ThrowIfCancellationRequested();
                 if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
                     return;
+
+                // Hâlâ kuyrukta olan anahtarı buluttan ezme.
+                lock (BekleyenKayitlar)
+                {
+                    if (BekleyenKayitlar.Contains(anahtar))
+                    {
+                        tamamlanan++;
+                        continue;
+                    }
+                }
 
                 ilerleme?.Report((tamamlanan, toplam, SenkronAdimMetni(anahtar)));
 
@@ -477,6 +497,10 @@ public static class BulutVeriSenkronu
             {
                 json = await AyarlariBulutaHazirlaAsync(iptal);
             }
+            else if (anahtar is ("stok" or "stok_hareket") && !bilincliBos)
+            {
+                json = await StokBelgesiniBulutaHazirlaAsync(anahtar, json, yol, iptal);
+            }
             else if (!bilincliBos &&
                      await BosListeBulutuEzmesinAsync(anahtar, json, yol, iptal).ConfigureAwait(false))
             {
@@ -649,6 +673,13 @@ public static class BulutVeriSenkronu
                 return;
             }
 
+            // İnternet geri gelince bekleyen stok/yerel yazmaları önce gönder.
+            bool bekleyenVar;
+            lock (BekleyenKayitlar)
+                bekleyenVar = BekleyenKayitlar.Count > 0;
+            if (bekleyenVar)
+                await BulutaGonderAsync();
+
             var tamTarama = ++_yoklamaDongusu % 5 == 0;
             var anahtarlar = tamTarama
                 ? BelgeHaritasi.Keys.ToArray()
@@ -706,6 +737,13 @@ public static class BulutVeriSenkronu
             {
                 if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
                     return;
+
+                // Yerelde bekleyen yazma varken buluttaki eski belgeyi uygulama (stok kaybı).
+                lock (BekleyenKayitlar)
+                {
+                    if (BekleyenKayitlar.Contains(anahtar))
+                        continue;
+                }
 
                 if (!BelgeHaritasi.TryGetValue(anahtar, out var relYol))
                     continue;
@@ -877,9 +915,26 @@ public static class BulutVeriSenkronu
         await AnahtarBulutaGonderAsync("stok_hareket", iptal);
     }
 
+    /// <summary>
+    /// Stok giriş/çıkış/sayım sonrası stok belgelerini anında Firebase'e gönderir.
+    /// Depo rolü Duzenleyebilir olmasa da çalışır; çevrimdışıysa kuyruğa alınıp bağlanınca gider.
+    /// </summary>
+    public static async Task StokSonrasiHemenGonderAsync(CancellationToken iptal = default)
+    {
+        if (!OturumYoneticisi.GirisYapildi || OturumYoneticisi.Firestore is null)
+            return;
+
+        Helpers.ErtelenmisKayit.HemenCalistir();
+        Planla("stok");
+        Planla("stok_hareket");
+        Planla("malzeme");
+        await BulutaGonderAsync(iptal);
+    }
+
     public static async Task BulutaGonderAsync(CancellationToken iptal = default)
     {
-        if (_senkronYukleniyor || !OturumYoneticisi.GirisYapildi || !KullaniciYetkileri.Duzenleyebilir)
+        // Duzenleyebilir şartı kaldırıldı: Depo stok yazabilir ama Duzenleyebilir false olabiliyordu.
+        if (_senkronYukleniyor || !OturumYoneticisi.GirisYapildi)
             return;
 
         string[] anahtarlar;
@@ -892,44 +947,83 @@ public static class BulutVeriSenkronu
         if (anahtarlar.Length == 0 || OturumYoneticisi.Firestore is null)
             return;
 
-        Array.Sort(anahtarlar, (a, b) => BulutGonderimOnceligi(a).CompareTo(BulutGonderimOnceligi(b)));
+        var yazilabilir = anahtarlar
+            .Where(a => BelgeHaritasi.ContainsKey(a) && ModulVeriDeposu.BulutAnahtariYazabilir(a))
+            .ToArray();
+        // Yetkisiz anahtarlar atılır (Depo'nun satinalma_* göndermesi engellenir).
 
-        foreach (var anahtar in anahtarlar)
+        Array.Sort(yazilabilir, (a, b) => BulutGonderimOnceligi(a).CompareTo(BulutGonderimOnceligi(b)));
+
+        var basarisiz = new List<string>();
+        foreach (var anahtar in yazilabilir)
         {
-            if (!BelgeHaritasi.TryGetValue(anahtar, out var relYol))
-                continue;
-
-            var yol = KiraciliBulutYolu(relYol);
-            var bilincliBos = BilincliBosYazmaIzinliMi(anahtar);
-
-            var json = Olustur(anahtar);
-            if (!bilincliBos
-                && anahtar != "satinalma_talepler"
-                && (string.IsNullOrEmpty(json) || json is "[]" or "{}"))
-                json = YerelJsonOku(anahtar) ?? json;
-
-            string? talepBirlesikJson = null;
-            if (anahtar == "satinalma_talepler" && !bilincliBos)
+            try
             {
-                (json, talepBirlesikJson) = await TalepleriBulutaHazirlaAsync(yol, iptal);
+                if (!BelgeHaritasi.TryGetValue(anahtar, out var relYol))
+                    continue;
+
+                var yol = KiraciliBulutYolu(relYol);
+                var bilincliBos = BilincliBosYazmaIzinliMi(anahtar);
+
+                var json = Olustur(anahtar);
+                if (!bilincliBos
+                    && anahtar != "satinalma_talepler"
+                    && (string.IsNullOrEmpty(json) || json is "[]" or "{}"))
+                    json = YerelJsonOku(anahtar) ?? json;
+
+                string? talepBirlesikJson = null;
+                if (anahtar == "satinalma_talepler" && !bilincliBos)
+                {
+                    (json, talepBirlesikJson) = await TalepleriBulutaHazirlaAsync(yol, iptal);
+                }
+                else if (anahtar == "satinalma_ayarlar" && !bilincliBos)
+                {
+                    json = await AyarlariBulutaHazirlaAsync(iptal);
+                }
+                else if (anahtar is ("stok" or "stok_hareket") && !bilincliBos)
+                {
+                    json = await StokBelgesiniBulutaHazirlaAsync(anahtar, json, yol, iptal);
+                }
+                else if (!bilincliBos &&
+                         await BosListeBulutuEzmesinAsync(anahtar, json, yol, iptal).ConfigureAwait(false))
+                {
+                    continue;
+                }
+
+                await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
+                    yol, json, OturumYoneticisi.Auth?.Uid, iptal);
+                YerelOnbellegeYaz(anahtar, json);
+                BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
+                BilincliBosYazmaIzniniTuket(anahtar);
+                if (talepBirlesikJson is not null)
+                    SatinalmaDepo.TalepleriBirlestirVeYukle(talepBirlesikJson, yerelBirlestir: false);
             }
-            else if (anahtar == "satinalma_ayarlar" && !bilincliBos)
+            catch (OperationCanceledException)
             {
-                json = await AyarlariBulutaHazirlaAsync(iptal);
+                basarisiz.Add(anahtar);
+                throw;
             }
-            else if (!bilincliBos &&
-                     await BosListeBulutuEzmesinAsync(anahtar, json, yol, iptal).ConfigureAwait(false))
+            catch (Exception ex)
             {
-                continue;
+                HataGunlugu.Kaydet(ex, $"BulutVeriSenkronu.BulutaGonder.{anahtar}");
+                basarisiz.Add(anahtar);
+            }
+        }
+
+        if (basarisiz.Count > 0)
+        {
+            lock (BekleyenKayitlar)
+            {
+                foreach (var a in basarisiz)
+                    BekleyenKayitlar.Add(a);
             }
 
-            await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
-                yol, json, OturumYoneticisi.Auth?.Uid, iptal);
-            YerelOnbellegeYaz(anahtar, json);
-            BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
-            BilincliBosYazmaIzniniTuket(anahtar);
-            if (talepBirlesikJson is not null)
-                SatinalmaDepo.TalepleriBirlestirVeYukle(talepBirlesikJson, yerelBirlestir: false);
+            _zamanlayici ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            _zamanlayici.Tick -= ZamanlayiciTik;
+            _zamanlayici.Tick += ZamanlayiciTik;
+            _zamanlayici.Stop();
+            _zamanlayici.Interval = TimeSpan.FromSeconds(5);
+            _zamanlayici.Start();
         }
     }
 
@@ -1119,6 +1213,43 @@ public static class BulutVeriSenkronu
     /// Sıfırlama damgası sonrası eski yerel talepleri buluta geri yazmaz.
     /// Boş bulutta yalnızca post-reset kayıtlar (ör. yeni açılan talep) gönderilir.
     /// </summary>
+    /// <summary>Yerel + bulut stok/hareket birleştir; son yazanın tüm belgeyi ezmesini önler.</summary>
+    private static async Task<string> StokBelgesiniBulutaHazirlaAsync(
+        string anahtar, string yerelJson, string yol, CancellationToken iptal)
+    {
+        if (_sifirlamaAktif || OturumYoneticisi.Firestore is null)
+            return yerelJson;
+
+        var (bulutJson, _) = await OturumYoneticisi.Firestore.BelgeOkuAsync(yol, iptal).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(bulutJson) || bulutJson.Trim() is "[]" or "null")
+            return yerelJson;
+
+        try
+        {
+            if (anahtar == "stok")
+            {
+                var yerel = JsonSerializer.Deserialize<List<StokKaydi>>(yerelJson, JsonSecenekleri) ?? [];
+                var bulut = JsonSerializer.Deserialize<List<StokKaydi>>(bulutJson, JsonSecenekleri) ?? [];
+                var birlesik = ModulVeriDeposu.StokKayitlariniBirlestir(yerel, bulut);
+                return JsonSerializer.Serialize(birlesik, JsonSecenekleri);
+            }
+
+            if (anahtar == "stok_hareket")
+            {
+                var yerel = JsonSerializer.Deserialize<List<StokHareketKaydi>>(yerelJson, JsonSecenekleri) ?? [];
+                var bulut = JsonSerializer.Deserialize<List<StokHareketKaydi>>(bulutJson, JsonSecenekleri) ?? [];
+                var birlesik = ModulVeriDeposu.StokHareketleriniBirlestir(yerel, bulut);
+                return JsonSerializer.Serialize(birlesik, JsonSecenekleri);
+            }
+        }
+        catch (Exception ex)
+        {
+            HataGunlugu.Kaydet(ex, $"BulutVeriSenkronu.StokBelgesiniBulutaHazirla.{anahtar}");
+        }
+
+        return yerelJson;
+    }
+
     private static async Task<(string json, string? birlesikJson)> TalepleriBulutaHazirlaAsync(
         string yol, CancellationToken iptal)
     {

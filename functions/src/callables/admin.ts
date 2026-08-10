@@ -15,19 +15,43 @@ export const seedNotificationTemplates = onCall(async (request) => {
   return { count: Object.keys(NOTIFICATION_TEMPLATES).length };
 });
 
+/**
+ * Legacy → enterprise dual-write.
+ * tenantId verilirse o kiracı; yoksa tüm kiracıların satinalma_talepler belgeleri.
+ */
 export const migrateLegacyBatch = onCall(async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Giriş gerekli");
   const limit = (request.data?.limit as number) ?? 50;
+  const tenantId = ((request.data?.tenantId as string) ?? "").trim();
+  const db = admin.firestore();
 
-  const doc = await admin.firestore().doc("veri/satinalma_talepler").get();
-  const talepler = parseLegacyTalepler(doc.data()?.json as string | undefined).slice(0, limit);
-  let migrated = 0;
-
-  for (const t of talepler) {
-    await dualWriteToEnterprise(t);
-    migrated++;
+  const tenantIds: string[] = [];
+  if (tenantId) {
+    tenantIds.push(tenantId);
+  } else {
+    const snap = await db.collection("tenants").select().get();
+    for (const d of snap.docs) tenantIds.push(d.id);
+    // Eski kök belge (SaaS öncesi) — varsa ekle
+    const root = await db.doc("veri/satinalma_talepler").get();
+    if (root.exists) tenantIds.push("");
   }
-  return { migrated };
+
+  let migrated = 0;
+  for (const tid of tenantIds) {
+    if (migrated >= limit) break;
+    const path = tid
+      ? `tenants/${tid}/veri/satinalma_talepler`
+      : "veri/satinalma_talepler";
+    const doc = await db.doc(path).get();
+    if (!doc.exists) continue;
+    const talepler = parseLegacyTalepler(doc.data()?.json as string | undefined);
+    for (const t of talepler) {
+      if (migrated >= limit) break;
+      await dualWriteToEnterprise(t, tid || undefined);
+      migrated++;
+    }
+  }
+  return { migrated, tenantsScanned: tenantIds.length };
 });
 
 export const manualFanOut = onCall(async (request) => {

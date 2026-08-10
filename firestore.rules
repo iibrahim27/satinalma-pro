@@ -137,10 +137,10 @@ service cloud.firestore {
 
       allow delete: if isAdmin();
 
-      // notification_inbox — yalnızca sahibi okur; state alanlarını günceller
+      // notification_inbox — sahibi okur/yazar; Functions da yazabilir
       match /notification_inbox/{notificationId} {
         allow read: if isOwner(uid);
-        allow create, delete: if isCloudFunction() || isAdmin();
+        allow create, delete: if isCloudFunction() || isAdmin() || isOwner(uid);
         allow update: if isOwner(uid)
           && onlyChangedFields([
             'isRead', 'readAt', 'isArchived', 'archivedAt',
@@ -397,13 +397,25 @@ service cloud.firestore {
           || (belongsToTenant(tenantId) && (request.auth.uid == uid || tenantUserRole(tenantId) == 'Admin'))
           || (belongsToTenant(tenantId) && tenantUserRole(tenantId) == 'Yönetim'
               && resource.data.rol in ['Şef', 'Saha', 'Atölye', 'Depo', 'Satınalma']);
-        allow create, update, delete: if isPlatformAdmin();
-        allow update: if belongsToTenant(tenantId) && request.auth.uid == uid
-          && onlyChangedFields(['fcmToken', 'fcmUpdatedAt', 'adSoyad']);
+        // Platform admin veya kiracı Admin (Satınalma Pro Ayarlar → kullanıcı yönetimi)
+        allow create: if isPlatformAdmin()
+          || (isTenantActiveUser(tenantId) && tenantUserRole(tenantId) == 'Admin'
+              && isValidRole(request.resource.data.rol)
+              && request.resource.data.aktif is bool);
+        allow delete: if isPlatformAdmin()
+          || (isTenantActiveUser(tenantId) && tenantUserRole(tenantId) == 'Admin');
+        allow update: if isPlatformAdmin()
+          || (isTenantActiveUser(tenantId) && tenantUserRole(tenantId) == 'Admin')
+          || (belongsToTenant(tenantId) && request.auth.uid == uid
+              && onlyChangedFields(['fcmToken', 'fcmUpdatedAt', 'adSoyad']));
 
         match /notification_inbox/{notificationId} {
           allow read: if belongsToTenant(tenantId) && request.auth.uid == uid;
-          allow create, delete: if isCloudFunction() || isPlatformAdmin();
+          // Client (SA yoksa) kendi inbox'ına yazabilir; Functions/platform da yazabilir.
+          allow create: if isCloudFunction() || isPlatformAdmin()
+            || (belongsToTenant(tenantId) && request.auth.uid == uid);
+          allow delete: if isCloudFunction() || isPlatformAdmin()
+            || (belongsToTenant(tenantId) && request.auth.uid == uid);
           allow update: if belongsToTenant(tenantId) && request.auth.uid == uid
             && onlyChangedFields([
               'isRead', 'readAt', 'isArchived', 'archivedAt',

@@ -1,14 +1,17 @@
 package com.satinalmapro.android.data.repository
 
 import com.satinalmapro.android.core.JsonConfig
+import com.satinalmapro.android.core.NetworkError
 import com.google.gson.reflect.TypeToken
 import com.satinalmapro.android.core.model.StokHareket
 import com.satinalmapro.android.core.model.StokHareketTipi
 import com.satinalmapro.android.core.model.StokKaydi
 import com.satinalmapro.android.core.model.UserProfile
 import com.satinalmapro.android.core.roles.KullaniciRolleri
+import com.satinalmapro.android.core.saas.TenantSession
 import com.satinalmapro.android.data.firebase.FirebaseAuthClient
 import com.satinalmapro.android.data.firebase.FirestoreClient
+import com.satinalmapro.android.data.local.OfflineCache
 import com.satinalmapro.android.services.StokTeslimFisiHelper
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -17,30 +20,161 @@ import java.util.UUID
 
 class StokRepository(
     private val firestore: FirestoreClient,
-    private val auth: FirebaseAuthClient
+    private val auth: FirebaseAuthClient,
+    private val offlineCache: OfflineCache? = null
 ) {
     private val gson = JsonConfig.gson
     private val stokType = object : TypeToken<List<StokKaydi>>() {}.type
     private val hareketType = object : TypeToken<List<StokHareket>>() {}.type
+    /** Son saveStok buluta yazıldı mı — pending yalnızca ikisi de gidince kalkar. */
+    @Volatile private var lastStokCloudOk = false
+
+    private fun tenantId(): String = TenantSession.tenantId().orEmpty()
 
     suspend fun loadStok(): List<StokKaydi> {
-        val json = firestore.readDocumentJson("veri/stok") ?: return emptyList()
-        return runCatching { gson.fromJson<List<StokKaydi>>(json, stokType) ?: emptyList() }.getOrDefault(emptyList())
+        val tid = tenantId()
+        if (tid.isNotBlank() && offlineCache?.hasStokPending(tid) == true) {
+            return offlineCache.loadStok(tid)
+        }
+        return try {
+            val json = firestore.readDocumentJson("veri/stok")
+            val list = if (json.isNullOrBlank()) emptyList()
+            else runCatching { gson.fromJson<List<StokKaydi>>(json, stokType) ?: emptyList() }
+                .getOrDefault(emptyList())
+            if (tid.isNotBlank()) offlineCache?.saveStok(tid, list)
+            list
+        } catch (e: Exception) {
+            if (NetworkError.isNetworkRelated(e) && tid.isNotBlank()) {
+                offlineCache?.loadStok(tid) ?: emptyList()
+            } else {
+                throw e
+            }
+        }
     }
 
     suspend fun loadHareketler(): List<StokHareket> {
-        val json = firestore.readDocumentJson("veri/stok_hareketleri") ?: return emptyList()
-        return runCatching { gson.fromJson<List<StokHareket>>(json, hareketType) ?: emptyList() }.getOrDefault(emptyList())
+        val tid = tenantId()
+        if (tid.isNotBlank() && offlineCache?.hasStokPending(tid) == true) {
+            return offlineCache.loadStokHareketleri(tid)
+        }
+        return try {
+            val json = firestore.readDocumentJson("veri/stok_hareketleri")
+            val list = if (json.isNullOrBlank()) emptyList()
+            else runCatching { gson.fromJson<List<StokHareket>>(json, hareketType) ?: emptyList() }
+                .getOrDefault(emptyList())
+            if (tid.isNotBlank()) offlineCache?.saveStokHareketleri(tid, list)
+            list
+        } catch (e: Exception) {
+            if (NetworkError.isNetworkRelated(e) && tid.isNotBlank()) {
+                offlineCache?.loadStokHareketleri(tid) ?: emptyList()
+            } else {
+                throw e
+            }
+        }
+    }
+
+    private fun stokAnahtar(s: StokKaydi) =
+        "${s.malzemeAdi.trim().lowercase()}|${s.depoSaha.trim().lowercase()}|${s.kategori.trim().lowercase()}"
+
+    private fun birlestirStok(yerel: List<StokKaydi>, bulut: List<StokKaydi>): List<StokKaydi> {
+        val map = linkedMapOf<String, StokKaydi>()
+        fun dahaGuncel(a: StokKaydi, b: StokKaydi): Boolean {
+            // Son güncelleme metni veya miktar — basit koruma
+            if (a.sonGuncelleme != b.sonGuncelleme) {
+                return a.sonGuncelleme >= b.sonGuncelleme
+            }
+            return a.mevcutMiktar >= b.mevcutMiktar
+        }
+        for (s in bulut) map[stokAnahtar(s)] = s
+        for (s in yerel) {
+            val key = stokAnahtar(s)
+            val mevcut = map[key]
+            if (mevcut == null || dahaGuncel(s, mevcut)) map[key] = s
+        }
+        return map.values.toList()
+    }
+
+    private fun birlestirHareket(yerel: List<StokHareket>, bulut: List<StokHareket>): List<StokHareket> {
+        val map = linkedMapOf<String, StokHareket>()
+        for (h in bulut) if (h.id.isNotBlank()) map[h.id] = h
+        for (h in yerel) if (h.id.isNotBlank()) map[h.id] = h
+        return map.values.toList()
     }
 
     private suspend fun saveStok(list: List<StokKaydi>) {
         val uid = auth.uid ?: throw IllegalStateException("Oturum gerekli")
-        firestore.writeDocumentJson("veri/stok", gson.toJson(list), uid)
+        val tid = tenantId()
+        if (tid.isNotBlank()) offlineCache?.saveStok(tid, list)
+        try {
+            val bulut = runCatching {
+                val json = firestore.readDocumentJson("veri/stok")
+                if (json.isNullOrBlank()) emptyList()
+                else gson.fromJson<List<StokKaydi>>(json, stokType) ?: emptyList()
+            }.getOrDefault(emptyList())
+            val birlesik = if (bulut.isEmpty()) list else birlestirStok(list, bulut)
+            firestore.writeDocumentJson("veri/stok", gson.toJson(birlesik), uid)
+            if (tid.isNotBlank()) offlineCache?.saveStok(tid, birlesik)
+            lastStokCloudOk = true
+        } catch (e: Exception) {
+            lastStokCloudOk = false
+            if (NetworkError.isNetworkRelated(e) && tid.isNotBlank()) {
+                offlineCache?.markStokPending(tid, true)
+                return
+            }
+            throw e
+        }
     }
 
     private suspend fun saveHareketler(list: List<StokHareket>) {
         val uid = auth.uid ?: throw IllegalStateException("Oturum gerekli")
-        firestore.writeDocumentJson("veri/stok_hareketleri", gson.toJson(list), uid)
+        val tid = tenantId()
+        if (tid.isNotBlank()) offlineCache?.saveStokHareketleri(tid, list)
+        try {
+            val bulut = runCatching {
+                val json = firestore.readDocumentJson("veri/stok_hareketleri")
+                if (json.isNullOrBlank()) emptyList()
+                else gson.fromJson<List<StokHareket>>(json, hareketType) ?: emptyList()
+            }.getOrDefault(emptyList())
+            val birlesik = if (bulut.isEmpty()) list else birlestirHareket(list, bulut)
+            firestore.writeDocumentJson("veri/stok_hareketleri", gson.toJson(birlesik), uid)
+            if (tid.isNotBlank()) {
+                offlineCache?.saveStokHareketleri(tid, birlesik)
+                if (lastStokCloudOk) offlineCache?.markStokPending(tid, false)
+                else offlineCache?.markStokPending(tid, true)
+            }
+        } catch (e: Exception) {
+            if (NetworkError.isNetworkRelated(e) && tid.isNotBlank()) {
+                offlineCache?.markStokPending(tid, true)
+                return
+            }
+            throw e
+        }
+    }
+
+    /**
+     * Çevrimdışı yapılan stok giriş/çıkış/sayımı internet gelince Firebase'e yollar.
+     * @return true gönderildiyse veya bekleyen yoksa
+     */
+    suspend fun flushPendingWrites(): Boolean {
+        val tid = tenantId()
+        val cache = offlineCache ?: return true
+        if (tid.isBlank() || !cache.hasStokPending(tid)) return true
+        val uid = auth.uid ?: return false
+        val stok = cache.loadStok(tid)
+        val hareket = cache.loadStokHareketleri(tid)
+        return try {
+            firestore.writeDocumentJson("veri/stok", gson.toJson(stok), uid)
+            firestore.writeDocumentJson("veri/stok_hareketleri", gson.toJson(hareket), uid)
+            cache.markStokPending(tid, false)
+            true
+        } catch (e: Exception) {
+            if (NetworkError.isNetworkRelated(e)) false else throw e
+        }
+    }
+
+    fun hasPendingWrites(): Boolean {
+        val tid = tenantId()
+        return tid.isNotBlank() && offlineCache?.hasStokPending(tid) == true
     }
 
     private fun bugun() = SimpleDateFormat("dd.MM.yyyy", Locale("tr", "TR")).format(Date())
@@ -50,7 +184,7 @@ class StokRepository(
             it.malzemeAdi.equals(malzeme.trim(), true) && it.depoSaha.equals(depo.trim(), true)
         }
 
-    private fun stokBulMalzeme(
+    fun stokBulMalzeme(
         list: List<StokKaydi>,
         malzeme: String,
         preferredDepo: String? = null
@@ -63,6 +197,16 @@ class StokRepository(
             matches.firstOrNull { it.depoSaha.equals(depo, true) }?.let { return it }
         }
         return matches.maxByOrNull { it.mevcutMiktar }
+    }
+
+    /** Aynı malzeme adındaki başka kayıttan veya varsayılandan kategori. */
+    fun kategoriCozumle(list: List<StokKaydi>, malzeme: String, mevcut: String?): String {
+        if (!mevcut.isNullOrBlank()) return mevcut.trim()
+        val ad = malzeme.trim()
+        list.firstOrNull {
+            it.malzemeAdi.equals(ad, true) && it.kategori.isNotBlank()
+        }?.kategori?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
+        return "Malzeme"
     }
 
     data class GirisSatir(
@@ -284,9 +428,11 @@ class StokRepository(
             if (satir.miktar > stok.mevcutMiktar) {
                 throw IllegalArgumentException("Yetersiz stok: ${stok.malzemeAdi} (${stok.depoSaha})")
             }
+            val kategori = kategoriCozumle(stokList, stok.malzemeAdi, stok.kategori)
             val index = stokList.indexOf(stok)
             val guncel = stok.copy(
                 mevcutMiktar = stok.mevcutMiktar - satir.miktar,
+                kategori = kategori,
                 sonGuncelleme = tarih,
                 toplamDeger = (stok.mevcutMiktar - satir.miktar) * stok.birimMaliyet
             )
@@ -297,7 +443,7 @@ class StokRepository(
                     tarih = tarih,
                     hareketTipi = StokHareketTipi.CIKIS,
                     malzemeAdi = guncel.malzemeAdi,
-                    kategori = guncel.kategori,
+                    kategori = kategori,
                     birim = guncel.birim,
                     miktar = satir.miktar,
                     depoSaha = guncel.depoSaha,

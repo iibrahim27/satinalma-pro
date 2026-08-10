@@ -231,6 +231,9 @@ public static class ModulVeriDeposu
         BulutVeriSenkronu.Planla(anahtar);
     }
 
+    /// <summary>Bulut senkronunun anahtar bazlı yazma kontrolü (Depo stok yazabilir).</summary>
+    public static bool BulutAnahtariYazabilir(string anahtar) => ModulAnahtariYazabilir(anahtar);
+
     private static bool ModulAnahtariYazabilir(string anahtar)
     {
         if (!OturumYoneticisi.BulutAktif)
@@ -247,7 +250,17 @@ public static class ModulVeriDeposu
             _ => null
         };
 
-        return modul is null || KullaniciYetkileri.ModulYazabilir(modul);
+        // Stok: Depo/Satınalma StokYazabilir ile; Alınan Malzemeler stok girişinde de yazar.
+        if (anahtar is "stok" or "stok_hareket")
+            return KullaniciYetkileri.StokYazabilir();
+        if (anahtar == "malzeme" && KullaniciYetkileri.StokYazabilir())
+            return true;
+
+        if (modul is not null)
+            return KullaniciYetkileri.ModulYazabilir(modul);
+
+        // satinalma_talepler / ayarlar vb. — genel düzenleme yetkisi gerekir (Depo hariç).
+        return KullaniciYetkileri.Duzenleyebilir;
     }
 
     private static bool YerelListeDosyasiDoluMu(string dosyaAdi)
@@ -534,11 +547,71 @@ public static class ModulVeriDeposu
     public static void AlinanMalzemeleriYukle(string json) =>
         KoleksiyonuYenile(AlinanMalzemeler, JsonSerializer.Deserialize<List<AlinanMalzemeKaydi>>(json, JsonSecenekleri));
 
-    public static void StokYukle(string json) =>
-        KoleksiyonuYenile(Stok, JsonSerializer.Deserialize<List<StokKaydi>>(json, JsonSecenekleri));
+    public static void StokYukle(string json, bool birlestir = true)
+    {
+        var bulut = JsonSerializer.Deserialize<List<StokKaydi>>(json, JsonSecenekleri) ?? [];
+        if (!birlestir || _sifirlamaAktifMi())
+        {
+            KoleksiyonuYenile(Stok, bulut);
+            return;
+        }
 
-    public static void StokHareketleriYukle(string json) =>
-        KoleksiyonuYenile(StokHareketleri, JsonSerializer.Deserialize<List<StokHareketKaydi>>(json, JsonSecenekleri));
+        KoleksiyonuYenile(Stok, StokKayitlariniBirlestir(Stok, bulut));
+    }
+
+    public static void StokHareketleriYukle(string json, bool birlestir = true)
+    {
+        var bulut = JsonSerializer.Deserialize<List<StokHareketKaydi>>(json, JsonSecenekleri) ?? [];
+        if (!birlestir || _sifirlamaAktifMi())
+        {
+            KoleksiyonuYenile(StokHareketleri, bulut);
+            return;
+        }
+
+        KoleksiyonuYenile(StokHareketleri, StokHareketleriniBirlestir(StokHareketleri, bulut));
+    }
+
+    private static bool _sifirlamaAktifMi() => BulutVeriSenkronu.SifirlamaAktif;
+
+    /// <summary>Malzeme+depo+kategori anahtarına göre birleştir; daha yeni SonGuncelleme kazanır.</summary>
+    public static List<StokKaydi> StokKayitlariniBirlestir(
+        IEnumerable<StokKaydi> yerel, IEnumerable<StokKaydi> bulut)
+    {
+        var sozluk = new Dictionary<string, StokKaydi>(StringComparer.OrdinalIgnoreCase);
+        void Ekle(StokKaydi kayit)
+        {
+            var anahtar = $"{kayit.MalzemeAdi}|{kayit.DepoSaha}|{kayit.Kategori}";
+            if (!sozluk.TryGetValue(anahtar, out var mevcut))
+            {
+                sozluk[anahtar] = kayit;
+                return;
+            }
+
+            var adayT = DateTime.TryParse(kayit.SonGuncelleme, out var a) ? a : DateTime.MinValue;
+            var mevT = DateTime.TryParse(mevcut.SonGuncelleme, out var m) ? m : DateTime.MinValue;
+            if (adayT > mevT || (adayT == mevT && kayit.MevcutMiktar > mevcut.MevcutMiktar))
+                sozluk[anahtar] = kayit;
+        }
+
+        foreach (var k in bulut) Ekle(k);
+        foreach (var k in yerel) Ekle(k);
+        return sozluk.Values
+            .OrderBy(s => s.MalzemeAdi, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(s => s.DepoSaha, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public static List<StokHareketKaydi> StokHareketleriniBirlestir(
+        IEnumerable<StokHareketKaydi> yerel, IEnumerable<StokHareketKaydi> bulut)
+    {
+        var sozluk = new Dictionary<Guid, StokHareketKaydi>();
+        foreach (var k in bulut) sozluk[k.Id] = k;
+        foreach (var k in yerel) sozluk[k.Id] = k;
+        return sozluk.Values
+            .OrderByDescending(h => h.Tarih)
+            .ThenBy(h => h.MalzemeAdi, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
 
     public static void AgregaYukle(string json) =>
         KoleksiyonuYenile(Agrega, JsonSerializer.Deserialize<List<AgregaKaydi>>(FaturaNoAnahtariniNormalizeEt(json), JsonSecenekleri));

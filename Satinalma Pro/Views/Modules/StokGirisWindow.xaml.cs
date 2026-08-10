@@ -146,21 +146,66 @@ public partial class StokGirisWindow : Window
     private void SatirGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
         BtnSatirSil.IsEnabled = SatirGrid.SelectedItem is not null;
 
-    private void Kaydet_Click(object sender, RoutedEventArgs e)
+    private StokCikisFisVerisi? FisVerisiOlustur(bool kayitIcin)
     {
         var teslimEdilen = TxtTeslimEdilen.Text.Trim();
         if (string.IsNullOrWhiteSpace(teslimEdilen))
         {
             MessageBox.Show("Teslim edilen kişiyi girin.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
+            return null;
         }
 
         var tedarikci = (CmbTedarikci.Text ?? "").Trim();
-        if (string.IsNullOrWhiteSpace(tedarikci))
+        if (kayitIcin && string.IsNullOrWhiteSpace(tedarikci))
         {
             MessageBox.Show("Tedarikçi firması girin veya seçin.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
+            return null;
         }
+
+        var satirlar = _satirlar.ToList();
+        if (satirlar.Count == 0)
+        {
+            if (!SatirFormuDogrula(out var satir))
+                return null;
+            satirlar.Add(satir);
+        }
+
+        if (satirlar.Count == 0)
+        {
+            MessageBox.Show("En az bir malzeme satırı ekleyin.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+
+        return new StokCikisFisVerisi(
+            TxtBelge.Text.Trim(),
+            TxtTarih.Text.Trim(),
+            TxtTeslimEden.Text.Trim(),
+            teslimEdilen,
+            satirlar.Select(s => new StokCikisFisSatir(
+                s.Malzeme,
+                s.MiktarGosterim,
+                s.Birim,
+                s.DepoSaha)).ToList(),
+            IndigiSaha: null,
+            Tip: StokFisTipi.Giris,
+            Tedarikci: string.IsNullOrWhiteSpace(tedarikci) ? null : tedarikci);
+    }
+
+    private void FisOnizle_Click(object sender, RoutedEventArgs e)
+    {
+        var fis = FisVerisiOlustur(kayitIcin: false);
+        if (fis is null)
+            return;
+        StokCikisPdfOlusturucu.OnizleVeYazdir(fis);
+    }
+
+    private void Kaydet_Click(object sender, RoutedEventArgs e)
+    {
+        if (FisVerisiOlustur(kayitIcin: true) is null)
+            return;
+
+        var teslimEdilen = TxtTeslimEdilen.Text.Trim();
+        var tedarikci = (CmbTedarikci.Text ?? "").Trim();
 
         if (_satirlar.Count == 0)
         {
@@ -205,9 +250,25 @@ public partial class StokGirisWindow : Window
                     teslimEdilen);
             }
             ModulVeriDeposu.EndBatch();
+            _ = BulutVeriSenkronu.StokSonrasiHemenGonderAsync();
+
+            var fisVerisi = new StokCikisFisVerisi(
+                belgeNo,
+                tarih,
+                teslimEden,
+                teslimEdilen,
+                _satirlar.Select(s => new StokCikisFisSatir(
+                    s.Malzeme,
+                    s.MiktarGosterim,
+                    s.Birim,
+                    s.DepoSaha)).ToList(),
+                IndigiSaha: null,
+                Tip: StokFisTipi.Giris,
+                Tedarikci: tedarikci);
 
             DialogResult = true;
             Close();
+            StokCikisPdfOlusturucu.OnizleVeYazdir(fisVerisi);
         }
         catch (Exception ex)
         {

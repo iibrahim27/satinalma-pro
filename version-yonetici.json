@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.59",
-    "build":  62,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.59/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.59/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.59/SatinalmaYonetici.apk",
-    "notes":  "1.0.59 - Pro 2.1.106 ile birlikte (DialogResult guvenli kapanis)",
+    "version":  "1.0.60",
+    "build":  63,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.60/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.60/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.60/SatinalmaYonetici.apk",
+    "notes":  "1.0.60 - Pro 2.1.107 ile birlikte (Firebase senkron/stok/talep/fis)",
     "zorunlu":  false
 }

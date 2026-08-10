@@ -21,7 +21,7 @@
 
     <StackPanel Grid.Row="0" Margin="0,0,0,16">
       <TextBlock Text="Stok Çıkışı" Style="{StaticResource ModuleDialogTitleStyle}" />
-      <TextBlock Text="Birden fazla malzeme satırı ekleyerek toplu çıkış yapın"
+      <TextBlock Text="Birden fazla malzeme satırı ekleyerek toplu çıkış yapın. Kategori malzeme adından otomatik gelir."
                  Style="{StaticResource ModuleDialogSubtitleStyle}" />
     </StackPanel>
 

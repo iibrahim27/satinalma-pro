@@ -54,6 +54,7 @@ public static class StokIslemServisi
             TeslimEdilen = teslimEdilen
         };
         ModulVeriDeposu.StokHareketleri.Add(hareket);
+        StokDegisikliginiKaydet();
         return hareket;
     }
 
@@ -86,6 +87,7 @@ public static class StokIslemServisi
             TeslimEdilen = teslimEdilen
         };
         ModulVeriDeposu.StokHareketleri.Add(hareket);
+        StokDegisikliginiKaydet();
         return hareket;
     }
 
@@ -115,6 +117,7 @@ public static class StokIslemServisi
             Aciklama = aciklama
         };
         ModulVeriDeposu.StokHareketleri.Add(hareket);
+        StokDegisikliginiKaydet();
         return hareket;
     }
 
@@ -124,6 +127,7 @@ public static class StokIslemServisi
         if (stok is null)
         {
             ModulVeriDeposu.StokHareketleri.Remove(hareket);
+            StokDegisikliginiKaydet();
             return;
         }
 
@@ -143,6 +147,16 @@ public static class StokIslemServisi
         stok.SonGuncelleme = Bugun();
         stok.ToplamDegerHesapla();
         ModulVeriDeposu.StokHareketleri.Remove(hareket);
+        StokDegisikliginiKaydet();
+    }
+
+    /// <summary>
+    /// Mevcut miktar değişince CollectionChanged tetiklenmez — stok + hareketi diske ve bulut kuyruğuna yaz.
+    /// </summary>
+    private static void StokDegisikliginiKaydet()
+    {
+        ModulVeriDeposu.KaydetStok();
+        ModulVeriDeposu.KaydetStokHareketleri();
     }
 
     public static void HareketGuncelle(
@@ -213,6 +227,31 @@ public static class StokIslemServisi
             liste = liste.Where(s => s.Kategori.Equals(kategori.Trim(), StringComparison.OrdinalIgnoreCase));
 
         return liste.OrderByDescending(s => s.SonGuncelleme).FirstOrDefault();
+    }
+
+    /// <summary>Malzeme adına göre kategori — stok / alınan malzeme kaydından; yoksa «Malzeme».</summary>
+    public static string KategoriCozumle(string malzeme, string? mevcutKategori = null)
+    {
+        if (!string.IsNullOrWhiteSpace(mevcutKategori))
+            return mevcutKategori.Trim();
+
+        var ad = (malzeme ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(ad))
+            return "Malzeme";
+
+        var stoktan = ModulVeriDeposu.Stok
+            .FirstOrDefault(s => s.MalzemeAdi.Equals(ad, StringComparison.OrdinalIgnoreCase)
+                                 && !string.IsNullOrWhiteSpace(s.Kategori));
+        if (stoktan is not null)
+            return stoktan.Kategori.Trim();
+
+        var alinandan = ModulVeriDeposu.AlinanMalzemeler
+            .FirstOrDefault(a => a.MalzemeHizmet.Equals(ad, StringComparison.OrdinalIgnoreCase)
+                                 && !string.IsNullOrWhiteSpace(a.Kategori));
+        if (alinandan is not null)
+            return alinandan.Kategori.Trim();
+
+        return "Malzeme";
     }
 
     public static IEnumerable<StokKaydi> DepoStokListesi(string? depo = null)

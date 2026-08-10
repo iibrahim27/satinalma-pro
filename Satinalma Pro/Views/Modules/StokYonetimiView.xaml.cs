@@ -761,6 +761,29 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         HareketGrid.SelectedItem = satir.Item;
     }
 
+    private void HareketFisYazdir_Click(object sender, RoutedEventArgs e)
+    {
+        if (HareketGrid.SelectedItem is not StokHareketKaydi hareket)
+        {
+            MessageBox.Show("Fiş yazdırmak için bir giriş veya çıkış hareketi seçin.",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (hareket.HareketTipi is not (StokHareketTipleri.Giris or StokHareketTipleri.Cikis))
+        {
+            MessageBox.Show("Fiş yalnızca stok giriş ve çıkış hareketleri için yazdırılabilir.",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (!StokCikisPdfOlusturucu.HareketFisiYazdir(hareket))
+        {
+            MessageBox.Show("Fiş oluşturulamadı.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
     private void HareketDuzenle_Click(object sender, RoutedEventArgs e)
     {
         if (KullaniciYetkileri.StokYazmaIslemiEngellendi())
@@ -789,6 +812,7 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
             return;
 
         StokIslemServisi.HareketSil(hareket);
+        _ = BulutVeriSenkronu.StokSonrasiHemenGonderAsync();
         TumunuYenile();
     }
 
@@ -843,6 +867,8 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
                 sayim,
                 TxtSayimIslemYapan.Text.Trim(),
                 TxtSayimAciklama.Text.Trim());
+
+            _ = BulutVeriSenkronu.StokSonrasiHemenGonderAsync();
 
             TxtSayimMiktar.Clear();
             TxtSayimFark.Clear();

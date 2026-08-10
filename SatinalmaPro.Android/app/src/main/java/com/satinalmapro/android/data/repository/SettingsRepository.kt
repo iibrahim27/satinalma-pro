@@ -14,22 +14,65 @@ class SettingsRepository(
     private val auth: FirebaseAuthClient
 ) {
     suspend fun loadSettings(): UygulamaAyarlar {
-        val json = firestore.readDocumentJson(SETTINGS_PATH)
+        val json = readSettingsJson()
         return parseSettings(json)
     }
 
     suspend fun saveSettings(ayarlar: UygulamaAyarlar) {
         val updatedBy = auth.email ?: auth.uid ?: "android"
-        // Önce buluttaki güncel listeyi oku; eklenen terimleri kaybetmemek için birleştir.
-        // Silme: ayarlar listesinde olmayan terim bilinçli silinmiş kabul edilir —
-        // bu yüzden birleştirmede "ayarlar" öncelikli değil; union kullanıp
-        // silmeyi AppViewModel.removeBirim → tam liste yazımı ile yapıyoruz.
-        // removeBirim zaten güncel listeden çıkarır; burada union, eşzamanlı
-        // masaüstü eklemelerini korur. Silinen terim bulutta hâlâ varsa geri gelir —
-        // bunu önlemek için: union yerine "yazılan listeyi esas al, yalnızca
-        // buluttaki ekstra terimleri ekle" değil; silme sonrası anında yaz.
-        // Pratik çözüm: union yapma, doğrudan yaz (sık yoklama ile senkron).
-        firestore.writeDocumentJson(SETTINGS_PATH, toJson(ayarlar), updatedBy)
+        // Masaüstü alanlarını (logo, filo zimmet) koru — yalnızca Android alanlarını güncelle.
+        val mevcut = runCatching { readSettingsJson() }.getOrNull()
+        val birlesik = mergePreserveDesktopFields(mevcut, ayarlar)
+        firestore.writeDocumentJson(SETTINGS_PATH, birlesik, updatedBy)
+    }
+
+    /** json wrapper veya eski düz alan seed formatını okur. */
+    private suspend fun readSettingsJson(): String? {
+        val raw = firestore.readDocumentRaw(SETTINGS_PATH) ?: return null
+        val fields = JSONObject(raw).optJSONObject("fields") ?: return null
+        fields.optJSONObject("json")?.optString("stringValue")?.takeIf { it.isNotBlank() }?.let {
+            return it
+        }
+        // Flat seed (Yönetici eski format): firmaAdi / diziler üst düzeyde
+        val firma = fields.optJSONObject("firmaAdi")?.optString("stringValue").orEmpty()
+        val birimler = firestoreArrayToList(fields.optJSONObject("malzemeBirimleri"))
+        val kategoriler = firestoreArrayToList(fields.optJSONObject("malzemeKategorileri"))
+        if (firma.isBlank() && birimler.isEmpty() && kategoriler.isEmpty()) return null
+        return JSONObject()
+            .put("firmaAdi", firma)
+            .put("malzemeBirimleri", JSONArray(birimler))
+            .put("malzemeKategorileri", JSONArray(kategoriler))
+            .toString()
+    }
+
+    private fun firestoreArrayToList(field: JSONObject?): List<String> {
+        if (field == null) return emptyList()
+        val arr = field.optJSONObject("arrayValue")?.optJSONArray("values") ?: return emptyList()
+        return buildList {
+            for (i in 0 until arr.length()) {
+                arr.optJSONObject(i)?.optString("stringValue")?.trim()
+                    ?.takeIf { it.isNotBlank() }?.let(::add)
+            }
+        }
+    }
+
+    private fun mergePreserveDesktopFields(existingJson: String?, ayarlar: UygulamaAyarlar): String {
+        val obj = try {
+            if (existingJson.isNullOrBlank()) JSONObject()
+            else JSONObject(existingJson)
+        } catch (_: Exception) {
+            JSONObject()
+        }
+        obj.put("firmaAdi", ayarlar.firmaAdi)
+        obj.put(
+            "malzemeKategorileri",
+            JSONArray(ayarlar.malzemeKategorileri.distinctBy { it.lowercase() })
+        )
+        obj.put(
+            "malzemeBirimleri",
+            JSONArray(ayarlar.malzemeBirimleri.distinctBy { it.lowercase() })
+        )
+        return obj.toString()
     }
 
     suspend fun loadUsers(parseUser: (String, JSONObject) -> UserProfile): List<ManagedUser> =

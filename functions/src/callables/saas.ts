@@ -9,8 +9,39 @@ import {
   tenantUsersPath,
   webApiKey,
 } from "../lib/saas";
-
 const db = () => admin.firestore();
+
+/** Uygulamaların okuduğu standart blob: { json, updatedAt, updatedBy }. */
+function veriBlob(
+  json: string,
+  updatedBy: string
+): { json: string; updatedAt: string; updatedBy: string } {
+  return {
+    json,
+    updatedAt: new Date().toISOString(),
+    updatedBy,
+  };
+}
+
+function emptySatinalmaAyarlarJson(tenantId: string): string {
+  return JSON.stringify({
+    tenantId,
+    firmaAdi: "",
+    sartnameMetni: "",
+    teklifIstemeSartnameleri: "",
+    sefImzalari: [],
+    yonetimImzalari: [],
+    sartnameler: [],
+    sonTalepSira: 0,
+    sonSiparisSira: 0,
+    sonIadeSira: 0,
+    silinenTalepIdleri: [],
+    varsayilanUsdKuru: 0,
+    varsayilanEurKuru: 0,
+    imzaAyarleriTemiz: true,
+    veriSifirlamaUtc: 0,
+  });
+}
 
 type LisansTip = "deneme" | "yillik" | "2yil" | "3yil" | "manuel";
 
@@ -467,33 +498,53 @@ export const platformSaveTenant = onCall(async (request) => {
     { merge: true }
   );
 
-  // Kiracı ayarlarında firma adı Yönetici kaynağıdır; yeni firmada boş medya iskeleti.
-  const ayarlarRef = tenantRef.collection("veri").doc("uygulama_ayarlar");
+  // Kiracı ayarları — Pro/Android `fields.json` okur; düz alan seed görünmez.
+  const veriRoot = tenantRef.collection("veri");
+  const seedBy = request.auth?.uid ?? "platform";
   if (!id) {
-    await ayarlarRef.set(
-      {
-        firmaAdi: ad,
-        malzemeBirimleri: ["Adet", "Ton", "Kg", "Lt", "m", "m²", "m³"],
-        malzemeKategorileri: [],
-        guncelleme: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
-    await tenantRef.collection("veri").doc("medya").set(
-      {
-        firmaLogoDosya: "",
-        anasayfaLogoDosya: "",
-        firmaLogoBase64: "",
-        anasayfaLogoBase64: "",
-        guncelleme: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
+    const uygulamaJson = JSON.stringify({
+      firmaAdi: ad,
+      logoDosyaYolu: "",
+      anasayfaLogoDosyaYolu: "",
+      malzemeBirimleri: ["Adet", "Ton", "Kg", "Lt", "m", "m²", "m³"],
+      malzemeKategorileri: [],
+      filoZimmetFormMaddeleri: [],
+    });
+    const medyaJson = JSON.stringify({
+      firmaLogoDosya: "",
+      anasayfaLogoDosya: "",
+      firmaLogoBase64: "",
+      anasayfaLogoBase64: "",
+    });
+    await veriRoot.doc("uygulama_ayarlar").set(veriBlob(uygulamaJson, seedBy), { merge: true });
+    await veriRoot.doc("medya").set(veriBlob(medyaJson, seedBy), { merge: true });
+    await veriRoot
+      .doc("satinalma_ayarlar")
+      .set(veriBlob(emptySatinalmaAyarlarJson(tenantRef.id), seedBy), { merge: true });
+    await veriRoot.doc("satinalma_talepler").set(veriBlob("[]", seedBy), { merge: true });
+    await veriRoot.doc("stok").set(veriBlob("[]", seedBy), { merge: true });
+    await veriRoot.doc("stok_hareketleri").set(veriBlob("[]", seedBy), { merge: true });
+    await veriRoot.doc("alinan_malzemeler").set(veriBlob("[]", seedBy), { merge: true });
+    await veriRoot.doc("bildirimler").set(veriBlob("[]", seedBy), { merge: true });
   } else {
-    await ayarlarRef.set(
-      { firmaAdi: ad, guncelleme: admin.firestore.FieldValue.serverTimestamp() },
-      { merge: true }
-    );
+    // Mevcut kiracı: firma adını json blob içinde güncelle (yoksa oluştur).
+    const ayarlarSnap = await veriRoot.doc("uygulama_ayarlar").get();
+    let mevcut: Record<string, unknown> = {};
+    const rawJson = ayarlarSnap.data()?.json;
+    if (typeof rawJson === "string" && rawJson.trim()) {
+      try {
+        const parsed = JSON.parse(rawJson) as unknown;
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          mevcut = parsed as Record<string, unknown>;
+        }
+      } catch {
+        mevcut = {};
+      }
+    }
+    mevcut.firmaAdi = ad;
+    await veriRoot
+      .doc("uygulama_ayarlar")
+      .set(veriBlob(JSON.stringify(mevcut), seedBy), { merge: true });
   }
 
   // Manuel pasif: tüm aktif kullanıcıları da kapat.

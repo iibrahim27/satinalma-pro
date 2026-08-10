@@ -8,6 +8,12 @@ using System.IO;
 
 namespace SatinalmaPro.Services;
 
+public enum StokFisTipi
+{
+    Cikis,
+    Giris
+}
+
 public static class StokCikisPdfOlusturucu
 {
     private static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
@@ -17,11 +23,95 @@ public static class StokCikisPdfOlusturucu
 
     public static void OnizleVeYazdir(StokCikisFisVerisi veri)
     {
-        var dosyaAdi = $"TeslimFisi_{veri.BelgeNo.Replace('/', '-')}.pdf";
+        var tipAd = veri.Tip == StokFisTipi.Giris ? "GirisFisi" : "TeslimFisi";
+        var dosyaAdi = $"{tipAd}_{veri.BelgeNo.Replace('/', '-')}.pdf";
+        var pencereBaslik = veri.Tip == StokFisTipi.Giris
+            ? "Stok Giriş Fişi"
+            : "Stok Teslim Fişi";
         PdfOnizlemeServisi.Goster(
             dosya => PdfOlustur(dosya, veri),
             dosyaAdi,
-            "Stok Teslim Fişi");
+            pencereBaslik);
+    }
+
+    /// <summary>
+    /// Seçili stok hareketinin (Giriş/Çıkış) aynı belge numaralı satırlarından fiş oluşturur.
+    /// </summary>
+    public static bool HareketFisiYazdir(StokHareketKaydi secili)
+    {
+        var fis = HareketlerdenFis(secili);
+        if (fis is null)
+            return false;
+
+        OnizleVeYazdir(fis);
+        return true;
+    }
+
+    public static StokCikisFisVerisi? HareketlerdenFis(StokHareketKaydi secili)
+    {
+        if (secili.HareketTipi is not (StokHareketTipleri.Giris or StokHareketTipleri.Cikis))
+            return null;
+
+        var tip = secili.HareketTipi == StokHareketTipleri.Giris
+            ? StokFisTipi.Giris
+            : StokFisTipi.Cikis;
+
+        List<StokHareketKaydi> grup;
+        if (!string.IsNullOrWhiteSpace(secili.BelgeNo))
+        {
+            grup = ModulVeriDeposu.StokHareketleri
+                .Where(h => h.HareketTipi == secili.HareketTipi
+                            && h.BelgeNo.Equals(secili.BelgeNo.Trim(), StringComparison.OrdinalIgnoreCase))
+                .OrderBy(h => h.Tarih)
+                .ThenBy(h => h.MalzemeAdi)
+                .ToList();
+        }
+        else
+        {
+            grup = [secili];
+        }
+
+        if (grup.Count == 0)
+            grup = [secili];
+
+        var ilk = grup[0];
+        string? indigiSaha = null;
+        if (tip == StokFisTipi.Cikis)
+        {
+            var aciklama = grup.Select(h => h.Aciklama).FirstOrDefault(a =>
+                !string.IsNullOrWhiteSpace(a) && a.StartsWith("Sahaya indirme", StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(aciklama))
+            {
+                var ayir = aciklama.IndexOf(':');
+                if (ayir >= 0 && ayir < aciklama.Length - 1)
+                    indigiSaha = aciklama[(ayir + 1)..].Trim();
+            }
+        }
+
+        string? tedarikci = null;
+        if (tip == StokFisTipi.Giris && !string.IsNullOrWhiteSpace(ilk.BelgeNo))
+        {
+            var belge = ilk.BelgeNo.Trim();
+            tedarikci = ModulVeriDeposu.AlinanMalzemeler
+                .FirstOrDefault(a =>
+                    a.FaturaNo.Equals(belge, StringComparison.OrdinalIgnoreCase)
+                    || a.Aciklama.Contains(belge, StringComparison.OrdinalIgnoreCase))
+                ?.Tedarikci;
+        }
+
+        return new StokCikisFisVerisi(
+            string.IsNullOrWhiteSpace(ilk.BelgeNo) ? "—" : ilk.BelgeNo.Trim(),
+            string.IsNullOrWhiteSpace(ilk.Tarih) ? DateTime.Now.ToString("dd.MM.yyyy", Tr) : ilk.Tarih,
+            ilk.IslemYapan ?? "",
+            ilk.TeslimEdilen ?? "",
+            grup.Select(h => new StokCikisFisSatir(
+                h.MalzemeAdi,
+                h.Miktar.ToString("N2", Tr),
+                h.Birim,
+                h.DepoSaha)).ToList(),
+            indigiSaha,
+            tip,
+            tedarikci);
     }
 
     public static string TeslimEdenMetni()
@@ -67,9 +157,13 @@ public static class StokCikisPdfOlusturucu
         var logoYol = SatinalmaProLogoDeposu.TamYol(ayarlar.LogoDosyaYolu);
         var logoVar = !string.IsNullOrEmpty(logoYol) && File.Exists(logoYol);
         var firmaAdi = string.IsNullOrWhiteSpace(ayarlar.FirmaAdi) ? UygulamaBilgisi.Ad : ayarlar.FirmaAdi;
-        var baslik = string.IsNullOrWhiteSpace(veri.IndigiSaha)
-            ? "STOK TESLİM / DEPO ÇIKIŞ FİŞİ"
-            : "DEPO ÇIKIŞ FİŞİ (SAHAYA İNDİRME)";
+        var baslik = veri.Tip switch
+        {
+            StokFisTipi.Giris => "STOK GİRİŞ / DEPO TESLİM FİŞİ",
+            _ when !string.IsNullOrWhiteSpace(veri.IndigiSaha) => "DEPO ÇIKIŞ FİŞİ (SAHAYA İNDİRME)",
+            _ => "STOK TESLİM / DEPO ÇIKIŞ FİŞİ"
+        };
+        var baslikRenk = veri.Tip == StokFisTipi.Giris ? Colors.Blue.Medium : Colors.Teal.Medium;
 
         container.Column(col =>
         {
@@ -89,7 +183,7 @@ public static class StokCikisPdfOlusturucu
                 row.RelativeItem().AlignMiddle().Column(c =>
                 {
                     c.Item().AlignCenter().Text(firmaAdi).Bold().FontSize(12);
-                    c.Item().AlignCenter().Text(baslik).Bold().FontSize(12).FontColor(Colors.Teal.Medium);
+                    c.Item().AlignCenter().Text(baslik).Bold().FontSize(12).FontColor(baslikRenk);
                 });
 
                 row.ConstantItem(logoGenislik);
@@ -112,6 +206,8 @@ public static class StokCikisPdfOlusturucu
 
             BilgiSatiri(t, "Belge No", veri.BelgeNo, "Tarih", veri.Tarih);
             BilgiSatiri(t, "Teslim Eden", veri.TeslimEden, "Teslim Alan", veri.TeslimEdilen);
+            if (veri.Tip == StokFisTipi.Giris && !string.IsNullOrWhiteSpace(veri.Tedarikci))
+                BilgiSatiri(t, "Tedarikçi", veri.Tedarikci!, "", "");
             if (!string.IsNullOrWhiteSpace(veri.IndigiSaha))
                 BilgiSatiri(t, "İndiği Saha", veri.IndigiSaha!, "", "");
         });
@@ -217,4 +313,6 @@ public sealed record StokCikisFisVerisi(
     string TeslimEden,
     string TeslimEdilen,
     IReadOnlyList<StokCikisFisSatir> Satirlar,
-    string? IndigiSaha = null);
+    string? IndigiSaha = null,
+    StokFisTipi Tip = StokFisTipi.Cikis,
+    string? Tedarikci = null);

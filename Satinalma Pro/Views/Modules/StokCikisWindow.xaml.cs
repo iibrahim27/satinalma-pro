@@ -25,11 +25,14 @@ public partial class StokCikisWindow : Window
         MalzemeGiris.OneriKaynaginiAyarla(arama =>
             StokIslemServisi.MalzemeListesi(kategori: null, arama, sadeceMevcutStok: true));
         MalzemeGiris.MetinOnaylandi += (_, metin) => StoktanBilgileriDoldur(metin);
+        MalzemeGiris.MetinYazildi += (_, metin) => StoktanBilgileriDoldur(metin);
     }
 
     private void StoktanBilgileriDoldur(string malzemeAdi)
     {
-        var stok = StokIslemServisi.StokBulMalzemeAdi(malzemeAdi, sadeceMevcutStok: true);
+        var stok = string.IsNullOrWhiteSpace(malzemeAdi)
+            ? null
+            : StokIslemServisi.StokBulMalzemeAdi(malzemeAdi, sadeceMevcutStok: true);
 
         if (stok is null)
         {
@@ -38,6 +41,10 @@ public partial class StokCikisWindow : Window
             CmbBirim.Items.Clear();
             return;
         }
+
+        // Kategori kullanıcıdan istenmez — malzeme adından stok kaydına yazılır.
+        if (string.IsNullOrWhiteSpace(stok.Kategori))
+            stok.Kategori = StokIslemServisi.KategoriCozumle(stok.MalzemeAdi);
 
         _seciliStok = stok;
         TxtMevcut.Text = $"{stok.MevcutMiktar:N2} {stok.Birim}";
@@ -68,12 +75,9 @@ public partial class StokCikisWindow : Window
             return false;
         }
 
+        var kategori = StokIslemServisi.KategoriCozumle(stok.MalzemeAdi, stok.Kategori);
         if (string.IsNullOrWhiteSpace(stok.Kategori))
-        {
-            MessageBox.Show("Bu malzemenin stok kaydında kategori yok.", UygulamaBilgisi.Ad,
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-            return false;
-        }
+            stok.Kategori = kategori;
 
         if (!double.TryParse(TxtMiktar.Text, NumberStyles.Any, CultureInfo.CurrentCulture, out var miktar) || miktar <= 0)
         {
@@ -88,7 +92,7 @@ public partial class StokCikisWindow : Window
             return false;
         }
 
-        satir.Kategori = stok.Kategori.Trim();
+        satir.Kategori = kategori;
         satir.Malzeme = stok.MalzemeAdi;
         satir.Miktar = miktar;
         satir.Birim = stok.Birim;
@@ -231,6 +235,7 @@ public partial class StokCikisWindow : Window
                     teslimEdilen);
             }
             ModulVeriDeposu.EndBatch();
+            _ = BulutVeriSenkronu.StokSonrasiHemenGonderAsync();
 
             var fisVerisi = new StokCikisFisVerisi(
                 belgeNo,

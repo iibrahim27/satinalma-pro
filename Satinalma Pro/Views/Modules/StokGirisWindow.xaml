@@ -129,6 +129,7 @@
     </Border>
     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
       <Button Content="İptal" Style="{StaticResource ToolbarButtonStyle}" Width="100" Margin="0,0,8,0" Click="Iptal_Click" />
+      <Button Content="Fiş Önizle / Yazdır" Style="{StaticResource ToolbarButtonStyle}" Width="160" Margin="0,0,8,0" Click="FisOnizle_Click" />
       <Button Content="Kaydet" Style="{StaticResource PrimaryToolbarButtonStyle}" Width="120" Click="Kaydet_Click" />
     </StackPanel>
   </Grid>

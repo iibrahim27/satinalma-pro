@@ -11,6 +11,7 @@ import com.satinalmapro.android.core.model.UpdateManifest
 import com.satinalmapro.android.core.model.UserProfile
 import com.satinalmapro.android.core.AppContainer.UpdateInstallResult
 import com.satinalmapro.android.core.NetworkError
+import com.satinalmapro.android.core.NetworkMonitor
 import com.satinalmapro.android.core.model.ManagedUser
 import com.satinalmapro.android.core.model.UygulamaAyarlar
 import com.satinalmapro.android.core.roles.KullaniciRolleri
@@ -557,6 +558,14 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         if (backgroundRefreshStarted) return
         backgroundRefreshStarted = true
         BackgroundSyncScheduler.ensureScheduled(container.appContext)
+        // İnternet gelince bekleyen stok/talep yazmalarını anında Firebase'e gönder.
+        NetworkMonitor.registerOnlineListener(container.appContext) {
+            if (!_isLoggedIn.value) return@registerOnlineListener
+            viewModelScope.launch(Dispatchers.IO) {
+                runCatching { container.flushPendingStok() }
+                runCatching { container.flushPendingTalepler() }
+            }
+        }
         // Canlı talep+bildirim ” uygulama açıkken sık; arka planda WorkManager tamamlar.
         viewModelScope.launch(Dispatchers.IO) {
             while (true) {
@@ -919,6 +928,10 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
 
     fun stokMalzemeOnerileri(query: String, sadeceMevcut: Boolean = false): List<String> =
         container.stokMalzemeOnerileri(query, sadeceMevcut)
+
+    fun stokMevcutBul(malzeme: String) = container.stokMevcutBul(malzeme)
+
+    fun stokCikisOnerileri(query: String) = container.stokCikisOnerileri(query)
 
     fun sonrakiGirisBelgeNo(): String = container.sonrakiGirisBelgeNo()
 

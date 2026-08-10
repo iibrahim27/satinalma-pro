@@ -2,7 +2,7 @@
 ; Derleme: Inno Setup 6 kurulu olmalı, sonra ISCC.exe ile derlenir
 
 #define MyAppName "Satınalma Pro"
-#define MyAppVersion "2.1.106"
+#define MyAppVersion "2.1.107"
 #define MyAppPublisher "MV İNŞAAT"
 #define MyAppExeName "SatinalmaPro.exe"
 #define MyTalepProName "Talep Pro"
@@ -31,21 +31,29 @@ Name: "turkish"; MessagesFile: "compiler:Languages\Turkish.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "Masaüstü kısayolu oluştur"; GroupDescription: "Ek seçenekler:"; Flags: unchecked
+Name: "taleppro"; Description: "Talep Pro'yu da bu bilgisayara kur"; GroupDescription: "Ek uygulamalar:"; Flags: checkedonce
 
 [Files]
-Source: "{#MyPublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-; Talep Pro masaüstü/başlat menüsü kısayolu için TP ikonu (exe gömülü ikon yedek)
-Source: "..\..\TalepPro\Assets\app.ico"; DestDir: "{app}"; DestName: "TalepPro.ico"; Flags: ignoreversion
+; Satınalma Pro — Talep Pro dosyaları ayrı görevle kurulur
+Source: "{#MyPublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "TalepPro.exe,TalepPro.dll,TalepPro.runtimeconfig.json,TalepPro.deps.json,TalepPro.ico,TalepPro.pdb"
+; Talep Pro (yalnızca «Talep Pro'yu da kur» işaretliyse)
+Source: "{#MyPublishDir}\TalepPro.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Tasks: taleppro
+Source: "{#MyPublishDir}\TalepPro.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Tasks: taleppro
+Source: "{#MyPublishDir}\TalepPro.runtimeconfig.json"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Tasks: taleppro
+Source: "{#MyPublishDir}\TalepPro.deps.json"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Tasks: taleppro
+Source: "{#MyPublishDir}\TalepPro.ico"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Tasks: taleppro
+; Publish içinde yoksa kaynak ikon (kısayol için)
+Source: "..\..\TalepPro\Assets\app.ico"; DestDir: "{app}"; DestName: "TalepPro.ico"; Flags: ignoreversion skipifsourcedoesntexist; Tasks: taleppro
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\{#MyTalepProName}"; Filename: "{app}\{#MyTalepProExeName}"; IconFilename: "{app}\TalepPro.ico"
+Name: "{group}\{#MyTalepProName}"; Filename: "{app}\{#MyTalepProExeName}"; IconFilename: "{app}\TalepPro.ico"; Tasks: taleppro
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-Name: "{autodesktop}\{#MyTalepProName}"; Filename: "{app}\{#MyTalepProExeName}"; IconFilename: "{app}\TalepPro.ico"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyTalepProName}"; Filename: "{app}\{#MyTalepProExeName}"; IconFilename: "{app}\TalepPro.ico"; Tasks: desktopicon and taleppro
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-Filename: "{app}\{#MyTalepProExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyTalepProName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent unchecked
+Filename: "{app}\{#MyTalepProExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyTalepProName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent unchecked; Tasks: taleppro
 
 [UninstallDelete]
 ; Kurulum kaldırıldığında giriş hatırlatma dosyalarını sil (AppData — Program Files dışında)

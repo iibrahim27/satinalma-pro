@@ -39,6 +39,10 @@ class BackgroundSyncWorker(
         }
 
         container.hydrateFromOfflineCache()
+        runCatching { container.flushPendingStok() }
+            .onFailure { Log.w(TAG, "flushPendingStok", it) }
+        runCatching { container.flushPendingTalepler() }
+            .onFailure { Log.w(TAG, "flushPendingTalepler", it) }
         runCatching { container.syncLiveData() }
             .onFailure {
                 Log.e(TAG, "syncLiveData başarısız", it)

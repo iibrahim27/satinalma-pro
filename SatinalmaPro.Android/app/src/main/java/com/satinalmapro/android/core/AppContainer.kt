@@ -98,9 +98,9 @@ class AppContainer(private val context: Context) {
     val biometricPreferences = BiometricPreferences(context)
     private val fcmPush = FcmPushService(context, config.projectId, firestore)
     val bildirimler = BildirimRepository(firestore, auth, fcmPush)
-    val talepler = TalepRepository(firestore, auth, bildirimler)
+    val talepler = TalepRepository(firestore, auth, bildirimler, offlineCache)
     val talepDetayController = PurchaseRequestDetailController(talepler)
-    val stokRepo = StokRepository(firestore, auth)
+    val stokRepo = StokRepository(firestore, auth, offlineCache)
     val modulRepo = ModulRepository(firestore, auth)
     val settingsRepo = SettingsRepository(firestore, auth)
     private val medyaRepo = MedyaRepository(firestore)
@@ -194,11 +194,18 @@ class AppContainer(private val context: Context) {
                 BildirimLog.i("CACHE", "Offline bildirimler yüklendi: ${cachedNotif.size}")
             }
         }
-        if (_stok.value.isEmpty()) {
+        if (_stok.value.isEmpty() || offlineCache.hasStokPending(tenantId)) {
             val cachedStok = offlineCache.loadStok(tenantId)
             if (cachedStok.isNotEmpty()) {
                 _stok.value = cachedStok
                 BildirimLog.i("CACHE", "Offline stok yüklendi: ${cachedStok.size}")
+            }
+        }
+        if (_stokHareketleri.value.isEmpty() || offlineCache.hasStokPending(tenantId)) {
+            val cachedHareket = offlineCache.loadStokHareketleri(tenantId)
+            if (cachedHareket.isNotEmpty()) {
+                _stokHareketleri.value = cachedHareket
+                BildirimLog.i("CACHE", "Offline stok hareketleri yüklendi: ${cachedHareket.size}")
             }
         }
     }
@@ -515,6 +522,10 @@ class AppContainer(private val context: Context) {
             val uid = auth.uid ?: return
             runCatching { applyCloudResetIfNeeded() }
                 .onFailure { BildirimLog.e("SYNC", "applyCloudResetIfNeeded", it) }
+            runCatching { flushPendingStok() }
+                .onFailure { BildirimLog.e("SYNC", "flushPendingStok", it) }
+            runCatching { flushPendingTalepler() }
+                .onFailure { BildirimLog.e("SYNC", "flushPendingTalepler", it) }
             runCatching { loadMaterialNames() }
                 .onFailure { BildirimLog.e("SYNC", "loadMaterialNames", it) }
             runCatching { loadTalepler() }
@@ -550,6 +561,10 @@ class AppContainer(private val context: Context) {
             val uid = auth.uid ?: return
             runCatching { applyCloudResetIfNeeded() }
                 .onFailure { BildirimLog.e("SYNC", "live applyCloudResetIfNeeded", it) }
+            runCatching { flushPendingStok() }
+                .onFailure { BildirimLog.e("SYNC", "live flushPendingStok", it) }
+            runCatching { flushPendingTalepler() }
+                .onFailure { BildirimLog.e("SYNC", "live flushPendingTalepler", it) }
             runCatching { loadTalepler() }
                 .onFailure { BildirimLog.e("SYNC", "live loadTalepler", it) }
             runCatching { loadNotifications(uid, cleanup = false) }
@@ -664,10 +679,51 @@ class AppContainer(private val context: Context) {
         loadTalepler()
     }
 
+    /** Bekleyen stok yazmalarını Firebase'e gönder (internet gelince). */
+    suspend fun flushPendingStok(): Boolean {
+        if (!stokRepo.hasPendingWrites()) return true
+        if (!NetworkMonitor.isOnline(context)) return false
+        val ok = stokRepo.flushPendingWrites()
+        if (ok) {
+            BildirimLog.i("SYNC", "Bekleyen stok yazmaları Firebase'e gönderildi")
+            // Yerel state cache ile uyumlu kalsın
+            val tid = TenantSession.tenantId().orEmpty()
+            if (tid.isNotBlank()) {
+                _stok.value = offlineCache.loadStok(tid)
+                _stokHareketleri.value = offlineCache.loadStokHareketleri(tid)
+            }
+        }
+        return ok
+    }
+
+    /** Bekleyen talep yazmalarını Firebase'e gönder. */
+    suspend fun flushPendingTalepler(): Boolean {
+        if (!talepler.hasPendingWrites()) return true
+        if (!NetworkMonitor.isOnline(context)) return false
+        val ok = talepler.flushPendingWrites()
+        if (ok) {
+            BildirimLog.i("SYNC", "Bekleyen talepler Firebase'e gönderildi")
+            val tid = TenantSession.tenantId().orEmpty()
+            if (tid.isNotBlank()) {
+                _talepler.value = offlineCache.loadTalepler(tid)
+            }
+        }
+        return ok
+    }
+
     private suspend fun loadStok() {
         val prevStok = _stok.value
         val prevHareket = _stokHareketleri.value
         val tenantId = TenantSession.tenantId().orEmpty()
+        // Bekleyen yerel yazma varken buluttaki eski stok ile ezme.
+        if (tenantId.isNotBlank() && offlineCache.hasStokPending(tenantId)) {
+            runCatching { flushPendingStok() }
+            if (offlineCache.hasStokPending(tenantId)) {
+                _stok.value = offlineCache.loadStok(tenantId).ifEmpty { prevStok }
+                _stokHareketleri.value = offlineCache.loadStokHareketleri(tenantId).ifEmpty { prevHareket }
+                return
+            }
+        }
         _stok.value = runCatching { stokRepo.loadStok() }
             .getOrElse {
                 BildirimLog.w("SESSION", "Stok okunamadı, son veri korunuyor: ${it.message}")
@@ -678,8 +734,9 @@ class AppContainer(private val context: Context) {
                 BildirimLog.w("SESSION", "Stok hareketleri okunamadı, son veri korunuyor: ${it.message}")
                 prevHareket
             }
-        if (tenantId.isNotBlank()) {
+        if (tenantId.isNotBlank() && !offlineCache.hasStokPending(tenantId)) {
             offlineCache.saveStok(tenantId, _stok.value)
+            offlineCache.saveStokHareketleri(tenantId, _stokHareketleri.value)
         }
     }
 
@@ -1099,6 +1156,41 @@ class AppContainer(private val context: Context) {
         return MalzemeOneri.filtrele(source, query, bosSorgudaGoster = sadeceMevcut)
     }
 
+    /** Stok çıkışı: malzeme adına göre mevcut miktarlı kayıt (kategori stoktan gelir). */
+    fun stokMevcutBul(malzeme: String): StokKaydi? {
+        if (malzeme.isBlank()) return null
+        return stokRepo.stokBulMalzeme(_stok.value, malzeme, _user.value?.site)
+    }
+
+    data class StokCikisOneri(
+        val malzemeAdi: String,
+        val mevcutMiktar: Double,
+        val birim: String,
+        val kategori: String
+    )
+
+    fun stokCikisOnerileri(query: String?): List<StokCikisOneri> {
+        val preferred = _user.value?.site
+        val adaylar = _stok.value
+            .filter { it.mevcutMiktar > 0 && it.malzemeAdi.isNotBlank() }
+            .groupBy { it.malzemeAdi.trim().lowercase() }
+            .mapNotNull { (_, kayitlar) ->
+                preferred?.trim()?.takeIf { it.isNotBlank() }?.let { depo ->
+                    kayitlar.firstOrNull { it.depoSaha.equals(depo, true) }
+                } ?: kayitlar.maxByOrNull { it.mevcutMiktar }
+            }
+        val adlar = MalzemeOneri.filtrele(
+            adaylar.map { it.malzemeAdi },
+            query,
+            bosSorgudaGoster = true
+        )
+        return adlar.mapNotNull { ad ->
+            adaylar.firstOrNull { it.malzemeAdi.equals(ad, true) }?.let {
+                StokCikisOneri(it.malzemeAdi, it.mevcutMiktar, it.birim, it.kategori)
+            }
+        }
+    }
+
     suspend fun stokGirisCoklu(
         belgeNo: String,
         depo: String,
@@ -1443,6 +1535,15 @@ class AppContainer(private val context: Context) {
         val previous = _talepler.value
         val cached = if (tenantId.isBlank()) emptyList()
         else offlineCache.loadTalepler(tenantId)
+
+        // Bekleyen yerel talep yazması varken buluttaki eski listeyi ezme.
+        if (tenantId.isNotBlank() && offlineCache.hasTaleplerPending(tenantId)) {
+            runCatching { flushPendingTalepler() }
+            if (offlineCache.hasTaleplerPending(tenantId)) {
+                _talepler.value = cached.ifEmpty { previous }
+                return
+            }
+        }
 
         val loaded = runCatching { talepler.loadTalepler() }
             .getOrElse { ex ->

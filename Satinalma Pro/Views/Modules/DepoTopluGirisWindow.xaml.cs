@@ -328,7 +328,21 @@ public partial class DepoTopluGirisWindow : Window
             }
 
             ModulVeriDeposu.EndBatch();
+            _ = BulutVeriSenkronu.StokSonrasiHemenGonderAsync();
             MalzemeAdiOneriServisi.OnbellekSifirla();
+
+            var fisVerisi = new StokCikisFisVerisi(
+                belgeNo,
+                tarih,
+                islemYapan,
+                "Depo stok girişi",
+                _satirlar.Select(s => new StokCikisFisSatir(
+                    s.Malzeme,
+                    s.MiktarGosterim,
+                    s.Birim,
+                    depo)).ToList(),
+                IndigiSaha: null,
+                Tip: StokFisTipi.Giris);
 
             MessageBox.Show(
                 $"{_satirlar.Count} ürün depo stokuna eklendi.",
@@ -338,6 +352,7 @@ public partial class DepoTopluGirisWindow : Window
 
             DialogResult = true;
             Close();
+            StokCikisPdfOlusturucu.OnizleVeYazdir(fisVerisi);
         }
         catch (Exception ex)
         {

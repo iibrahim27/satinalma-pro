@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.106",
-    "build":  179,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.106/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.106/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.106/SatinalmaPro.apk",
-    "notes":  "2.1.106 - DialogResult guvenli kapanis (onay/kalem/teklif pencerelerinde sahte hata duzeltildi)",
+    "version":  "2.1.107",
+    "build":  180,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.107/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.107/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.107/SatinalmaPro.apk",
+    "notes":  "2.1.107 - Firebase senkron/seed/kurallar; stok birlestirme+Depo aninda bulut; talep offline merge; stok giris/cikis fisi; Talep Pro kurulum secenegi",
     "zorunlu":  false
 }

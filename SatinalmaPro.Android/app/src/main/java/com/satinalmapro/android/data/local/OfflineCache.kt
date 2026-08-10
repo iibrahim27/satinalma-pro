@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.satinalmapro.android.core.model.AppNotification
+import com.satinalmapro.android.core.model.StokHareket
 import com.satinalmapro.android.core.model.StokKaydi
 import com.satinalmapro.android.core.model.TalepItem
 
@@ -17,6 +18,7 @@ class OfflineCache(context: Context) {
     private val talepType = object : TypeToken<List<TalepItem>>() {}.type
     private val notifType = object : TypeToken<List<AppNotification>>() {}.type
     private val stokType = object : TypeToken<List<StokKaydi>>() {}.type
+    private val hareketType = object : TypeToken<List<StokHareket>>() {}.type
 
     fun saveTalepler(tenantId: String, list: List<TalepItem>) {
         val tid = tenantId.trim()
@@ -72,6 +74,48 @@ class OfflineCache(context: Context) {
         }.getOrDefault(emptyList())
     }
 
+    fun saveStokHareketleri(tenantId: String, list: List<StokHareket>) {
+        val tid = tenantId.trim()
+        if (tid.isBlank()) return
+        prefs.edit()
+            .putString(stokHareketKey(tid), gson.toJson(list))
+            .apply()
+    }
+
+    fun loadStokHareketleri(tenantId: String): List<StokHareket> {
+        val tid = tenantId.trim()
+        if (tid.isBlank()) return emptyList()
+        val json = prefs.getString(stokHareketKey(tid), null) ?: return emptyList()
+        return runCatching {
+            gson.fromJson<List<StokHareket>>(json, hareketType) ?: emptyList()
+        }.getOrDefault(emptyList())
+    }
+
+    /** Yerel stok yazması Firebase'e henüz gitmedi. */
+    fun markStokPending(tenantId: String, pending: Boolean) {
+        val tid = tenantId.trim()
+        if (tid.isBlank()) return
+        prefs.edit().putBoolean(stokPendingKey(tid), pending).apply()
+    }
+
+    fun hasStokPending(tenantId: String): Boolean {
+        val tid = tenantId.trim()
+        if (tid.isBlank()) return false
+        return prefs.getBoolean(stokPendingKey(tid), false)
+    }
+
+    fun markTaleplerPending(tenantId: String, pending: Boolean) {
+        val tid = tenantId.trim()
+        if (tid.isBlank()) return
+        prefs.edit().putBoolean(taleplerPendingKey(tid), pending).apply()
+    }
+
+    fun hasTaleplerPending(tenantId: String): Boolean {
+        val tid = tenantId.trim()
+        if (tid.isBlank()) return false
+        return prefs.getBoolean(taleplerPendingKey(tid), false)
+    }
+
     /** Firma değişiminde veya çıkışta tüm önbelleği sil. */
     fun clearAll() {
         prefs.edit().clear().apply()
@@ -84,12 +128,18 @@ class OfflineCache(context: Context) {
             .remove(taleplerKey(tid))
             .remove(notificationsKey(tid))
             .remove(stokKey(tid))
+            .remove(stokHareketKey(tid))
+            .remove(stokPendingKey(tid))
+            .remove(taleplerPendingKey(tid))
             .apply()
     }
 
     private fun taleplerKey(tenantId: String) = "talepler_json_$tenantId"
     private fun notificationsKey(tenantId: String) = "notifications_json_$tenantId"
     private fun stokKey(tenantId: String) = "stok_json_$tenantId"
+    private fun stokHareketKey(tenantId: String) = "stok_hareket_json_$tenantId"
+    private fun stokPendingKey(tenantId: String) = "stok_pending_$tenantId"
+    private fun taleplerPendingKey(tenantId: String) = "talepler_pending_$tenantId"
 
     companion object {
         private const val KEY_LEGACY_TALEPLER = "talepler_json"

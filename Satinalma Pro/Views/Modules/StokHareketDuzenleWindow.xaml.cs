@@ -54,6 +54,7 @@ public partial class StokHareketDuzenleWindow : Window
                 TxtIslemYapan.Text.Trim(),
                 TxtAciklama.Text.Trim());
 
+            _ = BulutVeriSenkronu.StokSonrasiHemenGonderAsync();
             DialogResult = true;
             Close();
         }
