@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.107",
-    "build":  180,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.107/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.107/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.107/SatinalmaPro.apk",
-    "notes":  "2.1.107 - Firebase senkron/seed/kurallar; stok birlestirme+Depo aninda bulut; talep offline merge; stok giris/cikis fisi; Talep Pro kurulum secenegi",
+    "version":  "2.1.108",
+    "build":  182,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.108/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.108/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.108/SatinalmaPro.apk",
+    "notes":  "2.1.108 - Android stok: tukenen ayri sekme; giris/cikis kaydet formu dogrudan kaydeder",
     "zorunlu":  false
 }

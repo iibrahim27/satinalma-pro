@@ -53,6 +53,7 @@ import com.satinalmapro.android.core.model.StokKaydi
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.data.repository.StokRepository
 import com.satinalmapro.android.ui.AppViewModel
+import com.satinalmapro.android.ui.components.AppDetailTabRow
 import com.satinalmapro.android.ui.components.AppPrimaryButton
 import com.satinalmapro.android.ui.components.MetrikField
 import com.satinalmapro.android.ui.components.StatusPill
@@ -63,9 +64,13 @@ import com.satinalmapro.android.ui.theme.MetrikSpace
 fun StokDurumScreen(viewModel: AppViewModel) {
     val stok by viewModel.stokList.collectAsState()
     var query by remember { mutableStateOf("") }
-    val filtered = remember(stok, query) {
+    var selectedTab by remember { mutableStateOf(0) } // 0 = stokta, 1 = tükenen
+    val stokta = remember(stok) { stok.filter { it.mevcutMiktar > 0 } }
+    val tukenen = remember(stok) { stok.filter { it.mevcutMiktar <= 0 } }
+    val kaynak = if (selectedTab == 0) stokta else tukenen
+    val filtered = remember(kaynak, query) {
         val q = query.trim()
-        stok
+        kaynak
             .sortedBy { it.malzemeAdi.lowercase() }
             .filter {
                 q.isBlank() ||
@@ -74,7 +79,7 @@ fun StokDurumScreen(viewModel: AppViewModel) {
                     it.kategori.contains(q, true)
             }
     }
-    val kritik = stok.count { it.durumMetin == "Kritik" || it.durumMetin == "Tükendi" }
+    val kritik = stokta.count { it.durumMetin == "Kritik" }
 
     Column(
         modifier = Modifier
@@ -83,7 +88,17 @@ fun StokDurumScreen(viewModel: AppViewModel) {
     ) {
         StokHeader(
             title = "Stok Durumu",
-            subtitle = if (kritik > 0) "$kritik kalem kritik veya tükenmiş" else "Kritik stok uyarısı yok"
+            subtitle = when {
+                selectedTab == 1 -> "${tukenen.size} tükenen malzeme"
+                kritik > 0 -> "$kritik kalem kritik stokta"
+                else -> "${stokta.size} malzeme stokta"
+            }
+        )
+        AppDetailTabRow(
+            tabs = listOf("Stokta (${stokta.size})", "Tükenen (${tukenen.size})"),
+            selectedIndex = selectedTab,
+            onTabSelected = { selectedTab = it },
+            modifier = Modifier.padding(horizontal = MetrikSpace.screen)
         )
         MetrikField(
             value = query,
@@ -96,7 +111,7 @@ fun StokDurumScreen(viewModel: AppViewModel) {
             }
         )
         if (filtered.isEmpty()) {
-            EmptyStokState("Stok kaydı yok")
+            EmptyStokState(if (selectedTab == 1) "Tükenen malzeme yok" else "Stokta malzeme yok")
         } else {
             LazyColumn(
                 contentPadding = PaddingValues(
@@ -177,8 +192,8 @@ fun StokGirisScreen(viewModel: AppViewModel) {
     val birimler by viewModel.malzemeBirimleri.collectAsState()
     val canWrite = KullaniciRolleri.canStockWrite(user?.role)
     var belgeNo by remember { mutableStateOf(viewModel.sonrakiGirisBelgeNo()) }
-    var depo by remember { mutableStateOf(user?.site.orEmpty()) }
-    var teslimAlan by remember { mutableStateOf("") }
+    var depo by remember(user?.site) { mutableStateOf(user?.site.orEmpty()) }
+    var teslimAlan by remember(user?.fullName) { mutableStateOf(user?.fullName.orEmpty()) }
     var malzeme by remember { mutableStateOf("") }
     var miktar by remember { mutableStateOf("") }
     var birim by remember { mutableStateOf("Adet") }
@@ -186,6 +201,32 @@ fun StokGirisScreen(viewModel: AppViewModel) {
     var birimMaliyet by remember { mutableStateOf("") }
     val satirlar = remember { mutableStateListOf<StokRepository.GirisSatir>() }
     val oneriler = remember(malzeme) { viewModel.stokMalzemeOnerileri(malzeme) }
+    val pendingSatir = remember(malzeme, miktar, birim, kategori, birimMaliyet) {
+        val m = miktar.replace(',', '.').toDoubleOrNull() ?: return@remember null
+        if (malzeme.isBlank() || m <= 0) null
+        else StokRepository.GirisSatir(
+            malzeme = malzeme.trim(),
+            miktar = m,
+            birim = birim.ifBlank { "Adet" },
+            kategori = kategori.trim(),
+            birimMaliyet = birimMaliyet.replace(',', '.').toDoubleOrNull() ?: 0.0
+        )
+    }
+    val kayitSayisi = satirlar.size + if (pendingSatir != null) 1 else 0
+    val kaydetHazir = kayitSayisi > 0 && depo.isNotBlank()
+
+    fun formTemizle() {
+        malzeme = ""
+        miktar = ""
+        kategori = ""
+        birimMaliyet = ""
+    }
+
+    fun kaydedilecekSatirlar(): List<StokRepository.GirisSatir> {
+        val liste = satirlar.toMutableList()
+        pendingSatir?.let { liste.add(it) }
+        return liste
+    }
 
     Column(
         modifier = Modifier
@@ -195,7 +236,7 @@ fun StokGirisScreen(viewModel: AppViewModel) {
             .padding(horizontal = MetrikSpace.screen, vertical = MetrikSpace.lg),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StokHeader(title = "Stok Girişi", subtitle = "Belgeye birden fazla satır ekleyin")
+        StokHeader(title = "Stok Girişi", subtitle = "Bilgileri doldurup kaydedin; birden fazla satır da ekleyebilirsiniz")
         if (!canWrite) {
             Text("Bu rol stok girişi yapamaz.", color = MetrikLight.Danger)
         } else {
@@ -205,7 +246,7 @@ fun StokGirisScreen(viewModel: AppViewModel) {
             }
             MetrikField(teslimAlan, { teslimAlan = it }, "Teslim alan")
 
-            Text("Satır ekle", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MetrikLight.TextPrimary)
+            Text("Malzeme satırı", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MetrikLight.TextPrimary)
             MetrikField(malzeme, { malzeme = it }, "Malzeme")
             if (oneriler.isNotEmpty() && malzeme.isNotBlank()) {
                 Row(
@@ -253,33 +294,21 @@ fun StokGirisScreen(viewModel: AppViewModel) {
             }
             OutlinedButton(
                 onClick = {
-                    val m = miktar.replace(',', '.').toDoubleOrNull() ?: 0.0
-                    if (malzeme.isBlank() || m <= 0) return@OutlinedButton
-                    satirlar.add(
-                        StokRepository.GirisSatir(
-                            malzeme = malzeme.trim(),
-                            miktar = m,
-                            birim = birim.ifBlank { "Adet" },
-                            kategori = kategori.trim(),
-                            birimMaliyet = birimMaliyet.replace(',', '.').toDoubleOrNull() ?: 0.0
-                        )
-                    )
-                    malzeme = ""
-                    miktar = ""
-                    kategori = ""
-                    birimMaliyet = ""
+                    val s = pendingSatir ?: return@OutlinedButton
+                    satirlar.add(s)
+                    formTemizle()
                 },
-                enabled = malzeme.isNotBlank() && miktar.isNotBlank(),
+                enabled = pendingSatir != null,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Satır ekle")
+                Text("Satır ekle (çoklu giriş)")
             }
 
             if (satirlar.isNotEmpty()) {
                 Text(
-                    "${satirlar.size} satır",
+                    "${satirlar.size} satır eklendi",
                     style = MaterialTheme.typography.labelLarge,
                     color = MetrikLight.TextSecondary
                 )
@@ -295,12 +324,15 @@ fun StokGirisScreen(viewModel: AppViewModel) {
 
             error?.let { Text(it, color = MetrikLight.Danger, style = MaterialTheme.typography.bodySmall) }
             AppPrimaryButton(
-                text = if (satirlar.isEmpty()) "Giriş kaydet" else "Giriş kaydet (${satirlar.size})",
+                text = if (kayitSayisi <= 1) "Stok girişi kaydet" else "Stok girişi kaydet ($kayitSayisi)",
                 loading = loading,
-                enabled = satirlar.isNotEmpty() && depo.isNotBlank(),
+                enabled = kaydetHazir && !loading,
                 onClick = {
-                    viewModel.stokGirisCoklu(belgeNo, depo, teslimAlan, satirlar.toList()) {
+                    val liste = kaydedilecekSatirlar()
+                    if (liste.isEmpty() || depo.isBlank()) return@AppPrimaryButton
+                    viewModel.stokGirisCoklu(belgeNo, depo, teslimAlan, liste) {
                         satirlar.clear()
+                        formTemizle()
                         belgeNo = viewModel.sonrakiGirisBelgeNo()
                         viewModel.navigateFromMenu("stok-durum")
                     }
@@ -315,16 +347,36 @@ fun StokGirisScreen(viewModel: AppViewModel) {
 @Composable
 fun StokCikisScreen(viewModel: AppViewModel) {
     val user by viewModel.user.collectAsState()
+    val stokList by viewModel.stokList.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.submitError.collectAsState()
     val canWrite = KullaniciRolleri.canStockWrite(user?.role)
     var belgeNo by remember { mutableStateOf(viewModel.sonrakiCikisBelgeNo()) }
-    var teslimAlan by remember { mutableStateOf("") }
+    var teslimAlan by remember(user?.fullName) { mutableStateOf(user?.fullName.orEmpty()) }
     var malzeme by remember { mutableStateOf("") }
     var miktar by remember { mutableStateOf("") }
     val satirlar = remember { mutableStateListOf<StokRepository.CikisSatir>() }
-    val oneriler = remember(malzeme) { viewModel.stokCikisOnerileri(malzeme) }
-    val mevcutStok = remember(malzeme) { viewModel.stokMevcutBul(malzeme) }
+    val oneriler = remember(malzeme, stokList) { viewModel.stokCikisOnerileri(malzeme) }
+    val mevcutStok = remember(malzeme, stokList) { viewModel.stokMevcutBul(malzeme) }
+    val pendingSatir = remember(malzeme, miktar, mevcutStok) {
+        val stok = mevcutStok ?: return@remember null
+        val m = miktar.replace(',', '.').toDoubleOrNull() ?: return@remember null
+        if (m <= 0 || m > stok.mevcutMiktar) null
+        else StokRepository.CikisSatir(malzeme = stok.malzemeAdi, miktar = m)
+    }
+    val kayitSayisi = satirlar.size + if (pendingSatir != null) 1 else 0
+    val kaydetHazir = kayitSayisi > 0 && teslimAlan.isNotBlank()
+
+    fun formTemizle() {
+        malzeme = ""
+        miktar = ""
+    }
+
+    fun kaydedilecekSatirlar(): List<StokRepository.CikisSatir> {
+        val liste = satirlar.toMutableList()
+        pendingSatir?.let { liste.add(it) }
+        return liste
+    }
 
     Column(
         modifier = Modifier
@@ -334,7 +386,7 @@ fun StokCikisScreen(viewModel: AppViewModel) {
             .padding(horizontal = MetrikSpace.screen, vertical = MetrikSpace.lg),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StokHeader(title = "Stok Çıkışı", subtitle = "Belgeye birden fazla satır ekleyin — kategori stoktan otomatik gelir")
+        StokHeader(title = "Stok Çıkışı", subtitle = "Bilgileri doldurup kaydedin — kategori stoktan otomatik gelir")
         if (!canWrite) {
             Text("Bu rol stok çıkışı yapamaz.", color = MetrikLight.Danger)
         } else {
@@ -343,7 +395,7 @@ fun StokCikisScreen(viewModel: AppViewModel) {
                 MetrikField(teslimAlan, { teslimAlan = it }, "Teslim alan", modifier = Modifier.weight(1f))
             }
 
-            Text("Satır ekle", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MetrikLight.TextPrimary)
+            Text("Malzeme satırı", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MetrikLight.TextPrimary)
             MetrikField(malzeme, { malzeme = it }, "Malzeme")
             if (oneriler.isNotEmpty() && malzeme.isNotBlank()) {
                 Row(
@@ -386,27 +438,21 @@ fun StokCikisScreen(viewModel: AppViewModel) {
             )
             OutlinedButton(
                 onClick = {
-                    val m = miktar.replace(',', '.').toDoubleOrNull() ?: 0.0
-                    val stok = viewModel.stokMevcutBul(malzeme) ?: return@OutlinedButton
-                    if (m <= 0 || m > stok.mevcutMiktar) return@OutlinedButton
-                    satirlar.add(StokRepository.CikisSatir(malzeme = stok.malzemeAdi, miktar = m))
-                    malzeme = ""
-                    miktar = ""
+                    val s = pendingSatir ?: return@OutlinedButton
+                    satirlar.add(s)
+                    formTemizle()
                 },
-                enabled = mevcutStok != null
-                    && (miktar.replace(',', '.').toDoubleOrNull() ?: 0.0).let { m ->
-                        m > 0 && m <= mevcutStok.mevcutMiktar
-                    },
+                enabled = pendingSatir != null,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Satır ekle")
+                Text("Satır ekle (çoklu çıkış)")
             }
 
             if (satirlar.isNotEmpty()) {
                 Text(
-                    "${satirlar.size} satır",
+                    "${satirlar.size} satır eklendi",
                     style = MaterialTheme.typography.labelLarge,
                     color = MetrikLight.TextSecondary
                 )
@@ -420,13 +466,23 @@ fun StokCikisScreen(viewModel: AppViewModel) {
             }
 
             error?.let { Text(it, color = MetrikLight.Danger, style = MaterialTheme.typography.bodySmall) }
+            if (kayitSayisi > 0 && teslimAlan.isBlank()) {
+                Text(
+                    "Kaydetmek için teslim alan girin",
+                    color = MetrikLight.Warning,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
             AppPrimaryButton(
-                text = if (satirlar.isEmpty()) "Çıkış kaydet" else "Çıkış kaydet (${satirlar.size})",
+                text = if (kayitSayisi <= 1) "Stok çıkışı kaydet" else "Stok çıkışı kaydet ($kayitSayisi)",
                 loading = loading,
-                enabled = satirlar.isNotEmpty() && teslimAlan.isNotBlank(),
+                enabled = kaydetHazir && !loading,
                 onClick = {
-                    viewModel.stokCikisCoklu(belgeNo, teslimAlan, satirlar.toList()) {
+                    val liste = kaydedilecekSatirlar()
+                    if (liste.isEmpty() || teslimAlan.isBlank()) return@AppPrimaryButton
+                    viewModel.stokCikisCoklu(belgeNo, teslimAlan, liste) {
                         satirlar.clear()
+                        formTemizle()
                         belgeNo = viewModel.sonrakiCikisBelgeNo()
                         viewModel.navigateFromMenu("stok-hareket")
                     }
