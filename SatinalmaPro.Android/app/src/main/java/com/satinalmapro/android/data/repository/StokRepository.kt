@@ -73,23 +73,44 @@ class StokRepository(
         }
     }
 
+    /** Malzeme+depo — kategori anahtarda olmamalı (çıkışta kategori değişince satır çiftlenmesin). */
     private fun stokAnahtar(s: StokKaydi) =
-        "${s.malzemeAdi.trim().lowercase()}|${s.depoSaha.trim().lowercase()}|${s.kategori.trim().lowercase()}"
+        "${s.malzemeAdi.trim().lowercase()}|${s.depoSaha.trim().lowercase()}"
 
+    private fun stokTarihMs(metin: String?): Long {
+        if (metin.isNullOrBlank()) return 0L
+        val temiz = metin.trim()
+        val formatlar = arrayOf(
+            "dd.MM.yyyy HH:mm:ss", "dd.MM.yyyy HH:mm", "dd.MM.yyyy",
+            "d.M.yyyy HH:mm", "d.M.yyyy", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd"
+        )
+        for (f in formatlar) {
+            runCatching {
+                val sdf = SimpleDateFormat(f, Locale("tr", "TR"))
+                sdf.isLenient = false
+                return sdf.parse(temiz)?.time ?: 0L
+            }
+        }
+        return 0L
+    }
+
+    /**
+     * Yerel (yazılacak) + bulut birleştir.
+     * Daha yeni SonGuncelleme kazanır; aynı anda yerel kazanır.
+     * Miktar karşılaştırması YOK — çıkışı (düşük miktar) geri almasın.
+     */
     private fun birlestirStok(yerel: List<StokKaydi>, bulut: List<StokKaydi>): List<StokKaydi> {
         val map = linkedMapOf<String, StokKaydi>()
-        fun dahaGuncel(a: StokKaydi, b: StokKaydi): Boolean {
-            // Son güncelleme metni veya miktar — basit koruma
-            if (a.sonGuncelleme != b.sonGuncelleme) {
-                return a.sonGuncelleme >= b.sonGuncelleme
-            }
-            return a.mevcutMiktar >= b.mevcutMiktar
+        fun yerelDahaGuncelVeyaEsit(yerelKayit: StokKaydi, bulutKayit: StokKaydi): Boolean {
+            val tY = stokTarihMs(yerelKayit.sonGuncelleme)
+            val tB = stokTarihMs(bulutKayit.sonGuncelleme)
+            return tY >= tB
         }
         for (s in bulut) map[stokAnahtar(s)] = s
         for (s in yerel) {
             val key = stokAnahtar(s)
             val mevcut = map[key]
-            if (mevcut == null || dahaGuncel(s, mevcut)) map[key] = s
+            if (mevcut == null || yerelDahaGuncelVeyaEsit(s, mevcut)) map[key] = s
         }
         return map.values.toList()
     }
@@ -163,8 +184,22 @@ class StokRepository(
         val stok = cache.loadStok(tid)
         val hareket = cache.loadStokHareketleri(tid)
         return try {
-            firestore.writeDocumentJson("veri/stok", gson.toJson(stok), uid)
-            firestore.writeDocumentJson("veri/stok_hareketleri", gson.toJson(hareket), uid)
+            val bulutStok = runCatching {
+                val json = firestore.readDocumentJson("veri/stok")
+                if (json.isNullOrBlank()) emptyList()
+                else gson.fromJson<List<StokKaydi>>(json, stokType) ?: emptyList()
+            }.getOrDefault(emptyList())
+            val bulutHareket = runCatching {
+                val json = firestore.readDocumentJson("veri/stok_hareketleri")
+                if (json.isNullOrBlank()) emptyList()
+                else gson.fromJson<List<StokHareket>>(json, hareketType) ?: emptyList()
+            }.getOrDefault(emptyList())
+            val birlesikStok = if (bulutStok.isEmpty()) stok else birlestirStok(stok, bulutStok)
+            val birlesikHareket = if (bulutHareket.isEmpty()) hareket else birlestirHareket(hareket, bulutHareket)
+            firestore.writeDocumentJson("veri/stok", gson.toJson(birlesikStok), uid)
+            firestore.writeDocumentJson("veri/stok_hareketleri", gson.toJson(birlesikHareket), uid)
+            cache.saveStok(tid, birlesikStok)
+            cache.saveStokHareketleri(tid, birlesikHareket)
             cache.markStokPending(tid, false)
             true
         } catch (e: Exception) {
@@ -178,6 +213,9 @@ class StokRepository(
     }
 
     private fun bugun() = SimpleDateFormat("dd.MM.yyyy", Locale("tr", "TR")).format(Date())
+
+    /** Stok satırı damgası — aynı gün giriş/çıkışta bulut birleştirmesinde yerel kazanır. */
+    private fun simdi() = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale("tr", "TR")).format(Date())
 
     private fun stokBul(list: MutableList<StokKaydi>, malzeme: String, depo: String): StokKaydi? =
         list.firstOrNull {
@@ -236,18 +274,19 @@ class StokRepository(
         val stokList = loadStok().toMutableList()
         val hareketList = loadHareketler().toMutableList()
         val tarih = bugun()
+        val damga = simdi()
         val stok = stokBul(stokList, malzeme, depo) ?: StokKaydi(
             malzemeAdi = malzeme.trim(),
             kategori = kategori.trim(),
             birim = birim.trim(),
             depoSaha = depo.trim(),
-            sonGuncelleme = tarih
+            sonGuncelleme = damga
         ).also { stokList.add(it) }
         val index = stokList.indexOf(stok)
         val guncel = stok.copy(
             mevcutMiktar = stok.mevcutMiktar + miktar,
             birimMaliyet = if (birimMaliyet > 0) birimMaliyet else stok.birimMaliyet,
-            sonGuncelleme = tarih,
+            sonGuncelleme = damga,
             toplamDeger = (stok.mevcutMiktar + miktar) * (if (birimMaliyet > 0) birimMaliyet else stok.birimMaliyet)
         )
         stokList[index] = guncel
@@ -287,10 +326,11 @@ class StokRepository(
         val stok = stokBul(stokList, malzeme, depo) ?: throw IllegalArgumentException("Stok bulunamadı")
         if (miktar > stok.mevcutMiktar) throw IllegalArgumentException("Yetersiz stok")
         val tarih = bugun()
+        val damga = simdi()
         val index = stokList.indexOf(stok)
         val guncel = stok.copy(
             mevcutMiktar = stok.mevcutMiktar - miktar,
-            sonGuncelleme = tarih,
+            sonGuncelleme = damga,
             toplamDeger = (stok.mevcutMiktar - miktar) * stok.birimMaliyet
         )
         stokList[index] = guncel
@@ -323,10 +363,11 @@ class StokRepository(
         val fark = sayimMiktari - stok.mevcutMiktar
         if (kotlin.math.abs(fark) < 0.0001) return
         val tarih = bugun()
+        val damga = simdi()
         val index = stokList.indexOf(stok)
         val guncel = stok.copy(
             mevcutMiktar = sayimMiktari,
-            sonGuncelleme = tarih,
+            sonGuncelleme = damga,
             toplamDeger = sayimMiktari * stok.birimMaliyet
         )
         stokList[index] = guncel
@@ -368,12 +409,13 @@ class StokRepository(
             if (satir.malzeme.isBlank() || satir.miktar <= 0) {
                 throw IllegalArgumentException("Geçerli malzeme ve miktar girin")
             }
+            val damga = simdi()
             val stok = stokBul(stokList, satir.malzeme, depoAdi) ?: StokKaydi(
                 malzemeAdi = satir.malzeme.trim(),
                 kategori = satir.kategori.trim().ifBlank { "Genel" },
                 birim = satir.birim.trim().ifBlank { "Adet" },
                 depoSaha = depoAdi,
-                sonGuncelleme = tarih
+                sonGuncelleme = damga
             ).also { stokList.add(it) }
             val index = stokList.indexOf(stok)
             val birimMaliyet = if (satir.birimMaliyet > 0) satir.birimMaliyet else stok.birimMaliyet
@@ -382,7 +424,7 @@ class StokRepository(
                 birim = satir.birim.trim().ifBlank { stok.birim },
                 kategori = satir.kategori.trim().ifBlank { stok.kategori },
                 birimMaliyet = birimMaliyet,
-                sonGuncelleme = tarih,
+                sonGuncelleme = damga,
                 toplamDeger = (stok.mevcutMiktar + satir.miktar) * birimMaliyet
             )
             stokList[index] = guncel
@@ -433,7 +475,7 @@ class StokRepository(
             val guncel = stok.copy(
                 mevcutMiktar = stok.mevcutMiktar - satir.miktar,
                 kategori = kategori,
-                sonGuncelleme = tarih,
+                sonGuncelleme = simdi(),
                 toplamDeger = (stok.mevcutMiktar - satir.miktar) * stok.birimMaliyet
             )
             stokList[index] = guncel
@@ -465,15 +507,16 @@ class StokRepository(
     private fun stokEtkisiniGeriAl(stokList: MutableList<StokKaydi>, hareket: StokHareket) {
         val stok = stokBul(stokList, hareket.malzemeAdi, hareket.depoSaha) ?: return
         val index = stokList.indexOf(stok)
+        val damga = simdi()
         val guncel = when {
             hareket.hareketTipi.equals(StokHareketTipi.GIRIS, true) -> stok.copy(
                 mevcutMiktar = (stok.mevcutMiktar - hareket.miktar).coerceAtLeast(0.0),
-                sonGuncelleme = bugun(),
+                sonGuncelleme = damga,
                 toplamDeger = (stok.mevcutMiktar - hareket.miktar).coerceAtLeast(0.0) * stok.birimMaliyet
             )
             hareket.hareketTipi.equals(StokHareketTipi.CIKIS, true) -> stok.copy(
                 mevcutMiktar = stok.mevcutMiktar + hareket.miktar,
-                sonGuncelleme = bugun(),
+                sonGuncelleme = damga,
                 toplamDeger = (stok.mevcutMiktar + hareket.miktar) * stok.birimMaliyet
             )
             else -> return
@@ -521,15 +564,16 @@ class StokRepository(
         }
 
         val index = stokList.indexOf(stok)
+        val damga = simdi()
         val guncelStok = when {
             eski.hareketTipi.equals(StokHareketTipi.GIRIS, true) -> stok.copy(
                 mevcutMiktar = stok.mevcutMiktar + miktar,
-                sonGuncelleme = tarih.ifBlank { bugun() },
+                sonGuncelleme = damga,
                 toplamDeger = (stok.mevcutMiktar + miktar) * stok.birimMaliyet
             )
             else -> stok.copy(
                 mevcutMiktar = stok.mevcutMiktar - miktar,
-                sonGuncelleme = tarih.ifBlank { bugun() },
+                sonGuncelleme = damga,
                 toplamDeger = (stok.mevcutMiktar - miktar) * stok.birimMaliyet
             )
         }

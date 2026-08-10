@@ -2,7 +2,7 @@
 ; Derleme: Inno Setup 6 kurulu olmalı, sonra ISCC.exe ile derlenir
 
 #define MyAppName "Satınalma Pro"
-#define MyAppVersion "2.1.108"
+#define MyAppVersion "2.1.109"
 #define MyAppPublisher "MV İNŞAAT"
 #define MyAppExeName "SatinalmaPro.exe"
 #define MyTalepProName "Talep Pro"

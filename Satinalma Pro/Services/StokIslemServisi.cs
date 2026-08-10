@@ -22,7 +22,7 @@ public static class StokIslemServisi
             Birim = birim.Trim(),
             DepoSaha = depo.Trim(),
             BirimMaliyet = birimMaliyet,
-            SonGuncelleme = Bugun()
+            SonGuncelleme = Simdi()
         };
         ModulVeriDeposu.Stok.Add(mevcut);
         return mevcut;
@@ -36,7 +36,7 @@ public static class StokIslemServisi
         stok.MevcutMiktar += miktar;
         if (birimMaliyet > 0)
             stok.BirimMaliyet = birimMaliyet;
-        stok.SonGuncelleme = tarih;
+        stok.SonGuncelleme = Simdi();
         stok.ToplamDegerHesapla();
 
         var hareket = new StokHareketKaydi
@@ -69,7 +69,7 @@ public static class StokIslemServisi
             throw new InvalidOperationException($"Yetersiz stok. Mevcut: {stok.MevcutMiktar:N2} {stok.Birim}");
 
         stok.MevcutMiktar -= miktar;
-        stok.SonGuncelleme = tarih;
+        stok.SonGuncelleme = Simdi();
         stok.ToplamDegerHesapla();
 
         var hareket = new StokHareketKaydi
@@ -98,7 +98,7 @@ public static class StokIslemServisi
         var fark = sayimMiktar - onceki;
 
         stok.MevcutMiktar = sayimMiktar;
-        stok.SonGuncelleme = tarih;
+        stok.SonGuncelleme = Simdi();
         stok.ToplamDegerHesapla();
 
         var hareket = new StokHareketKaydi
@@ -144,7 +144,7 @@ public static class StokIslemServisi
                 break;
         }
 
-        stok.SonGuncelleme = Bugun();
+        stok.SonGuncelleme = Simdi();
         stok.ToplamDegerHesapla();
         ModulVeriDeposu.StokHareketleri.Remove(hareket);
         StokDegisikliginiKaydet();
@@ -289,4 +289,7 @@ public static class StokIslemServisi
     }
 
     private static string Bugun() => DateTime.Now.ToString("dd.MM.yyyy");
+
+    // Bulut birleştirmesinde aynı gün çıkışın ezilmemesi için saat damgası.
+    private static string Simdi() => DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss");
 }

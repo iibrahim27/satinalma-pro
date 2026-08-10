@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.61",
-    "build":  64,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.61/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.61/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.61/SatinalmaYonetici.apk",
-    "notes":  "1.0.61 - Pro 2.1.108 ile birlikte (Android stok sekme ve kaydet)",
+    "version":  "1.0.62",
+    "build":  65,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.62/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.62/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.62/SatinalmaYonetici.apk",
+    "notes":  "1.0.62 - Pro 2.1.109 ile birlikte (stok bulut birlestirme duzeltmesi)",
     "zorunlu":  false
 }

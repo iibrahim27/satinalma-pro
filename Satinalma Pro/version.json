@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.108",
-    "build":  182,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.108/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.108/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.108/SatinalmaPro.apk",
-    "notes":  "2.1.108 - Android stok: tukenen ayri sekme; giris/cikis kaydet formu dogrudan kaydeder",
+    "version":  "2.1.109",
+    "build":  184,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.109/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.109/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.109/SatinalmaPro.apk",
+    "notes":  "2.1.109 - Stok giris/cikis bulut birlestirme duzeltmesi (miktar ezmesi kaldirildi)",
     "zorunlu":  false
 }

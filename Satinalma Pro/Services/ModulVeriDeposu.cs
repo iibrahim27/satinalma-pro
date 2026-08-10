@@ -573,28 +573,32 @@ public static class ModulVeriDeposu
 
     private static bool _sifirlamaAktifMi() => BulutVeriSenkronu.SifirlamaAktif;
 
-    /// <summary>Malzeme+depo+kategori anahtarına göre birleştir; daha yeni SonGuncelleme kazanır.</summary>
+    /// <summary>
+    /// Malzeme+depo anahtarına göre birleştir.
+    /// Daha yeni SonGuncelleme kazanır; eşitlikte yerel (son eklenen) kazanır.
+    /// Miktar karşılaştırması yok — çıkış (düşük miktar) geri alınmasın.
+    /// </summary>
     public static List<StokKaydi> StokKayitlariniBirlestir(
         IEnumerable<StokKaydi> yerel, IEnumerable<StokKaydi> bulut)
     {
         var sozluk = new Dictionary<string, StokKaydi>(StringComparer.OrdinalIgnoreCase);
-        void Ekle(StokKaydi kayit)
+        void Ekle(StokKaydi kayit, bool yerelKayit)
         {
-            var anahtar = $"{kayit.MalzemeAdi}|{kayit.DepoSaha}|{kayit.Kategori}";
+            var anahtar = $"{kayit.MalzemeAdi}|{kayit.DepoSaha}";
             if (!sozluk.TryGetValue(anahtar, out var mevcut))
             {
                 sozluk[anahtar] = kayit;
                 return;
             }
 
-            var adayT = DateTime.TryParse(kayit.SonGuncelleme, out var a) ? a : DateTime.MinValue;
-            var mevT = DateTime.TryParse(mevcut.SonGuncelleme, out var m) ? m : DateTime.MinValue;
-            if (adayT > mevT || (adayT == mevT && kayit.MevcutMiktar > mevcut.MevcutMiktar))
+            var adayT = TarihYardimcisi.TryParse(kayit.SonGuncelleme, out var a) ? a : DateTime.MinValue;
+            var mevT = TarihYardimcisi.TryParse(mevcut.SonGuncelleme, out var m) ? m : DateTime.MinValue;
+            if (adayT > mevT || (adayT == mevT && yerelKayit))
                 sozluk[anahtar] = kayit;
         }
 
-        foreach (var k in bulut) Ekle(k);
-        foreach (var k in yerel) Ekle(k);
+        foreach (var k in bulut) Ekle(k, yerelKayit: false);
+        foreach (var k in yerel) Ekle(k, yerelKayit: true);
         return sozluk.Values
             .OrderBy(s => s.MalzemeAdi, StringComparer.OrdinalIgnoreCase)
             .ThenBy(s => s.DepoSaha, StringComparer.OrdinalIgnoreCase)
