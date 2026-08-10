@@ -1123,22 +1123,33 @@ class AppContainer(private val context: Context) {
         saveUygulamaAyarlar(ayarlar.copy(malzemeKategorileri = ayarlar.malzemeKategorileri + ad))
     }
 
+    /** Giriş/çıkış sonrası UI'yi anında güncelle — buluttan eski okuma yarışını önler. */
+    private fun stokMutasyonSonrasiYenile() {
+        val tid = TenantSession.tenantId().orEmpty()
+        if (tid.isBlank()) return
+        _stok.value = offlineCache.loadStok(tid)
+        _stokHareketleri.value = offlineCache.loadStokHareketleri(tid)
+    }
+
     suspend fun stokGiris(malzeme: String, miktar: Double, birim: String, kategori: String, depo: String, birimMaliyet: Double, belgeNo: String, teslimEden: String, teslimAlan: String) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         stokRepo.girisYap(user, malzeme, miktar, birim, kategori, depo, birimMaliyet, belgeNo, teslimEden, teslimAlan)
-        loadStok()
+        stokMutasyonSonrasiYenile()
+        if (TenantSession.tenantId().isNullOrBlank()) loadStok()
     }
 
     suspend fun stokCikis(malzeme: String, miktar: Double, depo: String, belgeNo: String, teslimEden: String, teslimAlan: String) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         stokRepo.cikisYap(user, malzeme, miktar, depo, belgeNo, teslimEden, teslimAlan)
-        loadStok()
+        stokMutasyonSonrasiYenile()
+        if (TenantSession.tenantId().isNullOrBlank()) loadStok()
     }
 
     suspend fun stokSayim(malzeme: String, depo: String, sayimMiktari: Double) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         stokRepo.sayimYap(user, malzeme, depo, sayimMiktari)
-        loadStok()
+        stokMutasyonSonrasiYenile()
+        if (TenantSession.tenantId().isNullOrBlank()) loadStok()
     }
 
     fun sonrakiGirisBelgeNo(): String =
@@ -1199,19 +1210,22 @@ class AppContainer(private val context: Context) {
     ) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         stokRepo.girisYapCoklu(user, belgeNo, depo.ifBlank { user.site.orEmpty() }, teslimAlan, satirlar)
-        loadStok()
+        stokMutasyonSonrasiYenile()
+        if (TenantSession.tenantId().isNullOrBlank()) loadStok()
     }
 
     suspend fun stokCikisCoklu(belgeNo: String, teslimAlan: String, satirlar: List<StokRepository.CikisSatir>) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         stokRepo.cikisYapCoklu(user, belgeNo, teslimAlan, satirlar)
-        loadStok()
+        stokMutasyonSonrasiYenile()
+        if (TenantSession.tenantId().isNullOrBlank()) loadStok()
     }
 
     suspend fun stokHareketSil(hareketId: String) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         stokRepo.hareketSil(user, hareketId)
-        loadStok()
+        stokMutasyonSonrasiYenile()
+        if (TenantSession.tenantId().isNullOrBlank()) loadStok()
     }
 
     suspend fun stokHareketGuncelle(
@@ -1225,7 +1239,8 @@ class AppContainer(private val context: Context) {
     ) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
         stokRepo.hareketGuncelle(user, hareketId, tarih, miktar, belgeNo, islemYapan, teslimEdilen, aciklama)
-        loadStok()
+        stokMutasyonSonrasiYenile()
+        if (TenantSession.tenantId().isNullOrBlank()) loadStok()
     }
 
     fun stokCikisFisiOlustur(

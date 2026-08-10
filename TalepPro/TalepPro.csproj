@@ -12,10 +12,10 @@
     <AssemblyTitle>Talep Pro</AssemblyTitle>
     <Company>MV İNŞAAT</Company>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>2.1.110</Version>
-    <AssemblyVersion>2.1.110.0</AssemblyVersion>
-    <FileVersion>2.1.110.0</FileVersion>
-    <InformationalVersion>2.1.110</InformationalVersion>
+    <Version>2.1.111</Version>
+    <AssemblyVersion>2.1.111.0</AssemblyVersion>
+    <FileVersion>2.1.111.0</FileVersion>
+    <InformationalVersion>2.1.111</InformationalVersion>
     <RootNamespace>TalepPro</RootNamespace>
   </PropertyGroup>
 

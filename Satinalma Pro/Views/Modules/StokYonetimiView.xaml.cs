@@ -52,8 +52,8 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         InitializeComponent();
         DataContext = this;
 
-        _filtreZamanlayici = new FiltreZamanlayici(StokFiltreYenile);
-        _hareketFiltreZamanlayici = new FiltreZamanlayici(HareketFiltreYenile);
+        _filtreZamanlayici = new FiltreZamanlayici(() => StokFiltreYenile());
+        _hareketFiltreZamanlayici = new FiltreZamanlayici(() => HareketFiltreYenile());
 
         _stokGorunum = CollectionViewSource.GetDefaultView(Kayitlar);
         _stokGorunum.Filter = StokFiltresi;
@@ -412,7 +412,7 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         StokFiltreYenile();
     }
 
-    private void StokFiltreYenile()
+    private void StokFiltreYenile(bool ilkSayfayaDon = true)
     {
         _stokGorunum.SortDescriptions.Clear();
         _stokGorunum.Refresh();
@@ -421,11 +421,11 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         if (string.IsNullOrEmpty(_stokGrupAlani))
         {
             _stokSayfalama.KaynakGuncelle(
-                filtrelenmis, k => ModulSayfalamaYardimcisi.TarihSira(k.SonGuncelleme), ilkSayfayaDon: true);
+                filtrelenmis, k => ModulSayfalamaYardimcisi.TarihSira(k.SonGuncelleme), ilkSayfayaDon);
         }
         else
         {
-            _stokSayfalama.SiraliKaynakGuncelle(StokGruplanmisListe(filtrelenmis, _stokGrupAlani), ilkSayfayaDon: true);
+            _stokSayfalama.SiraliKaynakGuncelle(StokGruplanmisListe(filtrelenmis, _stokGrupAlani), ilkSayfayaDon);
         }
 
         StokSayfalamaBar.Guncelle(_stokSayfalama.GuncelSayfa, _stokSayfalama.ToplamSayfa, _stokSayfalama.ToplamKayit);
@@ -729,12 +729,14 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         HareketFiltreYenile();
     }
 
-    private void HareketFiltreYenile()
+    private void HareketFiltreYenile(bool ilkSayfayaDon = true)
     {
         ModulSayfalamaYardimcisi.FiltreSonrasi(
-            _hareketSayfalama, _hareketGorunum, h => ModulSayfalamaYardimcisi.TarihSira(h.Tarih), HareketSayfalamaBar);
+            _hareketSayfalama, _hareketGorunum, h => ModulSayfalamaYardimcisi.TarihSira(h.Tarih), HareketSayfalamaBar,
+            ilkSayfayaDon: ilkSayfayaDon);
         ModulSayfalamaYardimcisi.FiltreSonrasi(
-            _sayimSayfalama, _sayimGorunum, h => ModulSayfalamaYardimcisi.TarihSira(h.Tarih), SayimSayfalamaBar);
+            _sayimSayfalama, _sayimGorunum, h => ModulSayfalamaYardimcisi.TarihSira(h.Tarih), SayimSayfalamaBar,
+            ilkSayfayaDon: ilkSayfayaDon);
     }
 
     private bool HareketFiltresi(object item)
@@ -925,10 +927,10 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         StokSecimCombolariniGuncelle();
         KategoriAgaciniGuncelle();
 
-        _stokGorunum.Refresh();
-        _hareketGorunum.Refresh();
-        _sayimGorunum.Refresh();
-        OzetGuncelle();
+        // Grid SayfaKayitlari'na bağlı — yalnızca CollectionView.Refresh yetmez;
+        // giriş/çıkış sonrası miktarın anında görünmesi için sayfayı yeniden kur.
+        StokFiltreYenile(ilkSayfayaDon: false);
+        HareketFiltreYenile(ilkSayfayaDon: false);
     }
 
     private void StokSecimCombolariniGuncelle()

@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.110",
-    "build":  185,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.110/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.110/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.110/SatinalmaPro.apk",
-    "notes":  "2.1.110 - Stok cikis cift satir/tekillestirme; gecmis hareketleri goruntule",
+    "version":  "2.1.111",
+    "build":  186,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.111/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.111/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.111/SatinalmaPro.apk",
+    "notes":  "2.1.111 - Stok giris/cikis sonrasi Stok Durumu aninda yenilenir",
     "zorunlu":  false
 }

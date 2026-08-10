@@ -484,7 +484,7 @@ fun StokCikisScreen(viewModel: AppViewModel) {
                         satirlar.clear()
                         formTemizle()
                         belgeNo = viewModel.sonrakiCikisBelgeNo()
-                        viewModel.navigateFromMenu("stok-hareket")
+                        viewModel.navigateFromMenu("stok-durum")
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
