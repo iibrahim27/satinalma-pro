@@ -30,11 +30,58 @@ public partial class StokCikisWindow : Window
 
     private void StoktanBilgileriDoldur(string malzemeAdi)
     {
-        var stok = string.IsNullOrWhiteSpace(malzemeAdi)
-            ? null
-            : StokIslemServisi.StokBulMalzemeAdi(malzemeAdi, sadeceMevcutStok: true);
+        if (string.IsNullOrWhiteSpace(malzemeAdi))
+        {
+            _seciliStok = null;
+            CmbDepo.Items.Clear();
+            TxtMevcut.Clear();
+            CmbBirim.Items.Clear();
+            return;
+        }
 
-        if (stok is null)
+        var depolar = ModulVeriDeposu.Stok
+            .Where(s => s.MalzemeAdi.Equals(malzemeAdi.Trim(), StringComparison.OrdinalIgnoreCase)
+                        && s.MevcutMiktar > 0
+                        && !string.IsNullOrWhiteSpace(s.DepoSaha))
+            .Select(s => s.DepoSaha.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        CmbDepo.SelectionChanged -= DepoDegisti;
+        CmbDepo.Items.Clear();
+        foreach (var d in depolar)
+            CmbDepo.Items.Add(d);
+
+        var tercih = OturumYoneticisi.AktifKullanici?.Saha?.Trim();
+        var secili = depolar.FirstOrDefault(d =>
+                        !string.IsNullOrWhiteSpace(tercih) &&
+                        d.Equals(tercih, StringComparison.OrdinalIgnoreCase))
+                    ?? depolar.FirstOrDefault();
+        if (secili is not null)
+            CmbDepo.SelectedItem = secili;
+        CmbDepo.SelectionChanged += DepoDegisti;
+
+        SeciliDepodanStokDoldur(malzemeAdi);
+    }
+
+    private void DepoDegisti(object sender, SelectionChangedEventArgs e)
+    {
+        var malzeme = (MalzemeGiris.Metin ?? "").Trim();
+        if (!string.IsNullOrWhiteSpace(malzeme))
+            SeciliDepodanStokDoldur(malzeme);
+    }
+
+    private void SeciliDepodanStokDoldur(string malzemeAdi)
+    {
+        var depo = (CmbDepo.SelectedItem as string)?.Trim()
+                   ?? CmbDepo.Text?.Trim()
+                   ?? "";
+        var stok = string.IsNullOrWhiteSpace(depo)
+            ? StokIslemServisi.StokBulMalzemeAdi(malzemeAdi, sadeceMevcutStok: true)
+            : StokIslemServisi.StokBul(malzemeAdi, depo);
+
+        if (stok is null || stok.MevcutMiktar <= 0)
         {
             _seciliStok = null;
             TxtMevcut.Clear();
@@ -42,12 +89,11 @@ public partial class StokCikisWindow : Window
             return;
         }
 
-        // Kategori kullanıcıdan istenmez — malzeme adından stok kaydına yazılır.
         if (string.IsNullOrWhiteSpace(stok.Kategori))
             stok.Kategori = StokIslemServisi.KategoriCozumle(stok.MalzemeAdi);
 
         _seciliStok = stok;
-        TxtMevcut.Text = $"{stok.MevcutMiktar:N2} {stok.Birim}";
+        TxtMevcut.Text = $"{stok.MevcutMiktar:N2} {stok.Birim} ({stok.DepoSaha})";
 
         if (!string.IsNullOrWhiteSpace(stok.Birim))
             MalzemeBirimDeposu.ComboDoldur(CmbBirim, stok.Birim);
@@ -65,12 +111,23 @@ public partial class StokCikisWindow : Window
             return false;
         }
 
-        stok = _seciliStok
-            ?? StokIslemServisi.StokBulMalzemeAdi(malzeme, sadeceMevcutStok: true);
-
-        if (stok is null)
+        var depo = (CmbDepo.SelectedItem as string)?.Trim()
+                   ?? CmbDepo.Text?.Trim()
+                   ?? "";
+        if (string.IsNullOrWhiteSpace(depo))
         {
-            MessageBox.Show("Seçilen malzeme için yeterli stok bulunamadı.", UygulamaBilgisi.Ad,
+            MessageBox.Show("Depo / saha seçin.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        stok = _seciliStok is { } s && s.DepoSaha.Equals(depo, StringComparison.OrdinalIgnoreCase)
+            ? _seciliStok
+            : StokIslemServisi.StokBul(malzeme, depo);
+
+        if (stok is null || stok.MevcutMiktar <= 0)
+        {
+            MessageBox.Show("Seçilen malzeme ve depo için yeterli stok bulunamadı.", UygulamaBilgisi.Ad,
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }

@@ -929,7 +929,9 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun stokMalzemeOnerileri(query: String, sadeceMevcut: Boolean = false): List<String> =
         container.stokMalzemeOnerileri(query, sadeceMevcut)
 
-    fun stokMevcutBul(malzeme: String) = container.stokMevcutBul(malzeme)
+    fun stokMevcutBul(malzeme: String, depo: String? = null) = container.stokMevcutBul(malzeme, depo)
+
+    fun stokDepolari(malzeme: String) = container.stokDepolari(malzeme)
 
     fun stokCikisOnerileri(query: String) = container.stokCikisOnerileri(query)
 

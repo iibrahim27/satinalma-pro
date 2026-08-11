@@ -184,6 +184,9 @@ public static class StokIslemServisi
         string islemYapan,
         string aciklama)
     {
+        if (miktar <= 0)
+            throw new InvalidOperationException("Geçerli bir miktar girin.");
+
         var id = eski.Id;
         var tip = eski.HareketTipi;
         var malzeme = eski.MalzemeAdi;
@@ -191,23 +194,67 @@ public static class StokIslemServisi
         var birim = eski.Birim;
         var depo = eski.DepoSaha;
         var maliyet = eski.BirimMaliyet;
+        var teslimEdilen = eski.TeslimEdilen;
+
+        // Silmeden önce doğrula — CikisYap hata verirse eski hareket kaybolmasın.
+        if (tip == StokHareketTipleri.Cikis)
+        {
+            var stok = StokBul(malzeme, depo)
+                ?? throw new InvalidOperationException("Bu malzeme ve depo için stok kaydı bulunamadı.");
+            var geriAlinmis = stok.MevcutMiktar + eski.Miktar;
+            if (miktar > geriAlinmis)
+                throw new InvalidOperationException(
+                    $"Yetersiz stok. Düzenleme sonrası mevcut: {geriAlinmis:N2} {stok.Birim}");
+        }
+        else if (tip == StokHareketTipleri.Sayim)
+        {
+            _ = StokBul(malzeme, depo)
+                ?? throw new InvalidOperationException("Stok kaydı bulunamadı.");
+        }
 
         HareketSil(eski);
 
-        StokHareketKaydi yeni = tip switch
+        try
         {
-            StokHareketTipleri.Giris => GirisYap(tarih, malzeme, kategori, birim, miktar, depo, maliyet, belgeNo, islemYapan, eski.TeslimEdilen),
-            StokHareketTipleri.Cikis => CikisYap(tarih, malzeme, depo, miktar, belgeNo, islemYapan, eski.TeslimEdilen),
-            StokHareketTipleri.Sayim => SayimYap(
-                tarih,
-                StokBul(malzeme, depo) ?? throw new InvalidOperationException("Stok kaydı bulunamadı."),
-                miktar,
-                islemYapan,
-                aciklama),
-            _ => throw new InvalidOperationException("Bilinmeyen hareket tipi.")
-        };
+            StokHareketKaydi yeni = tip switch
+            {
+                StokHareketTipleri.Giris => GirisYap(tarih, malzeme, kategori, birim, miktar, depo, maliyet, belgeNo, islemYapan, teslimEdilen),
+                StokHareketTipleri.Cikis => CikisYap(tarih, malzeme, depo, miktar, belgeNo, islemYapan, teslimEdilen),
+                StokHareketTipleri.Sayim => SayimYap(
+                    tarih,
+                    StokBul(malzeme, depo) ?? throw new InvalidOperationException("Stok kaydı bulunamadı."),
+                    miktar,
+                    islemYapan,
+                    aciklama),
+                _ => throw new InvalidOperationException("Bilinmeyen hareket tipi.")
+            };
 
-        yeni.Id = id;
+            yeni.Id = id;
+        }
+        catch
+        {
+            // Son çare: eski hareketi geri yaz (stok etkisi yeniden uygulansın).
+            try
+            {
+                StokHareketKaydi geri = tip switch
+                {
+                    StokHareketTipleri.Giris => GirisYap(eski.Tarih, malzeme, kategori, birim, eski.Miktar, depo, maliyet, eski.BelgeNo, eski.IslemYapan, teslimEdilen),
+                    StokHareketTipleri.Cikis => CikisYap(eski.Tarih, malzeme, depo, eski.Miktar, eski.BelgeNo, eski.IslemYapan, teslimEdilen),
+                    StokHareketTipleri.Sayim when eski.OncekiMiktar.HasValue && eski.SayimMiktar.HasValue =>
+                        SayimYap(eski.Tarih, StokBul(malzeme, depo)!, eski.SayimMiktar.Value, eski.IslemYapan, eski.Aciklama),
+                    _ => throw new InvalidOperationException("Hareket geri yüklenemedi.")
+                };
+                geri.Id = id;
+                if (eski.OncekiMiktar.HasValue) geri.OncekiMiktar = eski.OncekiMiktar;
+                if (eski.SayimMiktar.HasValue) geri.SayimMiktar = eski.SayimMiktar;
+            }
+            catch
+            {
+                // yut — orijinal hatayı fırlat
+            }
+
+            throw;
+        }
     }
 
     public static IEnumerable<string> MalzemeListesi(string? kategori = null, string? arama = null, bool sadeceMevcutStok = false)

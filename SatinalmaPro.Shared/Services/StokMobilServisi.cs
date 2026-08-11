@@ -27,7 +27,7 @@ public sealed class StokMobilServisi
             Birim = birim.Trim(),
             DepoSaha = depo.Trim(),
             BirimMaliyet = birimMaliyet,
-            SonGuncelleme = Bugun()
+            SonGuncelleme = Simdi()
         };
         _depo.Stok.Add(mevcut);
         return mevcut;
@@ -44,7 +44,7 @@ public sealed class StokMobilServisi
             stok.MevcutMiktar += satir.Miktar;
             if (satir.BirimFiyat > 0)
                 stok.BirimMaliyet = satir.BirimFiyat;
-            stok.SonGuncelleme = tarih;
+            stok.SonGuncelleme = Simdi();
             stok.ToplamDegerHesapla();
 
             _depo.StokHareketleri.Add(new StokHareketKaydi
@@ -81,7 +81,7 @@ public sealed class StokMobilServisi
                 throw new InvalidOperationException($"{satir.Malzeme} için yetersiz stok.");
 
             stok.MevcutMiktar -= satir.Miktar;
-            stok.SonGuncelleme = tarih;
+            stok.SonGuncelleme = Simdi();
             stok.ToplamDegerHesapla();
 
             _depo.StokHareketleri.Add(new StokHareketKaydi
@@ -129,9 +129,10 @@ public sealed class StokMobilServisi
         if (Math.Abs(fark) < 0.0001)
             return;
 
+        var onceki = stok.MevcutMiktar;
         var tarih = Bugun();
         stok.MevcutMiktar = sayimMiktari;
-        stok.SonGuncelleme = tarih;
+        stok.SonGuncelleme = Simdi();
         stok.ToplamDegerHesapla();
 
         _depo.StokHareketleri.Add(new StokHareketKaydi
@@ -142,6 +143,8 @@ public sealed class StokMobilServisi
             Kategori = stok.Kategori,
             Birim = stok.Birim,
             Miktar = Math.Abs(fark),
+            OncekiMiktar = onceki,
+            SayimMiktar = sayimMiktari,
             DepoSaha = stok.DepoSaha,
             BirimMaliyet = stok.BirimMaliyet,
             BelgeNo = _depo.YeniBelgeNo("SY"),
@@ -154,4 +157,7 @@ public sealed class StokMobilServisi
     }
 
     private static string Bugun() => DateTime.Now.ToString("dd.MM.yyyy");
+
+    // Bulut birleştirmesinde aynı gün çıkışın ezilmemesi için saat damgası.
+    private static string Simdi() => DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss");
 }

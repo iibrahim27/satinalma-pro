@@ -69,13 +69,15 @@
             <TextBlock Text="Yeni Satır" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" Margin="0,0,0,12" />
             <Grid>
               <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1.6*" />
+                <ColumnDefinition Width="1.4*" />
                 <ColumnDefinition Width="12" />
-                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="1.1*" />
                 <ColumnDefinition Width="12" />
                 <ColumnDefinition Width="0.9*" />
                 <ColumnDefinition Width="12" />
                 <ColumnDefinition Width="0.8*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="0.7*" />
               </Grid.ColumnDefinitions>
               <StackPanel Grid.Column="0">
                 <TextBlock Text="Malzeme" Style="{StaticResource ModuleFormLabelStyle}" />
@@ -85,14 +87,19 @@
                 </Border>
               </StackPanel>
               <StackPanel Grid.Column="2">
+                <TextBlock Text="Depo / Saha" Style="{StaticResource ModuleFormLabelStyle}" />
+                <ComboBox x:Name="CmbDepo" Style="{StaticResource FilterComboStyle}" IsEditable="False"
+                          SelectionChanged="DepoDegisti" />
+              </StackPanel>
+              <StackPanel Grid.Column="4">
                 <TextBlock Text="Mevcut Stok" Style="{StaticResource ModuleFormLabelStyle}" />
                 <TextBox x:Name="TxtMevcut" Style="{StaticResource FilterBoxStyle}" IsReadOnly="True" Background="#FFFFFF" />
               </StackPanel>
-              <StackPanel Grid.Column="4">
+              <StackPanel Grid.Column="6">
                 <TextBlock Text="Miktar" Style="{StaticResource ModuleFormLabelStyle}" />
                 <TextBox x:Name="TxtMiktar" Style="{StaticResource FilterBoxStyle}" />
               </StackPanel>
-              <StackPanel Grid.Column="6">
+              <StackPanel Grid.Column="8">
                 <TextBlock Text="Birim" Style="{StaticResource ModuleFormLabelStyle}" />
                 <ComboBox x:Name="CmbBirim" Style="{StaticResource FilterComboStyle}" IsEditable="False" IsEnabled="False" />
               </StackPanel>
@@ -111,11 +118,12 @@
                     AlternatingRowBackground="Transparent" IsReadOnly="True"
                     SelectionChanged="SatirGrid_SelectionChanged">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Kategori" Binding="{Binding Kategori}" Width="110" />
-              <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" MinWidth="140" />
-              <DataGridTextColumn Header="Mevcut" Binding="{Binding MevcutStokMetin}" Width="100" />
-              <DataGridTextColumn Header="Miktar" Binding="{Binding MiktarGosterim}" Width="80" />
-              <DataGridTextColumn Header="Birim" Binding="{Binding Birim}" Width="70" />
+              <DataGridTextColumn Header="Kategori" Binding="{Binding Kategori}" Width="100" />
+              <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="*" MinWidth="120" />
+              <DataGridTextColumn Header="Depo" Binding="{Binding DepoSaha}" Width="110" />
+              <DataGridTextColumn Header="Mevcut" Binding="{Binding MevcutStokMetin}" Width="90" />
+              <DataGridTextColumn Header="Miktar" Binding="{Binding MiktarGosterim}" Width="70" />
+              <DataGridTextColumn Header="Birim" Binding="{Binding Birim}" Width="60" />
             </DataGrid.Columns>
           </DataGrid>
         </Border>

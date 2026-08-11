@@ -71,12 +71,12 @@ public partial class StokDuzenleWindow : Window
         _kayit.Birim = TxtBirim.Text.Trim();
         _kayit.DepoSaha = TxtDepoSaha.Text.Trim();
         _kayit.BirimMaliyet = maliyet;
-        _kayit.SonGuncelleme = string.IsNullOrWhiteSpace(TxtSonGuncelleme.Text)
-            ? DateTime.Now.ToString("dd.MM.yyyy")
-            : TxtSonGuncelleme.Text.Trim();
+        // Her kayıtta taze saat damgası — aksi halde bulut birleştirmesi eski miktarı geri getirir.
+        _kayit.SonGuncelleme = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss");
         _kayit.Aciklama = TxtAciklama.Text.Trim();
         _kayit.ToplamDegerHesapla();
 
+        ModulVeriDeposu.StokTekillestir();
         ModulVeriDeposu.KaydetStok();
         DialogResult = true;
         Close();

@@ -60,8 +60,7 @@ public static class AlinanMalzemeAktarimServisi
         kayit.MalzemeHizmet.Equals(malzeme, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Excel / manuel Alınan Malzeme kaydından stok giriş + otomatik çıkış oluşturur
-    /// (mal kabul «sahaya direkt» ile aynı mantık).
+    /// Excel / manuel Alınan Malzeme kaydından yalnızca stok girişi oluşturur.
     /// Tarih = alınan malzeme tarihi; depo = indirildiği saha (boşsa Genel).
     /// </summary>
     public static StokHareketKaydi? ExcelKayittanStokGiris(AlinanMalzemeKaydi kayit)
@@ -86,6 +85,7 @@ public static class AlinanMalzemeAktarimServisi
 
         MalzemeKategoriDeposu.Ekle(kategori);
 
+        // Excel aktarım: yalnızca depoya giriş (miktar stokta kalır).
         var giris = StokIslemServisi.GirisYap(
             tarih,
             malzeme,
@@ -97,21 +97,9 @@ public static class AlinanMalzemeAktarimServisi
             belgeNo,
             islemYapan,
             teslimAlan);
-
-        // Girişten hemen sonra aynı miktarda çıkış (sahaya / teslim alana).
-        var teslimEdilen = !string.IsNullOrWhiteSpace(teslimAlan) ? teslimAlan : depo;
-        var cikisBelge = $"{belgeNo}-Ç";
-        var cikis = StokIslemServisi.CikisYap(
-            tarih,
-            malzeme,
-            depo,
-            kayit.Miktar,
-            cikisBelge,
-            islemYapan,
-            teslimEdilen);
-        cikis.Aciklama = string.IsNullOrWhiteSpace(kayit.IndirildigiSaha)
-            ? "Excel aktarım — otomatik çıkış"
-            : $"Excel aktarım — sahaya indirme: {kayit.IndirildigiSaha.Trim()}";
+        giris.Aciklama = string.IsNullOrWhiteSpace(kayit.IndirildigiSaha)
+            ? "Excel aktarım — stok girişi"
+            : $"Excel aktarım — depo: {depo} / saha notu: {kayit.IndirildigiSaha.Trim()}";
 
         return giris;
     }

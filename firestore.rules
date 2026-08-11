@@ -114,12 +114,22 @@ service cloud.firestore {
         && tenantLicenseOk(tenantId);
     }
 
+    /** SaaS stok yazma — legacy canWriteStock ile aynı roller. */
+    function canWriteTenantStock(tenantId) {
+      return isTenantActiveUser(tenantId)
+        && tenantUserRole(tenantId) in ['Admin', 'Satınalma', 'Depo'];
+    }
+
     function onlyChangedFields(allowedFields) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedFields);
     }
 
     function isValidRole(rol) {
       return rol in ['Admin', 'Yönetim', 'Satınalma', 'Şef', 'Saha', 'Atölye', 'Depo'];
+    }
+
+    function isTenantStockDoc(docId) {
+      return docId in ['stok', 'stok_hareketleri'];
     }
 
     // ─── users ───────────────────────────────────────────────────────────
@@ -429,7 +439,11 @@ service cloud.firestore {
       }
 
       match /veri/{docId} {
-        allow read, write: if isTenantActiveUser(tenantId);
+        allow read: if isTenantActiveUser(tenantId);
+        // Stok/hareket: yalnızca Admin / Satınalma / Depo yazabilir (Saha yanlışlıkla bozmasın).
+        allow write: if isTenantStockDoc(docId)
+          ? canWriteTenantStock(tenantId)
+          : isTenantActiveUser(tenantId);
       }
     }
 

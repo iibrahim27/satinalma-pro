@@ -28,9 +28,46 @@ public partial class StokGirisWindow : Window
         MalzemeKategoriDeposu.ComboDoldur(CmbKategori);
         MalzemeBirimDeposu.ComboDoldur(CmbBirim);
         TedarikciDeposu.ComboDoldur(CmbTedarikci);
+        DepoComboDoldur();
 
         MalzemeGiris.OneriKaynaginiAyarla(MalzemeAdiOneriServisi.Ara);
         MalzemeGiris.MetinOnaylandi += (_, metin) => StoktanBilgileriDoldur(metin);
+    }
+
+    private void DepoComboDoldur(string? tercih = null)
+    {
+        var depolar = ModulVeriDeposu.Stok
+            .Select(s => s.DepoSaha?.Trim())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var varsayilan = tercih?.Trim()
+            ?? OturumYoneticisi.AktifKullanici?.Saha?.Trim()
+            ?? depolar.FirstOrDefault()
+            ?? "";
+
+        CmbDepo.Items.Clear();
+        foreach (var d in depolar)
+            CmbDepo.Items.Add(d);
+
+        if (!string.IsNullOrWhiteSpace(varsayilan))
+        {
+            if (!depolar.Any(d => d.Equals(varsayilan, StringComparison.OrdinalIgnoreCase)))
+                CmbDepo.Items.Insert(0, varsayilan);
+            CmbDepo.Text = varsayilan;
+            _seciliDepo = varsayilan;
+        }
+    }
+
+    private string SeciliDepo()
+    {
+        var depo = (CmbDepo.Text ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(depo) && CmbDepo.SelectedItem is string s)
+            depo = s.Trim();
+        return depo;
     }
 
     private string? SeciliKategori => CmbKategori.SelectedItem?.ToString();
@@ -48,6 +85,8 @@ public partial class StokGirisWindow : Window
 
         _seciliDepo = stok.DepoSaha;
         _seciliMaliyet = stok.BirimMaliyet;
+        if (!string.IsNullOrWhiteSpace(stok.DepoSaha) && string.IsNullOrWhiteSpace(SeciliDepo()))
+            CmbDepo.Text = stok.DepoSaha;
 
         if (!string.IsNullOrWhiteSpace(stok.Kategori))
         {
@@ -104,6 +143,16 @@ public partial class StokGirisWindow : Window
         var stok = StokIslemServisi.StokBulMalzemeAdi(malzeme, kategori)
             ?? StokIslemServisi.StokBulMalzemeAdi(malzeme);
 
+        var depo = SeciliDepo();
+        if (string.IsNullOrWhiteSpace(depo))
+            depo = stok?.DepoSaha?.Trim() ?? _seciliDepo;
+        if (string.IsNullOrWhiteSpace(depo))
+        {
+            MessageBox.Show("Depo / saha seçin veya yazın. Giriş hangi depoya yapılacak belirsiz olamaz.",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
         decimal.TryParse(TxtBirimFiyat.Text, NumberStyles.Any, CultureInfo.CurrentCulture, out var maliyet);
         if (maliyet <= 0)
             maliyet = stok?.BirimMaliyet ?? _seciliMaliyet;
@@ -113,7 +162,7 @@ public partial class StokGirisWindow : Window
         satir.Miktar = miktar;
         satir.Birim = birim;
         satir.BirimFiyat = maliyet;
-        satir.DepoSaha = stok?.DepoSaha ?? _seciliDepo;
+        satir.DepoSaha = depo;
         return true;
     }
 
@@ -224,6 +273,13 @@ public partial class StokGirisWindow : Window
         var tarih = TxtTarih.Text.Trim();
         var belgeNo = TxtBelge.Text.Trim();
         var teslimEden = TxtTeslimEden.Text.Trim();
+
+        if (_satirlar.Any(s => string.IsNullOrWhiteSpace(s.DepoSaha)))
+        {
+            MessageBox.Show("Tüm satırlarda Depo / Saha dolu olmalı.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
 
         try
         {

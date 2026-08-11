@@ -150,27 +150,34 @@ class StokRepository(
         return map.values.toList()
     }
 
+    /** Okuma başarısızsa boş liste sanma — aksi halde buluttaki stok ezilir. */
+    private suspend fun buluttanStokOku(): List<StokKaydi> {
+        val json = firestore.readDocumentJson("veri/stok")
+        if (json.isNullOrBlank()) return emptyList()
+        return gson.fromJson<List<StokKaydi>>(json, stokType) ?: emptyList()
+    }
+
+    private suspend fun buluttanHareketOku(): List<StokHareket> {
+        val json = firestore.readDocumentJson("veri/stok_hareketleri")
+        if (json.isNullOrBlank()) return emptyList()
+        return gson.fromJson<List<StokHareket>>(json, hareketType) ?: emptyList()
+    }
+
     private suspend fun saveStok(list: List<StokKaydi>) {
         val uid = auth.uid ?: throw IllegalStateException("Oturum gerekli")
         val tid = tenantId()
         val temizYerel = tekillestirStok(list, tercihYerel = true)
         if (tid.isNotBlank()) offlineCache?.saveStok(tid, temizYerel)
         try {
-            val bulut = runCatching {
-                val json = firestore.readDocumentJson("veri/stok")
-                if (json.isNullOrBlank()) emptyList()
-                else gson.fromJson<List<StokKaydi>>(json, stokType) ?: emptyList()
-            }.getOrDefault(emptyList())
+            val bulut = buluttanStokOku()
             val birlesik = if (bulut.isEmpty()) temizYerel else birlestirStok(temizYerel, bulut)
             firestore.writeDocumentJson("veri/stok", gson.toJson(birlesik), uid)
             if (tid.isNotBlank()) offlineCache?.saveStok(tid, birlesik)
             lastStokCloudOk = true
         } catch (e: Exception) {
             lastStokCloudOk = false
-            if (NetworkError.isNetworkRelated(e) && tid.isNotBlank()) {
-                offlineCache?.markStokPending(tid, true)
-                return
-            }
+            if (tid.isNotBlank()) offlineCache?.markStokPending(tid, true)
+            if (NetworkError.isNetworkRelated(e)) return
             throw e
         }
     }
@@ -180,11 +187,7 @@ class StokRepository(
         val tid = tenantId()
         if (tid.isNotBlank()) offlineCache?.saveStokHareketleri(tid, list)
         try {
-            val bulut = runCatching {
-                val json = firestore.readDocumentJson("veri/stok_hareketleri")
-                if (json.isNullOrBlank()) emptyList()
-                else gson.fromJson<List<StokHareket>>(json, hareketType) ?: emptyList()
-            }.getOrDefault(emptyList())
+            val bulut = buluttanHareketOku()
             val birlesik = if (bulut.isEmpty()) list else birlestirHareket(list, bulut)
             firestore.writeDocumentJson("veri/stok_hareketleri", gson.toJson(birlesik), uid)
             if (tid.isNotBlank()) {
@@ -193,10 +196,8 @@ class StokRepository(
                 else offlineCache?.markStokPending(tid, true)
             }
         } catch (e: Exception) {
-            if (NetworkError.isNetworkRelated(e) && tid.isNotBlank()) {
-                offlineCache?.markStokPending(tid, true)
-                return
-            }
+            if (tid.isNotBlank()) offlineCache?.markStokPending(tid, true)
+            if (NetworkError.isNetworkRelated(e)) return
             throw e
         }
     }
@@ -213,16 +214,8 @@ class StokRepository(
         val stok = cache.loadStok(tid)
         val hareket = cache.loadStokHareketleri(tid)
         return try {
-            val bulutStok = runCatching {
-                val json = firestore.readDocumentJson("veri/stok")
-                if (json.isNullOrBlank()) emptyList()
-                else gson.fromJson<List<StokKaydi>>(json, stokType) ?: emptyList()
-            }.getOrDefault(emptyList())
-            val bulutHareket = runCatching {
-                val json = firestore.readDocumentJson("veri/stok_hareketleri")
-                if (json.isNullOrBlank()) emptyList()
-                else gson.fromJson<List<StokHareket>>(json, hareketType) ?: emptyList()
-            }.getOrDefault(emptyList())
+            val bulutStok = buluttanStokOku()
+            val bulutHareket = buluttanHareketOku()
             val birlesikStok = if (bulutStok.isEmpty()) stok else birlestirStok(stok, bulutStok)
             val birlesikHareket = if (bulutHareket.isEmpty()) hareket else birlestirHareket(hareket, bulutHareket)
             firestore.writeDocumentJson("veri/stok", gson.toJson(birlesikStok), uid)
@@ -232,6 +225,7 @@ class StokRepository(
             cache.markStokPending(tid, false)
             true
         } catch (e: Exception) {
+            cache.markStokPending(tid, true)
             if (NetworkError.isNetworkRelated(e)) false else throw e
         }
     }
@@ -284,7 +278,7 @@ class StokRepository(
         val birimMaliyet: Double
     )
 
-    data class CikisSatir(val malzeme: String, val miktar: Double)
+    data class CikisSatir(val malzeme: String, val miktar: Double, val depo: String = "")
 
     suspend fun girisYap(
         user: UserProfile,
@@ -407,7 +401,7 @@ class StokRepository(
             StokHareket(
                 id = UUID.randomUUID().toString(),
                 tarih = tarih,
-                hareketTipi = if (fark > 0) StokHareketTipi.GIRIS else StokHareketTipi.CIKIS,
+                hareketTipi = StokHareketTipi.SAYIM,
                 malzemeAdi = guncel.malzemeAdi,
                 kategori = guncel.kategori,
                 birim = guncel.birim,
@@ -416,7 +410,9 @@ class StokRepository(
                 birimMaliyet = guncel.birimMaliyet,
                 belgeNo = "SAY-${System.currentTimeMillis()}",
                 islemYapan = user.fullName,
-                teslimEdilen = "Sayım düzeltmesi"
+                teslimEdilen = "",
+                aciklama = if (fark > 0) "Sayım fazlası (önceki: ${stok.mevcutMiktar})"
+                else "Sayım eksiği (önceki: ${stok.mevcutMiktar})"
             )
         )
         saveStok(stokList)
@@ -498,8 +494,11 @@ class StokRepository(
             if (satir.malzeme.isBlank() || satir.miktar <= 0) {
                 throw IllegalArgumentException("Geçerli malzeme ve miktar girin")
             }
-            val stok = stokBulMalzeme(stokList, satir.malzeme, user.site)
-                ?: throw IllegalArgumentException("Stok bulunamadı: ${satir.malzeme}")
+            val stok = if (satir.depo.isNotBlank()) {
+                stokBul(stokList, satir.malzeme, satir.depo)
+            } else {
+                stokBulMalzeme(stokList, satir.malzeme, user.site)
+            } ?: throw IllegalArgumentException("Stok bulunamadı: ${satir.malzeme}")
             if (satir.miktar > stok.mevcutMiktar) {
                 throw IllegalArgumentException("Yetersiz stok: ${stok.malzemeAdi} (${stok.depoSaha})")
             }

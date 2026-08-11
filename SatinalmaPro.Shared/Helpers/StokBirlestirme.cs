@@ -1,18 +1,31 @@
+using System.Globalization;
 using SatinalmaPro.Shared.Models;
 
 namespace SatinalmaPro.Shared.Helpers;
 
 public static class StokBirlestirme
 {
+    private static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
+    private static readonly string[] TarihFormatlari =
+    [
+        "dd.MM.yyyy HH:mm:ss", "dd.MM.yyyy HH:mm", "dd.MM.yyyy",
+        "d.M.yyyy HH:mm", "d.M.yyyy", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd"
+    ];
+
+    /// <summary>
+    /// Malzeme+depo anahtarına göre birleştir.
+    /// Daha yeni SonGuncelleme kazanır; eşitlikte yerel kazanır.
+    /// Miktar karşılaştırması yok — çıkış (düşük miktar) geri alınmasın.
+    /// </summary>
     public static List<StokKaydi> Birlestir(IEnumerable<StokKaydi> yerel, IEnumerable<StokKaydi> bulut)
     {
         var sozluk = new Dictionary<string, StokKaydi>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var kayit in bulut)
-            EkleVeyaGuncelle(sozluk, kayit);
+            Ekle(sozluk, kayit, yerelKayit: false);
 
         foreach (var kayit in yerel)
-            EkleVeyaGuncelle(sozluk, kayit);
+            Ekle(sozluk, kayit, yerelKayit: true);
 
         return sozluk.Values
             .OrderBy(s => s.MalzemeAdi, StringComparer.OrdinalIgnoreCase)
@@ -33,38 +46,42 @@ public static class StokBirlestirme
             sozluk[kayit.Id] = kayit;
 
         return sozluk.Values
-            .OrderByDescending(h => h.Tarih)
+            .OrderByDescending(h => TarihOku(h.Tarih))
             .ThenBy(h => h.MalzemeAdi, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
-    private static void EkleVeyaGuncelle(Dictionary<string, StokKaydi> sozluk, StokKaydi kayit)
+    private static void Ekle(Dictionary<string, StokKaydi> sozluk, StokKaydi kayit, bool yerelKayit)
     {
         var anahtar = Anahtar(kayit);
+        if (string.IsNullOrWhiteSpace(anahtar) || anahtar == "|")
+            return;
+
         if (!sozluk.TryGetValue(anahtar, out var mevcut))
         {
             sozluk[anahtar] = kayit;
             return;
         }
 
-        if (DahaGuncel(kayit, mevcut))
+        var adayT = TarihOku(kayit.SonGuncelleme);
+        var mevT = TarihOku(mevcut.SonGuncelleme);
+        if (adayT > mevT || (adayT == mevT && yerelKayit))
             sozluk[anahtar] = kayit;
     }
 
     private static string Anahtar(StokKaydi kayit) =>
-        $"{kayit.MalzemeAdi}|{kayit.DepoSaha}|{kayit.Kategori}";
+        $"{kayit.MalzemeAdi?.Trim()}|{kayit.DepoSaha?.Trim()}";
 
-    private static bool DahaGuncel(StokKaydi aday, StokKaydi mevcut)
+    private static DateTime TarihOku(string? metin)
     {
-        var adayTarih = TarihOku(aday.SonGuncelleme);
-        var mevcutTarih = TarihOku(mevcut.SonGuncelleme);
+        if (string.IsNullOrWhiteSpace(metin))
+            return DateTime.MinValue;
 
-        if (adayTarih != mevcutTarih)
-            return adayTarih > mevcutTarih;
-
-        return aday.MevcutMiktar > mevcut.MevcutMiktar;
+        var temiz = metin.Trim();
+        if (DateTime.TryParseExact(temiz, TarihFormatlari, Tr, DateTimeStyles.None, out var dt))
+            return dt;
+        if (DateTime.TryParse(temiz, Tr, DateTimeStyles.None, out dt))
+            return dt;
+        return DateTime.TryParse(temiz, out dt) ? dt : DateTime.MinValue;
     }
-
-    private static DateTime TarihOku(string? metin) =>
-        DateTime.TryParse(metin, out var tarih) ? tarih : DateTime.MinValue;
 }

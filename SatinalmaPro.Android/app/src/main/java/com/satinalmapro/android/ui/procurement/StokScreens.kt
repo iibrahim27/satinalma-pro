@@ -34,12 +34,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import java.text.SimpleDateFormat
+import java.util.Locale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -136,7 +139,7 @@ fun StokHareketScreen(viewModel: AppViewModel) {
     val filtered = remember(hareketler, query) {
         val q = query.trim()
         hareketler
-            .sortedByDescending { it.tarih }
+            .sortedByDescending { hareketTarihMs(it.tarih) }
             .filter {
                 q.isBlank() ||
                     it.malzemeAdi.contains(q, true) ||
@@ -354,21 +357,33 @@ fun StokCikisScreen(viewModel: AppViewModel) {
     var belgeNo by remember { mutableStateOf(viewModel.sonrakiCikisBelgeNo()) }
     var teslimAlan by remember(user?.fullName) { mutableStateOf(user?.fullName.orEmpty()) }
     var malzeme by remember { mutableStateOf("") }
+    var depo by remember { mutableStateOf("") }
     var miktar by remember { mutableStateOf("") }
     val satirlar = remember { mutableStateListOf<StokRepository.CikisSatir>() }
     val oneriler = remember(malzeme, stokList) { viewModel.stokCikisOnerileri(malzeme) }
-    val mevcutStok = remember(malzeme, stokList) { viewModel.stokMevcutBul(malzeme) }
-    val pendingSatir = remember(malzeme, miktar, mevcutStok) {
+    val depolar = remember(malzeme, stokList) { viewModel.stokDepolari(malzeme) }
+    LaunchedEffect(malzeme, depolar, user?.site) {
+        if (malzeme.isBlank()) {
+            depo = ""
+            return@LaunchedEffect
+        }
+        if (depo.isNotBlank() && depolar.any { it.equals(depo, true) }) return@LaunchedEffect
+        val tercih = user?.site?.trim().orEmpty()
+        depo = depolar.firstOrNull { it.equals(tercih, true) } ?: depolar.firstOrNull().orEmpty()
+    }
+    val mevcutStok = remember(malzeme, depo, stokList) { viewModel.stokMevcutBul(malzeme, depo.ifBlank { null }) }
+    val pendingSatir = remember(malzeme, depo, miktar, mevcutStok) {
         val stok = mevcutStok ?: return@remember null
         val m = miktar.replace(',', '.').toDoubleOrNull() ?: return@remember null
-        if (m <= 0 || m > stok.mevcutMiktar) null
-        else StokRepository.CikisSatir(malzeme = stok.malzemeAdi, miktar = m)
+        if (m <= 0 || m > stok.mevcutMiktar || stok.depoSaha.isBlank()) null
+        else StokRepository.CikisSatir(malzeme = stok.malzemeAdi, miktar = m, depo = stok.depoSaha)
     }
     val kayitSayisi = satirlar.size + if (pendingSatir != null) 1 else 0
     val kaydetHazir = kayitSayisi > 0 && teslimAlan.isNotBlank()
 
     fun formTemizle() {
         malzeme = ""
+        depo = ""
         miktar = ""
     }
 
@@ -408,7 +423,10 @@ fun StokCikisScreen(viewModel: AppViewModel) {
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(MetrikLight.Surface)
-                                .clickable { malzeme = o.malzemeAdi }
+                                .clickable {
+                                    malzeme = o.malzemeAdi
+                                    if (o.depoSaha.isNotBlank()) depo = o.depoSaha
+                                }
                                 .padding(horizontal = 10.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelMedium,
                             color = MetrikLight.TextSecondary,
@@ -417,9 +435,32 @@ fun StokCikisScreen(viewModel: AppViewModel) {
                     }
                 }
             }
+            if (depolar.isNotEmpty()) {
+                Text("Depo / Saha", style = MaterialTheme.typography.labelMedium, color = MetrikLight.TextSecondary)
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    depolar.forEach { d ->
+                        val secili = d.equals(depo, true)
+                        Text(
+                            d,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (secili) MetrikLight.Primary.copy(alpha = 0.15f) else MetrikLight.Surface)
+                                .clickable { depo = d }
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (secili) MetrikLight.Primary else MetrikLight.TextSecondary,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
             if (mevcutStok != null) {
                 Text(
                     "Mevcut stok: ${formatQty(mevcutStok.mevcutMiktar, mevcutStok.birim)}" +
+                        " · ${mevcutStok.depoSaha}" +
                         (if (mevcutStok.kategori.isNotBlank()) " · ${mevcutStok.kategori}" else ""),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -459,7 +500,7 @@ fun StokCikisScreen(viewModel: AppViewModel) {
                 satirlar.forEachIndexed { index, s ->
                     StokSatirChip(
                         title = s.malzeme,
-                        subtitle = formatQty(s.miktar, ""),
+                        subtitle = "${formatQty(s.miktar, "")} · ${s.depo}",
                         onRemove = { satirlar.removeAt(index) }
                     )
                 }
@@ -674,4 +715,21 @@ private fun StokHareketRow(item: StokHareket) {
 private fun formatQty(qty: Double, birim: String): String {
     val n = if (qty % 1.0 == 0.0) qty.toInt().toString() else String.format("%.2f", qty)
     return if (birim.isBlank()) n else "$n $birim"
+}
+
+/** dd.MM.yyyy (ve saat) metnini sıralama için ms'ye çevir — string sıralama yanlış kronoloji verir. */
+private fun hareketTarihMs(metin: String?): Long {
+    if (metin.isNullOrBlank()) return 0L
+    val temiz = metin.trim()
+    val formatlar = arrayOf(
+        "dd.MM.yyyy HH:mm:ss", "dd.MM.yyyy HH:mm", "dd.MM.yyyy",
+        "d.M.yyyy HH:mm", "d.M.yyyy", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd"
+    )
+    for (f in formatlar) {
+        val t = runCatching {
+            SimpleDateFormat(f, Locale("tr", "TR")).apply { isLenient = false }.parse(temiz)?.time
+        }.getOrNull()
+        if (t != null) return t
+    }
+    return 0L
 }

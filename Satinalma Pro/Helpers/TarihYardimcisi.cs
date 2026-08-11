@@ -38,9 +38,17 @@ public static class TarihYardimcisi
         if (OaTarihDene(temiz, out sonuc))
             return true;
 
-        var tarihKismi = temiz.Split(' ', 'T')[0];
-        if (tarihKismi != temiz && TryParse(tarihKismi, out sonuc))
-            return true;
+        // Zaman içeren metinde yalnızca güne düşürme — stok SonGuncelleme damgası bozulmasın.
+        var ayirici = temiz.IndexOfAny([' ', 'T']);
+        if (ayirici > 0)
+        {
+            var saatKismi = temiz[(ayirici + 1)..];
+            if (saatKismi.Contains(':'))
+                return false;
+
+            if (TryParse(temiz[..ayirici], out sonuc))
+                return true;
+        }
 
         return false;
     }

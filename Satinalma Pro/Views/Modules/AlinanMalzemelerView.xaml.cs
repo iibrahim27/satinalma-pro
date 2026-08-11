@@ -308,7 +308,7 @@ public partial class AlinanMalzemelerView : UserControl, IModulKlavyeKisayollari
 
             VeriGuncellendi();
             MessageBox.Show(
-                $"{yeniKayitlar.Count} kayıt içe aktarıldı.\n{stokGirisSayisi} kalem için stok giriş ve çıkış hareketi oluşturuldu (alınan malzeme tarihine göre).",
+                $"{yeniKayitlar.Count} kayıt içe aktarıldı.\n{stokGirisSayisi} kalem için depoya stok girişi oluşturuldu (miktar stokta kalır).",
                 UygulamaBilgisi.Ad,
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);

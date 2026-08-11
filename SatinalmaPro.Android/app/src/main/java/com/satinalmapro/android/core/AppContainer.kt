@@ -1167,17 +1167,36 @@ class AppContainer(private val context: Context) {
         return MalzemeOneri.filtrele(source, query, bosSorgudaGoster = sadeceMevcut)
     }
 
-    /** Stok çıkışı: malzeme adına göre mevcut miktarlı kayıt (kategori stoktan gelir). */
-    fun stokMevcutBul(malzeme: String): StokKaydi? {
+    /** Stok çıkışı: malzeme (+ isteğe bağlı depo) için mevcut miktarlı kayıt. */
+    fun stokMevcutBul(malzeme: String, depo: String? = null): StokKaydi? {
         if (malzeme.isBlank()) return null
+        if (!depo.isNullOrBlank()) {
+            return _stok.value.firstOrNull {
+                it.malzemeAdi.equals(malzeme.trim(), true) &&
+                    it.depoSaha.equals(depo.trim(), true) &&
+                    it.mevcutMiktar > 0
+            }
+        }
         return stokRepo.stokBulMalzeme(_stok.value, malzeme, _user.value?.site)
+    }
+
+    /** Aynı malzemenin stoklu depoları. */
+    fun stokDepolari(malzeme: String): List<String> {
+        if (malzeme.isBlank()) return emptyList()
+        return _stok.value
+            .filter { it.malzemeAdi.equals(malzeme.trim(), true) && it.mevcutMiktar > 0 }
+            .map { it.depoSaha.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+            .sorted()
     }
 
     data class StokCikisOneri(
         val malzemeAdi: String,
         val mevcutMiktar: Double,
         val birim: String,
-        val kategori: String
+        val kategori: String,
+        val depoSaha: String = ""
     )
 
     fun stokCikisOnerileri(query: String?): List<StokCikisOneri> {
@@ -1197,7 +1216,7 @@ class AppContainer(private val context: Context) {
         )
         return adlar.mapNotNull { ad ->
             adaylar.firstOrNull { it.malzemeAdi.equals(ad, true) }?.let {
-                StokCikisOneri(it.malzemeAdi, it.mevcutMiktar, it.birim, it.kategori)
+                StokCikisOneri(it.malzemeAdi, it.mevcutMiktar, it.birim, it.kategori, it.depoSaha)
             }
         }
     }
@@ -1255,13 +1274,19 @@ class AppContainer(private val context: Context) {
         val firmaAdi = _uygulamaAyarlar.value.firmaAdi.ifBlank { "Satınalma Pro" }
         val depo = user.site.orEmpty()
         val fisSatirlar = satirlar.map { satir ->
-            val stok = _stok.value.firstOrNull { it.malzemeAdi.equals(satir.malzeme, true) }
+            val stok = if (satir.depo.isNotBlank()) {
+                _stok.value.firstOrNull {
+                    it.malzemeAdi.equals(satir.malzeme, true) && it.depoSaha.equals(satir.depo, true)
+                }
+            } else {
+                _stok.value.firstOrNull { it.malzemeAdi.equals(satir.malzeme, true) }
+            }
             val birim = stok?.birim?.ifBlank { "Adet" } ?: "Adet"
             StokTeslimFisiHelper.Satir(
                 malzeme = satir.malzeme,
                 miktar = StokTeslimFisiHelper.miktarMetni(satir.miktar, birim),
                 birim = birim,
-                depoSaha = depo
+                depoSaha = satir.depo.ifBlank { stok?.depoSaha.orEmpty() }.ifBlank { depo }
             )
         }
         return StokTeslimFisiHelper.Fis(

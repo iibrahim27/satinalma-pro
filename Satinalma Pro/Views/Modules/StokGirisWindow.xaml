@@ -56,11 +56,24 @@
           </StackPanel>
         </Grid>
 
-        <StackPanel Margin="0,0,0,14">
-          <TextBlock Text="Tedarikçi Firması" Style="{StaticResource ModuleFormLabelStyle}" />
-          <ComboBox x:Name="CmbTedarikci" Style="{StaticResource FilterComboStyle}" IsEditable="True"
-                    IsTextSearchEnabled="False" ui:ControlHelper.PlaceholderText="Listedeki cariyi seçin veya yeni firma yazın" />
-        </StackPanel>
+        <Grid Margin="0,0,0,14">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+            <TextBlock Text="Depo / Saha" Style="{StaticResource ModuleFormLabelStyle}" />
+            <ComboBox x:Name="CmbDepo" Style="{StaticResource FilterComboStyle}" IsEditable="True"
+                      IsTextSearchEnabled="False"
+                      ui:ControlHelper.PlaceholderText="Stokun gireceği depo (zorunlu)" />
+          </StackPanel>
+          <StackPanel Grid.Column="2">
+            <TextBlock Text="Tedarikçi Firması" Style="{StaticResource ModuleFormLabelStyle}" />
+            <ComboBox x:Name="CmbTedarikci" Style="{StaticResource FilterComboStyle}" IsEditable="True"
+                      IsTextSearchEnabled="False" ui:ControlHelper.PlaceholderText="Listedeki cariyi seçin veya yeni firma yazın" />
+          </StackPanel>
+        </Grid>
 
         <Border Style="{StaticResource ModuleFormSectionStyle}" Margin="0,0,0,10">
           <StackPanel>

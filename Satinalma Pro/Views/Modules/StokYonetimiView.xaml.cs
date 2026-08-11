@@ -382,7 +382,7 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         var yeni = new StokKaydi
         {
             Birim = "Adet",
-            SonGuncelleme = DateTime.Now.ToString("dd.MM.yyyy")
+            SonGuncelleme = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")
         };
 
         var pencere = new StokDuzenleWindow(yeni) { Owner = Window.GetWindow(this) };
