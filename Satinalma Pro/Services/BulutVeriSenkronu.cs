@@ -473,7 +473,12 @@ public static class BulutVeriSenkronu
 
         var yol = KiraciliBulutYolu(relYol, senkronTenantId);
 
+        // Yazma bitene kadar çekmenin eski belgeyi uygulamasını engelle.
+        lock (BekleyenKayitlar)
+            BekleyenKayitlar.Add(anahtar);
+
         await BulutYazmaKilidi.WaitAsync(iptal);
+        var yazildi = false;
         try
         {
             if (!string.Equals(senkronTenantId, KiracıOturumu.TenantId, StringComparison.Ordinal))
@@ -518,6 +523,7 @@ public static class BulutVeriSenkronu
             // Disk birleştirme eski yedeği geri getirmesin — yüklenen JSON esas.
             if (talepBirlesikJson is not null)
                 SatinalmaDepo.TalepleriBirlestirVeYukle(talepBirlesikJson, yerelBirlestir: false);
+            yazildi = true;
         }
         catch (OperationCanceledException)
         {
@@ -529,6 +535,11 @@ public static class BulutVeriSenkronu
         }
         finally
         {
+            if (yazildi)
+            {
+                lock (BekleyenKayitlar)
+                    BekleyenKayitlar.Remove(anahtar);
+            }
             BulutYazmaKilidi.Release();
         }
     }
@@ -937,93 +948,138 @@ public static class BulutVeriSenkronu
         if (_senkronYukleniyor || !OturumYoneticisi.GirisYapildi)
             return;
 
-        string[] anahtarlar;
-        lock (BekleyenKayitlar)
-        {
-            anahtarlar = BekleyenKayitlar.ToArray();
-            BekleyenKayitlar.Clear();
-        }
-
-        if (anahtarlar.Length == 0 || OturumYoneticisi.Firestore is null)
+        if (OturumYoneticisi.Firestore is null)
             return;
 
-        var yazilabilir = anahtarlar
-            .Where(a => BelgeHaritasi.ContainsKey(a) && ModulVeriDeposu.BulutAnahtariYazabilir(a))
-            .ToArray();
-        // Yetkisiz anahtarlar atılır (Depo'nun satinalma_* göndermesi engellenir).
-
-        Array.Sort(yazilabilir, (a, b) => BulutGonderimOnceligi(a).CompareTo(BulutGonderimOnceligi(b)));
-
-        var basarisiz = new List<string>();
-        foreach (var anahtar in yazilabilir)
+        await BulutYazmaKilidi.WaitAsync(iptal);
+        try
         {
-            try
+            string[] anahtarlar;
+            lock (BekleyenKayitlar)
+                anahtarlar = BekleyenKayitlar.ToArray();
+
+            if (anahtarlar.Length == 0)
+                return;
+
+            var yazilabilir = anahtarlar
+                .Where(a => BelgeHaritasi.ContainsKey(a) && ModulVeriDeposu.BulutAnahtariYazabilir(a))
+                .ToArray();
+            // Yetkisiz anahtarlar kuyruktan düşer (Depo'nun satinalma_* göndermesi engellenir).
+            var atilan = anahtarlar.Except(yazilabilir, StringComparer.Ordinal).ToArray();
+            if (atilan.Length > 0)
             {
-                if (!BelgeHaritasi.TryGetValue(anahtar, out var relYol))
+                lock (BekleyenKayitlar)
+                {
+                    foreach (var a in atilan)
+                        BekleyenKayitlar.Remove(a);
+                }
+            }
+
+            if (yazilabilir.Length == 0)
+                return;
+
+            Array.Sort(yazilabilir, (a, b) => BulutGonderimOnceligi(a).CompareTo(BulutGonderimOnceligi(b)));
+
+            var basarisiz = new HashSet<string>(StringComparer.Ordinal);
+            var basarili = new HashSet<string>(StringComparer.Ordinal);
+            var stokYazilamadi = false;
+
+            foreach (var anahtar in yazilabilir)
+            {
+                // Stok bakiyesi gitmeden hareket yazma — hareketler şişer, miktar yerinde kalır.
+                if (anahtar == "stok_hareket"
+                    && yazilabilir.Contains("stok", StringComparer.Ordinal)
+                    && !basarili.Contains("stok"))
+                {
                     continue;
-
-                var yol = KiraciliBulutYolu(relYol);
-                var bilincliBos = BilincliBosYazmaIzinliMi(anahtar);
-
-                var json = Olustur(anahtar);
-                if (!bilincliBos
-                    && anahtar != "satinalma_talepler"
-                    && (string.IsNullOrEmpty(json) || json is "[]" or "{}"))
-                    json = YerelJsonOku(anahtar) ?? json;
-
-                string? talepBirlesikJson = null;
-                if (anahtar == "satinalma_talepler" && !bilincliBos)
-                {
-                    (json, talepBirlesikJson) = await TalepleriBulutaHazirlaAsync(yol, iptal);
-                }
-                else if (anahtar == "satinalma_ayarlar" && !bilincliBos)
-                {
-                    json = await AyarlariBulutaHazirlaAsync(iptal);
-                }
-                else if (anahtar is ("stok" or "stok_hareket") && !bilincliBos)
-                {
-                    json = await StokBelgesiniBulutaHazirlaAsync(anahtar, json, yol, iptal);
-                }
-                else if (!bilincliBos &&
-                         await BosListeBulutuEzmesinAsync(anahtar, json, yol, iptal).ConfigureAwait(false))
-                {
-                    continue;
                 }
 
-                await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
-                    yol, json, OturumYoneticisi.Auth?.Uid, iptal);
-                YerelOnbellegeYaz(anahtar, json);
-                BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
-                BilincliBosYazmaIzniniTuket(anahtar);
-                if (talepBirlesikJson is not null)
-                    SatinalmaDepo.TalepleriBirlestirVeYukle(talepBirlesikJson, yerelBirlestir: false);
+                try
+                {
+                    if (!BelgeHaritasi.TryGetValue(anahtar, out var relYol))
+                    {
+                        basarili.Add(anahtar);
+                        continue;
+                    }
+
+                    var yol = KiraciliBulutYolu(relYol);
+                    var bilincliBos = BilincliBosYazmaIzinliMi(anahtar);
+
+                    var json = Olustur(anahtar);
+                    if (!bilincliBos
+                        && anahtar != "satinalma_talepler"
+                        && (string.IsNullOrEmpty(json) || json is "[]" or "{}"))
+                        json = YerelJsonOku(anahtar) ?? json;
+
+                    string? talepBirlesikJson = null;
+                    if (anahtar == "satinalma_talepler" && !bilincliBos)
+                    {
+                        (json, talepBirlesikJson) = await TalepleriBulutaHazirlaAsync(yol, iptal);
+                    }
+                    else if (anahtar == "satinalma_ayarlar" && !bilincliBos)
+                    {
+                        json = await AyarlariBulutaHazirlaAsync(iptal);
+                    }
+                    else if (anahtar is ("stok" or "stok_hareket") && !bilincliBos)
+                    {
+                        json = await StokBelgesiniBulutaHazirlaAsync(anahtar, json, yol, iptal);
+                    }
+                    else if (!bilincliBos &&
+                             await BosListeBulutuEzmesinAsync(anahtar, json, yol, iptal).ConfigureAwait(false))
+                    {
+                        basarili.Add(anahtar);
+                        continue;
+                    }
+
+                    await OturumYoneticisi.Firestore.BelgeJsonYazAsync(
+                        yol, json, OturumYoneticisi.Auth?.Uid, iptal);
+                    YerelOnbellegeYaz(anahtar, json);
+                    BulutSenkronZamani.Kaydet(anahtar, DateTime.UtcNow);
+                    BilincliBosYazmaIzniniTuket(anahtar);
+                    if (talepBirlesikJson is not null)
+                        SatinalmaDepo.TalepleriBirlestirVeYukle(talepBirlesikJson, yerelBirlestir: false);
+                    basarili.Add(anahtar);
+                }
+                catch (OperationCanceledException)
+                {
+                    basarisiz.Add(anahtar);
+                    if (anahtar == "stok")
+                        stokYazilamadi = true;
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    HataGunlugu.Kaydet(ex, $"BulutVeriSenkronu.BulutaGonder.{anahtar}");
+                    basarisiz.Add(anahtar);
+                    if (anahtar == "stok")
+                        stokYazilamadi = true;
+                }
             }
-            catch (OperationCanceledException)
-            {
-                basarisiz.Add(anahtar);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                HataGunlugu.Kaydet(ex, $"BulutVeriSenkronu.BulutaGonder.{anahtar}");
-                basarisiz.Add(anahtar);
-            }
-        }
 
-        if (basarisiz.Count > 0)
-        {
+            // Kuyruğu yazma bitmeden temizleme — yoklama eski stok belgesini geri basmasın.
             lock (BekleyenKayitlar)
             {
+                foreach (var a in basarili)
+                    BekleyenKayitlar.Remove(a);
                 foreach (var a in basarisiz)
                     BekleyenKayitlar.Add(a);
+                if (stokYazilamadi || basarisiz.Contains("stok"))
+                    BekleyenKayitlar.Add("stok_hareket");
             }
 
-            _zamanlayici ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-            _zamanlayici.Tick -= ZamanlayiciTik;
-            _zamanlayici.Tick += ZamanlayiciTik;
-            _zamanlayici.Stop();
-            _zamanlayici.Interval = TimeSpan.FromSeconds(5);
-            _zamanlayici.Start();
+            if (basarisiz.Count > 0 || stokYazilamadi)
+            {
+                _zamanlayici ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+                _zamanlayici.Tick -= ZamanlayiciTik;
+                _zamanlayici.Tick += ZamanlayiciTik;
+                _zamanlayici.Stop();
+                _zamanlayici.Interval = TimeSpan.FromSeconds(5);
+                _zamanlayici.Start();
+            }
+        }
+        finally
+        {
+            BulutYazmaKilidi.Release();
         }
     }
 
@@ -1507,7 +1563,9 @@ public static class BulutVeriSenkronu
     {
         "satinalma_ayarlar" => 0,
         "satinalma_talepler" => 1,
-        _ => 2
+        "stok" => 2,
+        "stok_hareket" => 3,
+        _ => 4
     };
 
     private static void SatinalmaAyarlariniDisktenYenile()

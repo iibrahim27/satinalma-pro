@@ -136,10 +136,12 @@ class StokRepository(
     }
 
     private fun ayniMalzemeDepoTekBirak(list: MutableList<StokKaydi>, keeper: StokKaydi) {
+        val m = keeper.malzemeAdi.trim()
+        val d = keeper.depoSaha.trim()
         list.removeAll {
             it !== keeper &&
-                it.malzemeAdi.equals(keeper.malzemeAdi, true) &&
-                it.depoSaha.equals(keeper.depoSaha, true)
+                it.malzemeAdi.trim().equals(m, true) &&
+                it.depoSaha.trim().equals(d, true)
         }
     }
 
@@ -186,14 +188,18 @@ class StokRepository(
         val uid = auth.uid ?: throw IllegalStateException("Oturum gerekli")
         val tid = tenantId()
         if (tid.isNotBlank()) offlineCache?.saveStokHareketleri(tid, list)
+        // Bakiye buluta gitmeden hareket yazma — listede hareket var, stok durumu değişmez.
+        if (!lastStokCloudOk) {
+            if (tid.isNotBlank()) offlineCache?.markStokPending(tid, true)
+            return
+        }
         try {
             val bulut = buluttanHareketOku()
             val birlesik = if (bulut.isEmpty()) list else birlestirHareket(list, bulut)
             firestore.writeDocumentJson("veri/stok_hareketleri", gson.toJson(birlesik), uid)
             if (tid.isNotBlank()) {
                 offlineCache?.saveStokHareketleri(tid, birlesik)
-                if (lastStokCloudOk) offlineCache?.markStokPending(tid, false)
-                else offlineCache?.markStokPending(tid, true)
+                offlineCache?.markStokPending(tid, false)
             }
         } catch (e: Exception) {
             if (tid.isNotBlank()) offlineCache?.markStokPending(tid, true)
@@ -240,10 +246,13 @@ class StokRepository(
     /** Stok satırı damgası — aynı gün giriş/çıkışta bulut birleştirmesinde yerel kazanır. */
     private fun simdi() = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale("tr", "TR")).format(Date())
 
-    private fun stokBul(list: MutableList<StokKaydi>, malzeme: String, depo: String): StokKaydi? =
-        list.firstOrNull {
-            it.malzemeAdi.equals(malzeme.trim(), true) && it.depoSaha.equals(depo.trim(), true)
+    private fun stokBul(list: MutableList<StokKaydi>, malzeme: String, depo: String): StokKaydi? {
+        val m = malzeme.trim()
+        val d = depo.trim()
+        return list.firstOrNull {
+            it.malzemeAdi.trim().equals(m, true) && it.depoSaha.trim().equals(d, true)
         }
+    }
 
     fun stokBulMalzeme(
         list: List<StokKaydi>,

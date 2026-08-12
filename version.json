@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.112",
-    "build":  187,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.112/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.112/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.112/SatinalmaPro.apk",
-    "notes":  "2.1.112 - Stok yonetimi: birlestirme/depo secimi/cikis koruma, Firebase stok yazma kurallari",
+    "version":  "2.1.113",
+    "build":  188,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.113/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.113/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.113/SatinalmaPro.apk",
+    "notes":  "2.1.113 - Stok senkron: hareket kaydedilip bakiye guncellenmeme duzeltmesi",
     "zorunlu":  false
 }

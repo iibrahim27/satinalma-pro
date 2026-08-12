@@ -5,10 +5,14 @@ namespace SatinalmaPro.Services;
 
 public static class StokIslemServisi
 {
-    public static StokKaydi? StokBul(string malzeme, string depo) =>
-        ModulVeriDeposu.Stok.FirstOrDefault(s =>
-            s.MalzemeAdi.Equals(malzeme.Trim(), StringComparison.OrdinalIgnoreCase) &&
-            s.DepoSaha.Equals(depo.Trim(), StringComparison.OrdinalIgnoreCase));
+    public static StokKaydi? StokBul(string malzeme, string depo)
+    {
+        var m = malzeme.Trim();
+        var d = depo.Trim();
+        return ModulVeriDeposu.Stok.FirstOrDefault(s =>
+            s.MalzemeAdi.Trim().Equals(m, StringComparison.OrdinalIgnoreCase) &&
+            s.DepoSaha.Trim().Equals(d, StringComparison.OrdinalIgnoreCase));
+    }
 
     public static StokKaydi StokBulVeyaOlustur(string malzeme, string kategori, string birim, string depo, decimal birimMaliyet = 0)
     {
@@ -167,10 +171,14 @@ public static class StokIslemServisi
     /// <summary>Kategori farkıyla oluşmuş çift satırları sil; güncellenen kaydı bırak.</summary>
     private static void AyniMalzemeDepoTekBirak(StokKaydi keeper)
     {
+        var m = keeper.MalzemeAdi.Trim();
+        var d = keeper.DepoSaha.Trim();
+        keeper.MalzemeAdi = m;
+        keeper.DepoSaha = d;
         var silinecek = ModulVeriDeposu.Stok
             .Where(s => !ReferenceEquals(s, keeper)
-                        && s.MalzemeAdi.Equals(keeper.MalzemeAdi, StringComparison.OrdinalIgnoreCase)
-                        && s.DepoSaha.Equals(keeper.DepoSaha, StringComparison.OrdinalIgnoreCase))
+                        && s.MalzemeAdi.Trim().Equals(m, StringComparison.OrdinalIgnoreCase)
+                        && s.DepoSaha.Trim().Equals(d, StringComparison.OrdinalIgnoreCase))
             .ToList();
         foreach (var s in silinecek)
             ModulVeriDeposu.Stok.Remove(s);
