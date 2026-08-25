@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.66",
-    "build":  69,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.66/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.66/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.66/SatinalmaYonetici.apk",
-    "notes":  "1.0.66 - Pro 2.1.113 ile birlikte (stok senkron bakiye duzeltmesi)",
+    "version":  "1.0.67",
+    "build":  70,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.67/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.67/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.67/SatinalmaYonetici.apk",
+    "notes":  "1.0.67 - Pro 2.1.114 ile birlikte (Android/masaustu stok yonetimi esitleme)",
     "zorunlu":  false
 }

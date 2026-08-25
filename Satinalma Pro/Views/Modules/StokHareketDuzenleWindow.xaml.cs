@@ -38,7 +38,7 @@ public partial class StokHareketDuzenleWindow : Window
 
     private void Kaydet_Click(object sender, RoutedEventArgs e)
     {
-        if (!double.TryParse(TxtMiktar.Text, NumberStyles.Any, CultureInfo.CurrentCulture, out var miktar) || miktar < 0)
+        if (!double.TryParse(TxtMiktar.Text, NumberStyles.Any, CultureInfo.CurrentCulture, out var miktar) || miktar <= 0)
         {
             MessageBox.Show("Geçerli bir miktar girin.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
             return;

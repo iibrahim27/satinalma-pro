@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 
@@ -5,27 +6,31 @@ namespace SatinalmaPro.Services;
 
 public static class StokIslemServisi
 {
-    public static StokKaydi? StokBul(string malzeme, string depo)
+    public static StokKaydi? StokBul(string? malzeme, string? depo)
     {
-        var m = malzeme.Trim();
-        var d = depo.Trim();
+        var m = (malzeme ?? "").Trim();
+        var d = (depo ?? "").Trim();
         return ModulVeriDeposu.Stok.FirstOrDefault(s =>
-            s.MalzemeAdi.Trim().Equals(m, StringComparison.OrdinalIgnoreCase) &&
-            s.DepoSaha.Trim().Equals(d, StringComparison.OrdinalIgnoreCase));
+            (s.MalzemeAdi ?? "").Trim().Equals(m, StringComparison.OrdinalIgnoreCase) &&
+            (s.DepoSaha ?? "").Trim().Equals(d, StringComparison.OrdinalIgnoreCase));
     }
 
-    public static StokKaydi StokBulVeyaOlustur(string malzeme, string kategori, string birim, string depo, decimal birimMaliyet = 0)
+    public static StokKaydi StokBulVeyaOlustur(string? malzeme, string? kategori, string? birim, string? depo, decimal birimMaliyet = 0)
     {
         var mevcut = StokBul(malzeme, depo);
         if (mevcut is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(kategori)) mevcut.Kategori = kategori.Trim();
+            if (!string.IsNullOrWhiteSpace(birim)) mevcut.Birim = birim.Trim();
             return mevcut;
+        }
 
         mevcut = new StokKaydi
         {
-            MalzemeAdi = malzeme.Trim(),
-            Kategori = kategori.Trim(),
-            Birim = birim.Trim(),
-            DepoSaha = depo.Trim(),
+            MalzemeAdi = (malzeme ?? "").Trim(),
+            Kategori = (kategori ?? "").Trim(),
+            Birim = (birim ?? "").Trim(),
+            DepoSaha = (depo ?? "").Trim(),
             BirimMaliyet = birimMaliyet,
             SonGuncelleme = Simdi()
         };
@@ -37,6 +42,9 @@ public static class StokIslemServisi
         string tarih, string malzeme, string kategori, string birim, double miktar,
         string depo, decimal birimMaliyet, string belgeNo, string teslimEden, string teslimEdilen)
     {
+        if (miktar <= 0)
+            throw new InvalidOperationException("Giriş miktarı sıfırdan büyük olmalıdır.");
+
         var stok = StokBulVeyaOlustur(malzeme, kategori, birim, depo, birimMaliyet);
         stok.MevcutMiktar += miktar;
         if (birimMaliyet > 0)
@@ -68,6 +76,9 @@ public static class StokIslemServisi
         string tarih, string malzeme, string depo, double miktar,
         string belgeNo, string teslimEden, string teslimEdilen)
     {
+        if (miktar <= 0)
+            throw new InvalidOperationException("Çıkış miktarı sıfırdan büyük olmalıdır.");
+
         var stok = StokBul(malzeme, depo)
             ?? throw new InvalidOperationException("Bu malzeme ve depo için stok kaydı bulunamadı.");
 
@@ -101,6 +112,9 @@ public static class StokIslemServisi
     public static StokHareketKaydi SayimYap(
         string tarih, StokKaydi stok, double sayimMiktar, string islemYapan, string aciklama)
     {
+        if (sayimMiktar < 0)
+            throw new InvalidOperationException("Sayım miktarı negatif olamaz.");
+
         var onceki = stok.MevcutMiktar;
         var fark = sayimMiktar - onceki;
 
@@ -131,6 +145,9 @@ public static class StokIslemServisi
 
     public static void HareketSil(StokHareketKaydi hareket)
     {
+        if (hareket.Miktar < 0)
+            throw new InvalidOperationException("Silinecek hareketin miktarı negatif olamaz.");
+
         var stok = StokBul(hareket.MalzemeAdi, hareket.DepoSaha);
         if (stok is null)
         {
@@ -142,6 +159,9 @@ public static class StokIslemServisi
         switch (hareket.HareketTipi)
         {
             case StokHareketTipleri.Giris:
+                if (stok.MevcutMiktar < hareket.Miktar)
+                    throw new InvalidOperationException(
+                        $"Giriş hareketi silinemez. Mevcut stok ({stok.MevcutMiktar:N2} {stok.Birim}) geri alınacak miktardan az.");
                 stok.MevcutMiktar -= hareket.Miktar;
                 break;
             case StokHareketTipleri.Cikis:
@@ -150,6 +170,8 @@ public static class StokIslemServisi
             case StokHareketTipleri.Sayim when hareket.OncekiMiktar.HasValue:
                 stok.MevcutMiktar = hareket.OncekiMiktar.Value;
                 break;
+            default:
+                throw new InvalidOperationException("Bilinmeyen hareket tipi.");
         }
 
         stok.SonGuncelleme = Simdi();
@@ -214,6 +236,15 @@ public static class StokIslemServisi
                 throw new InvalidOperationException(
                     $"Yetersiz stok. Düzenleme sonrası mevcut: {geriAlinmis:N2} {stok.Birim}");
         }
+        else if (tip == StokHareketTipleri.Giris)
+        {
+            var stok = StokBul(malzeme, depo)
+                ?? throw new InvalidOperationException("Bu malzeme ve depo için stok kaydı bulunamadı.");
+            var net = stok.MevcutMiktar + miktar - eski.Miktar;
+            if (net < 0)
+                throw new InvalidOperationException(
+                    $"Yetersiz stok. Düzenleme sonrası mevcut: {net:N2} {stok.Birim}");
+        }
         else if (tip == StokHareketTipleri.Sayim)
         {
             _ = StokBul(malzeme, depo)
@@ -256,9 +287,9 @@ public static class StokIslemServisi
                 if (eski.OncekiMiktar.HasValue) geri.OncekiMiktar = eski.OncekiMiktar;
                 if (eski.SayimMiktar.HasValue) geri.SayimMiktar = eski.SayimMiktar;
             }
-            catch
+            catch (Exception ex)
             {
-                // yut — orijinal hatayı fırlat
+                Debug.WriteLine($"Hareket geri yüklenemedi: {ex.Message}");
             }
 
             throw;
@@ -273,12 +304,15 @@ public static class StokIslemServisi
             liste = liste.Where(s => s.MevcutMiktar > 0);
 
         if (!string.IsNullOrWhiteSpace(kategori))
-            liste = liste.Where(s => s.Kategori.Equals(kategori.Trim(), StringComparison.OrdinalIgnoreCase));
+        {
+            var k = kategori.Trim();
+            liste = liste.Where(s => !string.IsNullOrWhiteSpace(s.Kategori) && s.Kategori.Equals(k, StringComparison.OrdinalIgnoreCase));
+        }
 
         if (!string.IsNullOrWhiteSpace(arama))
         {
             var metin = arama.Trim();
-            liste = liste.Where(s => s.MalzemeAdi.Contains(metin, StringComparison.OrdinalIgnoreCase));
+            liste = liste.Where(s => !string.IsNullOrWhiteSpace(s.MalzemeAdi) && s.MalzemeAdi.Contains(metin, StringComparison.OrdinalIgnoreCase));
         }
 
         return liste.Select(s => s.MalzemeAdi)
@@ -289,14 +323,18 @@ public static class StokIslemServisi
 
     public static StokKaydi? StokBulMalzemeAdi(string malzeme, string? kategori = null, bool sadeceMevcutStok = false)
     {
+        var m = (malzeme ?? "").Trim();
         var liste = ModulVeriDeposu.Stok.Where(s =>
-            s.MalzemeAdi.Equals(malzeme.Trim(), StringComparison.OrdinalIgnoreCase));
+            !string.IsNullOrWhiteSpace(s.MalzemeAdi) && s.MalzemeAdi.Equals(m, StringComparison.OrdinalIgnoreCase));
 
         if (sadeceMevcutStok)
             liste = liste.Where(s => s.MevcutMiktar > 0);
 
         if (!string.IsNullOrWhiteSpace(kategori))
-            liste = liste.Where(s => s.Kategori.Equals(kategori.Trim(), StringComparison.OrdinalIgnoreCase));
+        {
+            var k = kategori.Trim();
+            liste = liste.Where(s => !string.IsNullOrWhiteSpace(s.Kategori) && s.Kategori.Equals(k, StringComparison.OrdinalIgnoreCase));
+        }
 
         return liste
             .OrderByDescending(s => s.MevcutMiktar)
@@ -333,7 +371,10 @@ public static class StokIslemServisi
     {
         var liste = ModulVeriDeposu.Stok.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(depo))
-            liste = liste.Where(s => s.DepoSaha.Equals(depo, StringComparison.OrdinalIgnoreCase));
+        {
+            var d = depo.Trim();
+            liste = liste.Where(s => !string.IsNullOrWhiteSpace(s.DepoSaha) && s.DepoSaha.Equals(d, StringComparison.OrdinalIgnoreCase));
+        }
         return liste.OrderBy(s => s.MalzemeAdi);
     }
 

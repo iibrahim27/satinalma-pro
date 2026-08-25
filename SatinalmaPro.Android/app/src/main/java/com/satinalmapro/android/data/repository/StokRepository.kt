@@ -3,6 +3,7 @@ package com.satinalmapro.android.data.repository
 import com.satinalmapro.android.core.JsonConfig
 import com.satinalmapro.android.core.NetworkError
 import com.google.gson.reflect.TypeToken
+import com.satinalmapro.android.core.model.AlinanMalzemeKaydi
 import com.satinalmapro.android.core.model.StokHareket
 import com.satinalmapro.android.core.model.StokHareketTipi
 import com.satinalmapro.android.core.model.StokKaydi
@@ -21,7 +22,8 @@ import java.util.UUID
 class StokRepository(
     private val firestore: FirestoreClient,
     private val auth: FirebaseAuthClient,
-    private val offlineCache: OfflineCache? = null
+    private val offlineCache: OfflineCache? = null,
+    private val modulRepo: ModulRepository? = null
 ) {
     private val gson = JsonConfig.gson
     private val stokType = object : TypeToken<List<StokKaydi>>() {}.type
@@ -298,8 +300,10 @@ class StokRepository(
         depo: String,
         birimMaliyet: Double,
         belgeNo: String,
+        tedarikci: String,
         teslimEden: String,
-        teslimAlan: String
+        teslimAlan: String,
+        alinanKaydet: Boolean = true
     ) {
         if (!KullaniciRolleri.canStockWrite(user.role)) throw IllegalStateException("Stok giriş yetkiniz yok")
         if (malzeme.isBlank() || miktar <= 0) throw IllegalArgumentException("Malzeme ve miktar gerekli")
@@ -315,14 +319,20 @@ class StokRepository(
             sonGuncelleme = damga
         ).also { stokList.add(it) }
         val index = stokList.indexOf(stok)
+        val yeniBirim = birim.ifBlank { stok.birim }
+        val yeniKategori = kategori.ifBlank { stok.kategori }
+        val yeniBirimMaliyet = if (birimMaliyet > 0) birimMaliyet else stok.birimMaliyet
         val guncel = stok.copy(
             mevcutMiktar = stok.mevcutMiktar + miktar,
-            birimMaliyet = if (birimMaliyet > 0) birimMaliyet else stok.birimMaliyet,
+            birim = yeniBirim,
+            kategori = yeniKategori,
+            birimMaliyet = yeniBirimMaliyet,
             sonGuncelleme = damga,
-            toplamDeger = (stok.mevcutMiktar + miktar) * (if (birimMaliyet > 0) birimMaliyet else stok.birimMaliyet)
+            toplamDeger = kotlin.math.round((stok.mevcutMiktar + miktar) * yeniBirimMaliyet * 100) / 100
         )
         stokList[index] = guncel
         ayniMalzemeDepoTekBirak(stokList, guncel)
+        val faturaNo = belgeNo.ifBlank { "STG-${System.currentTimeMillis()}" }
         hareketList.add(
             StokHareket(
                 id = UUID.randomUUID().toString(),
@@ -334,13 +344,39 @@ class StokRepository(
                 miktar = miktar,
                 depoSaha = guncel.depoSaha,
                 birimMaliyet = guncel.birimMaliyet,
-                belgeNo = belgeNo.ifBlank { "STG-${System.currentTimeMillis()}" },
+                belgeNo = faturaNo,
                 islemYapan = teslimEden.ifBlank { user.fullName },
                 teslimEdilen = teslimAlan
             )
         )
+        if (alinanKaydet) {
+            val alinan = AlinanMalzemeKaydi(
+                tarih = tarih,
+                faturaNo = faturaNo,
+                kategori = guncel.kategori,
+                malzemeHizmet = guncel.malzemeAdi,
+                miktar = miktar,
+                birim = guncel.birim,
+                birimFiyati = guncel.birimMaliyet,
+                tedarikci = tedarikci,
+                indirildigiSaha = guncel.depoSaha,
+                teslimAlan = teslimAlan,
+                aciklama = "Stok girişi — $faturaNo"
+            ).hesaplaToplam()
+            alinanMalzemeEkle(listOf(alinan), user.role)
+        }
         saveStok(stokList)
         saveHareketler(hareketList)
+    }
+
+    /** Mevcut listeyi koruyarak yeni alınan malzeme kayıtları ekler. */
+    private suspend fun alinanMalzemeEkle(kayitlar: List<AlinanMalzemeKaydi>, role: String?) {
+        val repo = modulRepo ?: return
+        if (kayitlar.isEmpty()) return
+        runCatching {
+            val mevcut = repo.loadAlinanMalzemeler()
+            repo.saveAlinanMalzemeler(mevcut + kayitlar, role)
+        }
     }
 
     suspend fun cikisYap(
@@ -364,7 +400,7 @@ class StokRepository(
         val guncel = stok.copy(
             mevcutMiktar = stok.mevcutMiktar - miktar,
             sonGuncelleme = damga,
-            toplamDeger = (stok.mevcutMiktar - miktar) * stok.birimMaliyet
+            toplamDeger = kotlin.math.round((stok.mevcutMiktar - miktar) * stok.birimMaliyet * 100) / 100
         )
         stokList[index] = guncel
         ayniMalzemeDepoTekBirak(stokList, guncel)
@@ -402,7 +438,7 @@ class StokRepository(
         val guncel = stok.copy(
             mevcutMiktar = sayimMiktari,
             sonGuncelleme = damga,
-            toplamDeger = sayimMiktari * stok.birimMaliyet
+            toplamDeger = kotlin.math.round(sayimMiktari * stok.birimMaliyet * 100) / 100
         )
         stokList[index] = guncel
         ayniMalzemeDepoTekBirak(stokList, guncel)
@@ -415,9 +451,11 @@ class StokRepository(
                 kategori = guncel.kategori,
                 birim = guncel.birim,
                 miktar = kotlin.math.abs(fark),
+                oncekiMiktar = stok.mevcutMiktar,
+                sayimMiktar = sayimMiktari,
                 depoSaha = guncel.depoSaha,
                 birimMaliyet = guncel.birimMaliyet,
-                belgeNo = "SAY-${System.currentTimeMillis()}",
+                belgeNo = "",
                 islemYapan = user.fullName,
                 teslimEdilen = "",
                 aciklama = if (fark > 0) "Sayım fazlası (önceki: ${stok.mevcutMiktar})"
@@ -433,12 +471,14 @@ class StokRepository(
         belgeNo: String,
         depo: String,
         teslimAlan: String,
+        tedarikci: String,
         satirlar: List<GirisSatir>
     ) {
         if (!KullaniciRolleri.canStockWrite(user.role)) throw IllegalStateException("Stok giriş yetkiniz yok")
         if (satirlar.isEmpty()) throw IllegalArgumentException("En az bir satır girin")
         val stokList = loadStok().toMutableList()
         val hareketList = loadHareketler().toMutableList()
+        val alinanlar = mutableListOf<AlinanMalzemeKaydi>()
         val tarih = bugun()
         val belge = belgeNo.ifBlank { "STG-${System.currentTimeMillis()}" }
         val depoAdi = depo.ifBlank { user.site.orEmpty() }.ifBlank { "Merkez Depo" }
@@ -462,7 +502,7 @@ class StokRepository(
                 kategori = satir.kategori.trim().ifBlank { stok.kategori },
                 birimMaliyet = birimMaliyet,
                 sonGuncelleme = damga,
-                toplamDeger = (stok.mevcutMiktar + satir.miktar) * birimMaliyet
+                toplamDeger = kotlin.math.round((stok.mevcutMiktar + satir.miktar) * birimMaliyet * 100) / 100
             )
             stokList[index] = guncel
             ayniMalzemeDepoTekBirak(stokList, guncel)
@@ -482,7 +522,23 @@ class StokRepository(
                     teslimEdilen = teslimAlan.ifBlank { user.fullName }
                 )
             )
+            alinanlar.add(
+                AlinanMalzemeKaydi(
+                    tarih = tarih,
+                    faturaNo = belge,
+                    kategori = guncel.kategori,
+                    malzemeHizmet = guncel.malzemeAdi,
+                    miktar = satir.miktar,
+                    birim = guncel.birim,
+                    birimFiyati = birimMaliyet,
+                    tedarikci = tedarikci,
+                    indirildigiSaha = guncel.depoSaha,
+                    teslimAlan = teslimAlan,
+                    aciklama = "Stok girişi — $belge"
+                ).hesaplaToplam()
+            )
         }
+        alinanMalzemeEkle(alinanlar, user.role)
         saveStok(stokList)
         saveHareketler(hareketList)
     }
@@ -517,7 +573,7 @@ class StokRepository(
                 mevcutMiktar = stok.mevcutMiktar - satir.miktar,
                 kategori = kategori,
                 sonGuncelleme = simdi(),
-                toplamDeger = (stok.mevcutMiktar - satir.miktar) * stok.birimMaliyet
+                toplamDeger = kotlin.math.round((stok.mevcutMiktar - satir.miktar) * stok.birimMaliyet * 100) / 100
             )
             stokList[index] = guncel
             ayniMalzemeDepoTekBirak(stokList, guncel)
@@ -544,24 +600,43 @@ class StokRepository(
 
     private fun hareketDuzenlenebilir(hareket: StokHareket): Boolean =
         hareket.hareketTipi.equals(StokHareketTipi.GIRIS, true) ||
-            hareket.hareketTipi.equals(StokHareketTipi.CIKIS, true)
+            hareket.hareketTipi.equals(StokHareketTipi.CIKIS, true) ||
+            hareket.hareketTipi.equals(StokHareketTipi.SAYIM, true)
 
     private fun stokEtkisiniGeriAl(stokList: MutableList<StokKaydi>, hareket: StokHareket) {
-        val stok = stokBul(stokList, hareket.malzemeAdi, hareket.depoSaha) ?: return
+        val stok = stokBul(stokList, hareket.malzemeAdi, hareket.depoSaha)
+            ?: throw IllegalStateException("Hareketin stok kaydı bulunamadı")
         val index = stokList.indexOf(stok)
         val damga = simdi()
         val guncel = when {
-            hareket.hareketTipi.equals(StokHareketTipi.GIRIS, true) -> stok.copy(
-                mevcutMiktar = (stok.mevcutMiktar - hareket.miktar).coerceAtLeast(0.0),
-                sonGuncelleme = damga,
-                toplamDeger = (stok.mevcutMiktar - hareket.miktar).coerceAtLeast(0.0) * stok.birimMaliyet
-            )
-            hareket.hareketTipi.equals(StokHareketTipi.CIKIS, true) -> stok.copy(
-                mevcutMiktar = stok.mevcutMiktar + hareket.miktar,
-                sonGuncelleme = damga,
-                toplamDeger = (stok.mevcutMiktar + hareket.miktar) * stok.birimMaliyet
-            )
-            else -> return
+            hareket.hareketTipi.equals(StokHareketTipi.GIRIS, true) -> {
+                if (stok.mevcutMiktar < hareket.miktar) {
+                    throw IllegalStateException("Giriş hareketi geri alınamaz; mevcut stok yetersiz.")
+                }
+                val yeni = stok.mevcutMiktar - hareket.miktar
+                stok.copy(
+                    mevcutMiktar = yeni,
+                    sonGuncelleme = damga,
+                    toplamDeger = kotlin.math.round(yeni * stok.birimMaliyet * 100) / 100
+                )
+            }
+            hareket.hareketTipi.equals(StokHareketTipi.CIKIS, true) -> {
+                val yeni = stok.mevcutMiktar + hareket.miktar
+                stok.copy(
+                    mevcutMiktar = yeni,
+                    sonGuncelleme = damga,
+                    toplamDeger = kotlin.math.round(yeni * stok.birimMaliyet * 100) / 100
+                )
+            }
+            hareket.hareketTipi.equals(StokHareketTipi.SAYIM, true) && hareket.oncekiMiktar != null -> {
+                val yeni = hareket.oncekiMiktar
+                stok.copy(
+                    mevcutMiktar = yeni,
+                    sonGuncelleme = damga,
+                    toplamDeger = kotlin.math.round(yeni * stok.birimMaliyet * 100) / 100
+                )
+            }
+            else -> throw IllegalArgumentException("Bilinmeyen hareket tipi")
         }
         stokList[index] = guncel
     }
@@ -601,35 +676,70 @@ class StokRepository(
 
         val stok = stokBul(stokList, eski.malzemeAdi, eski.depoSaha)
             ?: throw IllegalArgumentException("Stok kaydı bulunamadı")
-        if (eski.hareketTipi.equals(StokHareketTipi.CIKIS, true) && miktar > stok.mevcutMiktar) {
-            throw IllegalArgumentException("Yetersiz stok")
-        }
 
         val index = stokList.indexOf(stok)
         val damga = simdi()
-        val guncelStok = when {
-            eski.hareketTipi.equals(StokHareketTipi.GIRIS, true) -> stok.copy(
-                mevcutMiktar = stok.mevcutMiktar + miktar,
-                sonGuncelleme = damga,
-                toplamDeger = (stok.mevcutMiktar + miktar) * stok.birimMaliyet
-            )
-            else -> stok.copy(
-                mevcutMiktar = stok.mevcutMiktar - miktar,
-                sonGuncelleme = damga,
-                toplamDeger = (stok.mevcutMiktar - miktar) * stok.birimMaliyet
-            )
+        val (guncelStok, yeniHareket) = when {
+            eski.hareketTipi.equals(StokHareketTipi.GIRIS, true) -> {
+                if (stok.mevcutMiktar + miktar < 0) {
+                    throw IllegalArgumentException("Yetersiz stok")
+                }
+                val yeni = stok.mevcutMiktar + miktar
+                stok.copy(
+                    mevcutMiktar = yeni,
+                    sonGuncelleme = damga,
+                    toplamDeger = kotlin.math.round(yeni * stok.birimMaliyet * 100) / 100
+                ) to eski.copy(
+                    tarih = tarih.ifBlank { eski.tarih },
+                    miktar = miktar,
+                    belgeNo = belgeNo.ifBlank { eski.belgeNo },
+                    islemYapan = islemYapan.ifBlank { eski.islemYapan },
+                    teslimEdilen = teslimEdilen.ifBlank { eski.teslimEdilen },
+                    aciklama = aciklama
+                )
+            }
+            eski.hareketTipi.equals(StokHareketTipi.CIKIS, true) -> {
+                if (miktar > stok.mevcutMiktar) {
+                    throw IllegalArgumentException("Yetersiz stok")
+                }
+                val yeni = stok.mevcutMiktar - miktar
+                stok.copy(
+                    mevcutMiktar = yeni,
+                    sonGuncelleme = damga,
+                    toplamDeger = kotlin.math.round(yeni * stok.birimMaliyet * 100) / 100
+                ) to eski.copy(
+                    tarih = tarih.ifBlank { eski.tarih },
+                    miktar = miktar,
+                    belgeNo = belgeNo.ifBlank { eski.belgeNo },
+                    islemYapan = islemYapan.ifBlank { eski.islemYapan },
+                    teslimEdilen = teslimEdilen.ifBlank { eski.teslimEdilen },
+                    aciklama = aciklama
+                )
+            }
+            eski.hareketTipi.equals(StokHareketTipi.SAYIM, true) -> {
+                if (miktar < 0) throw IllegalArgumentException("Sayım miktarı negatif olamaz")
+                val onceki = stok.mevcutMiktar
+                val fark = miktar - onceki
+                val yeniHareketMiktar = kotlin.math.abs(fark)
+                stok.copy(
+                    mevcutMiktar = miktar,
+                    sonGuncelleme = damga,
+                    toplamDeger = kotlin.math.round(miktar * stok.birimMaliyet * 100) / 100
+                ) to eski.copy(
+                    tarih = tarih.ifBlank { eski.tarih },
+                    miktar = yeniHareketMiktar,
+                    oncekiMiktar = onceki,
+                    sayimMiktar = miktar,
+                    belgeNo = belgeNo.ifBlank { eski.belgeNo },
+                    islemYapan = islemYapan.ifBlank { eski.islemYapan },
+                    teslimEdilen = teslimEdilen.ifBlank { eski.teslimEdilen },
+                    aciklama = if (fark > 0) "Sayım fazlası (önceki: $onceki)" else "Sayım eksiği (önceki: $onceki)"
+                )
+            }
+            else -> throw IllegalArgumentException("Bilinmeyen hareket tipi")
         }
         stokList[index] = guncelStok
-        hareketList.add(
-            eski.copy(
-                tarih = tarih.ifBlank { eski.tarih },
-                miktar = miktar,
-                belgeNo = belgeNo.ifBlank { eski.belgeNo },
-                islemYapan = islemYapan.ifBlank { eski.islemYapan },
-                teslimEdilen = teslimEdilen.ifBlank { eski.teslimEdilen },
-                aciklama = aciklama
-            )
-        )
+        hareketList.add(yeniHareket)
         saveStok(stokList)
         saveHareketler(hareketList)
     }

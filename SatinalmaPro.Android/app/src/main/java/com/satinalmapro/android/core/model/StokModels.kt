@@ -16,6 +16,7 @@ data class StokKaydi(
         get() = when {
             mevcutMiktar <= 0 -> "Tükendi"
             minimumStok > 0 && mevcutMiktar <= minimumStok -> "Kritik"
+            minimumStok > 0 && mevcutMiktar <= minimumStok * 1.25 -> "Düşük"
             else -> "Normal"
         }
 }
@@ -28,6 +29,8 @@ data class StokHareket(
     val kategori: String = "",
     val birim: String = "",
     val miktar: Double = 0.0,
+    val oncekiMiktar: Double? = null,
+    val sayimMiktar: Double? = null,
     val depoSaha: String = "",
     val birimMaliyet: Double = 0.0,
     val belgeNo: String = "",

@@ -542,9 +542,13 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
             if (kayit.MevcutMiktar > 0)
                 return false;
         }
-        else if (kayit.MevcutMiktar <= 0)
+        else
         {
-            return false;
+            var durum = ComboDegeri(CmbDurum);
+            var tukenenSecili = string.Equals(durum, "Tükendi", StringComparison.OrdinalIgnoreCase);
+            var tumuSecili = string.IsNullOrEmpty(durum) || string.Equals(durum, "Tümü", StringComparison.OrdinalIgnoreCase);
+            if (!tukenenSecili && !tumuSecili && kayit.MevcutMiktar <= 0)
+                return false;
         }
 
         var arama = TxtArama.Text.Trim();
@@ -1014,11 +1018,11 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         var gorunen = GorunenStoklar();
         var toplamMiktar = gorunen.Sum(k => k.MevcutMiktar);
         var toplamDeger = gorunen.Sum(k => k.ToplamDeger);
-        var kritik = Kayitlar.Count(k => k.DurumMetin == "Kritik");
-        var minimumAlti = Kayitlar.Count(k => k.DurumMetin is "Kritik" or "Düşük");
-        var pasif = Kayitlar.Count(k => k.DurumMetin == "Tükendi");
+        var kritik = gorunen.Count(k => k.DurumMetin == "Kritik");
+        var minimumAlti = gorunen.Count(k => k.DurumMetin is "Kritik" or "Düşük");
+        var pasif = gorunen.Count(k => k.DurumMetin == "Tükendi");
 
-        StokKpiGuncelle("Toplam Stok Kalemi", Kayitlar.Count.ToString("N0"));
+        StokKpiGuncelle("Toplam Stok Kalemi", gorunen.Count.ToString("N0"));
         StokKpiGuncelle("Toplam Stok Miktarı", $"{toplamMiktar:N1}");
         StokKpiGuncelle("Toplam Stok Değeri", $"₺{toplamDeger:N0}");
         StokKpiGuncelle("Kritik Stok", kritik.ToString("N0"));

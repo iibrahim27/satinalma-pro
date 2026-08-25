@@ -333,7 +333,7 @@ fun StokGirisScreen(viewModel: AppViewModel) {
                 onClick = {
                     val liste = kaydedilecekSatirlar()
                     if (liste.isEmpty() || depo.isBlank()) return@AppPrimaryButton
-                    viewModel.stokGirisCoklu(belgeNo, depo, teslimAlan, liste) {
+                    viewModel.stokGirisCoklu(belgeNo, depo, teslimAlan, "", liste) {
                         satirlar.clear()
                         formTemizle()
                         belgeNo = viewModel.sonrakiGirisBelgeNo()
@@ -592,7 +592,7 @@ private fun EmptyStokState(message: String) {
 private fun StokDurumRow(item: StokKaydi) {
     val tint = when (item.durumMetin) {
         "Tükendi" -> MetrikLight.Danger
-        "Kritik" -> MetrikLight.Warning
+        "Kritik", "Düşük" -> MetrikLight.Warning
         else -> MetrikLight.Success
     }
     Row(

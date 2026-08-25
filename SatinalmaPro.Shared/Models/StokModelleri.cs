@@ -15,6 +15,7 @@ public class StokKaydi
 
     public string DurumMetin => MevcutMiktar <= 0 ? "Tükendi"
         : MinimumStok > 0 && MevcutMiktar <= MinimumStok ? "Kritik"
+        : MinimumStok > 0 && MevcutMiktar <= MinimumStok * 1.25 ? "Düşük"
         : "Normal";
 
     public void ToplamDegerHesapla() =>

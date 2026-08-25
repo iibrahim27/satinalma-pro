@@ -57,12 +57,27 @@ public partial class StokDuzenleWindow : Window
             MessageBox.Show("Mevcut miktar geçerli bir sayı olmalıdır.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
+        if (mevcut < 0)
+        {
+            MessageBox.Show("Mevcut miktar negatif olamaz.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
 
         if (!double.TryParse(TxtMinimumStok.Text, NumberStyles.Any, CultureInfo.CurrentCulture, out var minimum))
             minimum = 0;
+        if (minimum < 0)
+        {
+            MessageBox.Show("Minimum stok negatif olamaz.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
 
         if (!decimal.TryParse(TxtBirimMaliyet.Text, NumberStyles.Any, CultureInfo.CurrentCulture, out var maliyet))
             maliyet = 0;
+        if (maliyet < 0)
+        {
+            MessageBox.Show("Birim maliyet negatif olamaz.", UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
 
         _kayit.MalzemeAdi = TxtMalzemeAdi.Text.Trim();
         _kayit.Kategori = CmbKategori.Text.Trim();

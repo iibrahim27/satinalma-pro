@@ -913,7 +913,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     fun stokGiris(malzeme: String, miktar: String, birim: String, kategori: String, depo: String, birimMaliyet: String, belgeNo: String, teslimAlan: String, onSuccess: () -> Unit) {
         val m = miktar.replace(',', '.').toDoubleOrNull() ?: run { _submitError.value = "Geçerli miktar girin"; return }
         val f = birimMaliyet.replace(',', '.').toDoubleOrNull() ?: 0.0
-        runWorkflow(onSuccess) { container.stokGiris(malzeme, m, birim, kategori, depo, f, belgeNo, "", teslimAlan) }
+        runWorkflow(onSuccess) { container.stokGiris(malzeme, m, birim, kategori, depo, f, belgeNo, "", "", teslimAlan) }
     }
 
     fun stokCikis(malzeme: String, miktar: String, depo: String, belgeNo: String, teslimAlan: String, onSuccess: () -> Unit) {
@@ -943,6 +943,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         belgeNo: String,
         depo: String,
         teslimAlan: String,
+        tedarikci: String,
         satirlar: List<StokRepository.GirisSatir>,
         onSuccess: () -> Unit
     ) {
@@ -950,7 +951,7 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             _submitError.value = "En az bir satır girin"
             return
         }
-        runWorkflow(onSuccess) { container.stokGirisCoklu(belgeNo, depo, teslimAlan, satirlar) }
+        runWorkflow(onSuccess) { container.stokGirisCoklu(belgeNo, depo, teslimAlan, tedarikci, satirlar) }
     }
 
     fun stokCikisFisiOlustur(

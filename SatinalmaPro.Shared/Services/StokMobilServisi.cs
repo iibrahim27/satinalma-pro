@@ -40,6 +40,9 @@ public sealed class StokMobilServisi
     {
         foreach (var satir in satirlar)
         {
+            if (satir.Miktar <= 0)
+                throw new InvalidOperationException("Giriş miktarı sıfırdan büyük olmalıdır.");
+
             var stok = StokBulVeyaOlustur(satir.Malzeme, satir.Kategori, satir.Birim, satir.DepoSaha, satir.BirimFiyat);
             stok.MevcutMiktar += satir.Miktar;
             if (satir.BirimFiyat > 0)
@@ -74,6 +77,9 @@ public sealed class StokMobilServisi
     {
         foreach (var satir in satirlar)
         {
+            if (satir.Miktar <= 0)
+                throw new InvalidOperationException("Çıkış miktarı sıfırdan büyük olmalıdır.");
+
             var stok = StokBul(satir.Malzeme, satir.DepoSaha)
                 ?? throw new InvalidOperationException($"{satir.Malzeme} stokta bulunamadı.");
 
@@ -122,6 +128,9 @@ public sealed class StokMobilServisi
         string malzeme, string depo, double sayimMiktari, string islemYapan,
         CancellationToken iptal = default)
     {
+        if (sayimMiktari < 0)
+            throw new InvalidOperationException("Sayım miktarı negatif olamaz.");
+
         var stok = StokBul(malzeme, depo)
             ?? throw new InvalidOperationException($"{malzeme} stokta bulunamadı.");
 

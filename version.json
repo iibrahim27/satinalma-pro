@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.113",
-    "build":  188,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.113/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.113/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.113/SatinalmaPro.apk",
-    "notes":  "2.1.113 - Stok senkron: hareket kaydedilip bakiye guncellenmeme duzeltmesi",
+    "version":  "2.1.114",
+    "build":  189,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.114/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.114/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.114/SatinalmaPro.apk",
+    "notes":  "2.1.114 - Android/masaustu stok yonetimi esitlendi: durum hesabi (Dusuk), sayim OncekiMiktar/SayimMiktar, hareket duzenleme/silme guvenligi, maliyet yuvarlama, stok girisinde alinan malzeme kaydi",
     "zorunlu":  false
 }

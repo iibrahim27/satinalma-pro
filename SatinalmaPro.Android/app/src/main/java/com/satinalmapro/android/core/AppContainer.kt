@@ -100,8 +100,8 @@ class AppContainer(private val context: Context) {
     val bildirimler = BildirimRepository(firestore, auth, fcmPush)
     val talepler = TalepRepository(firestore, auth, bildirimler, offlineCache)
     val talepDetayController = PurchaseRequestDetailController(talepler)
-    val stokRepo = StokRepository(firestore, auth, offlineCache)
     val modulRepo = ModulRepository(firestore, auth)
+    val stokRepo = StokRepository(firestore, auth, offlineCache, modulRepo)
     val settingsRepo = SettingsRepository(firestore, auth)
     private val medyaRepo = MedyaRepository(firestore)
 
@@ -1071,8 +1071,10 @@ class AppContainer(private val context: Context) {
             depo = depoSaha,
             birimMaliyet = birimFiyat,
             belgeNo = belgeNo,
+            tedarikci = firma,
             teslimEden = teslimEden,
-            teslimAlan = teslimAlan
+            teslimAlan = teslimAlan,
+            alinanKaydet = false
         )
         var fis: StokTeslimFisiHelper.Fis? = null
         if (sahayaDirekt && sahaHedef.isNotBlank()) {
@@ -1131,9 +1133,9 @@ class AppContainer(private val context: Context) {
         _stokHareketleri.value = offlineCache.loadStokHareketleri(tid)
     }
 
-    suspend fun stokGiris(malzeme: String, miktar: Double, birim: String, kategori: String, depo: String, birimMaliyet: Double, belgeNo: String, teslimEden: String, teslimAlan: String) {
+    suspend fun stokGiris(malzeme: String, miktar: Double, birim: String, kategori: String, depo: String, birimMaliyet: Double, belgeNo: String, tedarikci: String = "", teslimEden: String, teslimAlan: String) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
-        stokRepo.girisYap(user, malzeme, miktar, birim, kategori, depo, birimMaliyet, belgeNo, teslimEden, teslimAlan)
+        stokRepo.girisYap(user, malzeme, miktar, birim, kategori, depo, birimMaliyet, belgeNo, tedarikci, teslimEden, teslimAlan)
         stokMutasyonSonrasiYenile()
         if (TenantSession.tenantId().isNullOrBlank()) loadStok()
     }
@@ -1225,10 +1227,11 @@ class AppContainer(private val context: Context) {
         belgeNo: String,
         depo: String,
         teslimAlan: String,
+        tedarikci: String,
         satirlar: List<StokRepository.GirisSatir>
     ) {
         val user = _user.value ?: throw IllegalStateException("Oturum gerekli")
-        stokRepo.girisYapCoklu(user, belgeNo, depo.ifBlank { user.site.orEmpty() }, teslimAlan, satirlar)
+        stokRepo.girisYapCoklu(user, belgeNo, depo.ifBlank { user.site.orEmpty() }, teslimAlan, tedarikci, satirlar)
         stokMutasyonSonrasiYenile()
         if (TenantSession.tenantId().isNullOrBlank()) loadStok()
     }
