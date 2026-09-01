@@ -5,20 +5,12 @@ namespace SatinalmaPro.Services;
 
 public static class MalzemeKategoriDeposu
 {
-    public static readonly string[] Varsayilanlar =
-    [
-        "Agrega", "Bağlayıcı", "Demir", "Hizmet", "Yakıt", "Malzeme", "Diğer"
-    ];
-
     public static IReadOnlyList<string> Liste => UygulamaAyarDeposu.Ayarlar.MalzemeKategorileri;
 
+    /// <summary>Boş liste bırakır — örnek kategori isimleri otomatik eklenmez.</summary>
     public static void VarsayilanlariHazirla()
     {
-        if (UygulamaAyarDeposu.Ayarlar.MalzemeKategorileri.Count > 0)
-            return;
-
-        UygulamaAyarDeposu.Ayarlar.MalzemeKategorileri.AddRange(Varsayilanlar);
-        UygulamaAyarDeposu.Kaydet();
+        // Bilerek boş: kullanıcı veya alınan malzeme kayıtları kategorileri oluşturur.
     }
 
     public static bool Ekle(string ad)
@@ -43,12 +35,16 @@ public static class MalzemeKategoriDeposu
         if (bulunan is null)
             return false;
 
-        if (liste.Count <= 1)
-            return false;
-
         liste.Remove(bulunan);
         UygulamaAyarDeposu.Kaydet();
         return true;
+    }
+
+    /// <summary>Tüm kategori listesini temizler (veri sıfırlama).</summary>
+    public static void TumunuTemizle()
+    {
+        UygulamaAyarDeposu.Ayarlar.MalzemeKategorileri.Clear();
+        UygulamaAyarDeposu.Kaydet();
     }
 
     /// <summary>Kategoriye ait alınan malzeme kayıt sayısı (büyük/küçük harf duyarsız).</summary>
@@ -75,7 +71,7 @@ public static class MalzemeKategoriDeposu
 
         var liste = UygulamaAyarDeposu.Ayarlar.MalzemeKategorileri;
         var bulunan = liste.FirstOrDefault(k => k.Equals(ad, StringComparison.OrdinalIgnoreCase));
-        if (bulunan is null || liste.Count <= 1)
+        if (bulunan is null)
             return -1;
 
         ModulVeriDeposu.Yukle();
@@ -95,7 +91,35 @@ public static class MalzemeKategoriDeposu
         return silinecekler.Count;
     }
 
-    /// <summary>Ayarlar + alınan malzeme + stok kayıtlarındaki tüm kategoriler.</summary>
+    /// <summary>Birden fazla kategoriyi ayarlardan siler; kayıtları da temizler.</summary>
+    public static (int silinenKategori, int silinenKayit) TopluSil(IEnumerable<string> adlar)
+    {
+        var benzersiz = adlar
+            .Select(a => a.Trim())
+            .Where(a => !string.IsNullOrWhiteSpace(a))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (benzersiz.Count == 0)
+            return (0, 0);
+
+        var toplamKayit = 0;
+        var silinenKategori = 0;
+        foreach (var ad in benzersiz)
+        {
+            var n = SilVeAlinanMalzemeKayitlariniTemizle(ad);
+            if (n >= 0)
+            {
+                silinenKategori++;
+                toplamKayit += n;
+            }
+        }
+
+        BosKategorileriTemizle();
+        return (silinenKategori, toplamKayit);
+    }
+
+    /// <summary>Ayarlar + alınan malzeme + stok kayıtlarındaki tüm kategoriler (form/combo).</summary>
     public static IEnumerable<string> TumListe()
     {
         ModulVeriDeposu.Yukle();
@@ -116,7 +140,7 @@ public static class MalzemeKategoriDeposu
         return set.OrderBy(s => s, StringComparer.CurrentCultureIgnoreCase);
     }
 
-    /// <summary>Excel / kayıtlardaki yeni kategorileri ayarlara ekler; kullanılmayanları temizler.</summary>
+    /// <summary>Yalnızca alınan malzeme kayıtlarından kategorileri ayarlara ekler; kullanılmayanları temizler.</summary>
     public static int KayitlardanSenkronizeEt()
     {
         UygulamaAyarDeposu.Yukle();
@@ -125,8 +149,7 @@ public static class MalzemeKategoriDeposu
         var ayarlar = UygulamaAyarDeposu.Ayarlar.MalzemeKategorileri;
         var eklendi = 0;
 
-        foreach (var kategori in ModulVeriDeposu.AlinanMalzemeler.Select(k => k.Kategori)
-                     .Concat(ModulVeriDeposu.Stok.Select(k => k.Kategori)))
+        foreach (var kategori in ModulVeriDeposu.AlinanMalzemeler.Select(k => k.Kategori))
         {
             if (string.IsNullOrWhiteSpace(kategori))
                 continue;
@@ -146,9 +169,7 @@ public static class MalzemeKategoriDeposu
         return eklendi;
     }
 
-    /// <summary>
-    /// Alınan malzeme ve stokta kaydı kalmayan kategorileri ayarlardan kaldırır (en az bir kategori kalır).
-    /// </summary>
+    /// <summary>Alınan malzemede kaydı kalmayan kategorileri ayarlardan kaldırır.</summary>
     public static int BosKategorileriTemizle()
     {
         UygulamaAyarDeposu.Yukle();
@@ -161,22 +182,10 @@ public static class MalzemeKategoriDeposu
                 kullanilan.Add(k.Kategori.Trim());
         }
 
-        foreach (var k in ModulVeriDeposu.Stok)
-        {
-            if (!string.IsNullOrWhiteSpace(k.Kategori))
-                kullanilan.Add(k.Kategori.Trim());
-        }
-
         var liste = UygulamaAyarDeposu.Ayarlar.MalzemeKategorileri;
-        if (liste.Count <= 1)
-            return 0;
-
         var silinen = 0;
         for (var i = liste.Count - 1; i >= 0; i--)
         {
-            if (liste.Count <= 1)
-                break;
-
             if (kullanilan.Contains(liste[i]))
                 continue;
 

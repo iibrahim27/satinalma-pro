@@ -7,6 +7,7 @@ using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
 using SatinalmaPro.Shared.Procurement.Detail;
+using TalepProRuntime = SatinalmaPro.Shared.Helpers.TalepProRuntime;
 using SatinalmaPro.Shared.Services;
 using SatinalmaPro.Views.Modules.Satinalma;
 using SatinalmaPro.Views.Modules.Satinalma.Part1;
@@ -56,6 +57,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
         {
             try
             {
+                TalepProRuntime.EtkinlestirGerekirse();
                 SatinalmaMasaustuSifirlama.IlkAcilistaUygula();
                 SatinalmaDepo.Yukle();
 
@@ -293,7 +295,11 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
             }
 
             foreach (var menu in grup.Ogeler)
+            {
+                if (SatinalmaPart1Menusu.TalepProMenudeGizle(menu.Route))
+                    continue;
                 NavPanel.Children.Add(NavOgesi(menu.Route, menu.Baslik));
+            }
         }
 
         BtnYeniTalep.Visibility = SatinalmaPart1Menusu.TalepAcabilir(rol)
@@ -960,7 +966,9 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
 
             foreach (var (route, metin) in _navRozetleri)
             {
-                var sayi = sayaclar.GetValueOrDefault(route);
+                var sayi = SatinalmaPart1Menusu.BekleyenRozetGoster(route)
+                    ? sayaclar.GetValueOrDefault(route)
+                    : 0;
                 var gorunur = sayi > 0 && !_menuDaraltildi;
                 metin.Text = sayi > 99 ? "99+" : sayi.ToString();
                 metin.Visibility = sayi > 0 ? Visibility.Visible : Visibility.Collapsed;

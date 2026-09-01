@@ -191,6 +191,7 @@ public static class ModulVeriDeposu
                 case "alinan_malzemeler.json":
                     AlinanMalzemeler.Clear();
                     KaydetAlinanMalzemeler();
+                    MalzemeKategoriDeposu.BosKategorileriTemizle();
                     break;
                 case "stok.json":
                     Stok.Clear();
@@ -371,96 +372,17 @@ public static class ModulVeriDeposu
 
     private static void AlinanMalzemeOrnekVeri()
     {
-        AlinanMalzemeler.Add(new AlinanMalzemeKaydi
-        {
-            Tarih = "16.06.2026", FaturaNo = "FT-2026-1842", Kategori = "Agrega",
-            MalzemeHizmet = "Mıcır 0-11", Miktar = 42.5, Birim = "Ton", BirimFiyati = 3000,
-            Tedarikci = "Delta Madencilik", IndirildigiSaha = "Merkez Şantiye",
-            TeslimAlan = "Ahmet Yılmaz", Aciklama = "Acil sevkiyat"
-        });
-        AlinanMalzemeler.Add(new AlinanMalzemeKaydi
-        {
-            Tarih = "15.06.2026", FaturaNo = "FT-2026-1835", Kategori = "Bağlayıcı",
-            MalzemeHizmet = "Çimento CEM I", Miktar = 18, Birim = "Ton", BirimFiyati = 4800,
-            Tedarikci = "ABC Yapı", IndirildigiSaha = "Doğu Sahası",
-            TeslimAlan = "Mehmet Kaya", Aciklama = ""
-        });
-        foreach (var kayit in AlinanMalzemeler)
-            kayit.ToplamTutariHesapla();
+        // Örnek kayıt eklenmez — kategori/isim kalıntısı oluşmasın.
     }
 
     private static void StokOrnekVeri()
     {
-        Stok.Add(new StokKaydi
-        {
-            MalzemeAdi = "Mıcır 0-11",
-            Kategori = "Agrega",
-            Birim = "Ton",
-            MevcutMiktar = 125,
-            MinimumStok = 40,
-            DepoSaha = "Merkez Şantiye",
-            BirimMaliyet = 3000,
-            SonGuncelleme = "20.06.2026",
-            Aciklama = "Ana depo stoku"
-        });
-        Stok.Add(new StokKaydi
-        {
-            MalzemeAdi = "Demir Ø12",
-            Kategori = "Demir",
-            Birim = "Ton",
-            MevcutMiktar = 8,
-            MinimumStok = 15,
-            DepoSaha = "Doğu Sahası",
-            BirimMaliyet = 28500,
-            SonGuncelleme = "19.06.2026",
-            Aciklama = "Kritik seviyede"
-        });
-        Stok.Add(new StokKaydi
-        {
-            MalzemeAdi = "Naylon Branda",
-            Kategori = "Malzeme",
-            Birim = "Adet",
-            MevcutMiktar = 0,
-            MinimumStok = 20,
-            DepoSaha = "Merkez Şantiye",
-            BirimMaliyet = 450,
-            SonGuncelleme = "15.06.2026",
-            Aciklama = "Sipariş verilecek"
-        });
-        foreach (var kayit in Stok)
-            kayit.ToplamDegerHesapla();
+        // Örnek stok/kategori eklenmez.
     }
 
     private static void StokHareketOrnekVeri()
     {
-        StokHareketleri.Add(new StokHareketKaydi
-        {
-            Tarih = "18.06.2026",
-            HareketTipi = StokHareketTipleri.Giris,
-            MalzemeAdi = "Mıcır 0-11",
-            Kategori = "Agrega",
-            Birim = "Ton",
-            Miktar = 50,
-            DepoSaha = "Merkez Şantiye",
-            BirimMaliyet = 3000,
-            BelgeNo = "GR-2026-012",
-            IslemYapan = "Ahmet Yılmaz",
-            Aciklama = "İlk stok girişi"
-        });
-        StokHareketleri.Add(new StokHareketKaydi
-        {
-            Tarih = "19.06.2026",
-            HareketTipi = StokHareketTipleri.Cikis,
-            MalzemeAdi = "Mıcır 0-11",
-            Kategori = "Agrega",
-            Birim = "Ton",
-            Miktar = 12,
-            DepoSaha = "Merkez Şantiye",
-            BirimMaliyet = 3000,
-            BelgeNo = "CK-2026-004",
-            IslemYapan = "Mehmet Kaya",
-            Aciklama = "Şantiye kullanımı"
-        });
+        // Örnek hareket eklenmez.
     }
 
     private static void AgregaOrnekVeri()

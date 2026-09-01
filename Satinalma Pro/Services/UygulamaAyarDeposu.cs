@@ -228,6 +228,8 @@ public static class UygulamaAyarDeposu
 
         SatinalmaProLogoDeposu.TumDosyalariSil();
         Ayarlar = new UygulamaAyarlar();
+        Ayarlar.MalzemeKategorileri.Clear();
+        Ayarlar.MalzemeBirimleri.Clear();
         Kaydet();
     }
 

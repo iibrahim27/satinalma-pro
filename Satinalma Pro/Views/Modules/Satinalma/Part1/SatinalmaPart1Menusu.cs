@@ -2,6 +2,7 @@ using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
 using SatinalmaPro.Shared.Helpers;
+using SatinalmaPro.Shared.Procurement;
 
 namespace SatinalmaPro.Views.Modules.Satinalma.Part1;
 
@@ -72,6 +73,34 @@ public static class SatinalmaPart1Menusu
             : SatinalmaOnayGecmisi;
     }
 
+    /// <summary>Talep Pro sol menüde gösterilmeyecek route'lar.</summary>
+    public static bool TalepProMenudeGizle(string route) =>
+        TalepProRuntime.Aktif && ProcurementRouteMatcher.TalepProHaricRoute(route);
+
+    /// <summary>Sekme rozeti — yalnızca kullanıcı aksiyonu bekleyen kuyruklarda.</summary>
+    public static bool BekleyenRozetGoster(string route)
+    {
+        if (TalepProMenudeGizle(route))
+            return false;
+
+        return route switch
+        {
+            YonetimGelenTalepler or YonetimTeklifBekleyen or YonetimTeklifGirilen
+                or SatinalmaTeklifIstenen or SatinalmaTeklifGirilen or SatinalmaTeklifDuzeltme
+                or SatinalmaKarsilastirma or SatinalmaOnayBekleyen
+                => true,
+            SatinalmaOnayGecmisi or YonetimOnayGecmisi or YonetimRedVerilen
+                or YonetimGecmis or YonetimDirekOnaylanan
+                => false,
+            SatinalmaOnaylanan or YonetimOnaylananTeklifler or SatinalmaOnaylananTalepler
+                or OnaylananTeklifler
+                => !TalepProRuntime.Aktif,
+            SatinalmaSiparis or SatinalmaMalKabul or SatinalmaIade or SatinalmaTedarikciler
+                => !TalepProRuntime.Aktif,
+            _ => false
+        };
+    }
+
     /// <summary>Bildirim/deep-link: Talep Pro'da operasyon sekmeleri yerine geçmiş arşiv.</summary>
     public static string BildirimRouteDonustur(string route, string? rol)
     {
@@ -94,7 +123,7 @@ public static class SatinalmaPart1Menusu
     private static IReadOnlyList<MenuGrubu> MasaustuMenuGruplariniDuzenle(
         string? rol, IReadOnlyList<MenuGrubu> ham)
     {
-        var key = KullaniciRolleri.Normalize(rol);
+        var key = TabFilterManager.NormalizeRole(rol);
         if (key is not ("admin" or "satinalma"))
             return ham;
 

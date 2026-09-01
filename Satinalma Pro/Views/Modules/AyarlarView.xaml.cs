@@ -421,13 +421,6 @@ public partial class AyarlarView : UserControl
             return;
         }
 
-        if (MalzemeKategoriDeposu.Liste.Count <= 1)
-        {
-            MessageBox.Show("En az bir kategori bulunmalıdır.", UygulamaBilgisi.Ad,
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
         var kayitSayisi = MalzemeKategoriDeposu.AlinanMalzemeKayitSayisi(secili);
         var mesaj = kayitSayisi > 0
             ? $"«{secili}» kategorisi ve bu kategoriye ait {kayitSayisi} alınan malzeme kaydı kalıcı olarak silinecek.\n\nDevam etmek istiyor musunuz?"
@@ -449,6 +442,45 @@ public partial class AyarlarView : UserControl
             ? $"Kategori silindi. {silinen} alınan malzeme kaydı kaldırıldı."
             : "Boş kategori silindi.";
         MessageBox.Show(mesajSon, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void KategoriTopluSil_Click(object sender, RoutedEventArgs e)
+    {
+        var secilenler = KategoriListesi.SelectedItems.Cast<object>()
+            .Select(o => o?.ToString()?.Trim())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Cast<string>()
+            .ToList();
+
+        if (secilenler.Count == 0)
+        {
+            MessageBox.Show("Silmek için listeden bir veya daha fazla kategori seçin.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var toplamKayit = secilenler.Sum(MalzemeKategoriDeposu.AlinanMalzemeKayitSayisi);
+        var mesaj = toplamKayit > 0
+            ? $"{secilenler.Count} kategori ve toplam {toplamKayit} alınan malzeme kaydı kalıcı olarak silinecek.\n\nDevam etmek istiyor musunuz?"
+            : $"{secilenler.Count} kategori silinecek. Devam etmek istiyor musunuz?";
+
+        if (MessageBox.Show(mesaj, UygulamaBilgisi.Ad, MessageBoxButton.YesNo, MessageBoxImage.Warning)
+            != MessageBoxResult.Yes)
+            return;
+
+        var (silinenKategori, silinenKayit) = MalzemeKategoriDeposu.TopluSil(secilenler);
+        if (silinenKategori == 0)
+        {
+            MessageBox.Show("Seçili kategoriler silinemedi.", UygulamaBilgisi.Ad,
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        KategoriListesiniYenile();
+        var sonuc = silinenKayit > 0
+            ? $"{silinenKategori} kategori silindi. {silinenKayit} alınan malzeme kaydı kaldırıldı."
+            : $"{silinenKategori} kategori silindi.";
+        MessageBox.Show(sonuc, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void BirimListesiniYenile()

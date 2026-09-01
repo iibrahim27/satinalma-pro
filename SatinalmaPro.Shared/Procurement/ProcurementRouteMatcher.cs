@@ -9,6 +9,8 @@ namespace SatinalmaPro.Shared.Procurement;
 public static class ProcurementRouteMatcher
 {
     /// <summary>Talep Pro'da gizlenen sekmeler — onay sonrası yalnızca geçmiş sekmeleri kalır.</summary>
+    public static bool TalepProHaricRoute(string route) => TalepProHaricRoutes.Contains(route);
+
     private static readonly HashSet<string> TalepProHaricRoutes = new(StringComparer.Ordinal)
     {
         SatinalmaRoutes.SatinalmaOnaylanan,

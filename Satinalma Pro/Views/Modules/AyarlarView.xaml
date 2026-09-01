@@ -337,13 +337,15 @@
               <StackPanel>
                 <TextBlock Text="Alınan Malzeme Kategorileri" Style="{StaticResource AyarSectionTitle}" />
                 <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,14"
-                           Text="Satınalma modülünden aktarım yaparken ve Alınan Malzemeler kayıtlarında kullanılır. Kategori silindiğinde o kategorideki tüm alınan malzeme kayıtları da silinir. Alınan malzeme ve stokta kaydı kalmayan boş kategoriler otomatik kaldırılır." />
+                           Text="Satınalma modülünden aktarım yaparken ve Alınan Malzemeler kayıtlarında kullanılır. Kategori silindiğinde o kategorideki tüm alınan malzeme kayıtları da silinir. Alınan malzemede kaydı kalmayan kategoriler otomatik kaldırılır." />
                 <ListBox x:Name="KategoriListesi" Height="220"
+                         SelectionMode="Extended"
                          BorderBrush="{StaticResource AyarBorderBrush}" BorderThickness="1"
                          Margin="0,0,0,14" />
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
@@ -353,6 +355,8 @@
                           Margin="8,0,0,0" Click="KategoriEkle_Click" />
                   <Button Grid.Column="2" Style="{StaticResource AyarGhostButton}" Content="Sil"
                           Margin="8,0,0,0" Click="KategoriSil_Click" />
+                  <Button Grid.Column="3" Style="{StaticResource AyarGhostButton}" Content="Seçilenleri Sil"
+                          Margin="8,0,0,0" Click="KategoriTopluSil_Click" />
                 </Grid>
               </StackPanel>
             </Border>

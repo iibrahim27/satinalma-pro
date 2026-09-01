@@ -209,7 +209,18 @@ object RolNavigasyon {
             "satinalma-onaylanan",
             "satinalma-siparis",
             "satinalma-mal-kabul",
-            "onaylanan-malzemeler" -> true
+            "onaylanan-malzemeler" -> !TalepProModu.AKTIF
+            "satinalma-onay-gecmisi",
+            "onay-gecmisi",
+            "yonetim-onay-gecmisi",
+            "yonetim-red-verilen",
+            "red-talepler",
+            "gecmis-talepler",
+            "gecmis-teklifli-onaylar",
+            "yonetim-direk-onaylanan",
+            "yonetim-gecmis",
+            "onaylanan-teklifler",
+            "yonetim-onaylanan-teklifler" -> false
             else -> false
         }
     }

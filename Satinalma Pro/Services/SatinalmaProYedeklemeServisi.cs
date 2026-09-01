@@ -90,6 +90,8 @@ public static class SatinalmaProYedeklemeServisi
             case "akaryakit.json":
             case "filo.json":
                 ModulVeriDeposu.Sifirla(dosyaAdi);
+                if (dosyaAdi.Equals("alinan_malzemeler.json", StringComparison.OrdinalIgnoreCase))
+                    MalzemeKategoriDeposu.BosKategorileriTemizle();
                 break;
             case "finansman_gelir.json":
                 FinansmanVeriDeposu.Sifirla();
@@ -129,6 +131,7 @@ public static class SatinalmaProYedeklemeServisi
         }
 
         SatinalmaProLogoDeposu.TumDosyalariSil();
+        MalzemeKategoriDeposu.TumunuTemizle();
         YenidenYukle();
     }
 
@@ -157,6 +160,8 @@ public static class SatinalmaProYedeklemeServisi
             case "akaryakit.json":
             case "filo.json":
                 ModulVeriDeposu.Sifirla(dosyaAdi);
+                if (dosyaAdi.Equals("alinan_malzemeler.json", StringComparison.OrdinalIgnoreCase))
+                    MalzemeKategoriDeposu.BosKategorileriTemizle();
                 break;
             case "finansman_gelir.json":
                 FinansmanVeriDeposu.Sifirla();

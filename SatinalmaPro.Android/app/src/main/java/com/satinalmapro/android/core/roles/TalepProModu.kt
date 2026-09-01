@@ -12,6 +12,7 @@ object TalepProModu {
     val HARIC_ROUTES = setOf(
         "satinalma-onaylanan",
         "onaylanan-teklifler",
+        "yonetim-onaylanan-teklifler",
         "onaylanan-talepler",
         "satinalma-siparis",
         "satinalma-mal-kabul",

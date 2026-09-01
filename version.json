@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.115",
-    "build":  190,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.115/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.115/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.115/SatinalmaPro.apk",
-    "notes":  "2.1.115 - Talep Pro onay sonrasi operasyon sekmeleri kaldirildi; oturum kapatma butonlari; Android Talep Pro menu esitleme; Android stok tekillestirme derleme duzeltmesi; stok yonetimi iyilestirmeleri",
+    "version":  "2.1.117",
+    "build":  192,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.117/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.117/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.117/SatinalmaPro.apk",
+    "notes":  "2.1.117 - Kategori yonetimi: ornek isimler kaldirildi, alinan malzemede kaydi olmayan kategori ayarlardan temizlenir, toplu silme, veri sifirlamada kategori temizligi; Talep Pro menu/rozet duzeltmeleri",
     "zorunlu":  false
 }
