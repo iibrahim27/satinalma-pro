@@ -9,6 +9,7 @@ using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
 using SharedTalepDurumlari = SatinalmaPro.Shared.Models.SatinalmaTalepDurumlari;
+using TalepProRuntime = SatinalmaPro.Shared.Helpers.TalepProRuntime;
 
 namespace SatinalmaPro.Views.Modules.Satinalma.Part1;
 
@@ -334,7 +335,9 @@ public partial class SatinalmaPanosuView : UserControl
         RouteIstendi?.Invoke(SatinalmaPart1Menusu.SatinalmaTeklifIstenen);
 
     private void KpiSiparis_Click(object sender, MouseButtonEventArgs e) =>
-        RouteIstendi?.Invoke(SatinalmaPart1Menusu.SatinalmaSiparis);
+        RouteIstendi?.Invoke(TalepProRuntime.Aktif
+            ? SatinalmaPart1Menusu.OnaySonrasiRoute(null)
+            : SatinalmaPart1Menusu.SatinalmaSiparis);
 
     private void KpiGeciken_Click(object sender, MouseButtonEventArgs e) =>
         RouteIstendi?.Invoke(SatinalmaPart1Menusu.YonetimGelenTalepler);
@@ -365,8 +368,8 @@ public partial class SatinalmaPanosuView : UserControl
         SharedTalepDurumlari.YonetimOnayinda => SatinalmaPart1Menusu.YonetimGelenTalepler,
         SharedTalepDurumlari.TeklifGirisi => SatinalmaPart1Menusu.SatinalmaTeklifIstenen,
         SharedTalepDurumlari.Karsilastirma => SatinalmaPart1Menusu.SatinalmaKarsilastirma,
-        SharedTalepDurumlari.Onaylandi => SatinalmaPart1Menusu.SatinalmaOnaylanan,
-        SharedTalepDurumlari.SiparisOlusturuldu => SatinalmaPart1Menusu.SatinalmaSiparis,
+        SharedTalepDurumlari.Onaylandi => SatinalmaPart1Menusu.OnaySonrasiRoute(null),
+        SharedTalepDurumlari.SiparisOlusturuldu => SatinalmaPart1Menusu.OnaySonrasiRoute(null),
         SharedTalepDurumlari.Reddedildi => SatinalmaPart1Menusu.YonetimRedVerilen,
         _ => SatinalmaPart1Menusu.SatinalmaTalepler
     };

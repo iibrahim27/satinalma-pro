@@ -123,6 +123,10 @@
           </Button.Template>
           <dash:IconControl Kind="Settings" IconSize="18" StrokeBrush="#102A43" />
         </Button>
+
+        <Button x:Name="BtnCikis" Content="Çıkış Yap" Style="{StaticResource DashGhostButtonStyle}"
+                Margin="8,0,0,0" Padding="12,8" Click="BtnCikis_Click"
+                ToolTip="Oturumu kapat" Visibility="Collapsed" />
       </StackPanel>
     </Grid>
   </Border>

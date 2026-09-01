@@ -96,6 +96,7 @@ public partial class AppSidebarView : UserControl
         KullaniciyiGuncelle();
         LogoGuncelle();
         SirketBilgisiniGuncelle();
+        CikisButonunuGuncelle();
         AktifOgeyiAyarla(_aktif);
     }
 
@@ -217,13 +218,25 @@ public partial class AppSidebarView : UserControl
             TxtKullaniciRol.Text = "Oturum yok";
             TxtAvatar.Text = "?";
             BtnProfil.ToolTip = "Misafir";
+            CikisButonunuGuncelle();
             return;
         }
         TxtKullaniciAd.Text = k.AdSoyad;
         TxtKullaniciRol.Text = k.Rol;
         TxtAvatar.Text = BasHarfler(k.AdSoyad);
         BtnProfil.ToolTip = $"{k.AdSoyad} · {k.Rol}";
+        CikisButonunuGuncelle();
     }
+
+    private void CikisButonunuGuncelle()
+    {
+        BtnCikis.Visibility = OturumKapatmaServisi.CikisButonuGorunur
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private void BtnCikis_Click(object sender, RoutedEventArgs e) =>
+        CikisTiklandi?.Invoke(this, EventArgs.Empty);
 
     private void LogoGuncelle()
     {
@@ -247,7 +260,7 @@ public partial class AppSidebarView : UserControl
             ayarlar.Click += (_, _) => NavigasyonSecildi?.Invoke("Ayarlar");
             menu.Items.Add(ayarlar);
         }
-        if (OturumYoneticisi.BulutAktif && OturumYoneticisi.GirisYapildi)
+        if (OturumYoneticisi.GirisYapildi)
         {
             var cikis = new MenuItem { Header = "Çıkış Yap" };
             cikis.Click += (_, _) => CikisTiklandi?.Invoke(this, EventArgs.Empty);

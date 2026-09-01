@@ -50,6 +50,7 @@ import com.satinalmapro.android.core.roles.IsAkisRotalari
 import com.satinalmapro.android.core.roles.KalemFirmaAtamaYardimcisi
 import com.satinalmapro.android.core.roles.KullaniciRolleri
 import com.satinalmapro.android.core.roles.TalepKuyrugu
+import com.satinalmapro.android.core.roles.TalepProModu
 import com.satinalmapro.android.services.SatinalmaPdfFormats
 import com.satinalmapro.android.services.SatinalmaPdfHelper
 import com.satinalmapro.android.ui.AppViewModel
@@ -87,7 +88,8 @@ fun TeklifsizFirmaFiyatScreen(viewModel: AppViewModel, talepId: String?) {
     val item = talep!!
     LaunchedEffect(item.id) {
         if (!TalepKuyrugu.teklifsizFirmaFiyatBekliyor(item)) {
-            val hedef = if (TalepKuyrugu.onaylananMalzeme(item)) "onaylanan-malzemeler"
+            val hedef = if (TalepProModu.AKTIF) TalepProModu.onaySonrasiRoute(null)
+            else if (TalepKuyrugu.onaylananMalzeme(item)) "onaylanan-malzemeler"
             else "talep-detay?id=$talepId"
             viewModel.navigate(hedef)
         }
@@ -95,7 +97,10 @@ fun TeklifsizFirmaFiyatScreen(viewModel: AppViewModel, talepId: String?) {
     if (!TalepKuyrugu.teklifsizFirmaFiyatBekliyor(item)) return
     TeklifsizFirmaFiyatForm(item, firmaMap, fiyatMap, error) { girdiler ->
         viewModel.teklifsizFirmaFiyatKaydet(talepId, girdiler) {
-            viewModel.navigate("onaylanan-malzemeler")
+            viewModel.navigate(
+                if (TalepProModu.AKTIF) TalepProModu.onaySonrasiRoute(null)
+                else "onaylanan-malzemeler"
+            )
         }
     }
 }

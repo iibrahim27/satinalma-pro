@@ -1,6 +1,7 @@
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
+using SatinalmaPro.Shared.Helpers;
 
 namespace SatinalmaPro.Views.Modules.Satinalma.Part1;
 
@@ -60,6 +61,35 @@ public static class SatinalmaPart1Menusu
         return MasaustuMenuGruplariniDuzenle(rol, ham);
     }
 
+    /// <summary>Talep Pro — onay sonrası geçmiş sekmesine yönlendir.</summary>
+    public static string OnaySonrasiRoute(string? rol)
+    {
+        if (!TalepProRuntime.Aktif)
+            return SatinalmaOnaylanan;
+
+        return KullaniciRolleri.Normalize(rol) is KullaniciRolleri.Admin or KullaniciRolleri.Yonetim
+            ? YonetimOnayGecmisi
+            : SatinalmaOnayGecmisi;
+    }
+
+    /// <summary>Bildirim/deep-link: Talep Pro'da operasyon sekmeleri yerine geçmiş arşiv.</summary>
+    public static string BildirimRouteDonustur(string route, string? rol)
+    {
+        if (!TalepProRuntime.Aktif)
+            return route;
+
+        return route switch
+        {
+            SatinalmaOnaylanan or YonetimOnaylananTeklifler or SatinalmaOnaylananTalepler
+                or YonetimDirekOnaylanan or "teklifsiz-firma-fiyat"
+                => OnaySonrasiRoute(rol),
+            SatinalmaSiparis or SatinalmaMalKabul or SatinalmaIade or SatinalmaTedarikciler
+                or YonetimGecmis
+                => OnaySonrasiRoute(rol),
+            _ => route
+        };
+    }
+
     /// <summary>Talep Pro sol menü: GENEL / TALEP SÜRECİ / OPERASYON.</summary>
     private static IReadOnlyList<MenuGrubu> MasaustuMenuGruplariniDuzenle(
         string? rol, IReadOnlyList<MenuGrubu> ham)
@@ -80,20 +110,33 @@ public static class SatinalmaPart1Menusu
         if (Bul(SatinalmaPanosu) is { } pano) genel.Add(pano);
         if (YenidenAdlandir(SatinalmaTalep, "Yeni Talep") is { } yeni) genel.Add(yeni);
 
-        var surecRouteSirasi = new (string Route, string? Baslik)[]
-        {
-            (SatinalmaTalepler, null),
-            (YonetimGelenTalepler, null),
-            (SatinalmaTeklifIstenen, "Teklif İstemi Yapılanlar"),
-            (SatinalmaTeklifGirilen, null),
-            (YonetimTeklifGirilen, null),
-            (SatinalmaKarsilastirma, "Fiyat Karşılaştırma"),
-            (SatinalmaOnaylanan, "Onaylananlar"),
-            (YonetimOnaylananTeklifler, "Onaylananlar"),
-            (SatinalmaOnayGecmisi, "Geçmiş Onaylananlar"),
-            (YonetimOnayGecmisi, "Geçmiş Onaylananlar"),
-            (YonetimRedVerilen, "Reddedilenler")
-        };
+        var surecRouteSirasi = TalepProRuntime.Aktif
+            ? new (string Route, string? Baslik)[]
+            {
+                (SatinalmaTalepler, null),
+                (YonetimGelenTalepler, null),
+                (SatinalmaTeklifIstenen, "Teklif İstemi Yapılanlar"),
+                (SatinalmaTeklifGirilen, null),
+                (YonetimTeklifGirilen, null),
+                (SatinalmaKarsilastirma, "Fiyat Karşılaştırma"),
+                (SatinalmaOnayGecmisi, "Geçmiş Onaylananlar"),
+                (YonetimOnayGecmisi, "Geçmiş Onaylananlar"),
+                (YonetimRedVerilen, "Reddedilenler")
+            }
+            : new (string Route, string? Baslik)[]
+            {
+                (SatinalmaTalepler, null),
+                (YonetimGelenTalepler, null),
+                (SatinalmaTeklifIstenen, "Teklif İstemi Yapılanlar"),
+                (SatinalmaTeklifGirilen, null),
+                (YonetimTeklifGirilen, null),
+                (SatinalmaKarsilastirma, "Fiyat Karşılaştırma"),
+                (SatinalmaOnaylanan, "Onaylananlar"),
+                (YonetimOnaylananTeklifler, "Onaylananlar"),
+                (SatinalmaOnayGecmisi, "Geçmiş Onaylananlar"),
+                (YonetimOnayGecmisi, "Geçmiş Onaylananlar"),
+                (YonetimRedVerilen, "Reddedilenler")
+            };
 
         var surec = new List<Oge>();
         foreach (var (route, baslik) in surecRouteSirasi)
@@ -104,10 +147,13 @@ public static class SatinalmaPart1Menusu
         }
 
         var operasyon = new List<Oge>();
-        foreach (var route in new[] { SatinalmaSiparis, SatinalmaMalKabul, SatinalmaIade, SatinalmaTedarikciler })
+        if (!TalepProRuntime.Aktif)
         {
-            if (Bul(route) is { } o)
-                operasyon.Add(o);
+            foreach (var route in new[] { SatinalmaSiparis, SatinalmaMalKabul, SatinalmaIade, SatinalmaTedarikciler })
+            {
+                if (Bul(route) is { } o)
+                    operasyon.Add(o);
+            }
         }
 
         // Admin yönetim arşivleri süreç sonunda kalsın
@@ -116,6 +162,13 @@ public static class SatinalmaPart1Menusu
             if (surec.Any(x => x.Route == o.Route) || genel.Any(x => x.Route == o.Route)
                 || operasyon.Any(x => x.Route == o.Route))
                 continue;
+            if (TalepProRuntime.Aktif)
+            {
+                if (o.Route is YonetimTeklifBekleyen)
+                    surec.Add(o);
+                continue;
+            }
+
             if (o.Route is YonetimDirekOnaylanan or YonetimGecmis or YonetimTeklifBekleyen
                 or YonetimOnayGecmisi)
                 surec.Add(o);
@@ -218,7 +271,9 @@ public static class SatinalmaPart1Menusu
         SatinalmaTeklifDuzeltme => ("Düzeltme Bekleyen Teklifler", "Yönetimden geri gönderilen teklifler — düzeltip yeniden gönderin"),
         SatinalmaKarsilastirma => ("Karşılaştırma", "Teklif karşılaştırma ve seçim"),
         SatinalmaOnaylanan => ("Onaylanan Teklifler ve Talepler", "Onaylanmış talep ve teklifler — sipariş bekleyen"),
-        SatinalmaOnayGecmisi => ("Geçmiş Onaylananlar", "Tüm onaylı talep ve teklifler — sipariş/mal kabul sonrası kalıcı arşiv, PDF ve firma teklif geçmişi"),
+        SatinalmaOnayGecmisi => TalepProRuntime.Aktif
+            ? ("Geçmiş Onaylananlar", "Onaylanmış talep ve teklifler — kalıcı arşiv ve PDF")
+            : ("Geçmiş Onaylananlar", "Tüm onaylı talep ve teklifler — sipariş/mal kabul sonrası kalıcı arşiv, PDF ve firma teklif geçmişi"),
         SatinalmaSiparis => ("Sipariş Verilen Talep ve Teklifler", "Sipariş oluşturulmuş talepler"),
         SatinalmaMalKabul => ("Mal Kabul Edilmiş Talep ve Teklifler", "Mal kabulü tamamlanan talepler"),
         SatinalmaOnayBekleyen => ("Onay Bekleyen", "Yönetim onayı bekleyen talepleriniz"),

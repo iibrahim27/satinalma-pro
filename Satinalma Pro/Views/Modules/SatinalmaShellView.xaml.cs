@@ -17,6 +17,7 @@ namespace SatinalmaPro.Views.Modules;
 public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
 {
     public event Action? StokModuluIstendi;
+    public event Action? OturumKapatIstendi;
 
     private readonly Dictionary<string, Button> _navButtons = new(StringComparer.Ordinal);
     private readonly Dictionary<string, TextBlock> _navRozetleri = new(StringComparer.Ordinal);
@@ -61,6 +62,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
                 KullaniciPaneliniGuncelle();
                 NavigasyonuOlustur();
                 BildirimRozetiniGuncelle();
+                CikisButonlariniGuncelle();
                 var rol = OturumYoneticisi.AktifKullanici?.Rol ?? "";
                 var ilkRoute = SatinalmaPart1Menusu.IlkRoute(rol);
                 Dispatcher.BeginInvoke(DispatcherPriority.Background,
@@ -136,6 +138,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
             KullaniciPaneliniGuncelle();
             NavigasyonuOlustur();
             BildirimRozetiniGuncelle();
+            CikisButonlariniGuncelle();
 
             if (!_navButtons.ContainsKey(_aktifRoute))
             {
@@ -245,6 +248,7 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
             _ => SatinalmaPart1Menusu.SatinalmaTalepler
         };
 
+        route = SatinalmaPart1Menusu.BildirimRouteDonustur(route, rol);
         RouteAc(route, talepId);
     }
 
@@ -890,6 +894,19 @@ public partial class SatinalmaShellView : UserControl, IModulKlavyeKisayollari
 
     private void BtnSatinalmaProDon_Click(object sender, RoutedEventArgs e) =>
         UygulamaKoordinasyonu.SatinalmaProModulAc(null);
+
+    private void BtnCikis_Click(object sender, RoutedEventArgs e) =>
+        OturumKapatIstendi?.Invoke();
+
+    private void CikisButonlariniGuncelle()
+    {
+        var gorunur = OturumKapatmaServisi.CikisButonuGorunur
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        BtnCikis.Visibility = gorunur;
+        BtnCikisAlt.Visibility = gorunur;
+        BtnCikisUst.Visibility = gorunur;
+    }
 
     private void PanoYenilemeyiPlanla()
     {

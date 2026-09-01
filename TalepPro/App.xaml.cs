@@ -1,6 +1,7 @@
 using System.Windows;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Services;
+using SatinalmaPro.Shared.Helpers;
 using SatinalmaPro.Views;
 using TalepPro.Helpers;
 
@@ -27,6 +28,7 @@ public partial class App : Application
         }
 
         TalepProOtomatikBaslatma.Etkinlestir();
+        TalepProRuntime.Etkinlestir();
         base.OnStartup(e);
 
         DispatcherUnhandledException += (_, args) =>

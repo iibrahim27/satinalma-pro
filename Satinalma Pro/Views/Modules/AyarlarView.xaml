@@ -337,7 +337,7 @@
               <StackPanel>
                 <TextBlock Text="Alınan Malzeme Kategorileri" Style="{StaticResource AyarSectionTitle}" />
                 <TextBlock Style="{StaticResource AyarSectionDesc}" Margin="0,8,0,14"
-                           Text="Satınalma modülünden aktarım yaparken ve Alınan Malzemeler kayıtlarında kullanılır." />
+                           Text="Satınalma modülünden aktarım yaparken ve Alınan Malzemeler kayıtlarında kullanılır. Kategori silindiğinde o kategorideki tüm alınan malzeme kayıtları da silinir. Alınan malzeme ve stokta kaydı kalmayan boş kategoriler otomatik kaldırılır." />
                 <ListBox x:Name="KategoriListesi" Height="220"
                          BorderBrush="{StaticResource AyarBorderBrush}" BorderThickness="1"
                          Margin="0,0,0,14" />

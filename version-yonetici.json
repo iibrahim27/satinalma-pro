@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.67",
-    "build":  70,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.67/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.67/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.67/SatinalmaYonetici.apk",
-    "notes":  "1.0.67 - Pro 2.1.114 ile birlikte (Android/masaustu stok yonetimi esitleme)",
+    "version":  "1.0.68",
+    "build":  71,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.68/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.68/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.68/SatinalmaYonetici.apk",
+    "notes":  "1.0.68 - Pro 2.1.115 ile birlikte (Talep Pro, oturum kapatma, Android stok duzeltmesi)",
     "zorunlu":  false
 }

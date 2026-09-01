@@ -4,6 +4,7 @@ using System.Windows.Input;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
+using TalepProRuntime = SatinalmaPro.Shared.Helpers.TalepProRuntime;
 using SatinalmaPro.Services.Procurement;
 
 namespace SatinalmaPro.Views.Modules.Satinalma.Part1;
@@ -49,6 +50,7 @@ public partial class OnaylananTalepListesiView : UserControl
 
         var gecmisModu = SatinalmaPart1Menusu.OnayGecmisiRoute(route);
         BtnSiparis.Visibility = route == SatinalmaPart1Menusu.SatinalmaOnaylanan && !gecmisModu
+            && !TalepProRuntime.Aktif
             ? Visibility.Visible
             : Visibility.Collapsed;
     }
@@ -60,7 +62,9 @@ public partial class OnaylananTalepListesiView : UserControl
             SatinalmaPart1Menusu.YonetimOnayGecmisi =>
                 "Yönetimin verdiği tüm onaylar (teklifsiz + teklifli). Satır üzerine gelerek talep ve teklif içeriğini görün; detay ve PDF için çift tıklayın.",
             SatinalmaPart1Menusu.SatinalmaOnayGecmisi =>
-                "Tüm onaylı talep ve teklifler kalıcı arşivde. Satır üzerine gelerek içerik önizlemesini görün; detayda firma teklif geçmişi ve PDF'ler alınabilir.",
+                TalepProRuntime.Aktif
+                    ? "Onaylanmış talep ve teklifler. Detay ve PDF için çift tıklayın."
+                    : "Tüm onaylı talep ve teklifler kalıcı arşivde. Satır üzerine gelerek içerik önizlemesini görün; detayda firma teklif geçmişi ve PDF'ler alınabilir.",
             SatinalmaPart1Menusu.YonetimOnaylananTeklifler =>
                 "Onayladığınız teklifli talepler. Detay ve PDF için çift tıklayın veya sağ tık menüsünü kullanın.",
             _ =>

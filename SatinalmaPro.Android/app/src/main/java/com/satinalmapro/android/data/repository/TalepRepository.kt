@@ -469,10 +469,10 @@ class TalepRepository(
                     "satinalma-teklif-duzeltme"
                 ),
                 card(
-                    "Sipariş / Mal Kabul",
-                    malKabulBekleyenSayisi(talepler).toString(),
-                    "Mal kabul bekleyen",
-                    "satinalma-siparis"
+                    "Geçmiş Onaylananlar",
+                    TalepKuyrugu.filtre(TalepQueue.ONAY_GECMISI, talepler, uid, ad, role).size,
+                    "Onaylı arşiv",
+                    "satinalma-onay-gecmisi"
                 ),
                 card("Bildirim", unread.toString(), "Okunmamış", "bildirimler")
             )
@@ -483,7 +483,13 @@ class TalepRepository(
             else -> listOf(
                 card("Taleplerim", TalepKuyrugu.filtre(TalepQueue.TALEPLERIM, talepler, uid, ad, role).size, "Kayıtlı talep", "taleplerim"),
                 card("Onay Bekleyen", TalepKuyrugu.filtre(TalepQueue.ONAY_BEKLEYEN, talepler, uid, ad, role).size, "Süreçte", "onay-bekleyen"),
-                card("Onaylanan", TalepKuyrugu.filtre(TalepQueue.ONAYLANAN_TALEPLER, talepler, uid, ad, role).size, "Tamamlanan", "onaylanan-talepler"),
+                card(
+                    "Geçmiş Onaylananlar",
+                    TalepKuyrugu.filtre(TalepQueue.ONAY_GECMISI, talepler, uid, ad, role).size,
+                    "Onaylı arşiv",
+                    "satinalma-onay-gecmisi"
+                ),
+                card("Reddedilenler", TalepKuyrugu.filtre(TalepQueue.RED_TALEPLER, talepler, uid, ad, role).size, "Red", "red-talepler"),
                 card("Bildirim", unread.toString(), "Okunmamış", "bildirimler")
             )
         }

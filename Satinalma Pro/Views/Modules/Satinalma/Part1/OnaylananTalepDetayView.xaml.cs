@@ -5,6 +5,7 @@ using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
 using SatinalmaPro.Views;
+using TalepProRuntime = SatinalmaPro.Shared.Helpers.TalepProRuntime;
 
 namespace SatinalmaPro.Views.Modules.Satinalma.Part1;
 
@@ -38,7 +39,8 @@ public partial class OnaylananTalepDetayView : UserControl
             return;
 
         _talep = talep;
-        var gecmisModu = SatinalmaPart1Menusu.OnayGecmisiRoute(_listeRoute ?? "");
+        var gecmisModu = SatinalmaPart1Menusu.OnayGecmisiRoute(_listeRoute ?? "")
+            || TalepProRuntime.Aktif;
         TxtBaslik.Text = gecmisModu
             ? $"Geçmiş Onay — {talep.TalepNo}"
             : $"Onaylanan Talep — {talep.TalepNo}";

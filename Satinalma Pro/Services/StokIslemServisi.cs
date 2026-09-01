@@ -6,13 +6,19 @@ namespace SatinalmaPro.Services;
 
 public static class StokIslemServisi
 {
+    private static void StokHazirla() => ModulVeriDeposu.StokTekillestir();
+
     public static StokKaydi? StokBul(string? malzeme, string? depo)
     {
         var m = (malzeme ?? "").Trim();
         var d = (depo ?? "").Trim();
-        return ModulVeriDeposu.Stok.FirstOrDefault(s =>
-            (s.MalzemeAdi ?? "").Trim().Equals(m, StringComparison.OrdinalIgnoreCase) &&
-            (s.DepoSaha ?? "").Trim().Equals(d, StringComparison.OrdinalIgnoreCase));
+        return ModulVeriDeposu.Stok
+            .Where(s =>
+                (s.MalzemeAdi ?? "").Trim().Equals(m, StringComparison.OrdinalIgnoreCase) &&
+                (s.DepoSaha ?? "").Trim().Equals(d, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(s => s.MevcutMiktar)
+            .ThenByDescending(s => TarihYardimcisi.SiralamaDegeri(s.SonGuncelleme))
+            .FirstOrDefault();
     }
 
     public static StokKaydi StokBulVeyaOlustur(string? malzeme, string? kategori, string? birim, string? depo, decimal birimMaliyet = 0)
@@ -45,6 +51,7 @@ public static class StokIslemServisi
         if (miktar <= 0)
             throw new InvalidOperationException("Giriş miktarı sıfırdan büyük olmalıdır.");
 
+        StokHazirla();
         var stok = StokBulVeyaOlustur(malzeme, kategori, birim, depo, birimMaliyet);
         stok.MevcutMiktar += miktar;
         if (birimMaliyet > 0)
@@ -79,6 +86,7 @@ public static class StokIslemServisi
         if (miktar <= 0)
             throw new InvalidOperationException("Çıkış miktarı sıfırdan büyük olmalıdır.");
 
+        StokHazirla();
         var stok = StokBul(malzeme, depo)
             ?? throw new InvalidOperationException("Bu malzeme ve depo için stok kaydı bulunamadı.");
 
@@ -115,6 +123,7 @@ public static class StokIslemServisi
         if (sayimMiktar < 0)
             throw new InvalidOperationException("Sayım miktarı negatif olamaz.");
 
+        StokHazirla();
         var onceki = stok.MevcutMiktar;
         var fark = sayimMiktar - onceki;
 
@@ -190,20 +199,36 @@ public static class StokIslemServisi
         ModulVeriDeposu.KaydetStokHareketleri();
     }
 
-    /// <summary>Kategori farkıyla oluşmuş çift satırları sil; güncellenen kaydı bırak.</summary>
+    /// <summary>Kategori farkıyla oluşmuş çift satırları birleştir; güncellenen kaydı bırak.</summary>
     private static void AyniMalzemeDepoTekBirak(StokKaydi keeper)
     {
         var m = keeper.MalzemeAdi.Trim();
         var d = keeper.DepoSaha.Trim();
         keeper.MalzemeAdi = m;
         keeper.DepoSaha = d;
+
         var silinecek = ModulVeriDeposu.Stok
             .Where(s => !ReferenceEquals(s, keeper)
                         && s.MalzemeAdi.Trim().Equals(m, StringComparison.OrdinalIgnoreCase)
                         && s.DepoSaha.Trim().Equals(d, StringComparison.OrdinalIgnoreCase))
             .ToList();
+
+        if (silinecek.Count == 0)
+            return;
+
+        keeper.MevcutMiktar += silinecek.Sum(s => s.MevcutMiktar);
         foreach (var s in silinecek)
+        {
+            if (string.IsNullOrWhiteSpace(keeper.Kategori) && !string.IsNullOrWhiteSpace(s.Kategori))
+                keeper.Kategori = s.Kategori.Trim();
+            if (string.IsNullOrWhiteSpace(keeper.Birim) && !string.IsNullOrWhiteSpace(s.Birim))
+                keeper.Birim = s.Birim.Trim();
+            if (keeper.BirimMaliyet <= 0 && s.BirimMaliyet > 0)
+                keeper.BirimMaliyet = s.BirimMaliyet;
             ModulVeriDeposu.Stok.Remove(s);
+        }
+
+        keeper.ToplamDegerHesapla();
     }
 
     public static void HareketGuncelle(
@@ -321,7 +346,7 @@ public static class StokIslemServisi
             .OrderBy(s => s, StringComparer.CurrentCultureIgnoreCase);
     }
 
-    public static StokKaydi? StokBulMalzemeAdi(string malzeme, string? kategori = null, bool sadeceMevcutStok = false)
+    public static StokKaydi? StokBulMalzemeAdi(string malzeme, string? kategori = null, string? depo = null, bool sadeceMevcutStok = false)
     {
         var m = (malzeme ?? "").Trim();
         var liste = ModulVeriDeposu.Stok.Where(s =>
@@ -329,6 +354,18 @@ public static class StokIslemServisi
 
         if (sadeceMevcutStok)
             liste = liste.Where(s => s.MevcutMiktar > 0);
+
+        if (!string.IsNullOrWhiteSpace(depo))
+        {
+            var d = depo.Trim();
+            var depoda = liste
+                .Where(s => !string.IsNullOrWhiteSpace(s.DepoSaha) && s.DepoSaha.Equals(d, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(s => s.MevcutMiktar)
+                .ThenByDescending(s => TarihYardimcisi.SiralamaDegeri(s.SonGuncelleme))
+                .FirstOrDefault();
+            if (depoda is not null)
+                return depoda;
+        }
 
         if (!string.IsNullOrWhiteSpace(kategori))
         {

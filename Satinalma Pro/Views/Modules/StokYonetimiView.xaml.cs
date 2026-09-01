@@ -389,6 +389,15 @@ public partial class StokYonetimiView : UserControl, IModulKlavyeKisayollari
         if (pencere.ShowDialog() != true)
             return;
 
+        var mevcut = StokIslemServisi.StokBul(yeni.MalzemeAdi, yeni.DepoSaha);
+        if (mevcut is not null && !ReferenceEquals(mevcut, yeni))
+        {
+            MessageBox.Show(
+                $"«{yeni.MalzemeAdi}» bu depoda zaten kayıtlı (mevcut: {mevcut.MevcutMiktar:N2} {mevcut.Birim}).\nStok girişi ile miktar ekleyin veya mevcut kaydı düzenleyin.",
+                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
         Kayitlar.Add(yeni);
         TumunuYenile();
     }

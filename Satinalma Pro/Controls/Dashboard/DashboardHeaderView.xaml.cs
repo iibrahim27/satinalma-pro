@@ -9,6 +9,7 @@ public partial class DashboardHeaderView : UserControl
 {
     public event EventHandler? BildirimTiklandi;
     public event EventHandler? AyarlarTiklandi;
+    public event EventHandler? CikisTiklandi;
     public event Action<string>? AramaMetniDegisti;
 
     public DashboardHeaderView()
@@ -18,9 +19,14 @@ public partial class DashboardHeaderView : UserControl
         {
             FirmaEtiketiniGuncelle();
             TalepProButonunuGuncelle();
+            CikisButonunuGuncelle();
         };
         OturumYoneticisi.OturumDegisti += () =>
-            Dispatcher.BeginInvoke(TalepProButonunuGuncelle);
+            Dispatcher.BeginInvoke(() =>
+            {
+                TalepProButonunuGuncelle();
+                CikisButonunuGuncelle();
+            });
     }
 
     public void BreadcrumbAyarla(string metin) =>
@@ -39,6 +45,14 @@ public partial class DashboardHeaderView : UserControl
         TxtBadgeSayi.Text = sayi > 99 ? "99+" : sayi.ToString();
         AyarlarButonunuGuncelle();
         TalepProButonunuGuncelle();
+        CikisButonunuGuncelle();
+    }
+
+    public void CikisButonunuGuncelle()
+    {
+        BtnCikis.Visibility = OturumKapatmaServisi.CikisButonuGorunur
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     public void AyarlarButonunuGuncelle()
@@ -68,6 +82,9 @@ public partial class DashboardHeaderView : UserControl
             return;
         AyarlarTiklandi?.Invoke(this, EventArgs.Empty);
     }
+
+    private void BtnCikis_Click(object sender, RoutedEventArgs e) =>
+        CikisTiklandi?.Invoke(this, EventArgs.Empty);
 
     private void TxtArama_TextChanged(object sender, TextChangedEventArgs e) =>
         AramaMetniDegisti?.Invoke(TxtArama.Text);

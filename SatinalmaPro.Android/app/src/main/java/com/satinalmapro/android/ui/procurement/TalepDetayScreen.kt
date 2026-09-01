@@ -41,6 +41,7 @@ import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailAction
 import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailPresenter
 import com.satinalmapro.shared.filter.detail.PurchaseRequestDetailScreen
 import com.satinalmapro.android.core.roles.TalepTurleri
+import com.satinalmapro.android.core.roles.TalepProModu
 import com.satinalmapro.android.core.roles.TalepYetkileri
 import com.satinalmapro.android.services.SatinalmaPdfHelper
 import com.satinalmapro.android.services.StokTeslimFisiHelper
@@ -103,22 +104,22 @@ fun TalepDetayScreen(viewModel: AppViewModel, talepId: String, viewMode: String?
         item.teklifler.isNotEmpty() &&
         TalepKuyrugu.karsilastirma(item) &&
         item.durum != TalepDurumlari.YONETIM_ONAY
-    val teklifsizFirmaGir = KullaniciRolleri.canEnterQuotes(role) &&
+    val teklifsizFirmaGir = !TalepProModu.AKTIF && KullaniciRolleri.canEnterQuotes(role) &&
         TalepKuyrugu.teklifsizFirmaFiyatBekliyor(item)
-    val canPlaceOrder = KullaniciRolleri.canPlaceOrder(role) && item.durum == TalepDurumlari.ONAYLANDI
+    val canPlaceOrder = !TalepProModu.AKTIF && KullaniciRolleri.canPlaceOrder(role) && item.durum == TalepDurumlari.ONAYLANDI
     val malKabulBaslamis = item.kalemler.any { kalem ->
         kalem.kabulEdilenMiktar > 0.0001 ||
             KalemFirmaAtamaYardimcisi.etkinAtamalar(kalem).any { it.kabulEdilenMiktar > 0.0001 }
     }
-    val canSiparisGeriAl = KullaniciRolleri.canPlaceOrder(role)
+    val canSiparisGeriAl = !TalepProModu.AKTIF && KullaniciRolleri.canPlaceOrder(role)
         && item.durum == TalepDurumlari.SIPARIS
         && !malKabulBaslamis
-    val canOnayGeriAl = KullaniciRolleri.canPlaceOrder(role)
+    val canOnayGeriAl = !TalepProModu.AKTIF && KullaniciRolleri.canPlaceOrder(role)
         && (item.durum == TalepDurumlari.ONAYLANDI
             || (item.durum == TalepDurumlari.SIPARIS && !malKabulBaslamis))
         && (item.herhangiKalemOnayli || item.yonetimOnayKilitli || item.durum == TalepDurumlari.ONAYLANDI
             || item.durum == TalepDurumlari.SIPARIS)
-    val canMalKabul = KullaniciRolleri.canMalKabul(role)
+    val canMalKabul = !TalepProModu.AKTIF && KullaniciRolleri.canMalKabul(role)
     val duzenle = TalepYetkileri.talepDuzenleyebilir(role, item, user?.uid, user?.fullName)
     val sil = TalepYetkileri.talepSilebilir(role, item, user?.uid, user?.fullName)
     val loading by viewModel.loading.collectAsState()
@@ -150,7 +151,12 @@ fun TalepDetayScreen(viewModel: AppViewModel, talepId: String, viewMode: String?
             } else if (viewMode == "siparis") {
                 Text("Sipariş verilmiş talep özeti", style = MaterialTheme.typography.bodySmall, color = AppColors.Primary)
             } else if (viewMode == "onaylanan") {
-                Text("Onaylanmış talep — sipariş bekliyor", style = MaterialTheme.typography.bodySmall, color = AppColors.Warning)
+                Text(
+                    if (TalepProModu.AKTIF) "Onaylanmış talep — arşiv"
+                    else "Onaylanmış talep — sipariş bekliyor",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (TalepProModu.AKTIF) AppColors.Success else AppColors.Warning
+                )
             }
             AppDetailTabRow(tabs = tabs, selectedIndex = selectedTab, onTabSelected = { selectedTab = it })
         }

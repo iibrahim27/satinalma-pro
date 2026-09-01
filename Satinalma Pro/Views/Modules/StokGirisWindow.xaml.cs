@@ -79,7 +79,10 @@ public partial class StokGirisWindow : Window
 
     private void StoktanBilgileriDoldur(string malzemeAdi)
     {
-        var stok = StokIslemServisi.StokBulMalzemeAdi(malzemeAdi, SeciliKategori)
+        var depo = SeciliDepo();
+        var stok = StokIslemServisi.StokBulMalzemeAdi(malzemeAdi, SeciliKategori, depo)
+            ?? StokIslemServisi.StokBulMalzemeAdi(malzemeAdi, depo: depo)
+            ?? StokIslemServisi.StokBulMalzemeAdi(malzemeAdi, SeciliKategori)
             ?? StokIslemServisi.StokBulMalzemeAdi(malzemeAdi);
         if (stok is null) return;
 
@@ -140,7 +143,9 @@ public partial class StokGirisWindow : Window
             return false;
         }
 
-        var stok = StokIslemServisi.StokBulMalzemeAdi(malzeme, kategori)
+        var stok = StokIslemServisi.StokBulMalzemeAdi(malzeme, kategori, SeciliDepo())
+            ?? StokIslemServisi.StokBulMalzemeAdi(malzeme, depo: SeciliDepo())
+            ?? StokIslemServisi.StokBulMalzemeAdi(malzeme, kategori)
             ?? StokIslemServisi.StokBulMalzemeAdi(malzeme);
 
         var depo = SeciliDepo();

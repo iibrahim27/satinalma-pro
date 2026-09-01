@@ -29,41 +29,65 @@
     </ScrollViewer>
 
     <Border Grid.Row="2" Padding="12,12" BorderBrush="#D9E2EC" BorderThickness="0,1,0,0" Background="#F0F4F8">
-      <Button x:Name="BtnProfil" Background="Transparent" BorderThickness="0" Cursor="Hand"
-              Click="BtnProfil_Click" HorizontalContentAlignment="Stretch" Padding="8,8"
-              ToolTip="Profil / çıkış">
-        <Button.Template>
-          <ControlTemplate TargetType="Button">
-            <Border x:Name="B" Background="#FFFFFF" BorderBrush="#D9E2EC" BorderThickness="1"
-                    CornerRadius="12" Padding="{TemplateBinding Padding}">
-              <ContentPresenter />
+      <StackPanel>
+        <Button x:Name="BtnProfil" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                Click="BtnProfil_Click" HorizontalContentAlignment="Stretch" Padding="8,8"
+                ToolTip="Profil / çıkış">
+          <Button.Template>
+            <ControlTemplate TargetType="Button">
+              <Border x:Name="B" Background="#FFFFFF" BorderBrush="#D9E2EC" BorderThickness="1"
+                      CornerRadius="12" Padding="{TemplateBinding Padding}">
+                <ContentPresenter />
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="B" Property="Background" Value="#E0FCFF" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Button.Template>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Width="36" Height="36" CornerRadius="18" Background="#0D7377">
+              <TextBlock x:Name="TxtAvatar" Text="YK" Foreground="White" FontWeight="SemiBold" FontSize="12"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
-            <ControlTemplate.Triggers>
-              <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="B" Property="Background" Value="#E0FCFF" />
-              </Trigger>
-            </ControlTemplate.Triggers>
-          </ControlTemplate>
-        </Button.Template>
-        <Grid>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-          </Grid.ColumnDefinitions>
-          <Border Width="36" Height="36" CornerRadius="18" Background="#0D7377">
-            <TextBlock x:Name="TxtAvatar" Text="YK" Foreground="White" FontWeight="SemiBold" FontSize="12"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-            <TextBlock x:Name="TxtKullaniciAd" FontSize="12" FontWeight="SemiBold" Foreground="#102A43"
-                       TextTrimming="CharacterEllipsis" />
-            <TextBlock x:Name="TxtKullaniciRol" FontSize="11" Foreground="#627D98" Margin="0,2,0,0" />
-            <TextBlock x:Name="TxtSirketAdi" FontSize="10" Foreground="#9FB3C8" Margin="0,2,0,0"
-                       TextTrimming="CharacterEllipsis" />
-            <TextBlock x:Name="TxtMaliYil" Visibility="Collapsed" />
-          </StackPanel>
-        </Grid>
-      </Button>
+            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+              <TextBlock x:Name="TxtKullaniciAd" FontSize="12" FontWeight="SemiBold" Foreground="#102A43"
+                         TextTrimming="CharacterEllipsis" />
+              <TextBlock x:Name="TxtKullaniciRol" FontSize="11" Foreground="#627D98" Margin="0,2,0,0" />
+              <TextBlock x:Name="TxtSirketAdi" FontSize="10" Foreground="#9FB3C8" Margin="0,2,0,0"
+                         TextTrimming="CharacterEllipsis" />
+              <TextBlock x:Name="TxtMaliYil" Visibility="Collapsed" />
+            </StackPanel>
+          </Grid>
+        </Button>
+
+        <Button x:Name="BtnCikis" Content="Oturumu Kapat" Margin="0,8,0,0"
+                Background="Transparent" BorderBrush="#D9E2EC" BorderThickness="1"
+                Foreground="#627D98" FontSize="12" Padding="10,8" Cursor="Hand"
+                Click="BtnCikis_Click" Visibility="Collapsed">
+          <Button.Template>
+            <ControlTemplate TargetType="Button">
+              <Border x:Name="B" Background="{TemplateBinding Background}"
+                      BorderBrush="{TemplateBinding BorderBrush}"
+                      BorderThickness="{TemplateBinding BorderThickness}"
+                      CornerRadius="10" Padding="{TemplateBinding Padding}">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="B" Property="Background" Value="#FEE2E2" />
+                  <Setter Property="Foreground" Value="#B91C1C" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Button.Template>
+        </Button>
+      </StackPanel>
     </Border>
   </Grid>
 </UserControl>

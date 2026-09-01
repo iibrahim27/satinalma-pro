@@ -96,22 +96,46 @@ class StokRepository(
         return 0L
     }
 
-    /** Aynı malzeme+depo için tek kayıt (en yeni damga; eşitlikte tercih edilen taraf). */
+    /** Aynı malzeme+depo için tek kayıt; yerel listede miktarları toplar. */
     private fun tekillestirStok(liste: List<StokKaydi>, tercihYerel: Boolean = true): List<StokKaydi> {
-        val map = linkedMapOf<String, StokKaydi>()
+        val gruplar = linkedMapOf<String, MutableList<StokKaydi>>()
         for (s in liste) {
             val key = stokAnahtar(s)
             if (key == "|") continue
-            val mevcut = map[key]
-            if (mevcut == null) {
-                map[key] = s
+            gruplar.getOrPut(key) { mutableListOf() }.add(s)
+        }
+
+        val sonuc = mutableListOf<StokKaydi>()
+        for (grup in gruplar.values) {
+            if (grup.size == 1) {
+                sonuc.add(grup[0])
                 continue
             }
-            val tYeni = stokTarihMs(s.sonGuncelleme)
-            val tEski = stokTarihMs(mevcut.sonGuncelleme)
-            if (tYeni > tEski || (tYeni == tEski && tercihYerel)) map[key] = s
+
+            val keeper = grup.maxWith(
+                compareBy<StokKaydi> { it.mevcutMiktar }
+                    .thenBy { stokTarihMs(it.sonGuncelleme) }
+            )
+            val meta = grup.maxByOrNull { stokTarihMs(it.sonGuncelleme) } ?: keeper
+            val toplamMiktar = grup.sumOf { it.mevcutMiktar }
+            val birimMaliyet = when {
+                keeper.birimMaliyet > 0 -> keeper.birimMaliyet
+                meta.birimMaliyet > 0 -> meta.birimMaliyet
+                else -> 0.0
+            }
+            sonuc.add(
+                keeper.copy(
+                    malzemeAdi = keeper.malzemeAdi.trim(),
+                    depoSaha = keeper.depoSaha.trim(),
+                    kategori = keeper.kategori.trim().ifBlank { meta.kategori.trim() },
+                    birim = keeper.birim.trim().ifBlank { meta.birim.trim() },
+                    mevcutMiktar = toplamMiktar,
+                    birimMaliyet = birimMaliyet,
+                    toplamDeger = kotlin.math.round(toplamMiktar * birimMaliyet * 100) / 100
+                )
+            )
         }
-        return map.values.toList()
+        return sonuc
     }
 
     /**
@@ -140,11 +164,41 @@ class StokRepository(
     private fun ayniMalzemeDepoTekBirak(list: MutableList<StokKaydi>, keeper: StokKaydi) {
         val m = keeper.malzemeAdi.trim()
         val d = keeper.depoSaha.trim()
-        list.removeAll {
-            it !== keeper &&
-                it.malzemeAdi.trim().equals(m, true) &&
-                it.depoSaha.trim().equals(d, true)
+        var index = list.indexOfFirst { it === keeper }
+        if (index < 0) {
+            index = list.indexOfFirst {
+                it.malzemeAdi.trim().equals(m, true) && it.depoSaha.trim().equals(d, true)
+            }
         }
+        if (index < 0) return
+
+        val silinecek = list.filterIndexed { i, s ->
+            i != index &&
+                s.malzemeAdi.trim().equals(m, true) &&
+                s.depoSaha.trim().equals(d, true)
+        }
+        val mevcut = list[index]
+        var kategori = mevcut.kategori.trim().ifBlank { keeper.kategori.trim() }
+        var birim = mevcut.birim.trim().ifBlank { keeper.birim.trim() }
+        var birimMaliyet = if (mevcut.birimMaliyet > 0) mevcut.birimMaliyet else keeper.birimMaliyet
+        var toplamMiktar = mevcut.mevcutMiktar
+        for (s in silinecek) {
+            toplamMiktar += s.mevcutMiktar
+            if (kategori.isBlank() && s.kategori.isNotBlank()) kategori = s.kategori.trim()
+            if (birim.isBlank() && s.birim.isNotBlank()) birim = s.birim.trim()
+            if (birimMaliyet <= 0 && s.birimMaliyet > 0) birimMaliyet = s.birimMaliyet
+        }
+        list[index] = mevcut.copy(
+            malzemeAdi = m,
+            depoSaha = d,
+            kategori = kategori,
+            birim = birim,
+            mevcutMiktar = toplamMiktar,
+            birimMaliyet = birimMaliyet,
+            sonGuncelleme = keeper.sonGuncelleme.ifBlank { mevcut.sonGuncelleme },
+            toplamDeger = kotlin.math.round(toplamMiktar * birimMaliyet * 100) / 100
+        )
+        list.removeAll(silinecek)
     }
 
     private fun birlestirHareket(yerel: List<StokHareket>, bulut: List<StokHareket>): List<StokHareket> {
@@ -251,9 +305,12 @@ class StokRepository(
     private fun stokBul(list: MutableList<StokKaydi>, malzeme: String, depo: String): StokKaydi? {
         val m = malzeme.trim()
         val d = depo.trim()
-        return list.firstOrNull {
+        return list.filter {
             it.malzemeAdi.trim().equals(m, true) && it.depoSaha.trim().equals(d, true)
-        }
+        }.maxWithOrNull(
+            compareBy<StokKaydi> { it.mevcutMiktar }
+                .thenBy { stokTarihMs(it.sonGuncelleme) }
+        )
     }
 
     fun stokBulMalzeme(

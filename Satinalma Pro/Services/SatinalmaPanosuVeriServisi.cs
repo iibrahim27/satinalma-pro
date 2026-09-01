@@ -4,6 +4,7 @@ using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Models.SatinalmaMerkezi;
 using SatinalmaPro.Views.Modules.Satinalma.Part1;
+using TalepProRuntime = SatinalmaPro.Shared.Helpers.TalepProRuntime;
 using SharedTalepDurumlari = SatinalmaPro.Shared.Models.SatinalmaTalepDurumlari;
 
 namespace SatinalmaPro.Services;
@@ -111,10 +112,15 @@ public static class SatinalmaPanosuVeriServisi
             Adim("Teklif Bekleniyor", "\uE823", teklifBekleniyor, SatinalmaPart1Menusu.SatinalmaTeklifIstenen, "#7C3AED"),
             Adim("Teklif Geldi", "\uE8D1", teklifGeldi, SatinalmaPart1Menusu.SatinalmaTeklifGirilen, "#8B5CF6"),
             Adim("Karşılaştırılıyor", "\uE9D9", karsilastiriliyor, SatinalmaPart1Menusu.SatinalmaKarsilastirma, "#0891B2"),
-            Adim("Onaylandı", "\uE73E", onaylandi, SatinalmaPart1Menusu.SatinalmaOnaylanan, "#16A34A"),
-            Adim("Sipariş Verildi", "\uE7BF", siparisVerildi, SatinalmaPart1Menusu.SatinalmaSiparis, "#2563EB"),
-            Adim("Mal Kabul", "\uE8D1", malKabul, SatinalmaPart1Menusu.SatinalmaSiparis, "#0D9488"),
-            Adim("Tamamlandı", "\uE930", tamamlandi, SatinalmaPart1Menusu.SatinalmaMalKabul, "#64748B")
+            Adim("Onaylandı", "\uE73E", onaylandi, SatinalmaPart1Menusu.OnaySonrasiRoute(null), "#16A34A"),
+            .. TalepProRuntime.Aktif
+                ? Array.Empty<SatinalmaWorkflowAdim>()
+                :
+                [
+                    Adim("Sipariş Verildi", "\uE7BF", siparisVerildi, SatinalmaPart1Menusu.SatinalmaSiparis, "#2563EB"),
+                    Adim("Mal Kabul", "\uE8D1", malKabul, SatinalmaPart1Menusu.SatinalmaSiparis, "#0D9488"),
+                    Adim("Tamamlandı", "\uE930", tamamlandi, SatinalmaPart1Menusu.SatinalmaMalKabul, "#64748B")
+                ]
         ];
     }
 

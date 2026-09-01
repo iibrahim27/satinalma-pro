@@ -8,6 +8,20 @@ namespace SatinalmaPro.Shared.Procurement;
 /// </summary>
 public static class ProcurementRouteMatcher
 {
+    /// <summary>Talep Pro'da gizlenen sekmeler — onay sonrası yalnızca geçmiş sekmeleri kalır.</summary>
+    private static readonly HashSet<string> TalepProHaricRoutes = new(StringComparer.Ordinal)
+    {
+        SatinalmaRoutes.SatinalmaOnaylanan,
+        SatinalmaRoutes.YonetimOnaylananTeklifler,
+        SatinalmaRoutes.OnaylananTaleplerSaha,
+        SatinalmaRoutes.SatinalmaSiparis,
+        SatinalmaRoutes.SatinalmaMalKabul,
+        SatinalmaRoutes.SatinalmaIade,
+        SatinalmaRoutes.SatinalmaTedarikciler,
+        SatinalmaRoutes.YonetimDirekOnaylanan,
+        SatinalmaRoutes.YonetimGecmis
+    };
+
     private sealed record RouteRule(
         string Route,
         IReadOnlyList<string> StatusIn,
@@ -21,6 +35,9 @@ public static class ProcurementRouteMatcher
         string? currentUid)
     {
         if (!IsRouteVisibleForRole(route, role))
+            return false;
+
+        if (TalepProRuntime.Aktif && TalepProHaricRoutes.Contains(route))
             return false;
 
         if (route == SatinalmaRoutes.SatinalmaIade)
@@ -121,10 +138,10 @@ public static class ProcurementRouteMatcher
         var gruplar = new List<ProcurementMenuGroup>();
 
         if (roleKey == "atolye")
-            return gruplar;
+            return TalepProMenuleriDuzenle(gruplar);
 
         if (roleKey == "depo")
-            return gruplar;
+            return TalepProMenuleriDuzenle(gruplar);
 
         var yonetimItems = new List<ProcurementMenuItem>();
 
@@ -142,7 +159,11 @@ public static class ProcurementRouteMatcher
                 new("Reddedilenler", SatinalmaRoutes.YonetimRedVerilen)
             ]);
 
-            if (roleKey == "admin")
+            if (TalepProRuntime.Aktif)
+            {
+                yonetimItems.Add(new("Geçmiş Onaylananlar", SatinalmaRoutes.YonetimOnayGecmisi));
+            }
+            else if (roleKey == "admin")
             {
                 yonetimItems.Add(new("Yönetim Onay Geçmişi", SatinalmaRoutes.YonetimOnayGecmisi));
                 yonetimItems.Add(new("Direk Onaylanan Talepler", SatinalmaRoutes.YonetimDirekOnaylanan));
@@ -175,7 +196,7 @@ public static class ProcurementRouteMatcher
             };
 
             gruplar.Add(new ProcurementMenuGroup(roleKey == "admin" ? "Satınalma" : null, satinalmaItems));
-            return gruplar;
+            return TalepProMenuleriDuzenle(gruplar);
         }
 
         if (roleKey is "sef" or "saha")
@@ -192,13 +213,62 @@ public static class ProcurementRouteMatcher
                 new("Mal Kabul Edilmiş", SatinalmaRoutes.SatinalmaMalKabul),
                 new("Güncel Stok Durumu", "stok-durum")
             ]));
-            return gruplar;
+            return TalepProMenuleriDuzenle(gruplar);
         }
 
         if (roleKey == "yonetim")
             gruplar.Add(new ProcurementMenuGroup(null, yonetimItems));
 
-        return gruplar;
+        return TalepProMenuleriDuzenle(gruplar);
+    }
+
+    private static IReadOnlyList<ProcurementMenuGroup> TalepProMenuleriDuzenle(IReadOnlyList<ProcurementMenuGroup> gruplar)
+    {
+        if (!TalepProRuntime.Aktif)
+            return gruplar;
+
+        var sonuc = new List<ProcurementMenuGroup>();
+        foreach (var grup in gruplar)
+        {
+            var ogeler = grup.Items
+                .Where(i => !TalepProHaricRoutes.Contains(i.Route))
+                .ToList();
+
+            if (ogeler.Count == 0)
+                continue;
+
+            sonuc.Add(new ProcurementMenuGroup(grup.Baslik, ogeler));
+        }
+
+        TalepProGecmisOnaylananEkle(sonuc);
+        return sonuc;
+    }
+
+    private static void TalepProGecmisOnaylananEkle(List<ProcurementMenuGroup> gruplar)
+    {
+        var flat = gruplar.SelectMany(g => g.Items).ToList();
+        if (flat.Any(i => i.Route is SatinalmaRoutes.SatinalmaOnayGecmisi or SatinalmaRoutes.YonetimOnayGecmisi))
+            return;
+
+        var hedef = gruplar.FirstOrDefault()?.Items is { } ilkGrup
+            ? gruplar[0]
+            : null;
+
+        var gecmis = new ProcurementMenuItem("Geçmiş Onaylananlar", SatinalmaRoutes.SatinalmaOnayGecmisi);
+        if (hedef is null)
+        {
+            gruplar.Add(new ProcurementMenuGroup(null, [gecmis]));
+            return;
+        }
+
+        var yeniOgeler = gruplar[0].Items.ToList();
+        var redIdx = yeniOgeler.FindIndex(i => i.Route == SatinalmaRoutes.YonetimRedVerilen);
+        if (redIdx >= 0)
+            yeniOgeler.Insert(redIdx, gecmis);
+        else
+            yeniOgeler.Add(gecmis);
+
+        gruplar[0] = new ProcurementMenuGroup(gruplar[0].Baslik, yeniOgeler);
     }
 
     public static string FirstRoute(string? role)

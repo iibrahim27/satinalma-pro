@@ -250,8 +250,6 @@ private fun bottomTabsFor(role: String?): List<BottomTab> {
     when {
         normalized in setOf(KullaniciRolleri.DEPO, KullaniciRolleri.ATOLYE) ->
             tabs += BottomTab("stok-durum", "Stok", Icons.Rounded.Inventory2)
-        queues.any { it.route == "onaylanan-malzemeler" } || KullaniciRolleri.canMalKabul(role) ->
-            tabs += BottomTab("onaylanan-malzemeler", "Malzeme", Icons.Rounded.ShoppingCart)
         queues.any { it.route.startsWith("stok-") } ->
             tabs += BottomTab("stok-durum", "Stok", Icons.Rounded.Inventory2)
     }

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Windows;
 using SatinalmaPro.Helpers;
 using SatinalmaPro.Services;
+using SatinalmaPro.Views;
 using SatinalmaPro.Views.Modules;
 using TalepPro.Helpers;
 
@@ -26,7 +27,65 @@ public partial class MainWindow : Window
         {
             UygulamaKoordinasyonu.SatinalmaProModulAc("Stok Yönetimi");
         };
+        _shell.OturumKapatIstendi += () => _ = OturumKapatAsync();
         IcerikAlani.Content = _shell;
+    }
+
+    private async Task OturumKapatAsync()
+    {
+        var gizlendi = false;
+        try
+        {
+            Hide();
+            gizlendi = true;
+
+            var sonuc = await OturumKapatmaServisi.KapatVeYenidenGirAsync(
+                this,
+                new GirisPenceresiMarka(
+                    "Talep Pro — Giriş",
+                    "Talep Pro",
+                    "Profesyonel talep ve teklif yönetimi",
+                    "Satınalma Pro ile ortak oturum. Talep, teklif ve onay süreçleriniz burada."))
+                .ConfigureAwait(true);
+
+            if (sonuc is OturumKapatmaSonuc.GirisIptal or OturumKapatmaSonuc.Iptal)
+            {
+                if (sonuc == OturumKapatmaSonuc.GirisIptal)
+                    Application.Current.Shutdown();
+                return;
+            }
+
+            if (sonuc != OturumKapatmaSonuc.Basarili)
+                return;
+
+            if (_shell is not null)
+            {
+                IcerikAlani.Content = null;
+                _shell = new SatinalmaShellView();
+                _shell.StokModuluIstendi += () =>
+                    UygulamaKoordinasyonu.SatinalmaProModulAc("Stok Yönetimi");
+                _shell.OturumKapatIstendi += () => _ = OturumKapatAsync();
+                IcerikAlani.Content = _shell;
+            }
+
+            Show();
+            Activate();
+            gizlendi = false;
+        }
+        catch (Exception ex)
+        {
+            HataGunlugu.Kaydet(ex, "TalepPro.OturumKapat");
+            MessageBox.Show($"Çıkış sırasında hata: {ex.Message}", "Talep Pro",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally
+        {
+            if (gizlendi)
+            {
+                Show();
+                Activate();
+            }
+        }
     }
 
     public void DeepLinkUygula(IEnumerable<string>? args)

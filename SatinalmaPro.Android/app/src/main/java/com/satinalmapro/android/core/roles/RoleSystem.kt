@@ -134,7 +134,8 @@ object RolNavigasyon {
             KullaniciRolleri.DEPO -> listOf(stokDurum, stokGiris, stokCikis, stokHareket, satinalmaSiparis, bildirimler)
             else -> listOf(yeniTalep, taleplerim, bildirimler)
         }
-        return listOf(dashboard) + items + profil
+        val trimmed = TalepProModu.menuleriDuzenle(items, normalized)
+        return listOf(dashboard) + trimmed + profil
     }
 
     fun queueMenus(role: String?): List<MenuItem> =
@@ -188,6 +189,7 @@ object RolNavigasyon {
      */
     fun isActionQueue(route: String): Boolean {
         val r = route.substringBefore('?')
+        if (!TalepProModu.aksiyonKuyrugu(r)) return false
         return when (r) {
             "gelen-talepler",
             "yonetim-gelen-talepler",
@@ -320,27 +322,19 @@ object BildirimRota {
                 else -> "bildirimler"
             }
             "Onaylandi" -> when {
-                requestId == null && r == KullaniciRolleri.YONETIM -> "onay-gecmisi"
-                requestId == null && r == KullaniciRolleri.SATINALMA -> "satinalma-onaylanan"
-                requestId == null && sahaLike -> "onaylanan-talepler"
-                requestId == null -> "bildirimler"
-                r == KullaniciRolleri.SATINALMA -> "talep-detay?id=$requestId&view=onaylanan"
+                requestId == null -> TalepProModu.onaySonrasiRoute(role)
+                r == KullaniciRolleri.SATINALMA || r == KullaniciRolleri.ADMIN ->
+                    "talep-detay?id=$requestId&view=onaylanan"
                 else -> "talep-detay?id=$requestId"
             }
             "SiparisOlusturuldu" -> when {
-                requestId != null -> "talep-detay?id=$requestId&view=siparis"
-                r in setOf(KullaniciRolleri.SATINALMA, KullaniciRolleri.ADMIN) -> "satinalma-siparis"
-                r == KullaniciRolleri.YONETIM -> "onay-gecmisi"
-                sahaLike -> "onaylanan-talepler"
-                else -> "bildirimler"
+                requestId != null -> "talep-detay?id=$requestId&view=onaylanan"
+                else -> TalepProModu.onaySonrasiRoute(role)
             }
             "MalKabulEdildi" -> when {
                 r == KullaniciRolleri.DEPO -> "stok-durum"
-                requestId != null -> "talep-detay?id=$requestId&view=malkabul"
-                r in setOf(KullaniciRolleri.SATINALMA, KullaniciRolleri.ADMIN) -> "satinalma-mal-kabul"
-                r == KullaniciRolleri.YONETIM -> "onay-gecmisi"
-                sahaLike -> "onaylanan-talepler"
-                else -> "bildirimler"
+                requestId != null -> "talep-detay?id=$requestId&view=onaylanan"
+                else -> TalepProModu.onaySonrasiRoute(role)
             }
             "Reddedildi" -> if (r == KullaniciRolleri.YONETIM) "red-talepler"
             else if (requestId != null) "talep-detay?id=$requestId" else "bildirimler"
@@ -351,13 +345,14 @@ object BildirimRota {
     fun safeRoute(route: String?, role: String?): String {
         if (route.isNullOrBlank()) return RolNavigasyon.defaultRoute(role)
         val aliased = IsAkisRotalari.normalize(route, role)
-        val base = aliased.substringBefore('?')
-        if (RolNavigasyon.canAccess(role, base)) return aliased
+        val converted = TalepProModu.bildirimRouteDonustur(aliased, role)
+        val base = converted.substringBefore('?')
+        if (RolNavigasyon.canAccess(role, base)) return converted
         val requestId = aliased.substringAfter("id=", "").substringBefore('&').takeIf { it.isNotBlank() }
         if (requestId != null && RolNavigasyon.canAccess(role, "teklif-onay-detay"))
             return "teklif-onay-detay?id=$requestId"
         if (requestId != null && RolNavigasyon.canAccess(role, "talep-detay"))
-            return aliased
+            return converted
         // Bildirim derin linki erişilemezse dashboard yerine bildirim listesine düş.
         if (RolNavigasyon.canAccess(role, "bildirimler")) return "bildirimler"
         return RolNavigasyon.defaultRoute(role)

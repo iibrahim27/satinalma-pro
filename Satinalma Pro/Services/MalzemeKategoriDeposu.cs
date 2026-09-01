@@ -116,7 +116,7 @@ public static class MalzemeKategoriDeposu
         return set.OrderBy(s => s, StringComparer.CurrentCultureIgnoreCase);
     }
 
-    /// <summary>Excel / kayıtlardaki yeni kategorileri ayarlara ekler.</summary>
+    /// <summary>Excel / kayıtlardaki yeni kategorileri ayarlara ekler; kullanılmayanları temizler.</summary>
     public static int KayitlardanSenkronizeEt()
     {
         UygulamaAyarDeposu.Yukle();
@@ -142,7 +142,52 @@ public static class MalzemeKategoriDeposu
         if (eklendi > 0)
             UygulamaAyarDeposu.Kaydet();
 
+        BosKategorileriTemizle();
         return eklendi;
+    }
+
+    /// <summary>
+    /// Alınan malzeme ve stokta kaydı kalmayan kategorileri ayarlardan kaldırır (en az bir kategori kalır).
+    /// </summary>
+    public static int BosKategorileriTemizle()
+    {
+        UygulamaAyarDeposu.Yukle();
+        ModulVeriDeposu.Yukle();
+
+        var kullanilan = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var k in ModulVeriDeposu.AlinanMalzemeler)
+        {
+            if (!string.IsNullOrWhiteSpace(k.Kategori))
+                kullanilan.Add(k.Kategori.Trim());
+        }
+
+        foreach (var k in ModulVeriDeposu.Stok)
+        {
+            if (!string.IsNullOrWhiteSpace(k.Kategori))
+                kullanilan.Add(k.Kategori.Trim());
+        }
+
+        var liste = UygulamaAyarDeposu.Ayarlar.MalzemeKategorileri;
+        if (liste.Count <= 1)
+            return 0;
+
+        var silinen = 0;
+        for (var i = liste.Count - 1; i >= 0; i--)
+        {
+            if (liste.Count <= 1)
+                break;
+
+            if (kullanilan.Contains(liste[i]))
+                continue;
+
+            liste.RemoveAt(i);
+            silinen++;
+        }
+
+        if (silinen > 0)
+            UygulamaAyarDeposu.Kaydet();
+
+        return silinen;
     }
 
     public static IEnumerable<string> FiltreIcinListe(IEnumerable<AlinanMalzemeKaydi> kayitlar) => TumListe();

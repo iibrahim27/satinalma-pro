@@ -110,6 +110,10 @@ public static class ModulVeriDeposu
         JsonOku(Akaryakit, "akaryakit.json", AkaryakitOrnekVeri);
         FiloOku();
         ModulTarihleriniNormalizeEt();
+        var stokOnce = Stok.Count;
+        StokTekillestir();
+        if (Stok.Count != stokOnce)
+            JsonYaz("stok.json", Stok.ToList());
         MalzemeKategoriDeposu.KayitlardanSenkronizeEt();
 
         _yukleniyor = false;
@@ -550,13 +554,14 @@ public static class ModulVeriDeposu
     public static void StokYukle(string json, bool birlestir = true)
     {
         var bulut = JsonSerializer.Deserialize<List<StokKaydi>>(json, JsonSecenekleri) ?? [];
+        List<StokKaydi> birlesik;
         if (!birlestir || _sifirlamaAktifMi())
-        {
-            KoleksiyonuYenile(Stok, StokKayitlariniBirlestir(bulut, []));
-            return;
-        }
+            birlesik = StokKayitlariniBirlestir(bulut, []);
+        else
+            birlesik = StokKayitlariniBirlestir(Stok, bulut);
 
-        KoleksiyonuYenile(Stok, StokKayitlariniBirlestir(Stok, bulut));
+        birlesik = StokYerelTekillestir(birlesik);
+        KoleksiyonuYenile(Stok, birlesik);
     }
 
     public static void StokHareketleriYukle(string json, bool birlestir = true)
@@ -612,13 +617,76 @@ public static class ModulVeriDeposu
             .ToList();
     }
 
-    /// <summary>Aynı malzeme+depo için tek kayıt bırak (en yeni SonGuncelleme).</summary>
+    /// <summary>Aynı malzeme+depo için tek kayıt bırakır; miktarları toplar (yerel çift satır temizliği).</summary>
+    public static List<StokKaydi> StokYerelTekillestir(IEnumerable<StokKaydi> kaynak)
+    {
+        var gruplar = new Dictionary<string, List<StokKaydi>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var kayit in kaynak)
+        {
+            var anahtar = StokKimlikAnahtari(kayit);
+            if (string.IsNullOrWhiteSpace(anahtar) || anahtar == "|")
+                continue;
+
+            if (!gruplar.TryGetValue(anahtar, out var liste))
+            {
+                liste = [];
+                gruplar[anahtar] = liste;
+            }
+
+            liste.Add(kayit);
+        }
+
+        var sonuc = new List<StokKaydi>(gruplar.Count);
+        foreach (var liste in gruplar.Values)
+        {
+            if (liste.Count == 1)
+            {
+                sonuc.Add(NormalizeStokSatir(liste[0]));
+                continue;
+            }
+
+            var keeper = liste
+                .OrderByDescending(s => s.MevcutMiktar)
+                .ThenByDescending(s => TarihYardimcisi.SiralamaDegeri(s.SonGuncelleme))
+                .First();
+
+            keeper.MevcutMiktar = liste.Sum(s => s.MevcutMiktar);
+            var meta = liste
+                .OrderByDescending(s => TarihYardimcisi.SiralamaDegeri(s.SonGuncelleme))
+                .First();
+            if (string.IsNullOrWhiteSpace(keeper.Kategori) && !string.IsNullOrWhiteSpace(meta.Kategori))
+                keeper.Kategori = meta.Kategori.Trim();
+            if (string.IsNullOrWhiteSpace(keeper.Birim) && !string.IsNullOrWhiteSpace(meta.Birim))
+                keeper.Birim = meta.Birim.Trim();
+            if (keeper.BirimMaliyet <= 0 && meta.BirimMaliyet > 0)
+                keeper.BirimMaliyet = meta.BirimMaliyet;
+
+            sonuc.Add(NormalizeStokSatir(keeper));
+        }
+
+        return sonuc
+            .OrderBy(s => s.MalzemeAdi, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(s => s.DepoSaha, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static StokKaydi NormalizeStokSatir(StokKaydi kayit)
+    {
+        kayit.MalzemeAdi = (kayit.MalzemeAdi ?? "").Trim();
+        kayit.DepoSaha = (kayit.DepoSaha ?? "").Trim();
+        kayit.Kategori = (kayit.Kategori ?? "").Trim();
+        kayit.Birim = (kayit.Birim ?? "").Trim();
+        kayit.ToplamDegerHesapla();
+        return kayit;
+    }
+
+    /// <summary>Aynı malzeme+depo için tek kayıt bırak (miktarları topla).</summary>
     public static void StokTekillestir()
     {
         if (Stok.Count <= 1)
             return;
 
-        var birlesik = StokKayitlariniBirlestir(Stok.ToList(), []);
+        var birlesik = StokYerelTekillestir(Stok);
         if (birlesik.Count == Stok.Count)
             return;
 

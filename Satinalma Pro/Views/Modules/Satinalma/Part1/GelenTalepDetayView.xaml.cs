@@ -4,6 +4,7 @@ using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
 using SatinalmaPro.Shared.Procurement.Detail;
+using TalepProRuntime = SatinalmaPro.Shared.Helpers.TalepProRuntime;
 namespace SatinalmaPro.Views.Modules.Satinalma.Part1;
 public partial class GelenTalepDetayView : UserControl
 {
@@ -177,7 +178,9 @@ public partial class GelenTalepDetayView : UserControl
                 PurchaseRequestDetailAction.RejectRequest => SatinalmaPart1Menusu.YonetimRedVerilen,
                 PurchaseRequestDetailAction.DirectApprove
                     or PurchaseRequestDetailAction.ConvertToUrgentAndApprove
-                    => SatinalmaPart1Menusu.YonetimDirekOnaylanan,
+                    => TalepProRuntime.Aktif
+                        ? SatinalmaPart1Menusu.OnaySonrasiRoute(OturumYoneticisi.AktifKullanici?.Rol)
+                        : SatinalmaPart1Menusu.YonetimDirekOnaylanan,
                 PurchaseRequestDetailAction.StartQuoteProcess =>
                     KullaniciRolleri.Normalize(OturumYoneticisi.AktifKullanici?.Rol) == KullaniciRolleri.Satinalma
                         ? SatinalmaPart1Menusu.SatinalmaTeklifIstenen

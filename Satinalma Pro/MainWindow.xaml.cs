@@ -29,6 +29,7 @@ public partial class MainWindow : Window
         KisayollariBagla();
         Sidebar.NavigasyonSecildi += Sidebar_NavigasyonSecildi;
         Sidebar.CikisTiklandi += (_, _) => Cikis_Click(this, new RoutedEventArgs());
+        Header.CikisTiklandi += (_, _) => Cikis_Click(this, new RoutedEventArgs());
         Header.BildirimTiklandi += (_, _) => Bildirimler_Click(this, new RoutedEventArgs());
         Header.AyarlarTiklandi += (_, _) => OnModuleSelected("Ayarlar");
         AltBilgiyiGuncelle(modulde: false);
@@ -172,25 +173,24 @@ public partial class MainWindow : Window
         var gizlendi = false;
         try
         {
-            BulutVeriSenkronu.YoklamayiDurdur();
-            await BulutVeriSenkronu.BulutaGonderAsync().ConfigureAwait(true);
-            OturumYoneticisi.CikisYap();
-
             Hide();
             gizlendi = true;
 
-            if (!GirisPenceresi.OturumAc(null))
+            var sonuc = await OturumKapatmaServisi.KapatVeYenidenGirAsync(this).ConfigureAwait(true);
+            if (sonuc is OturumKapatmaSonuc.GirisIptal or OturumKapatmaSonuc.Iptal)
             {
-                Application.Current.Shutdown();
+                if (sonuc == OturumKapatmaSonuc.GirisIptal)
+                    Application.Current.Shutdown();
                 return;
             }
 
-            await BulutVeriSenkronu.BuluttanYukleAsync().ConfigureAwait(true);
-            BulutVeriSenkronu.YoklamayiBaslat();
-            BildirimYoneticisi.Baslat();
+            if (sonuc != OturumKapatmaSonuc.Basarili)
+                return;
+
             _modulOnbellegi.Clear();
             ShowHome();
             Sidebar.Yenile();
+            Header.CikisButonunuGuncelle();
             AnasayfaKarsilamayiGuncelle();
             AltBilgiyiGuncelle(modulde: false);
         }

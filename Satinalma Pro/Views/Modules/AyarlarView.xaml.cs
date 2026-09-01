@@ -445,12 +445,10 @@ public partial class AyarlarView : UserControl
         }
 
         KategoriListesiniYenile();
-        if (silinen > 0)
-        {
-            MessageBox.Show(
-                $"Kategori silindi. {silinen} alınan malzeme kaydı kaldırıldı.",
-                UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
-        }
+        var mesajSon = silinen > 0
+            ? $"Kategori silindi. {silinen} alınan malzeme kaydı kaldırıldı."
+            : "Boş kategori silindi.";
+        MessageBox.Show(mesajSon, UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void BirimListesiniYenile()

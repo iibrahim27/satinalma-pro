@@ -314,13 +314,14 @@ public partial class DepoTopluGirisWindow : Window
                 MalzemeKategoriDeposu.Ekle(satir.Kategori);
                 MalzemeBirimDeposu.Ekle(satir.Birim);
 
+                var satirDepo = string.IsNullOrWhiteSpace(satir.DepoSaha) ? depo : satir.DepoSaha.Trim();
                 StokIslemServisi.GirisYap(
                     tarih,
                     satir.Malzeme,
                     satir.Kategori,
                     satir.Birim,
                     satir.Miktar,
-                    depo,
+                    satirDepo,
                     0,
                     belgeNo,
                     islemYapan,

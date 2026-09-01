@@ -6,6 +6,7 @@ using SatinalmaPro.Helpers;
 using SatinalmaPro.Models;
 using SatinalmaPro.Services;
 using SatinalmaIsAkisi = SatinalmaPro.Shared.Helpers.SatinalmaIsAkisi;
+using TalepProRuntime = SatinalmaPro.Shared.Helpers.TalepProRuntime;
 using UygulamaBilgisi = SatinalmaPro.Helpers.UygulamaBilgisi;
 
 namespace SatinalmaPro.Views.Modules.Satinalma.Part1;
@@ -729,7 +730,9 @@ public partial class TeklifGirisView : UserControl
         }
 
         MessageBox.Show(
-            $"{talep.TalepNo} onaylandı. «Onaylanan Teklifler ve Talepler» sekmesinden devam edebilirsiniz.",
+            TalepProRuntime.Aktif
+                ? $"{talep.TalepNo} onaylandı. «Geçmiş Onaylananlar» sekmesinde görüntüleyebilirsiniz."
+                : $"{talep.TalepNo} onaylandı. «Onaylanan Teklifler ve Talepler» sekmesinden devam edebilirsiniz.",
             UygulamaBilgisi.Ad, MessageBoxButton.OK, MessageBoxImage.Information);
 
         Degisti?.Invoke();

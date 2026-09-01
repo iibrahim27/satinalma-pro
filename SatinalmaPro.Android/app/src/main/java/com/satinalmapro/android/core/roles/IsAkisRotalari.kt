@@ -20,13 +20,14 @@ object IsAkisRotalari {
 
     fun teklifOnaySonrasi(role: String?, talepId: String): String = when (KullaniciRolleri.normalize(role)) {
         KullaniciRolleri.YONETIM -> "talep-detay?id=$talepId"
-        KullaniciRolleri.SATINALMA -> "onaylanan-malzemeler"
-        else -> "onaylanan-malzemeler"
+        else -> if (TalepProModu.AKTIF) TalepProModu.onaySonrasiRoute(role)
+        else "onaylanan-malzemeler"
     }
 
     fun teklifsizOnaySonrasi(role: String?, talepId: String): String = when (KullaniciRolleri.normalize(role)) {
         KullaniciRolleri.YONETIM -> "talep-detay?id=$talepId"
-        else -> "teklifsiz-firma-fiyat?id=$talepId"
+        else -> if (TalepProModu.AKTIF) TalepProModu.onaySonrasiRoute(role)
+        else "teklifsiz-firma-fiyat?id=$talepId"
     }
 
     fun teklifIsteSonrasi(role: String?): String = when (KullaniciRolleri.normalize(role)) {
@@ -44,16 +45,20 @@ object IsAkisRotalari {
         else -> teklifOnayListesi(role)
     }
 
-    fun gecmisTeklifliListe(role: String?): String = when (KullaniciRolleri.normalize(role)) {
-        KullaniciRolleri.YONETIM -> "onaylanan-teklifler"
-        KullaniciRolleri.SATINALMA -> "satinalma-onaylanan"
-        else -> "gecmis-teklifli-onaylar"
-    }
+    fun gecmisTeklifliListe(role: String?): String =
+        if (TalepProModu.AKTIF) TalepProModu.onaySonrasiRoute(role)
+        else when (KullaniciRolleri.normalize(role)) {
+            KullaniciRolleri.YONETIM -> "onaylanan-teklifler"
+            KullaniciRolleri.SATINALMA -> "satinalma-onaylanan"
+            else -> "gecmis-teklifli-onaylar"
+        }
 
-    fun gecmisTalepListe(role: String?): String = when (KullaniciRolleri.normalize(role)) {
-        KullaniciRolleri.YONETIM -> "onay-gecmisi"
-        else -> "gecmis-talepler"
-    }
+    fun gecmisTalepListe(role: String?): String =
+        if (TalepProModu.AKTIF) TalepProModu.onaySonrasiRoute(role)
+        else when (KullaniciRolleri.normalize(role)) {
+            KullaniciRolleri.YONETIM -> "onay-gecmisi"
+            else -> "gecmis-talepler"
+        }
 
     /** Erişilemeyen admin rotalarını role uygun menü rotasına çevirir. */
     fun normalize(route: String, role: String?): String {
@@ -66,6 +71,8 @@ object IsAkisRotalari {
         val aliasedBase = masaustuRotaTakmaAdlari[base] ?: base
 
         return when {
+            TalepProModu.AKTIF && aliasedBase in TalepProModu.HARIC_ROUTES ->
+                "${TalepProModu.onaySonrasiRoute(role)}$suffix"
             aliasedBase == "teklif-onay" && r == KullaniciRolleri.YONETIM ->
                 "yonetim-teklif-girilen$suffix"
             aliasedBase == "teklif-onay" && r == KullaniciRolleri.SATINALMA ->

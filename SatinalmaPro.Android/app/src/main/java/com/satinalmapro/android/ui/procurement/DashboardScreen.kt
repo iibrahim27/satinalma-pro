@@ -103,7 +103,6 @@ fun DashboardScreen(viewModel: AppViewModel) {
     val waitingTotal = badges.values.sum()
     val kritikStok = stok.count { it.durumMetin == "Kritik" || it.durumMetin == "Tükendi" }
     val tukenenStok = stok.count { it.durumMetin == "Tükendi" }
-    val yoldakiSayisi = badges["satinalma-siparis"] ?: 0
     val displayName = remember(user?.fullName) {
         user?.fullName?.trim()?.takeIf { it.isNotBlank() }
     }
@@ -145,11 +144,11 @@ fun DashboardScreen(viewModel: AppViewModel) {
                         onClick = { viewModel.navigateFromMenu("stok-durum") }
                     )
                     SummaryTile(
-                        label = "Yoldaki",
-                        value = yoldakiSayisi.toString(),
-                        accent = if (yoldakiSayisi > 0) MetrikLight.Accent else MetrikLight.TextSecondary,
+                        label = "Tükenen",
+                        value = tukenenStok.toString(),
+                        accent = if (tukenenStok > 0) MetrikLight.Warning else MetrikLight.TextSecondary,
                         modifier = Modifier.weight(1f),
-                        onClick = { viewModel.navigateFromMenu("satinalma-siparis") }
+                        onClick = { viewModel.navigateFromMenu("stok-durum") }
                     )
                 } else if (stockFocused) {
                     SummaryTile(
@@ -310,15 +309,6 @@ fun DashboardScreen(viewModel: AppViewModel) {
                         subtitle = "Depodan malzeme çıkar",
                         tint = MetrikLight.Warning,
                         onClick = { viewModel.navigateFromMenu("stok-cikis") }
-                    )
-                }
-                if (depoFocused && queues.any { it.route == "satinalma-siparis" }) {
-                    ActionRow(
-                        icon = Icons.Rounded.Assignment,
-                        title = "Yoldaki malzemeler",
-                        subtitle = if (yoldakiSayisi > 0) "$yoldakiSayisi sipariş · mal kabul" else "Sipariş ve mal kabul",
-                        tint = MetrikLight.Accent,
-                        onClick = { viewModel.navigateFromMenu("satinalma-siparis") }
                     )
                 }
                 ActionRow(
