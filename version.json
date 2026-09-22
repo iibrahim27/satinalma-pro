@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.117",
-    "build":  192,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.117/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.117/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.117/SatinalmaPro.apk",
-    "notes":  "2.1.117 - Kategori yonetimi: ornek isimler kaldirildi, alinan malzemede kaydi olmayan kategori ayarlardan temizlenir, toplu silme, veri sifirlamada kategori temizligi; Talep Pro menu/rozet duzeltmeleri",
+    "version":  "2.1.118",
+    "build":  193,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.118/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.118/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.118/SatinalmaPro.apk",
+    "notes":  "2.1.118 - Talep Pro dashboard (gelen talepler, teklif girisi bekleyenler, onay bekleyen teklifler); oturum kapatma duzeltmesi",
     "zorunlu":  false
 }
