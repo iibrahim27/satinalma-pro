@@ -63,9 +63,20 @@ public partial class GirisPenceresi : Window
                 aciklama ?? "Satınalma taleplerinizi buradan yönetin.");
         }
 
-        if (sahip is not null)
+        if (sahip is { IsVisible: true })
+        {
             pencere.Owner = sahip;
+            pencere.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        }
+        else
+        {
+            pencere.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            pencere.Topmost = true;
+            pencere.ShowActivated = true;
+        }
 
-        return pencere.ShowDialog() == true && pencere.GirisTamamlandi;
+        var sonuc = pencere.ShowDialog() == true && pencere.GirisTamamlandi;
+        pencere.Topmost = false;
+        return sonuc;
     }
 }

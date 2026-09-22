@@ -12,6 +12,7 @@ public partial class MainWindow : Window
 {
     private SatinalmaShellView? _shell;
     private bool _kapanisaIzinVer;
+    private bool _oturumKapatiliyor;
 
     public MainWindow()
     {
@@ -33,7 +34,11 @@ public partial class MainWindow : Window
 
     private async Task OturumKapatAsync()
     {
-        var gizlendi = false;
+        if (_oturumKapatiliyor)
+            return;
+
+        _oturumKapatiliyor = true;
+        var gizlendi = !IsVisible;
         try
         {
             var sonuc = await OturumKapatmaServisi.KapatVeYenidenGirAsync(
@@ -42,33 +47,28 @@ public partial class MainWindow : Window
                     "Talep Pro — Giriş",
                     "Talep Pro",
                     "Profesyonel talep ve teklif yönetimi",
-                    "Satınalma Pro ile ortak oturum. Talep, teklif ve onay süreçleriniz burada."),
-                onOnaylandi: () =>
-                {
-                    Hide();
-                    gizlendi = true;
-                })
+                    "Satınalma Pro ile ortak oturum. Talep, teklif ve onay süreçleriniz burada."))
                 .ConfigureAwait(true);
 
-            if (sonuc is OturumKapatmaSonuc.GirisIptal or OturumKapatmaSonuc.Iptal)
+            if (sonuc == OturumKapatmaSonuc.Iptal)
+                return;
+
+            if (sonuc == OturumKapatmaSonuc.GirisIptal)
             {
-                if (sonuc == OturumKapatmaSonuc.GirisIptal)
-                    Application.Current.Shutdown();
+                _kapanisaIzinVer = true;
+                Application.Current.Shutdown();
                 return;
             }
 
             if (sonuc != OturumKapatmaSonuc.Basarili)
                 return;
 
-            if (_shell is not null)
-            {
-                IcerikAlani.Content = null;
-                _shell = new SatinalmaShellView();
-                _shell.StokModuluIstendi += () =>
-                    UygulamaKoordinasyonu.SatinalmaProModulAc("Stok Yönetimi");
-                _shell.OturumKapatIstendi += () => _ = OturumKapatAsync();
-                IcerikAlani.Content = _shell;
-            }
+            IcerikAlani.Content = null;
+            _shell = new SatinalmaShellView();
+            _shell.StokModuluIstendi += () =>
+                UygulamaKoordinasyonu.SatinalmaProModulAc("Stok Yönetimi");
+            _shell.OturumKapatIstendi += () => _ = OturumKapatAsync();
+            IcerikAlani.Content = _shell;
 
             Show();
             Activate();
@@ -77,7 +77,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             HataGunlugu.Kaydet(ex, "TalepPro.OturumKapat");
-            MessageBox.Show($"Çıkış sırasında hata: {ex.Message}", "Talep Pro",
+            MessageBox.Show(this, $"Çıkış sırasında hata: {ex.Message}", "Talep Pro",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally
@@ -87,6 +87,8 @@ public partial class MainWindow : Window
                 Show();
                 Activate();
             }
+
+            _oturumKapatiliyor = false;
         }
     }
 

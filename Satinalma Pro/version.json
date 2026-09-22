@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "2.1.118",
-    "build":  193,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.118/SatinalmaPro_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.118/SatinalmaPro.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.118/SatinalmaPro.apk",
-    "notes":  "2.1.118 - Talep Pro dashboard (gelen talepler, teklif girisi bekleyenler, onay bekleyen teklifler); oturum kapatma duzeltmesi",
+    "version":  "2.1.119",
+    "build":  194,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.119/SatinalmaPro_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.119/SatinalmaPro.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/v2.1.119/SatinalmaPro.apk",
+    "notes":  "2.1.119 - Talep Pro yonetim Dashboard; oturum kapatma giris penceresi duzeltmesi",
     "zorunlu":  false
 }

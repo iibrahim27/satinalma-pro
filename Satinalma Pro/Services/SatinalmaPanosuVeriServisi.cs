@@ -252,15 +252,26 @@ public static class SatinalmaPanosuVeriServisi
         var rol = OturumYoneticisi.AktifKullanici?.Rol;
         var uid = OturumYoneticisi.AktifKullanici?.Uid;
 
-        var tanimlar = new (string Baslik, string Aciklama, string Route, string Renk, string Ikon)[]
+        var tanimlar = new List<(string Baslik, string Aciklama, string Route, string Renk, string Ikon)>
         {
             ("Gelen Talepler", "Onaya gönderilen talepler",
                 SatinalmaPart1Menusu.YonetimGelenTalepler, "#2563EB", "\uE8F1"),
-            ("Teklif Girişi Bekleyenler", "Teklif girilecek talepler",
-                SatinalmaPart1Menusu.SatinalmaTeklifGirilen, "#7447D8", "\uE787"),
             ("Onay Bekleyen Teklifler", "Teklif inceleme ve onay",
                 SatinalmaPart1Menusu.YonetimTeklifGirilen, "#24964A", "\uE73E")
         };
+
+        if (DesktopRoleTabManager.RouteVisible(rol, SatinalmaPart1Menusu.SatinalmaTeklifGirilen))
+        {
+            tanimlar.Insert(1, (
+                "Teklif Girişi Bekleyenler", "Teklif girilecek talepler",
+                SatinalmaPart1Menusu.SatinalmaTeklifGirilen, "#7447D8", "\uE787"));
+        }
+        else if (DesktopRoleTabManager.RouteVisible(rol, SatinalmaPart1Menusu.YonetimTeklifBekleyen))
+        {
+            tanimlar.Insert(1, (
+                "Teklif İstenenler", "Satınalmadan teklif beklenen talepler",
+                SatinalmaPart1Menusu.YonetimTeklifBekleyen, "#7447D8", "\uE823"));
+        }
 
         var sonuc = new List<PanosuKuyrukPanel>();
         foreach (var tanim in tanimlar)

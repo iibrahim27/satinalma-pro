@@ -10,10 +10,10 @@
     <Product>Satınalma Yönetici</Product>
     <RootNamespace>SatinalmaYonetici</RootNamespace>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>1.0.70</Version>
-    <AssemblyVersion>1.0.70.0</AssemblyVersion>
-    <FileVersion>1.0.70.0</FileVersion>
-    <InformationalVersion>1.0.70</InformationalVersion>
+    <Version>1.0.71</Version>
+    <AssemblyVersion>1.0.71.0</AssemblyVersion>
+    <FileVersion>1.0.71.0</FileVersion>
+    <InformationalVersion>1.0.71</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

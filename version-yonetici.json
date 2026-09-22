@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.70",
-    "build":  73,
-    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.70/SatinalmaYonetici_Kurulum.exe",
-    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.70/SatinalmaYonetici.zip",
-    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.70/SatinalmaYonetici.apk",
-    "notes":  "1.0.70 - Pro 2.1.118 ile birlikte (Talep Pro dashboard, oturum kapatma)",
+    "version":  "1.0.71",
+    "build":  74,
+    "downloadUrl":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.71/SatinalmaYonetici_Kurulum.exe",
+    "downloadUrlZip":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.71/SatinalmaYonetici.zip",
+    "downloadUrlApk":  "https://github.com/iibrahim27/satinalma-pro/releases/download/yonetici-v1.0.71/SatinalmaYonetici.apk",
+    "notes":  "1.0.71 - Pro 2.1.119 ile birlikte (yonetim Dashboard, oturum kapatma)",
     "zorunlu":  false
 }

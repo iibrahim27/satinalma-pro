@@ -149,8 +149,12 @@ public static class ProcurementRouteMatcher
 
         if (roleKey is "admin" or "yonetim")
         {
-            if (roleKey == "admin")
-                yonetimItems.Add(new("Satınalma Panosu", SatinalmaRoutes.Panosu));
+            if (roleKey == "admin" || TalepProRuntime.Aktif)
+            {
+                yonetimItems.Add(new(
+                    TalepProRuntime.Aktif ? "Dashboard" : "Satınalma Panosu",
+                    SatinalmaRoutes.Panosu));
+            }
 
             yonetimItems.AddRange(
             [

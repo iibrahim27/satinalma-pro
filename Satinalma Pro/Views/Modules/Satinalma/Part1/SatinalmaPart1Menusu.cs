@@ -124,6 +124,8 @@ public static class SatinalmaPart1Menusu
         string? rol, IReadOnlyList<MenuGrubu> ham)
     {
         var key = TabFilterManager.NormalizeRole(rol);
+        if (key == "yonetim" && TalepProRuntime.Aktif)
+            return YonetimTalepProMenusuDuzenle(ham);
         if (key is not ("admin" or "satinalma"))
             return ham;
 
@@ -208,6 +210,38 @@ public static class SatinalmaPart1Menusu
         if (genel.Count > 0) sonuc.Add(new MenuGrubu("Genel", genel));
         if (surec.Count > 0) sonuc.Add(new MenuGrubu("Talep Süreci", surec));
         if (operasyon.Count > 0) sonuc.Add(new MenuGrubu("Operasyon", operasyon));
+        return sonuc.Count > 0 ? sonuc : ham;
+    }
+
+    /// <summary>Talep Pro — yönetim rolü menüsü (Dashboard + süreç).</summary>
+    private static IReadOnlyList<MenuGrubu> YonetimTalepProMenusuDuzenle(IReadOnlyList<MenuGrubu> ham)
+    {
+        var flat = ham.SelectMany(g => g.Ogeler).ToList();
+        Oge? Bul(string route) => flat.FirstOrDefault(o => o.Route == route);
+
+        var genel = new List<Oge>();
+        if (Bul(SatinalmaPanosu) is { } pano)
+            genel.Add(pano with { Baslik = "Dashboard" });
+
+        var surecRouteSirasi = new[]
+        {
+            YonetimGelenTalepler,
+            YonetimTeklifBekleyen,
+            YonetimTeklifGirilen,
+            YonetimOnayGecmisi,
+            YonetimRedVerilen
+        };
+
+        var surec = new List<Oge>();
+        foreach (var route in surecRouteSirasi)
+        {
+            if (Bul(route) is { } o && surec.All(x => x.Route != o.Route))
+                surec.Add(o);
+        }
+
+        var sonuc = new List<MenuGrubu>();
+        if (genel.Count > 0) sonuc.Add(new MenuGrubu("Genel", genel));
+        if (surec.Count > 0) sonuc.Add(new MenuGrubu("Talep Süreci", surec));
         return sonuc.Count > 0 ? sonuc : ham;
     }
 

@@ -54,9 +54,14 @@ public static class OturumKapatmaServisi
             await BulutVeriSenkronu.BulutaGonderAsync().ConfigureAwait(true);
             OturumYoneticisi.CikisYap();
 
+            // Gizli sahip penceresi ShowDialog'u engeller — görünür değilse sahipsiz aç.
+            var girisSahibi = sahip is { IsVisible: true } ? sahip : null;
+            if (girisSahibi is null)
+                sahip?.Hide();
+
             var girisOk = marka is null
-                ? GirisPenceresi.OturumAc(sahip)
-                : GirisPenceresi.OturumAc(sahip, marka.PencereBasligi, marka.Marka, marka.AltBaslik, marka.Aciklama);
+                ? GirisPenceresi.OturumAc(girisSahibi)
+                : GirisPenceresi.OturumAc(girisSahibi, marka.PencereBasligi, marka.Marka, marka.AltBaslik, marka.Aciklama);
 
             if (!girisOk)
                 return OturumKapatmaSonuc.GirisIptal;
