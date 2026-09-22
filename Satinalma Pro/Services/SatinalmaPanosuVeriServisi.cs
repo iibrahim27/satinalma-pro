@@ -81,6 +81,27 @@ public sealed class PanosuKritikSatir
     public Brush BeklemeYazi { get; init; } = Brushes.Black;
 }
 
+public sealed class PanosuKuyrukSatir
+{
+    public Guid Id { get; init; }
+    public string TalepNo { get; init; } = "";
+    public string Malzeme { get; init; } = "";
+    public string Santiye { get; init; } = "";
+    public string Bekleme { get; init; } = "";
+    public required string Route { get; init; }
+}
+
+public sealed class PanosuKuyrukPanel
+{
+    public required string Baslik { get; init; }
+    public required string Aciklama { get; init; }
+    public required string Route { get; init; }
+    public int Adet { get; init; }
+    public required string RenkHex { get; init; }
+    public required string Ikon { get; init; }
+    public IReadOnlyList<PanosuKuyrukSatir> Kayitlar { get; init; } = [];
+}
+
 public static class SatinalmaPanosuVeriServisi
 {
     public static IReadOnlyList<SatinalmaWorkflowAdim> WorkflowAdimlari()
@@ -223,6 +244,61 @@ public static class SatinalmaPanosuVeriServisi
             Yuzde = Math.Round(x.Adet * 100d / toplam, 0),
             RenkHex = x.Renk
         }).ToList();
+    }
+
+    /// <summary>Talep Pro dashboard — gelen talepler, teklif girişi ve onay bekleyen teklif kuyrukları.</summary>
+    public static IReadOnlyList<PanosuKuyrukPanel> TalepProDashboardKuyruklari(int kayitAdet = 5)
+    {
+        var rol = OturumYoneticisi.AktifKullanici?.Rol;
+        var uid = OturumYoneticisi.AktifKullanici?.Uid;
+
+        var tanimlar = new (string Baslik, string Aciklama, string Route, string Renk, string Ikon)[]
+        {
+            ("Gelen Talepler", "Onaya gönderilen talepler",
+                SatinalmaPart1Menusu.YonetimGelenTalepler, "#2563EB", "\uE8F1"),
+            ("Teklif Girişi Bekleyenler", "Teklif girilecek talepler",
+                SatinalmaPart1Menusu.SatinalmaTeklifGirilen, "#7447D8", "\uE787"),
+            ("Onay Bekleyen Teklifler", "Teklif inceleme ve onay",
+                SatinalmaPart1Menusu.YonetimTeklifGirilen, "#24964A", "\uE73E")
+        };
+
+        var sonuc = new List<PanosuKuyrukPanel>();
+        foreach (var tanim in tanimlar)
+        {
+            if (!DesktopRoleTabManager.RouteVisible(rol, tanim.Route))
+                continue;
+
+            var liste = DesktopRoleTabManager.FilterAndSort(
+                tanim.Route, SatinalmaDepo.Talepler, rol, uid);
+
+            var kayitlar = liste.Take(kayitAdet).Select(talep =>
+            {
+                var ilk = talep.Kalemler?.FirstOrDefault();
+                var gun = BeklemeGun(talep);
+                return new PanosuKuyrukSatir
+                {
+                    Id = talep.Id,
+                    TalepNo = talep.TalepNo,
+                    Malzeme = ilk?.Malzeme ?? "—",
+                    Santiye = SantiyeMetni(talep),
+                    Bekleme = gun <= 0 ? "Bugün" : $"{gun} gün",
+                    Route = tanim.Route
+                };
+            }).ToList();
+
+            sonuc.Add(new PanosuKuyrukPanel
+            {
+                Baslik = tanim.Baslik,
+                Aciklama = tanim.Aciklama,
+                Route = tanim.Route,
+                Adet = liste.Count,
+                RenkHex = tanim.Renk,
+                Ikon = tanim.Ikon,
+                Kayitlar = kayitlar
+            });
+        }
+
+        return sonuc;
     }
 
     public static IReadOnlyList<PanosuKritikSatir> KritikBekleyenTalepler(int adet = 5)

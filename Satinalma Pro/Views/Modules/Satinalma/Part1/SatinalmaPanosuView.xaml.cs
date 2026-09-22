@@ -28,6 +28,14 @@ public partial class SatinalmaPanosuView : UserControl
     {
         InitializeComponent();
         TxtYilEtiket.Text = DateTime.Now.Year.ToString(Tr);
+        TalepProModunuUygula();
+    }
+
+    private void TalepProModunuUygula()
+    {
+        var talepPro = TalepProRuntime.Aktif;
+        TalepProDashboardPanel.Visibility = talepPro ? Visibility.Visible : Visibility.Collapsed;
+        KlasikPanosuPanel.Visibility = talepPro ? Visibility.Collapsed : Visibility.Visible;
     }
 
     public void Yenile()
@@ -44,6 +52,10 @@ public partial class SatinalmaPanosuView : UserControl
                 var kritik = SatinalmaPanosuVeriServisi.KritikBekleyenTalepler(5);
                 var kategori = SatinalmaPanosuVeriServisi.KategoriHarcamaDagilimi(4);
 
+                var kuyruklar = TalepProRuntime.Aktif
+                    ? SatinalmaPanosuVeriServisi.TalepProDashboardKuyruklari()
+                    : null;
+
                 Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
                 {
                     if (sira != _yenilemeSira)
@@ -51,6 +63,9 @@ public partial class SatinalmaPanosuView : UserControl
 
                     try
                     {
+                        if (TalepProRuntime.Aktif)
+                            TalepProKuyruklariCiz(kuyruklar ?? []);
+
                         TxtKpiOnay.Text = kpi.OnayBekleyen;
                         TxtKpiTeklif.Text = kpi.TeklifSurecinde;
                         TxtKpiSiparis.Text = kpi.SipariseDonusen;
@@ -328,11 +343,224 @@ public partial class SatinalmaPanosuView : UserControl
     private static Brush BrushHex(string hex) =>
         (Brush)new BrushConverter().ConvertFromString(hex)!;
 
+    private void TalepProKuyruklariCiz(IReadOnlyList<PanosuKuyrukPanel> kuyruklar)
+    {
+        TalepProKuyrukGrid.Children.Clear();
+        foreach (var kuyruk in kuyruklar)
+            TalepProKuyrukGrid.Children.Add(KuyrukKartiOlustur(kuyruk));
+    }
+
+    private Border KuyrukKartiOlustur(PanosuKuyrukPanel kuyruk)
+    {
+        var kart = new Border
+        {
+            Style = (Style)FindResource("DashCard"),
+            Margin = new Thickness(0, 0, 10, 0),
+            Cursor = Cursors.Hand
+        };
+        kart.MouseLeftButtonUp += (_, e) =>
+        {
+            if (e.OriginalSource is FrameworkElement { Tag: string blokTag } && blokTag == "satir")
+                return;
+            RouteIstendi?.Invoke(kuyruk.Route);
+        };
+
+        var kok = new Grid();
+        kok.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        kok.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star), MinHeight = 160 });
+        kok.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        var baslik = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
+        baslik.Children.Add(new Border
+        {
+            Width = 44,
+            Height = 44,
+            CornerRadius = new CornerRadius(22),
+            Background = KuyrukArkaPlan(kuyruk.RenkHex),
+            Margin = new Thickness(0, 0, 12, 0),
+            Child = new TextBlock
+            {
+                Text = kuyruk.Ikon,
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                FontSize = 18,
+                Foreground = BrushHex(kuyruk.RenkHex),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            }
+        });
+        var baslikMetin = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        baslikMetin.Children.Add(new TextBlock
+        {
+            Text = kuyruk.Baslik,
+            FontSize = 15,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = BrushHex("#10233F")
+        });
+        baslikMetin.Children.Add(new TextBlock
+        {
+            Text = kuyruk.Aciklama,
+            FontSize = 12,
+            Foreground = BrushHex("#607089"),
+            Margin = new Thickness(0, 2, 0, 0),
+            TextWrapping = TextWrapping.Wrap
+        });
+        baslik.Children.Add(baslikMetin);
+        DockPanel.SetDock(baslik.Children[0], Dock.Left);
+
+        var rozet = new Border
+        {
+            Background = BrushHex(kuyruk.RenkHex),
+            CornerRadius = new CornerRadius(14),
+            Padding = new Thickness(10, 4, 10, 4),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Child = new TextBlock
+            {
+                Text = kuyruk.Adet.ToString("N0", Tr),
+                FontSize = 16,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = Brushes.White
+            }
+        };
+        DockPanel.SetDock(rozet, Dock.Right);
+        baslik.Children.Add(rozet);
+
+        Grid.SetRow(baslik, 0);
+        kok.Children.Add(baslik);
+
+        var liste = new ListBox
+        {
+            BorderThickness = new Thickness(0),
+            Background = Brushes.Transparent,
+            ItemsSource = kuyruk.Kayitlar,
+            Tag = kuyruk.Route
+        };
+        liste.MouseDoubleClick += KuyrukSatir_DoubleClick;
+        liste.ItemContainerStyle = KuyrukSatirStili();
+        liste.ItemTemplate = KuyrukSatirSablonu();
+        if (kuyruk.Kayitlar.Count == 0)
+        {
+            liste.Visibility = Visibility.Collapsed;
+            var bos = new TextBlock
+            {
+                Text = "Bekleyen kayıt yok.",
+                FontSize = 12,
+                Foreground = BrushHex("#94A3B8"),
+                Margin = new Thickness(0, 8, 0, 8),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetRow(bos, 1);
+            kok.Children.Add(bos);
+        }
+        else
+        {
+            Grid.SetRow(liste, 1);
+            kok.Children.Add(liste);
+        }
+
+        var tumunu = new Button
+        {
+            Content = "Tümünü gör  ›",
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(0, 10, 0, 0),
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Cursor = Cursors.Hand,
+            Foreground = BrushHex("#07858E"),
+            FontSize = 12,
+            FontWeight = FontWeights.SemiBold,
+            Padding = new Thickness(4, 6, 4, 6),
+            Tag = kuyruk.Route
+        };
+        tumunu.Click += (_, _) => RouteIstendi?.Invoke(kuyruk.Route);
+        Grid.SetRow(tumunu, 2);
+        kok.Children.Add(tumunu);
+
+        kart.Child = kok;
+        return kart;
+    }
+
+    private static Style KuyrukSatirStili()
+    {
+        var stil = new Style(typeof(ListBoxItem));
+        stil.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0)));
+        stil.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
+        stil.Setters.Add(new Setter(FrameworkElement.TagProperty, "satir"));
+        return stil;
+    }
+
+    private static DataTemplate KuyrukSatirSablonu()
+    {
+        var fabrika = new FrameworkElementFactory(typeof(Grid));
+        fabrika.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 0, 8));
+
+        var col0 = new FrameworkElementFactory(typeof(ColumnDefinition));
+        col0.SetValue(ColumnDefinition.WidthProperty, new GridLength(88));
+        fabrika.AppendChild(col0);
+        fabrika.AppendChild(new FrameworkElementFactory(typeof(ColumnDefinition)));
+
+        var talepNo = new FrameworkElementFactory(typeof(TextBlock));
+        talepNo.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding(nameof(PanosuKuyrukSatir.TalepNo)));
+        talepNo.SetValue(TextBlock.FontSizeProperty, 12.0);
+        talepNo.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
+        talepNo.SetValue(TextBlock.ForegroundProperty, BrushHex("#10233F"));
+        talepNo.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        fabrika.AppendChild(talepNo);
+
+        var detay = new FrameworkElementFactory(typeof(StackPanel));
+        detay.SetValue(Grid.ColumnProperty, 1);
+        var malzeme = new FrameworkElementFactory(typeof(TextBlock));
+        malzeme.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding(nameof(PanosuKuyrukSatir.Malzeme)));
+        malzeme.SetValue(TextBlock.FontSizeProperty, 12.0);
+        malzeme.SetValue(TextBlock.ForegroundProperty, BrushHex("#10233F"));
+        malzeme.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
+        detay.AppendChild(malzeme);
+        var alt = new FrameworkElementFactory(typeof(TextBlock));
+        alt.SetValue(TextBlock.FontSizeProperty, 11.0);
+        alt.SetValue(TextBlock.ForegroundProperty, BrushHex("#607089"));
+        alt.SetValue(TextBlock.MarginProperty, new Thickness(0, 2, 0, 0));
+        alt.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding
+        {
+            Path = new PropertyPath("."),
+            Converter = new KuyrukSatirAltMetinDonusturucu()
+        });
+        detay.AppendChild(alt);
+        fabrika.AppendChild(detay);
+
+        return new DataTemplate { VisualTree = fabrika };
+    }
+
+    private void KuyrukSatir_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not ListBox { SelectedItem: PanosuKuyrukSatir satir })
+            return;
+        TalepAcIstendi?.Invoke(satir.Id);
+    }
+
+    private static Brush KuyrukArkaPlan(string renkHex) => renkHex switch
+    {
+        "#2563EB" => BrushHex("#DBEAFE"),
+        "#7447D8" => BrushHex("#EDE9FE"),
+        "#24964A" => BrushHex("#DCFCE7"),
+        _ => BrushHex("#F1F5F9")
+    };
+
+    private sealed class KuyrukSatirAltMetinDonusturucu : System.Windows.Data.IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+            value is PanosuKuyrukSatir s ? $"{s.Santiye} · {s.Bekleme}" : "";
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
+
     private void KpiOnay_Click(object sender, MouseButtonEventArgs e) =>
         RouteIstendi?.Invoke(SatinalmaPart1Menusu.YonetimTeklifGirilen);
 
     private void KpiTeklif_Click(object sender, MouseButtonEventArgs e) =>
-        RouteIstendi?.Invoke(SatinalmaPart1Menusu.SatinalmaTeklifIstenen);
+        RouteIstendi?.Invoke(TalepProRuntime.Aktif
+            ? SatinalmaPart1Menusu.SatinalmaTeklifGirilen
+            : SatinalmaPart1Menusu.SatinalmaTeklifIstenen);
 
     private void KpiSiparis_Click(object sender, MouseButtonEventArgs e) =>
         RouteIstendi?.Invoke(TalepProRuntime.Aktif

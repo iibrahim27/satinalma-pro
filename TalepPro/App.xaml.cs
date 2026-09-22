@@ -173,6 +173,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        OturumYoneticisi.UygulamaKapanirken();
         TalepProTepsiYoneticisi.Temizle();
         TalepProTekOrnek.SerbestBirak();
         base.OnExit(e);

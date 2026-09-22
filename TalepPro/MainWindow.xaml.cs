@@ -36,16 +36,18 @@ public partial class MainWindow : Window
         var gizlendi = false;
         try
         {
-            Hide();
-            gizlendi = true;
-
             var sonuc = await OturumKapatmaServisi.KapatVeYenidenGirAsync(
                 this,
                 new GirisPenceresiMarka(
                     "Talep Pro — Giriş",
                     "Talep Pro",
                     "Profesyonel talep ve teklif yönetimi",
-                    "Satınalma Pro ile ortak oturum. Talep, teklif ve onay süreçleriniz burada."))
+                    "Satınalma Pro ile ortak oturum. Talep, teklif ve onay süreçleriniz burada."),
+                onOnaylandi: () =>
+                {
+                    Hide();
+                    gizlendi = true;
+                })
                 .ConfigureAwait(true);
 
             if (sonuc is OturumKapatmaSonuc.GirisIptal or OturumKapatmaSonuc.Iptal)

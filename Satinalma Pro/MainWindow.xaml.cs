@@ -173,10 +173,13 @@ public partial class MainWindow : Window
         var gizlendi = false;
         try
         {
-            Hide();
-            gizlendi = true;
-
-            var sonuc = await OturumKapatmaServisi.KapatVeYenidenGirAsync(this).ConfigureAwait(true);
+            var sonuc = await OturumKapatmaServisi.KapatVeYenidenGirAsync(
+                this,
+                onOnaylandi: () =>
+                {
+                    Hide();
+                    gizlendi = true;
+                }).ConfigureAwait(true);
             if (sonuc is OturumKapatmaSonuc.GirisIptal or OturumKapatmaSonuc.Iptal)
             {
                 if (sonuc == OturumKapatmaSonuc.GirisIptal)

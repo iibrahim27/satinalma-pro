@@ -136,7 +136,8 @@ public static class SatinalmaPart1Menusu
         }
 
         var genel = new List<Oge>();
-        if (Bul(SatinalmaPanosu) is { } pano) genel.Add(pano);
+        if (Bul(SatinalmaPanosu) is { } pano)
+            genel.Add(TalepProRuntime.Aktif ? pano with { Baslik = "Dashboard" } : pano);
         if (YenidenAdlandir(SatinalmaTalep, "Yeni Talep") is { } yeni) genel.Add(yeni);
 
         var surecRouteSirasi = TalepProRuntime.Aktif
@@ -293,7 +294,9 @@ public static class SatinalmaPart1Menusu
         YonetimGecmis => ("Talep ve Onaylanan Teklifler Geçmişi", "Tamamlanan talep ve teklif geçmişi"),
 
         SatinalmaTalep => ("Talep", "Malzeme talebi oluşturun"),
-        SatinalmaPanosu => ("Satınalma Panosu", "Satınalma performansını, bekleyen işleri ve hızlı işlemleri tek ekranda görün."),
+        SatinalmaPanosu => TalepProRuntime.Aktif
+            ? ("Dashboard", "Gelen talepler, teklif girişi bekleyenler ve onay bekleyen teklifler.")
+            : ("Satınalma Panosu", "Satınalma performansını, bekleyen işleri ve hızlı işlemleri tek ekranda görün."),
         SatinalmaTalepler => ("Talepler", "Oluşturduğunuz talepler"),
         SatinalmaTeklifIstenen => ("Teklif İstenen Talepler", "Yönetim teklif istedi — tek teklif ile de yönetime gönderebilirsiniz"),
         SatinalmaTeklifGirilen => ("Teklif Girişi Bekleyenler", "Teklif girişi yapılacak talepler"),

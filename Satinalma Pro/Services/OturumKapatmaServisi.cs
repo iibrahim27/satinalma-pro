@@ -25,7 +25,8 @@ public static class OturumKapatmaServisi
     public static async Task<OturumKapatmaSonuc> KapatVeYenidenGirAsync(
         Window? sahip,
         GirisPenceresiMarka? marka = null,
-        bool onayIste = true)
+        bool onayIste = true,
+        Action? onOnaylandi = null)
     {
         if (!OturumYoneticisi.BulutAktif)
             return OturumKapatmaSonuc.YerelMod;
@@ -36,6 +37,7 @@ public static class OturumKapatmaServisi
         if (onayIste)
         {
             var onay = MessageBox.Show(
+                sahip,
                 "Oturumu kapatmak istiyor musunuz?",
                 marka?.Marka ?? UygulamaBilgisi.Ad,
                 MessageBoxButton.YesNo,
@@ -43,6 +45,8 @@ public static class OturumKapatmaServisi
             if (onay != MessageBoxResult.Yes)
                 return OturumKapatmaSonuc.Iptal;
         }
+
+        onOnaylandi?.Invoke();
 
         try
         {
